@@ -21,6 +21,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print 'Functions:'
   print '   list_devices()'
   print '  Device get_device(string name)'
+  print '   get_all_devices()'
   print '  void add_device(string name, string begin_time, string end_time)'
   print '  void update_device(string name, string begin_time, string end_time)'
   print '   list_device_oidsets(Device device)'
@@ -76,6 +77,12 @@ elif cmd == 'get_device':
     print 'get_device requires 1 args'
     sys.exit(1)
   pp.pprint(client.get_device(args[0],))
+
+elif cmd == 'get_all_devices':
+  if len(args) != 0:
+    print 'get_all_devices requires 0 args'
+    sys.exit(1)
+  pp.pprint(client.get_all_devices())
 
 elif cmd == 'add_device':
   if len(args) != 3:

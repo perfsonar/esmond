@@ -2,4 +2,5 @@
 
 DB=essnmp
 
-dropdb $DB && createdb $DB && psql $DB < essnmp.sql
+dropdb $DB && createdb $DB && psql $DB < ../src/sql/essnmp.sql && \
+psql $DB < ../src/sql/testdata.sql

@@ -46,38 +46,10 @@ class Var {
 
 };
 
-class Device {
- public:
-
-  Device() : id(0), name(""), begin_time(0), end_time(0) {
-  } 
-
-  virtual ~Device() throw() {}
-
-  int32_t id;
-  std::string name;
-  int32_t begin_time;
-  int32_t end_time;
-  std::vector<Var>  vars;
-
-  struct __isset {
-    __isset() : id(false), name(false), begin_time(false), end_time(false), vars(false) {}
-    bool id;
-    bool name;
-    bool begin_time;
-    bool end_time;
-    bool vars;
-  } __isset;
-
-  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
-  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
-
-};
-
 class OID {
  public:
 
-  OID() : id(0), name(""), storage(""), oidtype(""), oidtype_id(0) {
+  OID() : id(0), name(""), storage(""), oidtypeid(0) {
   } 
 
   virtual ~OID() throw() {}
@@ -85,16 +57,14 @@ class OID {
   int32_t id;
   std::string name;
   std::string storage;
-  std::string oidtype;
-  int32_t oidtype_id;
+  int32_t oidtypeid;
 
   struct __isset {
-    __isset() : id(false), name(false), storage(false), oidtype(false), oidtype_id(false) {}
+    __isset() : id(false), name(false), storage(false), oidtypeid(false) {}
     bool id;
     bool name;
     bool storage;
-    bool oidtype;
-    bool oidtype_id;
+    bool oidtypeid;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
@@ -105,22 +75,52 @@ class OID {
 class OIDSet {
  public:
 
-  OIDSet() : id(0), name(""), polling_frequency(0) {
+  OIDSet() : id(0), name(""), frequency(0) {
   } 
 
   virtual ~OIDSet() throw() {}
 
   int32_t id;
   std::string name;
-  int32_t polling_frequency;
+  int32_t frequency;
   std::vector<OID>  oids;
 
   struct __isset {
-    __isset() : id(false), name(false), polling_frequency(false), oids(false) {}
+    __isset() : id(false), name(false), frequency(false), oids(false) {}
     bool id;
     bool name;
-    bool polling_frequency;
+    bool frequency;
     bool oids;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class Device {
+ public:
+
+  Device() : id(0), name(""), begin_time(0), end_time(0), community("") {
+  } 
+
+  virtual ~Device() throw() {}
+
+  int32_t id;
+  std::string name;
+  int32_t begin_time;
+  int32_t end_time;
+  std::string community;
+  std::vector<OIDSet>  oidsets;
+
+  struct __isset {
+    __isset() : id(false), name(false), begin_time(false), end_time(false), community(false), oidsets(false) {}
+    bool id;
+    bool name;
+    bool begin_time;
+    bool end_time;
+    bool community;
+    bool oidsets;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);

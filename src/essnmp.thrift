@@ -8,12 +8,27 @@ struct Var {
     3: i32 device_id
 }
 
+struct OID {
+    1: i32 id,
+    2: string name,
+    3: string storage,
+    4: i32 oidtypeid
+}
+
+struct OIDSet {
+    1: i32 id,
+    2: string name,
+    3: i32 frequency,
+    4: list<OID> oids
+}
+
 struct Device {
     1: i32 id,
     2: string name,
     3: i32 begin_time,
     4: i32 end_time,
-    5: list<Var> vars
+    5: string community,
+    6: list<OIDSet> oidsets
 }
 
 enum Grouping {
@@ -22,21 +37,6 @@ enum Grouping {
     ResearchEducation = 3,
     Education = 4,
     Site = 5
-}
-
-struct OID {
-    1: i32 id,
-    2: string name,
-    3: string storage,
-    4: string oidtype,
-    5: i32 oidtype_id
-}
-
-struct OIDSet {
-    1: i32 id,
-    2: string name,
-    3: i32 polling_frequency,
-    4: list<OID> oids
 }
 
 struct Counter32 {
@@ -72,6 +72,7 @@ struct VarList {
 service ESDB {
     list<string> list_devices(),
     Device get_device(1: string name),
+    map<string, Device> get_all_devices(),
     void add_device(1: string name, 2: string begin_time, 3: string end_time),
     void update_device(1: string name, 2: string begin_time, 3: string end_time),
     list<OIDSet> list_device_oidsets(1: Device device),

@@ -15,6 +15,9 @@ class Iface(object):
   def get_device(self, name):
     pass
 
+  def get_all_devices(self, ):
+    pass
+
   def add_device(self, name, begin_time, end_time):
     pass
 
@@ -112,6 +115,31 @@ class Client(Iface):
     if result.success != None:
       return result.success
     raise TApplicationException(TApplicationException.MISSING_RESULT, "get_device failed: unknown result");
+
+  def get_all_devices(self, ):
+    self.send_get_all_devices()
+    return self.recv_get_all_devices()
+
+  def send_get_all_devices(self, ):
+    self._oprot.writeMessageBegin('get_all_devices', TMessageType.CALL, self._seqid)
+    args = get_all_devices_args()
+    args.write(self._oprot)
+    self._oprot.writeMessageEnd()
+    self._oprot.trans.flush()
+
+  def recv_get_all_devices(self, ):
+    (fname, mtype, rseqid) = self._iprot.readMessageBegin()
+    if mtype == TMessageType.EXCEPTION:
+      x = TApplicationException()
+      x.read(self._iprot)
+      self._iprot.readMessageEnd()
+      raise x
+    result = get_all_devices_result()
+    result.read(self._iprot)
+    self._iprot.readMessageEnd()
+    if result.success != None:
+      return result.success
+    raise TApplicationException(TApplicationException.MISSING_RESULT, "get_all_devices failed: unknown result");
 
   def add_device(self, name, begin_time, end_time):
     self.send_add_device(name, begin_time, end_time)
@@ -453,6 +481,7 @@ class Processor(Iface, TProcessor):
     self._processMap = {}
     self._processMap["list_devices"] = Processor.process_list_devices
     self._processMap["get_device"] = Processor.process_get_device
+    self._processMap["get_all_devices"] = Processor.process_get_all_devices
     self._processMap["add_device"] = Processor.process_add_device
     self._processMap["update_device"] = Processor.process_update_device
     self._processMap["list_device_oidsets"] = Processor.process_list_device_oidsets
@@ -500,6 +529,17 @@ class Processor(Iface, TProcessor):
     result = get_device_result()
     result.success = self._handler.get_device(args.name)
     oprot.writeMessageBegin("get_device", TMessageType.REPLY, seqid)
+    result.write(oprot)
+    oprot.writeMessageEnd()
+    oprot.trans.flush()
+
+  def process_get_all_devices(self, seqid, iprot, oprot):
+    args = get_all_devices_args()
+    args.read(iprot)
+    iprot.readMessageEnd()
+    result = get_all_devices_result()
+    result.success = self._handler.get_all_devices()
+    oprot.writeMessageBegin("get_all_devices", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
@@ -803,6 +843,83 @@ class get_device_result(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
+class get_all_devices_args(object):
+
+  def __init__(self, d=None):
+    pass
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('get_all_devices_args')
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+class get_all_devices_result(object):
+
+  def __init__(self, d=None):
+    self.success = None
+    if isinstance(d, dict):
+      if 'success' in d:
+        self.success = d['success']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 0:
+        if ftype == TType.MAP:
+          self.success = {}
+          (_ktype43, _vtype44, _size42 ) = iprot.readMapBegin() 
+          for _i46 in xrange(_size42):
+            _key47 = iprot.readString();
+            _val48 = Device()
+            _val48.read(iprot)
+            self.success[_key47] = _val48
+          iprot.readMapEnd()
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('get_all_devices_result')
+    if self.success != None:
+      oprot.writeFieldBegin('success', TType.MAP, 0)
+      oprot.writeMapBegin(TType.STRING, TType.STRUCT, len(self.success))
+      for kiter49,viter50 in self.success.items():
+        oprot.writeString(kiter49)
+        viter50.write(oprot)
+      oprot.writeMapEnd()
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
 class add_device_args(object):
 
   def __init__(self, d=None):
@@ -1040,11 +1157,11 @@ class list_device_oidsets_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype45, _size42) = iprot.readListBegin()
-          for _i46 in xrange(_size42):
-            _elem47 = OIDSet()
-            _elem47.read(iprot)
-            self.success.append(_elem47)
+          (_etype54, _size51) = iprot.readListBegin()
+          for _i55 in xrange(_size51):
+            _elem56 = OIDSet()
+            _elem56.read(iprot)
+            self.success.append(_elem56)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1058,8 +1175,8 @@ class list_device_oidsets_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRUCT, len(self.success))
-      for iter48 in self.success:
-        iter48.write(oprot)
+      for iter57 in self.success:
+        iter57.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1115,10 +1232,10 @@ class list_oids_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype52, _size49) = iprot.readListBegin()
-          for _i53 in xrange(_size49):
-            _elem54 = iprot.readString();
-            self.success.append(_elem54)
+          (_etype61, _size58) = iprot.readListBegin()
+          for _i62 in xrange(_size58):
+            _elem63 = iprot.readString();
+            self.success.append(_elem63)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1132,8 +1249,8 @@ class list_oids_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRING, len(self.success))
-      for iter55 in self.success:
-        oprot.writeString(iter55)
+      for iter64 in self.success:
+        oprot.writeString(iter64)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1358,10 +1475,10 @@ class list_oidsets_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype59, _size56) = iprot.readListBegin()
-          for _i60 in xrange(_size56):
-            _elem61 = iprot.readString();
-            self.success.append(_elem61)
+          (_etype68, _size65) = iprot.readListBegin()
+          for _i69 in xrange(_size65):
+            _elem70 = iprot.readString();
+            self.success.append(_elem70)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1375,8 +1492,8 @@ class list_oidsets_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRING, len(self.success))
-      for iter62 in self.success:
-        oprot.writeString(iter62)
+      for iter71 in self.success:
+        oprot.writeString(iter71)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1524,11 +1641,11 @@ class get_oidset_devices_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype66, _size63) = iprot.readListBegin()
-          for _i67 in xrange(_size63):
-            _elem68 = Device()
-            _elem68.read(iprot)
-            self.success.append(_elem68)
+          (_etype75, _size72) = iprot.readListBegin()
+          for _i76 in xrange(_size72):
+            _elem77 = Device()
+            _elem77.read(iprot)
+            self.success.append(_elem77)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1542,8 +1659,8 @@ class get_oidset_devices_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRUCT, len(self.success))
-      for iter69 in self.success:
-        iter69.write(oprot)
+      for iter78 in self.success:
+        iter78.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1654,22 +1771,22 @@ class insert_counter32_args(object):
       if fid == -1:
         if ftype == TType.LIST:
           self.vars = []
-          (_etype73, _size70) = iprot.readListBegin()
-          for _i74 in xrange(_size70):
-            _elem75 = Var()
-            _elem75.read(iprot)
-            self.vars.append(_elem75)
+          (_etype82, _size79) = iprot.readListBegin()
+          for _i83 in xrange(_size79):
+            _elem84 = Var()
+            _elem84.read(iprot)
+            self.vars.append(_elem84)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
       elif fid == -2:
         if ftype == TType.LIST:
           self.values = []
-          (_etype79, _size76) = iprot.readListBegin()
-          for _i80 in xrange(_size76):
-            _elem81 = Counter32()
-            _elem81.read(iprot)
-            self.values.append(_elem81)
+          (_etype88, _size85) = iprot.readListBegin()
+          for _i89 in xrange(_size85):
+            _elem90 = Counter32()
+            _elem90.read(iprot)
+            self.values.append(_elem90)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1683,15 +1800,15 @@ class insert_counter32_args(object):
     if self.vars != None:
       oprot.writeFieldBegin('vars', TType.LIST, -1)
       oprot.writeListBegin(TType.STRUCT, len(self.vars))
-      for iter82 in self.vars:
-        iter82.write(oprot)
+      for iter91 in self.vars:
+        iter91.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.values != None:
       oprot.writeFieldBegin('values', TType.LIST, -2)
       oprot.writeListBegin(TType.STRUCT, len(self.values))
-      for iter83 in self.values:
-        iter83.write(oprot)
+      for iter92 in self.values:
+        iter92.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1750,22 +1867,22 @@ class insert_counter64_args(object):
       if fid == -1:
         if ftype == TType.LIST:
           self.vars = []
-          (_etype87, _size84) = iprot.readListBegin()
-          for _i88 in xrange(_size84):
-            _elem89 = Var()
-            _elem89.read(iprot)
-            self.vars.append(_elem89)
+          (_etype96, _size93) = iprot.readListBegin()
+          for _i97 in xrange(_size93):
+            _elem98 = Var()
+            _elem98.read(iprot)
+            self.vars.append(_elem98)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
       elif fid == -2:
         if ftype == TType.LIST:
           self.values = []
-          (_etype93, _size90) = iprot.readListBegin()
-          for _i94 in xrange(_size90):
-            _elem95 = Counter64()
-            _elem95.read(iprot)
-            self.values.append(_elem95)
+          (_etype102, _size99) = iprot.readListBegin()
+          for _i103 in xrange(_size99):
+            _elem104 = Counter64()
+            _elem104.read(iprot)
+            self.values.append(_elem104)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1779,15 +1896,15 @@ class insert_counter64_args(object):
     if self.vars != None:
       oprot.writeFieldBegin('vars', TType.LIST, -1)
       oprot.writeListBegin(TType.STRUCT, len(self.vars))
-      for iter96 in self.vars:
-        iter96.write(oprot)
+      for iter105 in self.vars:
+        iter105.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.values != None:
       oprot.writeFieldBegin('values', TType.LIST, -2)
       oprot.writeListBegin(TType.STRUCT, len(self.values))
-      for iter97 in self.values:
-        iter97.write(oprot)
+      for iter106 in self.values:
+        iter106.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1846,22 +1963,22 @@ class insert_gauge32_args(object):
       if fid == -1:
         if ftype == TType.LIST:
           self.vars = []
-          (_etype101, _size98) = iprot.readListBegin()
-          for _i102 in xrange(_size98):
-            _elem103 = Var()
-            _elem103.read(iprot)
-            self.vars.append(_elem103)
+          (_etype110, _size107) = iprot.readListBegin()
+          for _i111 in xrange(_size107):
+            _elem112 = Var()
+            _elem112.read(iprot)
+            self.vars.append(_elem112)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
       elif fid == -2:
         if ftype == TType.LIST:
           self.values = []
-          (_etype107, _size104) = iprot.readListBegin()
-          for _i108 in xrange(_size104):
-            _elem109 = Gauge32()
-            _elem109.read(iprot)
-            self.values.append(_elem109)
+          (_etype116, _size113) = iprot.readListBegin()
+          for _i117 in xrange(_size113):
+            _elem118 = Gauge32()
+            _elem118.read(iprot)
+            self.values.append(_elem118)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1875,15 +1992,15 @@ class insert_gauge32_args(object):
     if self.vars != None:
       oprot.writeFieldBegin('vars', TType.LIST, -1)
       oprot.writeListBegin(TType.STRUCT, len(self.vars))
-      for iter110 in self.vars:
-        iter110.write(oprot)
+      for iter119 in self.vars:
+        iter119.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.values != None:
       oprot.writeFieldBegin('values', TType.LIST, -2)
       oprot.writeListBegin(TType.STRUCT, len(self.values))
-      for iter111 in self.values:
-        iter111.write(oprot)
+      for iter120 in self.values:
+        iter120.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()

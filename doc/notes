@@ -1,0 +1,5 @@
+polling does not try to correlate ifIndexes at all.  it is always stored with
+the raw ifIndex returned from the SNMP queries.  the interface history is used
+to assemble the data for any given interface.
+
+

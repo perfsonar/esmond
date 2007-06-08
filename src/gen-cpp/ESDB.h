@@ -16,6 +16,7 @@ class ESDBIf {
   virtual ~ESDBIf() {}
   virtual void list_devices(std::vector<std::string> & _return) = 0;
   virtual void get_device(Device& _return, const std::string& name) = 0;
+  virtual void get_all_devices(std::map<std::string, Device> & _return) = 0;
   virtual void add_device(const std::string& name, const std::string& begin_time, const std::string& end_time) = 0;
   virtual void update_device(const std::string& name, const std::string& begin_time, const std::string& end_time) = 0;
   virtual void list_device_oidsets(std::vector<OIDSet> & _return, const Device& device) = 0;
@@ -38,6 +39,9 @@ class ESDBNull : virtual public ESDBIf {
     return;
   }
   void get_device(Device& _return, const std::string& name) {
+    return;
+  }
+  void get_all_devices(std::map<std::string, Device> & _return) {
     return;
   }
   void add_device(const std::string& name, const std::string& begin_time, const std::string& end_time) {
@@ -202,6 +206,68 @@ class ESDB_get_device_presult {
   virtual ~ESDB_get_device_presult() throw() {}
 
   Device* success;
+
+  struct __isset {
+    __isset() : success(false) {}
+    bool success;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+
+};
+
+class ESDB_get_all_devices_args {
+ public:
+
+  ESDB_get_all_devices_args() {
+  } 
+
+  virtual ~ESDB_get_all_devices_args() throw() {}
+
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class ESDB_get_all_devices_pargs {
+ public:
+
+
+  virtual ~ESDB_get_all_devices_pargs() throw() {}
+
+
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class ESDB_get_all_devices_result {
+ public:
+
+  ESDB_get_all_devices_result() {
+  } 
+
+  virtual ~ESDB_get_all_devices_result() throw() {}
+
+  std::map<std::string, Device>  success;
+
+  struct __isset {
+    __isset() : success(false) {}
+    bool success;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class ESDB_get_all_devices_presult {
+ public:
+
+
+  virtual ~ESDB_get_all_devices_presult() throw() {}
+
+  std::map<std::string, Device> * success;
 
   struct __isset {
     __isset() : success(false) {}
@@ -1070,6 +1136,9 @@ class ESDBClient : virtual public ESDBIf {
   void get_device(Device& _return, const std::string& name);
   void send_get_device(const std::string& name);
   void recv_get_device(Device& _return);
+  void get_all_devices(std::map<std::string, Device> & _return);
+  void send_get_all_devices();
+  void recv_get_all_devices(std::map<std::string, Device> & _return);
   void add_device(const std::string& name, const std::string& begin_time, const std::string& end_time);
   void send_add_device(const std::string& name, const std::string& begin_time, const std::string& end_time);
   void recv_add_device();
@@ -1124,6 +1193,7 @@ class ESDBProcessor : virtual public facebook::thrift::TProcessor {
   std::map<std::string, void (ESDBProcessor::*)(int32_t, facebook::thrift::protocol::TProtocol*, facebook::thrift::protocol::TProtocol*)> processMap_;
   void process_list_devices(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
   void process_get_device(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
+  void process_get_all_devices(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
   void process_add_device(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
   void process_update_device(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
   void process_list_device_oidsets(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
@@ -1142,6 +1212,7 @@ class ESDBProcessor : virtual public facebook::thrift::TProcessor {
     iface_(iface) {
     processMap_["list_devices"] = &ESDBProcessor::process_list_devices;
     processMap_["get_device"] = &ESDBProcessor::process_get_device;
+    processMap_["get_all_devices"] = &ESDBProcessor::process_get_all_devices;
     processMap_["add_device"] = &ESDBProcessor::process_add_device;
     processMap_["update_device"] = &ESDBProcessor::process_update_device;
     processMap_["list_device_oidsets"] = &ESDBProcessor::process_list_device_oidsets;
@@ -1193,6 +1264,18 @@ class ESDBMultiface : virtual public ESDBIf {
         return;
       } else {
         ifaces_[i]->get_device(_return, name);
+      }
+    }
+  }
+
+  void get_all_devices(std::map<std::string, Device> & _return) {
+    uint32_t sz = ifaces_.size();
+    for (uint32_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->get_all_devices(_return);
+        return;
+      } else {
+        ifaces_[i]->get_all_devices(_return);
       }
     }
   }

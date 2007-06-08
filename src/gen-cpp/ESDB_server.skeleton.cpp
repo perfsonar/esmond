@@ -30,6 +30,11 @@ class ESDBHandler : virtual public ESDBIf {
     printf("get_device\n");
   }
 
+  void get_all_devices(std::map<std::string, Device> & _return) {
+    // Your implementation goes here
+    printf("get_all_devices\n");
+  }
+
   void add_device(const std::string& name, const std::string& begin_time, const std::string& end_time) {
     // Your implementation goes here
     printf("add_device\n");

@@ -19,19 +19,27 @@ class ESDBHandler(object):
         return [d.name for d in self.session.query(Device).select()]
 
     def get_device(self,name):
-        print "foo"
         r = self.session.query(Device).select_by(name=name)[0]
-        r.begin_time = timegm(r.begin_time.utctimetuple())
-        if r.begin_time < 0:
-            r.begin_time = 0
+        print r.begin_time, r.end_time
 
-        r.end_time = timegm(r.end_time.utctimetuple())
-        if r.end_time > 2**31-1:
-            r.end_time = 2**31-1
-        
-        print r, r.begin_time, r.end_time
-        r.vars = []
+        if type(r.begin_time) is not int:
+            r.begin_time = timegm(r.begin_time.utctimetuple())
+            if r.begin_time < 0:
+                r.begin_time = 0
+    
+            r.end_time = timegm(r.end_time.utctimetuple())
+            if r.end_time > 2**31-1:
+                r.end_time = 2**31-1
+            
         return r
+
+    def get_all_devices(self):
+        d = {}
+        for device in self.list_devices():
+            d[device] = self.get_device(device)
+
+        return d
+
 
     def add_device(self, device):
         self.session.save(device)
