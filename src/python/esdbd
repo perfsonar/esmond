@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+
+from calendar import timegm
+
+from thrift.transport import TSocket, TTransport
+from thrift.protocol import TBinaryProtocol
+from thrift.server import TServer
+
+
+from essnmp.sql import *
+from  essnmp.thrift import ESDB
+import essnmp.thrift.ttypes
+
+class ESDBHandler(object):
+    def __init__(self):
+        self.session = create_session(bind_to=essnmp.sql.db)
+
+    def list_devices(self):
+        return [d.name for d in self.session.query(Device).select()]
+
+    def get_device(self,name):
+        print "foo"
+        r = self.session.query(Device).select_by(name=name)[0]
+        r.begin_time = timegm(r.begin_time.utctimetuple())
+        if r.begin_time < 0:
+            r.begin_time = 0
+
+        r.end_time = timegm(r.end_time.utctimetuple())
+        if r.end_time > 2**31-1:
+            r.end_time = 2**31-1
+        
+        print r, r.begin_time, r.end_time
+        r.vars = []
+        return r
+
+    def add_device(self, device):
+        self.session.save(device)
+        self.session.flush()
+
+    def list_oids(self):
+        return [o.name for o in self.session.query(OID).select()]
+
+    def get_oid(self,name):
+        return self.session.query(OID).select_by(name=name)[0]
+
+    def list_oidsets(self):
+        return [s.name for s in self.session.query(OIDSet).select()]
+
+    def get_oidset(self,name):
+        return self.session.query(OIDSet).select_by(name=name)[0]
+
+
+handler = ESDBHandler()
+processor = ESDB.Processor(handler)
+transport = TSocket.TServerSocket(9090)
+tfactory = TTransport.TBufferedTransportFactory()
+pfactory = TBinaryProtocol.TBinaryProtocolFactory()
+
+server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
+
+server.serve()

@@ -1,0 +1,18 @@
+class ESSNMPPollManager(object):
+    """Starts a polling thread for each device"""
+
+    def __init__(self):
+        pass
+
+class ESSNMPPoller(object):
+    """Handles polling all OIDSets for a device
+   
+    Wakes every n seconds where n is 1/2 the smallest polling interval of all
+    OIDSets.  The polling of each OIDSet is scheduled by this class.  Polling
+    is done in order of ascending polling interval -- small interval polls
+    should take less time.  When done polling the class sleeps until it's next
+    scheduled run.
+    
+    """
+    def __init__(self):
+        pass

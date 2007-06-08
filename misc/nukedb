@@ -1,0 +1,5 @@
+#!/bin/sh -x
+
+DB=essnmp
+
+dropdb $DB && createdb $DB && psql $DB < essnmp.sql
