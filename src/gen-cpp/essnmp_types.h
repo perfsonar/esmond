@@ -22,23 +22,43 @@ enum Grouping {
   Site = 5
 };
 
-class Var {
+class OIDType {
  public:
 
-  Var() : name(""), type_id(0), device_id(0) {
+  OIDType() : id(0), name("") {
   } 
 
-  virtual ~Var() throw() {}
+  virtual ~OIDType() throw() {}
 
+  int32_t id;
   std::string name;
-  int8_t type_id;
-  int32_t device_id;
 
   struct __isset {
-    __isset() : name(false), type_id(false), device_id(false) {}
+    __isset() : id(false), name(false) {}
+    bool id;
     bool name;
-    bool type_id;
-    bool device_id;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class OIDCorrelator {
+ public:
+
+  OIDCorrelator() : id(0), name("") {
+  } 
+
+  virtual ~OIDCorrelator() throw() {}
+
+  int32_t id;
+  std::string name;
+
+  struct __isset {
+    __isset() : id(false), name(false) {}
+    bool id;
+    bool name;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
@@ -49,22 +69,44 @@ class Var {
 class OID {
  public:
 
-  OID() : id(0), name(""), storage(""), oidtypeid(0) {
+  OID() : id(0), name(""), oidtypeid(0), oidcorrelatorid(0) {
   } 
 
   virtual ~OID() throw() {}
 
   int32_t id;
   std::string name;
-  std::string storage;
   int32_t oidtypeid;
+  int32_t oidcorrelatorid;
 
   struct __isset {
-    __isset() : id(false), name(false), storage(false), oidtypeid(false) {}
+    __isset() : id(false), name(false), oidtypeid(false), oidcorrelatorid(false) {}
     bool id;
     bool name;
-    bool storage;
     bool oidtypeid;
+    bool oidcorrelatorid;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class Poller {
+ public:
+
+  Poller() : id(0), name("") {
+  } 
+
+  virtual ~Poller() throw() {}
+
+  int32_t id;
+  std::string name;
+
+  struct __isset {
+    __isset() : id(false), name(false) {}
+    bool id;
+    bool name;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
@@ -75,7 +117,7 @@ class OID {
 class OIDSet {
  public:
 
-  OIDSet() : id(0), name(""), frequency(0) {
+  OIDSet() : id(0), name(""), frequency(0), pollerid(0) {
   } 
 
   virtual ~OIDSet() throw() {}
@@ -84,13 +126,37 @@ class OIDSet {
   std::string name;
   int32_t frequency;
   std::vector<OID>  oids;
+  int32_t pollerid;
 
   struct __isset {
-    __isset() : id(false), name(false), frequency(false), oids(false) {}
+    __isset() : id(false), name(false), frequency(false), oids(false), pollerid(false) {}
     bool id;
     bool name;
     bool frequency;
     bool oids;
+    bool pollerid;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class DeviceTag {
+ public:
+
+  DeviceTag() : id(0), name("") {
+  } 
+
+  virtual ~DeviceTag() throw() {}
+
+  int32_t id;
+  std::string name;
+
+  struct __isset {
+    __isset() : id(false), name(false) {}
+    bool id;
+    bool name;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
@@ -112,15 +178,17 @@ class Device {
   int32_t end_time;
   std::string community;
   std::vector<OIDSet>  oidsets;
+  std::vector<DeviceTag>  tags;
 
   struct __isset {
-    __isset() : id(false), name(false), begin_time(false), end_time(false), community(false), oidsets(false) {}
+    __isset() : id(false), name(false), begin_time(false), end_time(false), community(false), oidsets(false), tags(false) {}
     bool id;
     bool name;
     bool begin_time;
     bool end_time;
     bool community;
     bool oidsets;
+    bool tags;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
@@ -159,7 +227,7 @@ class Counter32 {
 class Counter64 {
  public:
 
-  Counter64() : flags(0), timestamp(0), value(0), version(1), type_id(1) {
+  Counter64() : flags(0), timestamp(0), value(0), version(1), type_id(2) {
   } 
 
   virtual ~Counter64() throw() {}
@@ -187,7 +255,7 @@ class Counter64 {
 class Gauge32 {
  public:
 
-  Gauge32() : flags(0), timestamp(0), value(0), version(1), type_id(1) {
+  Gauge32() : flags(0), timestamp(0), value(0), version(1), type_id(3) {
   } 
 
   virtual ~Gauge32() throw() {}
@@ -229,6 +297,54 @@ class VarList {
     bool counter32;
     bool counter64;
     bool gauge32;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class SNMPPollResultPair {
+ public:
+
+  SNMPPollResultPair() : OIDName(""), value("") {
+  } 
+
+  virtual ~SNMPPollResultPair() throw() {}
+
+  std::string OIDName;
+  std::string value;
+
+  struct __isset {
+    __isset() : OIDName(false), value(false) {}
+    bool OIDName;
+    bool value;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class SNMPPollResult {
+ public:
+
+  SNMPPollResult() : device_id(0), oidset_id(0), timestamp(0) {
+  } 
+
+  virtual ~SNMPPollResult() throw() {}
+
+  int32_t device_id;
+  int32_t oidset_id;
+  int32_t timestamp;
+  std::vector<std::vector<std::string> >  vars;
+
+  struct __isset {
+    __isset() : device_id(false), oidset_id(false), timestamp(false), vars(false) {}
+    bool device_id;
+    bool oidset_id;
+    bool timestamp;
+    bool vars;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);

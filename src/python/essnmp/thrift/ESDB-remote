@@ -32,9 +32,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print '  OIDSet get_oidset(string name)'
   print '   get_oidset_devices(OIDSet oidset)'
   print '  VarList get_vars_by_grouping(Grouping grouping)'
-  print '  void insert_counter32( vars,  values)'
-  print '  void insert_counter64( vars,  values)'
-  print '  void insert_gauge32( vars,  values)'
+  print '  byte store_poll_result(SNMPPollResult result)'
   print ''
   sys.exit(0)
 
@@ -144,22 +142,10 @@ elif cmd == 'get_vars_by_grouping':
     sys.exit(1)
   pp.pprint(client.get_vars_by_grouping(eval(args[0]),))
 
-elif cmd == 'insert_counter32':
-  if len(args) != 2:
-    print 'insert_counter32 requires 2 args'
+elif cmd == 'store_poll_result':
+  if len(args) != 1:
+    print 'store_poll_result requires 1 args'
     sys.exit(1)
-  pp.pprint(client.insert_counter32(eval(args[0]),eval(args[1]),))
-
-elif cmd == 'insert_counter64':
-  if len(args) != 2:
-    print 'insert_counter64 requires 2 args'
-    sys.exit(1)
-  pp.pprint(client.insert_counter64(eval(args[0]),eval(args[1]),))
-
-elif cmd == 'insert_gauge32':
-  if len(args) != 2:
-    print 'insert_gauge32 requires 2 args'
-    sys.exit(1)
-  pp.pprint(client.insert_gauge32(eval(args[0]),eval(args[1]),))
+  pp.pprint(client.store_poll_result(eval(args[0]),))
 
 transport.close()

@@ -85,19 +85,9 @@ class ESDBHandler : virtual public ESDBIf {
     printf("get_vars_by_grouping\n");
   }
 
-  void insert_counter32(const std::vector<Var> & vars, const std::vector<Counter32> & values) {
+  int8_t store_poll_result(const SNMPPollResult& result) {
     // Your implementation goes here
-    printf("insert_counter32\n");
-  }
-
-  void insert_counter64(const std::vector<Var> & vars, const std::vector<Counter64> & values) {
-    // Your implementation goes here
-    printf("insert_counter64\n");
-  }
-
-  void insert_gauge32(const std::vector<Var> & vars, const std::vector<Gauge32> & values) {
-    // Your implementation goes here
-    printf("insert_gauge32\n");
+    printf("store_poll_result\n");
   }
 
 };

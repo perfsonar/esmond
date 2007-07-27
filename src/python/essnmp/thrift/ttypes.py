@@ -13,85 +13,16 @@ class Grouping(object):
   Education = 4
   Site = 5
 
-class Var(object):
-
-  def __init__(self, d=None):
-    self.name = None
-    self.type_id = None
-    self.device_id = None
-    if isinstance(d, dict):
-      if 'name' in d:
-        self.name = d['name']
-      if 'type_id' in d:
-        self.type_id = d['type_id']
-      if 'device_id' in d:
-        self.device_id = d['device_id']
-
-  def read(self, iprot):
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 1:
-        if ftype == TType.STRING:
-          self.name = iprot.readString();
-        else:
-          iprot.skip(ftype)
-      elif fid == 2:
-        if ftype == TType.BYTE:
-          self.type_id = iprot.readByte();
-        else:
-          iprot.skip(ftype)
-      elif fid == 3:
-        if ftype == TType.I32:
-          self.device_id = iprot.readI32();
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    oprot.writeStructBegin('Var')
-    if self.name != None:
-      oprot.writeFieldBegin('name', TType.STRING, 1)
-      oprot.writeString(self.name)
-      oprot.writeFieldEnd()
-    if self.type_id != None:
-      oprot.writeFieldBegin('type_id', TType.BYTE, 2)
-      oprot.writeByte(self.type_id)
-      oprot.writeFieldEnd()
-    if self.device_id != None:
-      oprot.writeFieldBegin('device_id', TType.I32, 3)
-      oprot.writeI32(self.device_id)
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def __str__(self): 
-    return str(self.__dict__)
-
-  def __repr__(self): 
-    return repr(self.__dict__)
-
-class OID(object):
+class OIDType(object):
 
   def __init__(self, d=None):
     self.id = None
     self.name = None
-    self.storage = None
-    self.oidtypeid = None
     if isinstance(d, dict):
       if 'id' in d:
         self.id = d['id']
       if 'name' in d:
         self.name = d['name']
-      if 'storage' in d:
-        self.storage = d['storage']
-      if 'oidtypeid' in d:
-        self.oidtypeid = d['oidtypeid']
 
   def read(self, iprot):
     iprot.readStructBegin()
@@ -109,14 +40,122 @@ class OID(object):
           self.name = iprot.readString();
         else:
           iprot.skip(ftype)
-      elif fid == 3:
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('OIDType')
+    if self.id != None:
+      oprot.writeFieldBegin('id', TType.I32, 1)
+      oprot.writeI32(self.id)
+      oprot.writeFieldEnd()
+    if self.name != None:
+      oprot.writeFieldBegin('name', TType.STRING, 2)
+      oprot.writeString(self.name)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+class OIDCorrelator(object):
+
+  def __init__(self, d=None):
+    self.id = None
+    self.name = None
+    if isinstance(d, dict):
+      if 'id' in d:
+        self.id = d['id']
+      if 'name' in d:
+        self.name = d['name']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.id = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
         if ftype == TType.STRING:
-          self.storage = iprot.readString();
+          self.name = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('OIDCorrelator')
+    if self.id != None:
+      oprot.writeFieldBegin('id', TType.I32, 1)
+      oprot.writeI32(self.id)
+      oprot.writeFieldEnd()
+    if self.name != None:
+      oprot.writeFieldBegin('name', TType.STRING, 2)
+      oprot.writeString(self.name)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+class OID(object):
+
+  def __init__(self, d=None):
+    self.id = None
+    self.name = None
+    self.oidtypeid = None
+    self.oidcorrelatorid = None
+    if isinstance(d, dict):
+      if 'id' in d:
+        self.id = d['id']
+      if 'name' in d:
+        self.name = d['name']
+      if 'oidtypeid' in d:
+        self.oidtypeid = d['oidtypeid']
+      if 'oidcorrelatorid' in d:
+        self.oidcorrelatorid = d['oidcorrelatorid']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.id = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.STRING:
+          self.name = iprot.readString();
         else:
           iprot.skip(ftype)
       elif fid == 4:
         if ftype == TType.I32:
           self.oidtypeid = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 5:
+        if ftype == TType.I32:
+          self.oidcorrelatorid = iprot.readI32();
         else:
           iprot.skip(ftype)
       else:
@@ -134,13 +173,64 @@ class OID(object):
       oprot.writeFieldBegin('name', TType.STRING, 2)
       oprot.writeString(self.name)
       oprot.writeFieldEnd()
-    if self.storage != None:
-      oprot.writeFieldBegin('storage', TType.STRING, 3)
-      oprot.writeString(self.storage)
-      oprot.writeFieldEnd()
     if self.oidtypeid != None:
       oprot.writeFieldBegin('oidtypeid', TType.I32, 4)
       oprot.writeI32(self.oidtypeid)
+      oprot.writeFieldEnd()
+    if self.oidcorrelatorid != None:
+      oprot.writeFieldBegin('oidcorrelatorid', TType.I32, 5)
+      oprot.writeI32(self.oidcorrelatorid)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+class Poller(object):
+
+  def __init__(self, d=None):
+    self.id = None
+    self.name = None
+    if isinstance(d, dict):
+      if 'id' in d:
+        self.id = d['id']
+      if 'name' in d:
+        self.name = d['name']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.id = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.STRING:
+          self.name = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('Poller')
+    if self.id != None:
+      oprot.writeFieldBegin('id', TType.I32, 1)
+      oprot.writeI32(self.id)
+      oprot.writeFieldEnd()
+    if self.name != None:
+      oprot.writeFieldBegin('name', TType.STRING, 2)
+      oprot.writeString(self.name)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
@@ -158,6 +248,7 @@ class OIDSet(object):
     self.name = None
     self.frequency = None
     self.oids = None
+    self.pollerid = None
     if isinstance(d, dict):
       if 'id' in d:
         self.id = d['id']
@@ -167,6 +258,8 @@ class OIDSet(object):
         self.frequency = d['frequency']
       if 'oids' in d:
         self.oids = d['oids']
+      if 'pollerid' in d:
+        self.pollerid = d['pollerid']
 
   def read(self, iprot):
     iprot.readStructBegin()
@@ -200,6 +293,11 @@ class OIDSet(object):
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
+      elif fid == 5:
+        if ftype == TType.I32:
+          self.pollerid = iprot.readI32();
+        else:
+          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -226,6 +324,61 @@ class OIDSet(object):
         iter6.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
+    if self.pollerid != None:
+      oprot.writeFieldBegin('pollerid', TType.I32, 5)
+      oprot.writeI32(self.pollerid)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+class DeviceTag(object):
+
+  def __init__(self, d=None):
+    self.id = None
+    self.name = None
+    if isinstance(d, dict):
+      if 'id' in d:
+        self.id = d['id']
+      if 'name' in d:
+        self.name = d['name']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.id = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.STRING:
+          self.name = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('DeviceTag')
+    if self.id != None:
+      oprot.writeFieldBegin('id', TType.I32, 1)
+      oprot.writeI32(self.id)
+      oprot.writeFieldEnd()
+    if self.name != None:
+      oprot.writeFieldBegin('name', TType.STRING, 2)
+      oprot.writeString(self.name)
+      oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -244,6 +397,7 @@ class Device(object):
     self.end_time = None
     self.community = None
     self.oidsets = None
+    self.tags = None
     if isinstance(d, dict):
       if 'id' in d:
         self.id = d['id']
@@ -257,6 +411,8 @@ class Device(object):
         self.community = d['community']
       if 'oidsets' in d:
         self.oidsets = d['oidsets']
+      if 'tags' in d:
+        self.tags = d['tags']
 
   def read(self, iprot):
     iprot.readStructBegin()
@@ -300,6 +456,17 @@ class Device(object):
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
+      elif fid == 7:
+        if ftype == TType.LIST:
+          self.tags = []
+          (_etype16, _size13) = iprot.readListBegin()
+          for _i17 in xrange(_size13):
+            _elem18 = DeviceTag()
+            _elem18.read(iprot)
+            self.tags.append(_elem18)
+          iprot.readListEnd()
+        else:
+          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -330,8 +497,15 @@ class Device(object):
     if self.oidsets != None:
       oprot.writeFieldBegin('oidsets', TType.LIST, 6)
       oprot.writeListBegin(TType.STRUCT, len(self.oidsets))
-      for iter13 in self.oidsets:
-        iter13.write(oprot)
+      for iter19 in self.oidsets:
+        iter19.write(oprot)
+      oprot.writeListEnd()
+      oprot.writeFieldEnd()
+    if self.tags != None:
+      oprot.writeFieldBegin('tags', TType.LIST, 7)
+      oprot.writeListBegin(TType.STRUCT, len(self.tags))
+      for iter20 in self.tags:
+        iter20.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -437,7 +611,7 @@ class Counter64(object):
     self.timestamp = None
     self.value = None
     self.version = 1
-    self.type_id = 1
+    self.type_id = 2
     if isinstance(d, dict):
       if 'flags' in d:
         self.flags = d['flags']
@@ -524,7 +698,7 @@ class Gauge32(object):
     self.timestamp = None
     self.value = None
     self.version = 1
-    self.type_id = 1
+    self.type_id = 3
     if isinstance(d, dict):
       if 'flags' in d:
         self.flags = d['flags']
@@ -627,33 +801,33 @@ class VarList(object):
       if fid == 1:
         if ftype == TType.LIST:
           self.counter32 = []
-          (_etype17, _size14) = iprot.readListBegin()
-          for _i18 in xrange(_size14):
-            _elem19 = Counter32()
-            _elem19.read(iprot)
-            self.counter32.append(_elem19)
+          (_etype24, _size21) = iprot.readListBegin()
+          for _i25 in xrange(_size21):
+            _elem26 = Counter32()
+            _elem26.read(iprot)
+            self.counter32.append(_elem26)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
       elif fid == 2:
         if ftype == TType.LIST:
           self.counter64 = []
-          (_etype23, _size20) = iprot.readListBegin()
-          for _i24 in xrange(_size20):
-            _elem25 = Counter64()
-            _elem25.read(iprot)
-            self.counter64.append(_elem25)
+          (_etype30, _size27) = iprot.readListBegin()
+          for _i31 in xrange(_size27):
+            _elem32 = Counter64()
+            _elem32.read(iprot)
+            self.counter64.append(_elem32)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
       elif fid == 3:
         if ftype == TType.LIST:
           self.gauge32 = []
-          (_etype29, _size26) = iprot.readListBegin()
-          for _i30 in xrange(_size26):
-            _elem31 = Gauge32()
-            _elem31.read(iprot)
-            self.gauge32.append(_elem31)
+          (_etype36, _size33) = iprot.readListBegin()
+          for _i37 in xrange(_size33):
+            _elem38 = Gauge32()
+            _elem38.read(iprot)
+            self.gauge32.append(_elem38)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -667,22 +841,164 @@ class VarList(object):
     if self.counter32 != None:
       oprot.writeFieldBegin('counter32', TType.LIST, 1)
       oprot.writeListBegin(TType.STRUCT, len(self.counter32))
-      for iter32 in self.counter32:
-        iter32.write(oprot)
+      for iter39 in self.counter32:
+        iter39.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.counter64 != None:
       oprot.writeFieldBegin('counter64', TType.LIST, 2)
       oprot.writeListBegin(TType.STRUCT, len(self.counter64))
-      for iter33 in self.counter64:
-        iter33.write(oprot)
+      for iter40 in self.counter64:
+        iter40.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.gauge32 != None:
       oprot.writeFieldBegin('gauge32', TType.LIST, 3)
       oprot.writeListBegin(TType.STRUCT, len(self.gauge32))
-      for iter34 in self.gauge32:
-        iter34.write(oprot)
+      for iter41 in self.gauge32:
+        iter41.write(oprot)
+      oprot.writeListEnd()
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+class SNMPPollResultPair(object):
+
+  def __init__(self, d=None):
+    self.OIDName = None
+    self.value = None
+    if isinstance(d, dict):
+      if 'OIDName' in d:
+        self.OIDName = d['OIDName']
+      if 'value' in d:
+        self.value = d['value']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.STRING:
+          self.OIDName = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.STRING:
+          self.value = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('SNMPPollResultPair')
+    if self.OIDName != None:
+      oprot.writeFieldBegin('OIDName', TType.STRING, 1)
+      oprot.writeString(self.OIDName)
+      oprot.writeFieldEnd()
+    if self.value != None:
+      oprot.writeFieldBegin('value', TType.STRING, 2)
+      oprot.writeString(self.value)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
+class SNMPPollResult(object):
+
+  def __init__(self, d=None):
+    self.device_id = None
+    self.oidset_id = None
+    self.timestamp = None
+    self.vars = None
+    if isinstance(d, dict):
+      if 'device_id' in d:
+        self.device_id = d['device_id']
+      if 'oidset_id' in d:
+        self.oidset_id = d['oidset_id']
+      if 'timestamp' in d:
+        self.timestamp = d['timestamp']
+      if 'vars' in d:
+        self.vars = d['vars']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.device_id = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.I32:
+          self.oidset_id = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.I32:
+          self.timestamp = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 3:
+        if ftype == TType.LIST:
+          self.vars = []
+          (_etype45, _size42) = iprot.readListBegin()
+          for _i46 in xrange(_size42):
+            _elem47 = []
+            (_etype51, _size48) = iprot.readListBegin()
+            for _i52 in xrange(_size48):
+              _elem53 = iprot.readString();
+              _elem47.append(_elem53)
+            iprot.readListEnd()
+            self.vars.append(_elem47)
+          iprot.readListEnd()
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('SNMPPollResult')
+    if self.device_id != None:
+      oprot.writeFieldBegin('device_id', TType.I32, 1)
+      oprot.writeI32(self.device_id)
+      oprot.writeFieldEnd()
+    if self.oidset_id != None:
+      oprot.writeFieldBegin('oidset_id', TType.I32, 2)
+      oprot.writeI32(self.oidset_id)
+      oprot.writeFieldEnd()
+    if self.timestamp != None:
+      oprot.writeFieldBegin('timestamp', TType.I32, 2)
+      oprot.writeI32(self.timestamp)
+      oprot.writeFieldEnd()
+    if self.vars != None:
+      oprot.writeFieldBegin('vars', TType.LIST, 3)
+      oprot.writeListBegin(TType.LIST, len(self.vars))
+      for iter54 in self.vars:
+        oprot.writeListBegin(TType.STRING, len(iter54))
+        for iter55 in iter54:
+          oprot.writeString(iter55)
+        oprot.writeListEnd()
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()

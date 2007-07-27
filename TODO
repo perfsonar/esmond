@@ -2,7 +2,30 @@ Get specific OIDS for:
   OSPF MOC
   BGP  MOC
   CoS  Chin
+  Env stuff -- eg temp, cpu utilization?  
 
 Poller:
+
+  logging instead of prints
+  daemonize
+  reconsider process per oidset per router?  perhaps process per router?
+  add ability to to grouped polls (eg. IfRef)
+  report if polling takes longer than a threshold
+  what happens if poll has take longer than the entire interval?
+
+Aggregate functions -- TSDB? probably best in TSDB
+
+  rate
+  sum
+  min, max, avg as metadata?
+
+Web Admin Interface
+
+  Edit plot groups
+
+Web Plot Interface
+
+  Crixus like display?
+  display
 
 

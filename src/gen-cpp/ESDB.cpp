@@ -72,15 +72,15 @@ uint32_t ESDB_list_devices_result::read(facebook::thrift::protocol::TProtocol* i
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             this->success.clear();
-uint32_t _size35;
-            facebook::thrift::protocol::TType _etype38;
-            iprot->readListBegin(_etype38, _size35);
-            uint32_t _i39;
-            for (_i39 = 0; _i39 < _size35; ++_i39)
+uint32_t _size56;
+            facebook::thrift::protocol::TType _etype59;
+            iprot->readListBegin(_etype59, _size56);
+            uint32_t _i60;
+            for (_i60 = 0; _i60 < _size56; ++_i60)
             {
-              std::string _elem40;
-              xfer += iprot->readString(_elem40);
-              this->success.push_back(_elem40);
+              std::string _elem61;
+              xfer += iprot->readString(_elem61);
+              this->success.push_back(_elem61);
             }
             iprot->readListEnd();
           }
@@ -110,10 +110,10 @@ uint32_t ESDB_list_devices_result::write(facebook::thrift::protocol::TProtocol* 
     xfer += oprot->writeFieldBegin("success", facebook::thrift::protocol::T_LIST, 0);
     {
       xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRING, this->success.size());
-      std::vector<std::string> ::const_iterator _iter41;
-      for (_iter41 = this->success.begin(); _iter41 != this->success.end(); ++_iter41)
+      std::vector<std::string> ::const_iterator _iter62;
+      for (_iter62 = this->success.begin(); _iter62 != this->success.end(); ++_iter62)
       {
-        xfer += oprot->writeString((*_iter41));
+        xfer += oprot->writeString((*_iter62));
       }
       xfer += oprot->writeListEnd();
     }
@@ -145,15 +145,15 @@ uint32_t ESDB_list_devices_presult::read(facebook::thrift::protocol::TProtocol* 
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             (*(this->success)).clear();
-uint32_t _size42;
-            facebook::thrift::protocol::TType _etype45;
-            iprot->readListBegin(_etype45, _size42);
-            uint32_t _i46;
-            for (_i46 = 0; _i46 < _size42; ++_i46)
+uint32_t _size63;
+            facebook::thrift::protocol::TType _etype66;
+            iprot->readListBegin(_etype66, _size63);
+            uint32_t _i67;
+            for (_i67 = 0; _i67 < _size63; ++_i67)
             {
-              std::string _elem47;
-              xfer += iprot->readString(_elem47);
-              (*(this->success)).push_back(_elem47);
+              std::string _elem68;
+              xfer += iprot->readString(_elem68);
+              (*(this->success)).push_back(_elem68);
             }
             iprot->readListEnd();
           }
@@ -384,18 +384,18 @@ uint32_t ESDB_get_all_devices_result::read(facebook::thrift::protocol::TProtocol
         if (ftype == facebook::thrift::protocol::T_MAP) {
           {
             this->success.clear();
-uint32_t _size48;
-            facebook::thrift::protocol::TType _ktype49;
-            facebook::thrift::protocol::TType _vtype50;
-            iprot->readMapBegin(_ktype49, _vtype50, _size48);
-            uint32_t _i52;
-            for (_i52 = 0; _i52 < _size48; ++_i52)
+uint32_t _size69;
+            facebook::thrift::protocol::TType _ktype70;
+            facebook::thrift::protocol::TType _vtype71;
+            iprot->readMapBegin(_ktype70, _vtype71, _size69);
+            uint32_t _i73;
+            for (_i73 = 0; _i73 < _size69; ++_i73)
             {
-              std::string _key53;
-              Device _val54;
-              xfer += iprot->readString(_key53);
-              xfer += _val54.read(iprot);
-              this->success.insert(std::make_pair(_key53, _val54));
+              std::string _key74;
+              Device _val75;
+              xfer += iprot->readString(_key74);
+              xfer += _val75.read(iprot);
+              this->success.insert(std::make_pair(_key74, _val75));
             }
             iprot->readMapEnd();
           }
@@ -425,11 +425,11 @@ uint32_t ESDB_get_all_devices_result::write(facebook::thrift::protocol::TProtoco
     xfer += oprot->writeFieldBegin("success", facebook::thrift::protocol::T_MAP, 0);
     {
       xfer += oprot->writeMapBegin(facebook::thrift::protocol::T_STRING, facebook::thrift::protocol::T_STRUCT, this->success.size());
-      std::map<std::string, Device> ::const_iterator _iter55;
-      for (_iter55 = this->success.begin(); _iter55 != this->success.end(); ++_iter55)
+      std::map<std::string, Device> ::const_iterator _iter76;
+      for (_iter76 = this->success.begin(); _iter76 != this->success.end(); ++_iter76)
       {
-        xfer += oprot->writeString(_iter55->first);
-        xfer += _iter55->second.write(oprot);
+        xfer += oprot->writeString(_iter76->first);
+        xfer += _iter76->second.write(oprot);
       }
       xfer += oprot->writeMapEnd();
     }
@@ -461,18 +461,18 @@ uint32_t ESDB_get_all_devices_presult::read(facebook::thrift::protocol::TProtoco
         if (ftype == facebook::thrift::protocol::T_MAP) {
           {
             (*(this->success)).clear();
-uint32_t _size56;
-            facebook::thrift::protocol::TType _ktype57;
-            facebook::thrift::protocol::TType _vtype58;
-            iprot->readMapBegin(_ktype57, _vtype58, _size56);
-            uint32_t _i60;
-            for (_i60 = 0; _i60 < _size56; ++_i60)
+uint32_t _size77;
+            facebook::thrift::protocol::TType _ktype78;
+            facebook::thrift::protocol::TType _vtype79;
+            iprot->readMapBegin(_ktype78, _vtype79, _size77);
+            uint32_t _i81;
+            for (_i81 = 0; _i81 < _size77; ++_i81)
             {
-              std::string _key61;
-              Device _val62;
-              xfer += iprot->readString(_key61);
-              xfer += _val62.read(iprot);
-              (*(this->success)).insert(std::make_pair(_key61, _val62));
+              std::string _key82;
+              Device _val83;
+              xfer += iprot->readString(_key82);
+              xfer += _val83.read(iprot);
+              (*(this->success)).insert(std::make_pair(_key82, _val83));
             }
             iprot->readMapEnd();
           }
@@ -877,15 +877,15 @@ uint32_t ESDB_list_device_oidsets_result::read(facebook::thrift::protocol::TProt
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             this->success.clear();
-uint32_t _size63;
-            facebook::thrift::protocol::TType _etype66;
-            iprot->readListBegin(_etype66, _size63);
-            uint32_t _i67;
-            for (_i67 = 0; _i67 < _size63; ++_i67)
+uint32_t _size84;
+            facebook::thrift::protocol::TType _etype87;
+            iprot->readListBegin(_etype87, _size84);
+            uint32_t _i88;
+            for (_i88 = 0; _i88 < _size84; ++_i88)
             {
-              OIDSet _elem68;
-              xfer += _elem68.read(iprot);
-              this->success.push_back(_elem68);
+              OIDSet _elem89;
+              xfer += _elem89.read(iprot);
+              this->success.push_back(_elem89);
             }
             iprot->readListEnd();
           }
@@ -915,10 +915,10 @@ uint32_t ESDB_list_device_oidsets_result::write(facebook::thrift::protocol::TPro
     xfer += oprot->writeFieldBegin("success", facebook::thrift::protocol::T_LIST, 0);
     {
       xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->success.size());
-      std::vector<OIDSet> ::const_iterator _iter69;
-      for (_iter69 = this->success.begin(); _iter69 != this->success.end(); ++_iter69)
+      std::vector<OIDSet> ::const_iterator _iter90;
+      for (_iter90 = this->success.begin(); _iter90 != this->success.end(); ++_iter90)
       {
-        xfer += (*_iter69).write(oprot);
+        xfer += (*_iter90).write(oprot);
       }
       xfer += oprot->writeListEnd();
     }
@@ -950,15 +950,15 @@ uint32_t ESDB_list_device_oidsets_presult::read(facebook::thrift::protocol::TPro
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             (*(this->success)).clear();
-uint32_t _size70;
-            facebook::thrift::protocol::TType _etype73;
-            iprot->readListBegin(_etype73, _size70);
-            uint32_t _i74;
-            for (_i74 = 0; _i74 < _size70; ++_i74)
+uint32_t _size91;
+            facebook::thrift::protocol::TType _etype94;
+            iprot->readListBegin(_etype94, _size91);
+            uint32_t _i95;
+            for (_i95 = 0; _i95 < _size91; ++_i95)
             {
-              OIDSet _elem75;
-              xfer += _elem75.read(iprot);
-              (*(this->success)).push_back(_elem75);
+              OIDSet _elem96;
+              xfer += _elem96.read(iprot);
+              (*(this->success)).push_back(_elem96);
             }
             iprot->readListEnd();
           }
@@ -1043,15 +1043,15 @@ uint32_t ESDB_list_oids_result::read(facebook::thrift::protocol::TProtocol* ipro
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             this->success.clear();
-uint32_t _size76;
-            facebook::thrift::protocol::TType _etype79;
-            iprot->readListBegin(_etype79, _size76);
-            uint32_t _i80;
-            for (_i80 = 0; _i80 < _size76; ++_i80)
+uint32_t _size97;
+            facebook::thrift::protocol::TType _etype100;
+            iprot->readListBegin(_etype100, _size97);
+            uint32_t _i101;
+            for (_i101 = 0; _i101 < _size97; ++_i101)
             {
-              std::string _elem81;
-              xfer += iprot->readString(_elem81);
-              this->success.push_back(_elem81);
+              std::string _elem102;
+              xfer += iprot->readString(_elem102);
+              this->success.push_back(_elem102);
             }
             iprot->readListEnd();
           }
@@ -1081,10 +1081,10 @@ uint32_t ESDB_list_oids_result::write(facebook::thrift::protocol::TProtocol* opr
     xfer += oprot->writeFieldBegin("success", facebook::thrift::protocol::T_LIST, 0);
     {
       xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRING, this->success.size());
-      std::vector<std::string> ::const_iterator _iter82;
-      for (_iter82 = this->success.begin(); _iter82 != this->success.end(); ++_iter82)
+      std::vector<std::string> ::const_iterator _iter103;
+      for (_iter103 = this->success.begin(); _iter103 != this->success.end(); ++_iter103)
       {
-        xfer += oprot->writeString((*_iter82));
+        xfer += oprot->writeString((*_iter103));
       }
       xfer += oprot->writeListEnd();
     }
@@ -1116,15 +1116,15 @@ uint32_t ESDB_list_oids_presult::read(facebook::thrift::protocol::TProtocol* ipr
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             (*(this->success)).clear();
-uint32_t _size83;
-            facebook::thrift::protocol::TType _etype86;
-            iprot->readListBegin(_etype86, _size83);
-            uint32_t _i87;
-            for (_i87 = 0; _i87 < _size83; ++_i87)
+uint32_t _size104;
+            facebook::thrift::protocol::TType _etype107;
+            iprot->readListBegin(_etype107, _size104);
+            uint32_t _i108;
+            for (_i108 = 0; _i108 < _size104; ++_i108)
             {
-              std::string _elem88;
-              xfer += iprot->readString(_elem88);
-              (*(this->success)).push_back(_elem88);
+              std::string _elem109;
+              xfer += iprot->readString(_elem109);
+              (*(this->success)).push_back(_elem109);
             }
             iprot->readListEnd();
           }
@@ -1508,15 +1508,15 @@ uint32_t ESDB_list_oidsets_result::read(facebook::thrift::protocol::TProtocol* i
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             this->success.clear();
-uint32_t _size89;
-            facebook::thrift::protocol::TType _etype92;
-            iprot->readListBegin(_etype92, _size89);
-            uint32_t _i93;
-            for (_i93 = 0; _i93 < _size89; ++_i93)
+uint32_t _size110;
+            facebook::thrift::protocol::TType _etype113;
+            iprot->readListBegin(_etype113, _size110);
+            uint32_t _i114;
+            for (_i114 = 0; _i114 < _size110; ++_i114)
             {
-              std::string _elem94;
-              xfer += iprot->readString(_elem94);
-              this->success.push_back(_elem94);
+              std::string _elem115;
+              xfer += iprot->readString(_elem115);
+              this->success.push_back(_elem115);
             }
             iprot->readListEnd();
           }
@@ -1546,10 +1546,10 @@ uint32_t ESDB_list_oidsets_result::write(facebook::thrift::protocol::TProtocol* 
     xfer += oprot->writeFieldBegin("success", facebook::thrift::protocol::T_LIST, 0);
     {
       xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRING, this->success.size());
-      std::vector<std::string> ::const_iterator _iter95;
-      for (_iter95 = this->success.begin(); _iter95 != this->success.end(); ++_iter95)
+      std::vector<std::string> ::const_iterator _iter116;
+      for (_iter116 = this->success.begin(); _iter116 != this->success.end(); ++_iter116)
       {
-        xfer += oprot->writeString((*_iter95));
+        xfer += oprot->writeString((*_iter116));
       }
       xfer += oprot->writeListEnd();
     }
@@ -1581,15 +1581,15 @@ uint32_t ESDB_list_oidsets_presult::read(facebook::thrift::protocol::TProtocol* 
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             (*(this->success)).clear();
-uint32_t _size96;
-            facebook::thrift::protocol::TType _etype99;
-            iprot->readListBegin(_etype99, _size96);
-            uint32_t _i100;
-            for (_i100 = 0; _i100 < _size96; ++_i100)
+uint32_t _size117;
+            facebook::thrift::protocol::TType _etype120;
+            iprot->readListBegin(_etype120, _size117);
+            uint32_t _i121;
+            for (_i121 = 0; _i121 < _size117; ++_i121)
             {
-              std::string _elem101;
-              xfer += iprot->readString(_elem101);
-              (*(this->success)).push_back(_elem101);
+              std::string _elem122;
+              xfer += iprot->readString(_elem122);
+              (*(this->success)).push_back(_elem122);
             }
             iprot->readListEnd();
           }
@@ -1834,15 +1834,15 @@ uint32_t ESDB_get_oidset_devices_result::read(facebook::thrift::protocol::TProto
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             this->success.clear();
-uint32_t _size102;
-            facebook::thrift::protocol::TType _etype105;
-            iprot->readListBegin(_etype105, _size102);
-            uint32_t _i106;
-            for (_i106 = 0; _i106 < _size102; ++_i106)
+uint32_t _size123;
+            facebook::thrift::protocol::TType _etype126;
+            iprot->readListBegin(_etype126, _size123);
+            uint32_t _i127;
+            for (_i127 = 0; _i127 < _size123; ++_i127)
             {
-              Device _elem107;
-              xfer += _elem107.read(iprot);
-              this->success.push_back(_elem107);
+              Device _elem128;
+              xfer += _elem128.read(iprot);
+              this->success.push_back(_elem128);
             }
             iprot->readListEnd();
           }
@@ -1872,10 +1872,10 @@ uint32_t ESDB_get_oidset_devices_result::write(facebook::thrift::protocol::TProt
     xfer += oprot->writeFieldBegin("success", facebook::thrift::protocol::T_LIST, 0);
     {
       xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->success.size());
-      std::vector<Device> ::const_iterator _iter108;
-      for (_iter108 = this->success.begin(); _iter108 != this->success.end(); ++_iter108)
+      std::vector<Device> ::const_iterator _iter129;
+      for (_iter129 = this->success.begin(); _iter129 != this->success.end(); ++_iter129)
       {
-        xfer += (*_iter108).write(oprot);
+        xfer += (*_iter129).write(oprot);
       }
       xfer += oprot->writeListEnd();
     }
@@ -1907,15 +1907,15 @@ uint32_t ESDB_get_oidset_devices_presult::read(facebook::thrift::protocol::TProt
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             (*(this->success)).clear();
-uint32_t _size109;
-            facebook::thrift::protocol::TType _etype112;
-            iprot->readListBegin(_etype112, _size109);
-            uint32_t _i113;
-            for (_i113 = 0; _i113 < _size109; ++_i113)
+uint32_t _size130;
+            facebook::thrift::protocol::TType _etype133;
+            iprot->readListBegin(_etype133, _size130);
+            uint32_t _i134;
+            for (_i134 = 0; _i134 < _size130; ++_i134)
             {
-              Device _elem114;
-              xfer += _elem114.read(iprot);
-              (*(this->success)).push_back(_elem114);
+              Device _elem135;
+              xfer += _elem135.read(iprot);
+              (*(this->success)).push_back(_elem135);
             }
             iprot->readListEnd();
           }
@@ -2081,7 +2081,7 @@ uint32_t ESDB_get_vars_by_grouping_presult::read(facebook::thrift::protocol::TPr
   return xfer;
 }
 
-uint32_t ESDB_insert_counter32_args::read(facebook::thrift::protocol::TProtocol* iprot) {
+uint32_t ESDB_store_poll_result_args::read(facebook::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -2099,43 +2099,9 @@ uint32_t ESDB_insert_counter32_args::read(facebook::thrift::protocol::TProtocol*
     switch (fid)
     {
       case -1:
-        if (ftype == facebook::thrift::protocol::T_LIST) {
-          {
-            this->vars.clear();
-uint32_t _size115;
-            facebook::thrift::protocol::TType _etype118;
-            iprot->readListBegin(_etype118, _size115);
-            uint32_t _i119;
-            for (_i119 = 0; _i119 < _size115; ++_i119)
-            {
-              Var _elem120;
-              xfer += _elem120.read(iprot);
-              this->vars.push_back(_elem120);
-            }
-            iprot->readListEnd();
-          }
-          this->__isset.vars = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
-      case -2:
-        if (ftype == facebook::thrift::protocol::T_LIST) {
-          {
-            this->values.clear();
-uint32_t _size121;
-            facebook::thrift::protocol::TType _etype124;
-            iprot->readListBegin(_etype124, _size121);
-            uint32_t _i125;
-            for (_i125 = 0; _i125 < _size121; ++_i125)
-            {
-              Counter32 _elem126;
-              xfer += _elem126.read(iprot);
-              this->values.push_back(_elem126);
-            }
-            iprot->readListEnd();
-          }
-          this->__isset.values = true;
+        if (ftype == facebook::thrift::protocol::T_STRUCT) {
+          xfer += this->result.read(iprot);
+          this->__isset.result = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -2151,67 +2117,29 @@ uint32_t _size121;
   return xfer;
 }
 
-uint32_t ESDB_insert_counter32_args::write(facebook::thrift::protocol::TProtocol* oprot) const {
+uint32_t ESDB_store_poll_result_args::write(facebook::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("ESDB_insert_counter32_args");
-  xfer += oprot->writeFieldBegin("vars", facebook::thrift::protocol::T_LIST, -1);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->vars.size());
-    std::vector<Var> ::const_iterator _iter127;
-    for (_iter127 = this->vars.begin(); _iter127 != this->vars.end(); ++_iter127)
-    {
-      xfer += (*_iter127).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("values", facebook::thrift::protocol::T_LIST, -2);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->values.size());
-    std::vector<Counter32> ::const_iterator _iter128;
-    for (_iter128 = this->values.begin(); _iter128 != this->values.end(); ++_iter128)
-    {
-      xfer += (*_iter128).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
+  xfer += oprot->writeStructBegin("ESDB_store_poll_result_args");
+  xfer += oprot->writeFieldBegin("result", facebook::thrift::protocol::T_STRUCT, -1);
+  xfer += this->result.write(oprot);
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
 }
 
-uint32_t ESDB_insert_counter32_pargs::write(facebook::thrift::protocol::TProtocol* oprot) const {
+uint32_t ESDB_store_poll_result_pargs::write(facebook::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("ESDB_insert_counter32_pargs");
-  xfer += oprot->writeFieldBegin("vars", facebook::thrift::protocol::T_LIST, -1);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, (*(this->vars)).size());
-    std::vector<Var> ::const_iterator _iter129;
-    for (_iter129 = (*(this->vars)).begin(); _iter129 != (*(this->vars)).end(); ++_iter129)
-    {
-      xfer += (*_iter129).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("values", facebook::thrift::protocol::T_LIST, -2);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, (*(this->values)).size());
-    std::vector<Counter32> ::const_iterator _iter130;
-    for (_iter130 = (*(this->values)).begin(); _iter130 != (*(this->values)).end(); ++_iter130)
-    {
-      xfer += (*_iter130).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
+  xfer += oprot->writeStructBegin("ESDB_store_poll_result_pargs");
+  xfer += oprot->writeFieldBegin("result", facebook::thrift::protocol::T_STRUCT, -1);
+  xfer += (*(this->result)).write(oprot);
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
 }
 
-uint32_t ESDB_insert_counter32_result::read(facebook::thrift::protocol::TProtocol* iprot) {
+uint32_t ESDB_store_poll_result_result::read(facebook::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -2228,111 +2156,10 @@ uint32_t ESDB_insert_counter32_result::read(facebook::thrift::protocol::TProtoco
     }
     switch (fid)
     {
-      default:
-        xfer += iprot->skip(ftype);
-        break;
-    }
-    xfer += iprot->readFieldEnd();
-  }
-
-  xfer += iprot->readStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_counter32_result::write(facebook::thrift::protocol::TProtocol* oprot) const {
-
-  uint32_t xfer = 0;
-
-  xfer += oprot->writeStructBegin("ESDB_insert_counter32_result");
-
-  xfer += oprot->writeFieldStop();
-  xfer += oprot->writeStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_counter32_presult::read(facebook::thrift::protocol::TProtocol* iprot) {
-
-  uint32_t xfer = 0;
-  std::string fname;
-  facebook::thrift::protocol::TType ftype;
-  int16_t fid;
-
-  xfer += iprot->readStructBegin(fname);
-
-  while (true)
-  {
-    xfer += iprot->readFieldBegin(fname, ftype, fid);
-    if (ftype == facebook::thrift::protocol::T_STOP) { 
-      break;
-    }
-    switch (fid)
-    {
-      default:
-        xfer += iprot->skip(ftype);
-        break;
-    }
-    xfer += iprot->readFieldEnd();
-  }
-
-  xfer += iprot->readStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_counter64_args::read(facebook::thrift::protocol::TProtocol* iprot) {
-
-  uint32_t xfer = 0;
-  std::string fname;
-  facebook::thrift::protocol::TType ftype;
-  int16_t fid;
-
-  xfer += iprot->readStructBegin(fname);
-
-  while (true)
-  {
-    xfer += iprot->readFieldBegin(fname, ftype, fid);
-    if (ftype == facebook::thrift::protocol::T_STOP) { 
-      break;
-    }
-    switch (fid)
-    {
-      case -1:
-        if (ftype == facebook::thrift::protocol::T_LIST) {
-          {
-            this->vars.clear();
-uint32_t _size131;
-            facebook::thrift::protocol::TType _etype134;
-            iprot->readListBegin(_etype134, _size131);
-            uint32_t _i135;
-            for (_i135 = 0; _i135 < _size131; ++_i135)
-            {
-              Var _elem136;
-              xfer += _elem136.read(iprot);
-              this->vars.push_back(_elem136);
-            }
-            iprot->readListEnd();
-          }
-          this->__isset.vars = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
-      case -2:
-        if (ftype == facebook::thrift::protocol::T_LIST) {
-          {
-            this->values.clear();
-uint32_t _size137;
-            facebook::thrift::protocol::TType _etype140;
-            iprot->readListBegin(_etype140, _size137);
-            uint32_t _i141;
-            for (_i141 = 0; _i141 < _size137; ++_i141)
-            {
-              Counter64 _elem142;
-              xfer += _elem142.read(iprot);
-              this->values.push_back(_elem142);
-            }
-            iprot->readListEnd();
-          }
-          this->__isset.values = true;
+      case 0:
+        if (ftype == facebook::thrift::protocol::T_BYTE) {
+          xfer += iprot->readByte(this->success);
+          this->__isset.success = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -2348,67 +2175,23 @@ uint32_t _size137;
   return xfer;
 }
 
-uint32_t ESDB_insert_counter64_args::write(facebook::thrift::protocol::TProtocol* oprot) const {
+uint32_t ESDB_store_poll_result_result::write(facebook::thrift::protocol::TProtocol* oprot) const {
+
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("ESDB_insert_counter64_args");
-  xfer += oprot->writeFieldBegin("vars", facebook::thrift::protocol::T_LIST, -1);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->vars.size());
-    std::vector<Var> ::const_iterator _iter143;
-    for (_iter143 = this->vars.begin(); _iter143 != this->vars.end(); ++_iter143)
-    {
-      xfer += (*_iter143).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
+
+  xfer += oprot->writeStructBegin("ESDB_store_poll_result_result");
+
+  if (this->__isset.success) {
+    xfer += oprot->writeFieldBegin("success", facebook::thrift::protocol::T_BYTE, 0);
+    xfer += oprot->writeByte(this->success);
+    xfer += oprot->writeFieldEnd();
   }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("values", facebook::thrift::protocol::T_LIST, -2);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->values.size());
-    std::vector<Counter64> ::const_iterator _iter144;
-    for (_iter144 = this->values.begin(); _iter144 != this->values.end(); ++_iter144)
-    {
-      xfer += (*_iter144).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
 }
 
-uint32_t ESDB_insert_counter64_pargs::write(facebook::thrift::protocol::TProtocol* oprot) const {
-  uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("ESDB_insert_counter64_pargs");
-  xfer += oprot->writeFieldBegin("vars", facebook::thrift::protocol::T_LIST, -1);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, (*(this->vars)).size());
-    std::vector<Var> ::const_iterator _iter145;
-    for (_iter145 = (*(this->vars)).begin(); _iter145 != (*(this->vars)).end(); ++_iter145)
-    {
-      xfer += (*_iter145).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("values", facebook::thrift::protocol::T_LIST, -2);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, (*(this->values)).size());
-    std::vector<Counter64> ::const_iterator _iter146;
-    for (_iter146 = (*(this->values)).begin(); _iter146 != (*(this->values)).end(); ++_iter146)
-    {
-      xfer += (*_iter146).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldStop();
-  xfer += oprot->writeStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_counter64_result::read(facebook::thrift::protocol::TProtocol* iprot) {
+uint32_t ESDB_store_poll_result_presult::read(facebook::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -2425,242 +2208,14 @@ uint32_t ESDB_insert_counter64_result::read(facebook::thrift::protocol::TProtoco
     }
     switch (fid)
     {
-      default:
-        xfer += iprot->skip(ftype);
-        break;
-    }
-    xfer += iprot->readFieldEnd();
-  }
-
-  xfer += iprot->readStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_counter64_result::write(facebook::thrift::protocol::TProtocol* oprot) const {
-
-  uint32_t xfer = 0;
-
-  xfer += oprot->writeStructBegin("ESDB_insert_counter64_result");
-
-  xfer += oprot->writeFieldStop();
-  xfer += oprot->writeStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_counter64_presult::read(facebook::thrift::protocol::TProtocol* iprot) {
-
-  uint32_t xfer = 0;
-  std::string fname;
-  facebook::thrift::protocol::TType ftype;
-  int16_t fid;
-
-  xfer += iprot->readStructBegin(fname);
-
-  while (true)
-  {
-    xfer += iprot->readFieldBegin(fname, ftype, fid);
-    if (ftype == facebook::thrift::protocol::T_STOP) { 
-      break;
-    }
-    switch (fid)
-    {
-      default:
-        xfer += iprot->skip(ftype);
-        break;
-    }
-    xfer += iprot->readFieldEnd();
-  }
-
-  xfer += iprot->readStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_gauge32_args::read(facebook::thrift::protocol::TProtocol* iprot) {
-
-  uint32_t xfer = 0;
-  std::string fname;
-  facebook::thrift::protocol::TType ftype;
-  int16_t fid;
-
-  xfer += iprot->readStructBegin(fname);
-
-  while (true)
-  {
-    xfer += iprot->readFieldBegin(fname, ftype, fid);
-    if (ftype == facebook::thrift::protocol::T_STOP) { 
-      break;
-    }
-    switch (fid)
-    {
-      case -1:
-        if (ftype == facebook::thrift::protocol::T_LIST) {
-          {
-            this->vars.clear();
-uint32_t _size147;
-            facebook::thrift::protocol::TType _etype150;
-            iprot->readListBegin(_etype150, _size147);
-            uint32_t _i151;
-            for (_i151 = 0; _i151 < _size147; ++_i151)
-            {
-              Var _elem152;
-              xfer += _elem152.read(iprot);
-              this->vars.push_back(_elem152);
-            }
-            iprot->readListEnd();
-          }
-          this->__isset.vars = true;
+      case 0:
+        if (ftype == facebook::thrift::protocol::T_BYTE) {
+          xfer += iprot->readByte((*(this->success)));
+          this->__isset.success = true;
         } else {
           xfer += iprot->skip(ftype);
         }
         break;
-      case -2:
-        if (ftype == facebook::thrift::protocol::T_LIST) {
-          {
-            this->values.clear();
-uint32_t _size153;
-            facebook::thrift::protocol::TType _etype156;
-            iprot->readListBegin(_etype156, _size153);
-            uint32_t _i157;
-            for (_i157 = 0; _i157 < _size153; ++_i157)
-            {
-              Gauge32 _elem158;
-              xfer += _elem158.read(iprot);
-              this->values.push_back(_elem158);
-            }
-            iprot->readListEnd();
-          }
-          this->__isset.values = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
-      default:
-        xfer += iprot->skip(ftype);
-        break;
-    }
-    xfer += iprot->readFieldEnd();
-  }
-
-  xfer += iprot->readStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_gauge32_args::write(facebook::thrift::protocol::TProtocol* oprot) const {
-  uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("ESDB_insert_gauge32_args");
-  xfer += oprot->writeFieldBegin("vars", facebook::thrift::protocol::T_LIST, -1);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->vars.size());
-    std::vector<Var> ::const_iterator _iter159;
-    for (_iter159 = this->vars.begin(); _iter159 != this->vars.end(); ++_iter159)
-    {
-      xfer += (*_iter159).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("values", facebook::thrift::protocol::T_LIST, -2);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->values.size());
-    std::vector<Gauge32> ::const_iterator _iter160;
-    for (_iter160 = this->values.begin(); _iter160 != this->values.end(); ++_iter160)
-    {
-      xfer += (*_iter160).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldStop();
-  xfer += oprot->writeStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_gauge32_pargs::write(facebook::thrift::protocol::TProtocol* oprot) const {
-  uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("ESDB_insert_gauge32_pargs");
-  xfer += oprot->writeFieldBegin("vars", facebook::thrift::protocol::T_LIST, -1);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, (*(this->vars)).size());
-    std::vector<Var> ::const_iterator _iter161;
-    for (_iter161 = (*(this->vars)).begin(); _iter161 != (*(this->vars)).end(); ++_iter161)
-    {
-      xfer += (*_iter161).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("values", facebook::thrift::protocol::T_LIST, -2);
-  {
-    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, (*(this->values)).size());
-    std::vector<Gauge32> ::const_iterator _iter162;
-    for (_iter162 = (*(this->values)).begin(); _iter162 != (*(this->values)).end(); ++_iter162)
-    {
-      xfer += (*_iter162).write(oprot);
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldStop();
-  xfer += oprot->writeStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_gauge32_result::read(facebook::thrift::protocol::TProtocol* iprot) {
-
-  uint32_t xfer = 0;
-  std::string fname;
-  facebook::thrift::protocol::TType ftype;
-  int16_t fid;
-
-  xfer += iprot->readStructBegin(fname);
-
-  while (true)
-  {
-    xfer += iprot->readFieldBegin(fname, ftype, fid);
-    if (ftype == facebook::thrift::protocol::T_STOP) { 
-      break;
-    }
-    switch (fid)
-    {
-      default:
-        xfer += iprot->skip(ftype);
-        break;
-    }
-    xfer += iprot->readFieldEnd();
-  }
-
-  xfer += iprot->readStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_gauge32_result::write(facebook::thrift::protocol::TProtocol* oprot) const {
-
-  uint32_t xfer = 0;
-
-  xfer += oprot->writeStructBegin("ESDB_insert_gauge32_result");
-
-  xfer += oprot->writeFieldStop();
-  xfer += oprot->writeStructEnd();
-  return xfer;
-}
-
-uint32_t ESDB_insert_gauge32_presult::read(facebook::thrift::protocol::TProtocol* iprot) {
-
-  uint32_t xfer = 0;
-  std::string fname;
-  facebook::thrift::protocol::TType ftype;
-  int16_t fid;
-
-  xfer += iprot->readStructBegin(fname);
-
-  while (true)
-  {
-    xfer += iprot->readFieldBegin(fname, ftype, fid);
-    if (ftype == facebook::thrift::protocol::T_STOP) { 
-      break;
-    }
-    switch (fid)
-    {
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -3426,27 +2981,26 @@ void ESDBClient::recv_get_vars_by_grouping(VarList& _return)
   throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "get_vars_by_grouping failed: unknown result");
 }
 
-void ESDBClient::insert_counter32(const std::vector<Var> & vars, const std::vector<Counter32> & values)
+int8_t ESDBClient::store_poll_result(const SNMPPollResult& result)
 {
-  send_insert_counter32(vars, values);
-  recv_insert_counter32();
+  send_store_poll_result(result);
+  return recv_store_poll_result();
 }
 
-void ESDBClient::send_insert_counter32(const std::vector<Var> & vars, const std::vector<Counter32> & values)
+void ESDBClient::send_store_poll_result(const SNMPPollResult& result)
 {
   int32_t cseqid = 0;
-  oprot_->writeMessageBegin("insert_counter32", facebook::thrift::protocol::T_CALL, cseqid);
+  oprot_->writeMessageBegin("store_poll_result", facebook::thrift::protocol::T_CALL, cseqid);
 
-  ESDB_insert_counter32_pargs args;
-  args.vars = &vars;
-  args.values = &values;
+  ESDB_store_poll_result_pargs args;
+  args.result = &result;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
   oprot_->getTransport()->flush();
 }
 
-void ESDBClient::recv_insert_counter32()
+int8_t ESDBClient::recv_store_poll_result()
 {
 
   int32_t rseqid = 0;
@@ -3467,128 +3021,23 @@ void ESDBClient::recv_insert_counter32()
     iprot_->getTransport()->readEnd();
     throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
   }
-  if (fname.compare("insert_counter32") != 0) {
+  if (fname.compare("store_poll_result") != 0) {
     iprot_->skip(facebook::thrift::protocol::T_STRUCT);
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
     throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
   }
-  ESDB_insert_counter32_presult result;
+  int8_t _return;
+  ESDB_store_poll_result_presult result;
+  result.success = &_return;
   result.read(iprot_);
   iprot_->readMessageEnd();
   iprot_->getTransport()->readEnd();
 
-  return;
-}
-
-void ESDBClient::insert_counter64(const std::vector<Var> & vars, const std::vector<Counter64> & values)
-{
-  send_insert_counter64(vars, values);
-  recv_insert_counter64();
-}
-
-void ESDBClient::send_insert_counter64(const std::vector<Var> & vars, const std::vector<Counter64> & values)
-{
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("insert_counter64", facebook::thrift::protocol::T_CALL, cseqid);
-
-  ESDB_insert_counter64_pargs args;
-  args.vars = &vars;
-  args.values = &values;
-  args.write(oprot_);
-
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-}
-
-void ESDBClient::recv_insert_counter64()
-{
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
+  if (result.__isset.success) {
+    return _return;
   }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("insert_counter64") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  ESDB_insert_counter64_presult result;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  return;
-}
-
-void ESDBClient::insert_gauge32(const std::vector<Var> & vars, const std::vector<Gauge32> & values)
-{
-  send_insert_gauge32(vars, values);
-  recv_insert_gauge32();
-}
-
-void ESDBClient::send_insert_gauge32(const std::vector<Var> & vars, const std::vector<Gauge32> & values)
-{
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("insert_gauge32", facebook::thrift::protocol::T_CALL, cseqid);
-
-  ESDB_insert_gauge32_pargs args;
-  args.vars = &vars;
-  args.values = &values;
-  args.write(oprot_);
-
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-}
-
-void ESDBClient::recv_insert_gauge32()
-{
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("insert_gauge32") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  ESDB_insert_gauge32_presult result;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  return;
+  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "store_poll_result failed: unknown result");
 }
 
 bool ESDBProcessor::process(boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot) {
@@ -3866,51 +3315,18 @@ void ESDBProcessor::process_get_vars_by_grouping(int32_t seqid, facebook::thrift
   oprot->getTransport()->writeEnd();
 }
 
-void ESDBProcessor::process_insert_counter32(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot)
+void ESDBProcessor::process_store_poll_result(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot)
 {
-  ESDB_insert_counter32_args args;
+  ESDB_store_poll_result_args args;
   args.read(iprot);
   iprot->readMessageEnd();
   iprot->getTransport()->readEnd();
 
-  ESDB_insert_counter32_result result;
-  iface_->insert_counter32(args.vars, args.values);
+  ESDB_store_poll_result_result result;
+  result.success = iface_->store_poll_result(args.result);
+  result.__isset.success = true;
 
-  oprot->writeMessageBegin("insert_counter32", facebook::thrift::protocol::T_REPLY, seqid);
-  result.write(oprot);
-  oprot->writeMessageEnd();
-  oprot->getTransport()->flush();
-  oprot->getTransport()->writeEnd();
-}
-
-void ESDBProcessor::process_insert_counter64(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot)
-{
-  ESDB_insert_counter64_args args;
-  args.read(iprot);
-  iprot->readMessageEnd();
-  iprot->getTransport()->readEnd();
-
-  ESDB_insert_counter64_result result;
-  iface_->insert_counter64(args.vars, args.values);
-
-  oprot->writeMessageBegin("insert_counter64", facebook::thrift::protocol::T_REPLY, seqid);
-  result.write(oprot);
-  oprot->writeMessageEnd();
-  oprot->getTransport()->flush();
-  oprot->getTransport()->writeEnd();
-}
-
-void ESDBProcessor::process_insert_gauge32(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot)
-{
-  ESDB_insert_gauge32_args args;
-  args.read(iprot);
-  iprot->readMessageEnd();
-  iprot->getTransport()->readEnd();
-
-  ESDB_insert_gauge32_result result;
-  iface_->insert_gauge32(args.vars, args.values);
-
-  oprot->writeMessageBegin("insert_gauge32", facebook::thrift::protocol::T_REPLY, seqid);
+  oprot->writeMessageBegin("store_poll_result", facebook::thrift::protocol::T_REPLY, seqid);
   result.write(oprot);
   oprot->writeMessageEnd();
   oprot->getTransport()->flush();

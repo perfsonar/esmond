@@ -2,24 +2,39 @@
 
 cpp_namespace ESSNMP
 
-struct Var {
-    1: string name,
-    2: byte type_id,
-    3: i32 device_id
+struct OIDType {
+    1: i32 id,
+    2: string name
+}
+
+struct OIDCorrelator {
+    1: i32 id,
+    2: string name
 }
 
 struct OID {
     1: i32 id,
     2: string name,
-    3: string storage,
-    4: i32 oidtypeid
+    4: i32 oidtypeid,
+    5: i32 oidcorrelatorid
+}
+
+struct Poller {
+    1: i32 id,
+    2: string name
 }
 
 struct OIDSet {
     1: i32 id,
     2: string name,
     3: i32 frequency,
-    4: list<OID> oids
+    4: list<OID> oids,
+    5: i32 pollerid
+}
+
+struct DeviceTag {
+    1: i32 id,
+    2: string name
 }
 
 struct Device {
@@ -28,7 +43,25 @@ struct Device {
     3: i32 begin_time,
     4: i32 end_time,
     5: string community,
-    6: list<OIDSet> oidsets
+    6: list<OIDSet> oidsets,
+    7: list<DeviceTag> tags
+}
+
+struct IfRef {
+    1: i32 id,
+    2: deviceid,
+    3: i32 ifIndex,
+    4: string ifDescr,
+    5: string ifAlias,
+    6: i32 ifSpeed,
+    7: i32 ifHighSpeed,
+    8: string connection,
+    9: string conntype,
+    10: string usage,
+    11: string visibility,
+    12: string grouping,
+    13: i32 begin_time,
+    14: i32 end_time
 }
 
 enum Grouping {
@@ -52,7 +85,7 @@ struct Counter64 {
     2: i32 timestamp,
     3: i64 value,
     4: byte version = 1,
-    5: byte type_id = 1
+    5: byte type_id = 2
 }
 
 struct Gauge32 {
@@ -60,13 +93,25 @@ struct Gauge32 {
     2: i32 timestamp,
     3: i32 value,
     4: byte version = 1,
-    5: byte type_id = 1
+    5: byte type_id = 3
 }
 
 struct VarList {
     1: list<Counter32> counter32,
     2: list<Counter64> counter64,
     3: list<Gauge32> gauge32
+}
+
+struct SNMPPollResultPair {
+    1: string OIDName,
+    2: string value
+}
+
+struct SNMPPollResult {
+    1: i32 device_id,
+    2: i32 oidset_id,
+    2: i32 timestamp,
+    3: list<list<string>> vars
 }
 
 service ESDB {
@@ -86,7 +131,8 @@ service ESDB {
     list<Device> get_oidset_devices(1: OIDSet oidset),
 
     VarList get_vars_by_grouping(1: Grouping grouping), // should grouping e
-    void insert_counter32(list<Var> vars, list<Counter32> values),
-    void insert_counter64(list<Var> vars, list<Counter64> values),
-    void insert_gauge32(list<Var> vars, list<Gauge32> values),
+#    void insert_counter32(list<Var> vars, list<Counter32> values),
+#    void insert_counter64(list<Var> vars, list<Counter64> values),
+#    void insert_gauge32(list<Var> vars, list<Gauge32> values),
+    byte store_poll_result(SNMPPollResult result)
 }

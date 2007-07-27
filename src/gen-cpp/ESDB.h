@@ -27,9 +27,7 @@ class ESDBIf {
   virtual void get_oidset(OIDSet& _return, const std::string& name) = 0;
   virtual void get_oidset_devices(std::vector<Device> & _return, const OIDSet& oidset) = 0;
   virtual void get_vars_by_grouping(VarList& _return, const Grouping grouping) = 0;
-  virtual void insert_counter32(const std::vector<Var> & vars, const std::vector<Counter32> & values) = 0;
-  virtual void insert_counter64(const std::vector<Var> & vars, const std::vector<Counter64> & values) = 0;
-  virtual void insert_gauge32(const std::vector<Var> & vars, const std::vector<Gauge32> & values) = 0;
+  virtual int8_t store_poll_result(const SNMPPollResult& result) = 0;
 }; 
 
 class ESDBNull : virtual public ESDBIf {
@@ -74,14 +72,9 @@ class ESDBNull : virtual public ESDBIf {
   void get_vars_by_grouping(VarList& _return, const Grouping grouping) {
     return;
   }
-  void insert_counter32(const std::vector<Var> & vars, const std::vector<Counter32> & values) {
-    return;
-  }
-  void insert_counter64(const std::vector<Var> & vars, const std::vector<Counter64> & values) {
-    return;
-  }
-  void insert_gauge32(const std::vector<Var> & vars, const std::vector<Gauge32> & values) {
-    return;
+  int8_t store_poll_result(const SNMPPollResult& result) {
+    int8_t _return = 0;
+    return _return;
   }
 }; 
 
@@ -936,21 +929,19 @@ class ESDB_get_vars_by_grouping_presult {
 
 };
 
-class ESDB_insert_counter32_args {
+class ESDB_store_poll_result_args {
  public:
 
-  ESDB_insert_counter32_args() {
+  ESDB_store_poll_result_args() {
   } 
 
-  virtual ~ESDB_insert_counter32_args() throw() {}
+  virtual ~ESDB_store_poll_result_args() throw() {}
 
-  std::vector<Var>  vars;
-  std::vector<Counter32>  values;
+  SNMPPollResult result;
 
   struct __isset {
-    __isset() : vars(false), values(false) {}
-    bool vars;
-    bool values;
+    __isset() : result(false) {}
+    bool result;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
@@ -958,59 +949,31 @@ class ESDB_insert_counter32_args {
 
 };
 
-class ESDB_insert_counter32_pargs {
+class ESDB_store_poll_result_pargs {
  public:
 
 
-  virtual ~ESDB_insert_counter32_pargs() throw() {}
+  virtual ~ESDB_store_poll_result_pargs() throw() {}
 
-  const std::vector<Var> * vars;
-  const std::vector<Counter32> * values;
+  const SNMPPollResult* result;
 
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class ESDB_insert_counter32_result {
+class ESDB_store_poll_result_result {
  public:
 
-  ESDB_insert_counter32_result() {
+  ESDB_store_poll_result_result() : success(0) {
   } 
 
-  virtual ~ESDB_insert_counter32_result() throw() {}
+  virtual ~ESDB_store_poll_result_result() throw() {}
 
-
-  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
-  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-class ESDB_insert_counter32_presult {
- public:
-
-
-  virtual ~ESDB_insert_counter32_presult() throw() {}
-
-
-  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
-
-};
-
-class ESDB_insert_counter64_args {
- public:
-
-  ESDB_insert_counter64_args() {
-  } 
-
-  virtual ~ESDB_insert_counter64_args() throw() {}
-
-  std::vector<Var>  vars;
-  std::vector<Counter64>  values;
+  int8_t success;
 
   struct __isset {
-    __isset() : vars(false), values(false) {}
-    bool vars;
-    bool values;
+    __isset() : success(false) {}
+    bool success;
   } __isset;
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
@@ -1018,99 +981,18 @@ class ESDB_insert_counter64_args {
 
 };
 
-class ESDB_insert_counter64_pargs {
+class ESDB_store_poll_result_presult {
  public:
 
 
-  virtual ~ESDB_insert_counter64_pargs() throw() {}
+  virtual ~ESDB_store_poll_result_presult() throw() {}
 
-  const std::vector<Var> * vars;
-  const std::vector<Counter64> * values;
-
-  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-class ESDB_insert_counter64_result {
- public:
-
-  ESDB_insert_counter64_result() {
-  } 
-
-  virtual ~ESDB_insert_counter64_result() throw() {}
-
-
-  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
-  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-class ESDB_insert_counter64_presult {
- public:
-
-
-  virtual ~ESDB_insert_counter64_presult() throw() {}
-
-
-  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
-
-};
-
-class ESDB_insert_gauge32_args {
- public:
-
-  ESDB_insert_gauge32_args() {
-  } 
-
-  virtual ~ESDB_insert_gauge32_args() throw() {}
-
-  std::vector<Var>  vars;
-  std::vector<Gauge32>  values;
+  int8_t* success;
 
   struct __isset {
-    __isset() : vars(false), values(false) {}
-    bool vars;
-    bool values;
+    __isset() : success(false) {}
+    bool success;
   } __isset;
-
-  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
-  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-class ESDB_insert_gauge32_pargs {
- public:
-
-
-  virtual ~ESDB_insert_gauge32_pargs() throw() {}
-
-  const std::vector<Var> * vars;
-  const std::vector<Gauge32> * values;
-
-  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-class ESDB_insert_gauge32_result {
- public:
-
-  ESDB_insert_gauge32_result() {
-  } 
-
-  virtual ~ESDB_insert_gauge32_result() throw() {}
-
-
-  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
-  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-class ESDB_insert_gauge32_presult {
- public:
-
-
-  virtual ~ESDB_insert_gauge32_presult() throw() {}
-
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
 
@@ -1169,15 +1051,9 @@ class ESDBClient : virtual public ESDBIf {
   void get_vars_by_grouping(VarList& _return, const Grouping grouping);
   void send_get_vars_by_grouping(const Grouping grouping);
   void recv_get_vars_by_grouping(VarList& _return);
-  void insert_counter32(const std::vector<Var> & vars, const std::vector<Counter32> & values);
-  void send_insert_counter32(const std::vector<Var> & vars, const std::vector<Counter32> & values);
-  void recv_insert_counter32();
-  void insert_counter64(const std::vector<Var> & vars, const std::vector<Counter64> & values);
-  void send_insert_counter64(const std::vector<Var> & vars, const std::vector<Counter64> & values);
-  void recv_insert_counter64();
-  void insert_gauge32(const std::vector<Var> & vars, const std::vector<Gauge32> & values);
-  void send_insert_gauge32(const std::vector<Var> & vars, const std::vector<Gauge32> & values);
-  void recv_insert_gauge32();
+  int8_t store_poll_result(const SNMPPollResult& result);
+  void send_store_poll_result(const SNMPPollResult& result);
+  int8_t recv_store_poll_result();
  protected:
   boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot_;
@@ -1204,9 +1080,7 @@ class ESDBProcessor : virtual public facebook::thrift::TProcessor {
   void process_get_oidset(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
   void process_get_oidset_devices(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
   void process_get_vars_by_grouping(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
-  void process_insert_counter32(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
-  void process_insert_counter64(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
-  void process_insert_gauge32(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
+  void process_store_poll_result(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
  public: 
   ESDBProcessor(boost::shared_ptr<ESDBIf> iface) :
     iface_(iface) {
@@ -1223,9 +1097,7 @@ class ESDBProcessor : virtual public facebook::thrift::TProcessor {
     processMap_["get_oidset"] = &ESDBProcessor::process_get_oidset;
     processMap_["get_oidset_devices"] = &ESDBProcessor::process_get_oidset_devices;
     processMap_["get_vars_by_grouping"] = &ESDBProcessor::process_get_vars_by_grouping;
-    processMap_["insert_counter32"] = &ESDBProcessor::process_insert_counter32;
-    processMap_["insert_counter64"] = &ESDBProcessor::process_insert_counter64;
-    processMap_["insert_gauge32"] = &ESDBProcessor::process_insert_gauge32;
+    processMap_["store_poll_result"] = &ESDBProcessor::process_store_poll_result;
   }
 
   virtual bool process(boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot);
@@ -1385,24 +1257,14 @@ class ESDBMultiface : virtual public ESDBIf {
     }
   }
 
-  void insert_counter32(const std::vector<Var> & vars, const std::vector<Counter32> & values) {
+  int8_t store_poll_result(const SNMPPollResult& result) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
-      ifaces_[i]->insert_counter32(vars, values);
-    }
-  }
-
-  void insert_counter64(const std::vector<Var> & vars, const std::vector<Counter64> & values) {
-    uint32_t sz = ifaces_.size();
-    for (uint32_t i = 0; i < sz; ++i) {
-      ifaces_[i]->insert_counter64(vars, values);
-    }
-  }
-
-  void insert_gauge32(const std::vector<Var> & vars, const std::vector<Gauge32> & values) {
-    uint32_t sz = ifaces_.size();
-    for (uint32_t i = 0; i < sz; ++i) {
-      ifaces_[i]->insert_gauge32(vars, values);
+      if (i == sz - 1) {
+        return ifaces_[i]->store_poll_result(result);
+      } else {
+        ifaces_[i]->store_poll_result(result);
+      }
     }
   }
 

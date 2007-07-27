@@ -1,19 +1,69 @@
 #!/usr/bin/env python
 
+import threading
 from calendar import timegm
 
 from thrift.transport import TSocket, TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
+import tsdb
 
+from essnmp.config import ESConfig
 from essnmp.sql import *
 from  essnmp.thrift import ESDB
 import essnmp.thrift.ttypes
 
+class ExternalInterface(threading.Thread):
+    def __init__(self, **kwargs):
+        Threading.Thread.__init__(self, **kwargs)
+        self.setDaemon(1)
+        self.workq = Queue.Queue()
+        self.start()
+
+    def request(self, *args, **kwargs):
+        self.workq.put((args,kwargs))
+
+    def run(self):
+        while True:
+            args, kwargs = self.workq.get()
+            self.process(*args,**kwargs)
+
+    def process(self, *args, **kwargs):
+        raise NotImplementedError("subclasses MUST define process")
+
+
+class StorageThread(ExternalInterface):
+    def __init__(self, device_id):
+        ExternalInterface.__init__(self)
+        self.device_id = device_id
+        self.tsdb = tsdb.TSDB(ESConfig['TSDB_ROOT'])
+        self.device_set = tsdb.get_set(device_id, acquire_lock=True)
+        self.vars = {}
+        for var in self.device_set.list_vars():
+            self.vars[var] = self.device_set.get_var(var)
+
+    def get_var(self, name):
+        try:
+            return self.vars[name]
+        except KeyError:
+            try:
+                self.vars[name] = self.device_set.get_var(name)
+            except TSDBVarDoesNotExistError:
+                print "adding",name
+
+                self.vars[name] = self.device_set.add_var(name, type, step)
+
+            return self.vars[name]
+
+    def process(self, poll_results, **kwargs):
+        for (var, val) in poll_results.vars:
+            self.get_var(var).insert(poll_results.timestamp, val)
+
 class ESDBHandler(object):
     def __init__(self):
         self.session = create_session(bind_to=essnmp.sql.db)
+        self.device_threads = {}
 
     def list_devices(self):
         return [d.name for d in self.session.query(Device).select()]
@@ -57,6 +107,11 @@ class ESDBHandler(object):
     def get_oidset(self,name):
         return self.session.query(OIDSet).select_by(name=name)[0]
 
+    def store_poll_result(self, result):
+        print "STORE"
+        if self.device_threads.has_key(result.device_id):
+            self.device_threads[result.device_id].request(result)
+        return 1
 
 handler = ESDBHandler()
 processor = ESDB.Processor(handler)
@@ -64,6 +119,6 @@ transport = TSocket.TServerSocket(9090)
 tfactory = TTransport.TBufferedTransportFactory()
 pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
-server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
+server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
 
 server.serve()

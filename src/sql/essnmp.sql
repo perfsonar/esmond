@@ -3,11 +3,24 @@
 --
 
 CREATE TABLE Device (
-    id       SERIAL PRIMARY KEY,
-    name     varchar(256),
+    id          SERIAL PRIMARY KEY,
+    name        varchar(256),
     begin_time  timestamp,
     end_time    timestamp,
-    community   varchar(128)
+    community   varchar(128),
+    active      boolean
+);
+
+CREATE TABLE DeviceTag (
+    id       SERIAL PRIMARY KEY,
+    name     varchar(256),
+    UNIQUE(name)
+);
+
+CREATE TABLE DeviceTagMap (
+    id       SERIAL PRIMARY KEY,
+    deviceId int REFERENCES Device ON UPDATE CASCADE ON DELETE CASCADE,
+    deviceTagId int REFERENCES DeviceTag on UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE OIDType (
@@ -15,17 +28,28 @@ CREATE TABLE OIDType (
     name     varchar(256)
 );
 
+CREATE TABLE OIDCorrelator {
+    id       SERIAL PRIMARY KEY,
+    name     varchar(256)
+);
+
 CREATE TABLE OID (
     id       SERIAL PRIMARY KEY,
     name     varchar(1024),
-    storage  char(1), -- 'T': TSDB, 'S': SQL
-    OIDtypeId int REFERENCES OIDType
+    OIDtypeId int REFERENCES OIDType,
+    OIDCorrelatorId int REFERENCES OIDCorrelator
 );
 
-CREATE TABLE OIDSet (
+CREATE TABLE Poller (
     id       SERIAL PRIMARY KEY,
-    name     varchar(256),
-    frequency int
+    name     varchar(256)
+);
+t
+CREATE TABLE OIDSet (
+    id         SERIAL PRIMARY KEY,
+    name       varchar(256),
+    frequency  int,
+    pollerid   int REFERENCES Poller
 );
 
 CREATE TABLE OIDSetMember (
@@ -40,15 +64,26 @@ CREATE TABLE DeviceOIDSetMap (
     OIDSetId int REFERENCES OIDSet ON UPDATE CASCADE ON DELETE CASCADE
 );
 
---
--- OIDStorageMap 
---
+CREATE TABLE IfRef (
+    id          SERIAL PRIMARY KEY,
+    deviceid    int,
 
-CREATE TABLE Var (
-    id        SERIAL PRIMARY KEY,
-    OIDId     int REFERENCES OID,
-    DeviceId  int REFERENCES Device,
-    ifIndex   int
+    ifIndex     int,
+    ifDescr     varchar(512),
+    ifAlias     varchar(512),
+    ifSpeed     int,
+    ifHighSpeed int,
+
+    connection  varchar(128),
+    conntype    varchar(128),
+    usage       varchar(128),
+    visibility  char(1), -- S: show, H: hide
+    grouping    char(1), -- C: commercial, I: internal, R: R&E, E: edu, S: site
+
+    begin_time  timestamp,
+    end_time    timestamp,
+
+    FOREIGN KEY (deviceid) references device(id) ON DELETE RESTRICT
 );
 
 --- Model of MOCs topology database:

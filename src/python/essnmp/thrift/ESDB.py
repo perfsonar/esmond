@@ -48,13 +48,7 @@ class Iface(object):
   def get_vars_by_grouping(self, grouping):
     pass
 
-  def insert_counter32(self, vars, values):
-    pass
-
-  def insert_counter64(self, vars, values):
-    pass
-
-  def insert_gauge32(self, vars, values):
+  def store_poll_result(self, result):
     pass
 
 
@@ -399,80 +393,31 @@ class Client(Iface):
       return result.success
     raise TApplicationException(TApplicationException.MISSING_RESULT, "get_vars_by_grouping failed: unknown result");
 
-  def insert_counter32(self, vars, values):
-    self.send_insert_counter32(vars, values)
-    self.recv_insert_counter32()
+  def store_poll_result(self, result):
+    self.send_store_poll_result(result)
+    return self.recv_store_poll_result()
 
-  def send_insert_counter32(self, vars, values):
-    self._oprot.writeMessageBegin('insert_counter32', TMessageType.CALL, self._seqid)
-    args = insert_counter32_args()
-    args.vars = vars
-    args.values = values
+  def send_store_poll_result(self, result):
+    self._oprot.writeMessageBegin('store_poll_result', TMessageType.CALL, self._seqid)
+    args = store_poll_result_args()
+    args.result = result
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
     self._oprot.trans.flush()
 
-  def recv_insert_counter32(self, ):
+  def recv_store_poll_result(self, ):
     (fname, mtype, rseqid) = self._iprot.readMessageBegin()
     if mtype == TMessageType.EXCEPTION:
       x = TApplicationException()
       x.read(self._iprot)
       self._iprot.readMessageEnd()
       raise x
-    result = insert_counter32_result()
+    result = store_poll_result_result()
     result.read(self._iprot)
     self._iprot.readMessageEnd()
-    return
-
-  def insert_counter64(self, vars, values):
-    self.send_insert_counter64(vars, values)
-    self.recv_insert_counter64()
-
-  def send_insert_counter64(self, vars, values):
-    self._oprot.writeMessageBegin('insert_counter64', TMessageType.CALL, self._seqid)
-    args = insert_counter64_args()
-    args.vars = vars
-    args.values = values
-    args.write(self._oprot)
-    self._oprot.writeMessageEnd()
-    self._oprot.trans.flush()
-
-  def recv_insert_counter64(self, ):
-    (fname, mtype, rseqid) = self._iprot.readMessageBegin()
-    if mtype == TMessageType.EXCEPTION:
-      x = TApplicationException()
-      x.read(self._iprot)
-      self._iprot.readMessageEnd()
-      raise x
-    result = insert_counter64_result()
-    result.read(self._iprot)
-    self._iprot.readMessageEnd()
-    return
-
-  def insert_gauge32(self, vars, values):
-    self.send_insert_gauge32(vars, values)
-    self.recv_insert_gauge32()
-
-  def send_insert_gauge32(self, vars, values):
-    self._oprot.writeMessageBegin('insert_gauge32', TMessageType.CALL, self._seqid)
-    args = insert_gauge32_args()
-    args.vars = vars
-    args.values = values
-    args.write(self._oprot)
-    self._oprot.writeMessageEnd()
-    self._oprot.trans.flush()
-
-  def recv_insert_gauge32(self, ):
-    (fname, mtype, rseqid) = self._iprot.readMessageBegin()
-    if mtype == TMessageType.EXCEPTION:
-      x = TApplicationException()
-      x.read(self._iprot)
-      self._iprot.readMessageEnd()
-      raise x
-    result = insert_gauge32_result()
-    result.read(self._iprot)
-    self._iprot.readMessageEnd()
-    return
+    if result.success != None:
+      return result.success
+    raise TApplicationException(TApplicationException.MISSING_RESULT, "store_poll_result failed: unknown result");
 
 
 class Processor(Iface, TProcessor):
@@ -492,9 +437,7 @@ class Processor(Iface, TProcessor):
     self._processMap["get_oidset"] = Processor.process_get_oidset
     self._processMap["get_oidset_devices"] = Processor.process_get_oidset_devices
     self._processMap["get_vars_by_grouping"] = Processor.process_get_vars_by_grouping
-    self._processMap["insert_counter32"] = Processor.process_insert_counter32
-    self._processMap["insert_counter64"] = Processor.process_insert_counter64
-    self._processMap["insert_gauge32"] = Processor.process_insert_gauge32
+    self._processMap["store_poll_result"] = Processor.process_store_poll_result
 
   def process(self, iprot, oprot):
     (name, type, seqid) = iprot.readMessageBegin()
@@ -654,35 +597,13 @@ class Processor(Iface, TProcessor):
     oprot.writeMessageEnd()
     oprot.trans.flush()
 
-  def process_insert_counter32(self, seqid, iprot, oprot):
-    args = insert_counter32_args()
+  def process_store_poll_result(self, seqid, iprot, oprot):
+    args = store_poll_result_args()
     args.read(iprot)
     iprot.readMessageEnd()
-    result = insert_counter32_result()
-    self._handler.insert_counter32(args.vars, args.values)
-    oprot.writeMessageBegin("insert_counter32", TMessageType.REPLY, seqid)
-    result.write(oprot)
-    oprot.writeMessageEnd()
-    oprot.trans.flush()
-
-  def process_insert_counter64(self, seqid, iprot, oprot):
-    args = insert_counter64_args()
-    args.read(iprot)
-    iprot.readMessageEnd()
-    result = insert_counter64_result()
-    self._handler.insert_counter64(args.vars, args.values)
-    oprot.writeMessageBegin("insert_counter64", TMessageType.REPLY, seqid)
-    result.write(oprot)
-    oprot.writeMessageEnd()
-    oprot.trans.flush()
-
-  def process_insert_gauge32(self, seqid, iprot, oprot):
-    args = insert_gauge32_args()
-    args.read(iprot)
-    iprot.readMessageEnd()
-    result = insert_gauge32_result()
-    self._handler.insert_gauge32(args.vars, args.values)
-    oprot.writeMessageBegin("insert_gauge32", TMessageType.REPLY, seqid)
+    result = store_poll_result_result()
+    result.success = self._handler.store_poll_result(args.result)
+    oprot.writeMessageBegin("store_poll_result", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
@@ -734,10 +655,10 @@ class list_devices_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype38, _size35) = iprot.readListBegin()
-          for _i39 in xrange(_size35):
-            _elem40 = iprot.readString();
-            self.success.append(_elem40)
+          (_etype59, _size56) = iprot.readListBegin()
+          for _i60 in xrange(_size56):
+            _elem61 = iprot.readString();
+            self.success.append(_elem61)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -751,8 +672,8 @@ class list_devices_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRING, len(self.success))
-      for iter41 in self.success:
-        oprot.writeString(iter41)
+      for iter62 in self.success:
+        oprot.writeString(iter62)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -887,12 +808,12 @@ class get_all_devices_result(object):
       if fid == 0:
         if ftype == TType.MAP:
           self.success = {}
-          (_ktype43, _vtype44, _size42 ) = iprot.readMapBegin() 
-          for _i46 in xrange(_size42):
-            _key47 = iprot.readString();
-            _val48 = Device()
-            _val48.read(iprot)
-            self.success[_key47] = _val48
+          (_ktype64, _vtype65, _size63 ) = iprot.readMapBegin() 
+          for _i67 in xrange(_size63):
+            _key68 = iprot.readString();
+            _val69 = Device()
+            _val69.read(iprot)
+            self.success[_key68] = _val69
           iprot.readMapEnd()
         else:
           iprot.skip(ftype)
@@ -906,9 +827,9 @@ class get_all_devices_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.MAP, 0)
       oprot.writeMapBegin(TType.STRING, TType.STRUCT, len(self.success))
-      for kiter49,viter50 in self.success.items():
-        oprot.writeString(kiter49)
-        viter50.write(oprot)
+      for kiter70,viter71 in self.success.items():
+        oprot.writeString(kiter70)
+        viter71.write(oprot)
       oprot.writeMapEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1157,11 +1078,11 @@ class list_device_oidsets_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype54, _size51) = iprot.readListBegin()
-          for _i55 in xrange(_size51):
-            _elem56 = OIDSet()
-            _elem56.read(iprot)
-            self.success.append(_elem56)
+          (_etype75, _size72) = iprot.readListBegin()
+          for _i76 in xrange(_size72):
+            _elem77 = OIDSet()
+            _elem77.read(iprot)
+            self.success.append(_elem77)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1175,8 +1096,8 @@ class list_device_oidsets_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRUCT, len(self.success))
-      for iter57 in self.success:
-        iter57.write(oprot)
+      for iter78 in self.success:
+        iter78.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1232,10 +1153,10 @@ class list_oids_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype61, _size58) = iprot.readListBegin()
-          for _i62 in xrange(_size58):
-            _elem63 = iprot.readString();
-            self.success.append(_elem63)
+          (_etype82, _size79) = iprot.readListBegin()
+          for _i83 in xrange(_size79):
+            _elem84 = iprot.readString();
+            self.success.append(_elem84)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1249,8 +1170,8 @@ class list_oids_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRING, len(self.success))
-      for iter64 in self.success:
-        oprot.writeString(iter64)
+      for iter85 in self.success:
+        oprot.writeString(iter85)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1475,10 +1396,10 @@ class list_oidsets_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype68, _size65) = iprot.readListBegin()
-          for _i69 in xrange(_size65):
-            _elem70 = iprot.readString();
-            self.success.append(_elem70)
+          (_etype89, _size86) = iprot.readListBegin()
+          for _i90 in xrange(_size86):
+            _elem91 = iprot.readString();
+            self.success.append(_elem91)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1492,8 +1413,8 @@ class list_oidsets_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRING, len(self.success))
-      for iter71 in self.success:
-        oprot.writeString(iter71)
+      for iter92 in self.success:
+        oprot.writeString(iter92)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1641,11 +1562,11 @@ class get_oidset_devices_result(object):
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype75, _size72) = iprot.readListBegin()
-          for _i76 in xrange(_size72):
-            _elem77 = Device()
-            _elem77.read(iprot)
-            self.success.append(_elem77)
+          (_etype96, _size93) = iprot.readListBegin()
+          for _i97 in xrange(_size93):
+            _elem98 = Device()
+            _elem98.read(iprot)
+            self.success.append(_elem98)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1659,8 +1580,8 @@ class get_oidset_devices_result(object):
     if self.success != None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRUCT, len(self.success))
-      for iter78 in self.success:
-        iter78.write(oprot)
+      for iter99 in self.success:
+        iter99.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1751,16 +1672,13 @@ class get_vars_by_grouping_result(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-class insert_counter32_args(object):
+class store_poll_result_args(object):
 
   def __init__(self, d=None):
-    self.vars = None
-    self.values = None
+    self.result = None
     if isinstance(d, dict):
-      if 'vars' in d:
-        self.vars = d['vars']
-      if 'values' in d:
-        self.values = d['values']
+      if 'result' in d:
+        self.result = d['result']
 
   def read(self, iprot):
     iprot.readStructBegin()
@@ -1769,25 +1687,9 @@ class insert_counter32_args(object):
       if ftype == TType.STOP:
         break
       if fid == -1:
-        if ftype == TType.LIST:
-          self.vars = []
-          (_etype82, _size79) = iprot.readListBegin()
-          for _i83 in xrange(_size79):
-            _elem84 = Var()
-            _elem84.read(iprot)
-            self.vars.append(_elem84)
-          iprot.readListEnd()
-        else:
-          iprot.skip(ftype)
-      elif fid == -2:
-        if ftype == TType.LIST:
-          self.values = []
-          (_etype88, _size85) = iprot.readListBegin()
-          for _i89 in xrange(_size85):
-            _elem90 = Counter32()
-            _elem90.read(iprot)
-            self.values.append(_elem90)
-          iprot.readListEnd()
+        if ftype == TType.STRUCT:
+          self.result = SNMPPollResult()
+          self.result.read(iprot)
         else:
           iprot.skip(ftype)
       else:
@@ -1796,20 +1698,10 @@ class insert_counter32_args(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    oprot.writeStructBegin('insert_counter32_args')
-    if self.vars != None:
-      oprot.writeFieldBegin('vars', TType.LIST, -1)
-      oprot.writeListBegin(TType.STRUCT, len(self.vars))
-      for iter91 in self.vars:
-        iter91.write(oprot)
-      oprot.writeListEnd()
-      oprot.writeFieldEnd()
-    if self.values != None:
-      oprot.writeFieldBegin('values', TType.LIST, -2)
-      oprot.writeListBegin(TType.STRUCT, len(self.values))
-      for iter92 in self.values:
-        iter92.write(oprot)
-      oprot.writeListEnd()
+    oprot.writeStructBegin('store_poll_result_args')
+    if self.result != None:
+      oprot.writeFieldBegin('result', TType.STRUCT, -1)
+      self.result.write(oprot)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
@@ -1820,43 +1712,13 @@ class insert_counter32_args(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-class insert_counter32_result(object):
+class store_poll_result_result(object):
 
   def __init__(self, d=None):
-    pass
-
-  def read(self, iprot):
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    oprot.writeStructBegin('insert_counter32_result')
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def __str__(self): 
-    return str(self.__dict__)
-
-  def __repr__(self): 
-    return repr(self.__dict__)
-
-class insert_counter64_args(object):
-
-  def __init__(self, d=None):
-    self.vars = None
-    self.values = None
+    self.success = None
     if isinstance(d, dict):
-      if 'vars' in d:
-        self.vars = d['vars']
-      if 'values' in d:
-        self.values = d['values']
+      if 'success' in d:
+        self.success = d['success']
 
   def read(self, iprot):
     iprot.readStructBegin()
@@ -1864,26 +1726,9 @@ class insert_counter64_args(object):
       (fname, ftype, fid) = iprot.readFieldBegin()
       if ftype == TType.STOP:
         break
-      if fid == -1:
-        if ftype == TType.LIST:
-          self.vars = []
-          (_etype96, _size93) = iprot.readListBegin()
-          for _i97 in xrange(_size93):
-            _elem98 = Var()
-            _elem98.read(iprot)
-            self.vars.append(_elem98)
-          iprot.readListEnd()
-        else:
-          iprot.skip(ftype)
-      elif fid == -2:
-        if ftype == TType.LIST:
-          self.values = []
-          (_etype102, _size99) = iprot.readListBegin()
-          for _i103 in xrange(_size99):
-            _elem104 = Counter64()
-            _elem104.read(iprot)
-            self.values.append(_elem104)
-          iprot.readListEnd()
+      if fid == 0:
+        if ftype == TType.BYTE:
+          self.success = iprot.readByte();
         else:
           iprot.skip(ftype)
       else:
@@ -1892,144 +1737,11 @@ class insert_counter64_args(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    oprot.writeStructBegin('insert_counter64_args')
-    if self.vars != None:
-      oprot.writeFieldBegin('vars', TType.LIST, -1)
-      oprot.writeListBegin(TType.STRUCT, len(self.vars))
-      for iter105 in self.vars:
-        iter105.write(oprot)
-      oprot.writeListEnd()
+    oprot.writeStructBegin('store_poll_result_result')
+    if self.success != None:
+      oprot.writeFieldBegin('success', TType.BYTE, 0)
+      oprot.writeByte(self.success)
       oprot.writeFieldEnd()
-    if self.values != None:
-      oprot.writeFieldBegin('values', TType.LIST, -2)
-      oprot.writeListBegin(TType.STRUCT, len(self.values))
-      for iter106 in self.values:
-        iter106.write(oprot)
-      oprot.writeListEnd()
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def __str__(self): 
-    return str(self.__dict__)
-
-  def __repr__(self): 
-    return repr(self.__dict__)
-
-class insert_counter64_result(object):
-
-  def __init__(self, d=None):
-    pass
-
-  def read(self, iprot):
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    oprot.writeStructBegin('insert_counter64_result')
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def __str__(self): 
-    return str(self.__dict__)
-
-  def __repr__(self): 
-    return repr(self.__dict__)
-
-class insert_gauge32_args(object):
-
-  def __init__(self, d=None):
-    self.vars = None
-    self.values = None
-    if isinstance(d, dict):
-      if 'vars' in d:
-        self.vars = d['vars']
-      if 'values' in d:
-        self.values = d['values']
-
-  def read(self, iprot):
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == -1:
-        if ftype == TType.LIST:
-          self.vars = []
-          (_etype110, _size107) = iprot.readListBegin()
-          for _i111 in xrange(_size107):
-            _elem112 = Var()
-            _elem112.read(iprot)
-            self.vars.append(_elem112)
-          iprot.readListEnd()
-        else:
-          iprot.skip(ftype)
-      elif fid == -2:
-        if ftype == TType.LIST:
-          self.values = []
-          (_etype116, _size113) = iprot.readListBegin()
-          for _i117 in xrange(_size113):
-            _elem118 = Gauge32()
-            _elem118.read(iprot)
-            self.values.append(_elem118)
-          iprot.readListEnd()
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    oprot.writeStructBegin('insert_gauge32_args')
-    if self.vars != None:
-      oprot.writeFieldBegin('vars', TType.LIST, -1)
-      oprot.writeListBegin(TType.STRUCT, len(self.vars))
-      for iter119 in self.vars:
-        iter119.write(oprot)
-      oprot.writeListEnd()
-      oprot.writeFieldEnd()
-    if self.values != None:
-      oprot.writeFieldBegin('values', TType.LIST, -2)
-      oprot.writeListBegin(TType.STRUCT, len(self.values))
-      for iter120 in self.values:
-        iter120.write(oprot)
-      oprot.writeListEnd()
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def __str__(self): 
-    return str(self.__dict__)
-
-  def __repr__(self): 
-    return repr(self.__dict__)
-
-class insert_gauge32_result(object):
-
-  def __init__(self, d=None):
-    pass
-
-  def read(self, iprot):
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    oprot.writeStructBegin('insert_gauge32_result')
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 

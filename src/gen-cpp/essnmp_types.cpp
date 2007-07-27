@@ -7,7 +7,7 @@
 
 namespace ESSNMP { 
 
-uint32_t Var::read(facebook::thrift::protocol::TProtocol* iprot) {
+uint32_t OIDType::read(facebook::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -25,25 +25,17 @@ uint32_t Var::read(facebook::thrift::protocol::TProtocol* iprot) {
     switch (fid)
     {
       case 1:
-        if (ftype == facebook::thrift::protocol::T_STRING) {
-          xfer += iprot->readString(this->name);
-          this->__isset.name = true;
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->id);
+          this->__isset.id = true;
         } else {
           xfer += iprot->skip(ftype);
         }
         break;
       case 2:
-        if (ftype == facebook::thrift::protocol::T_BYTE) {
-          xfer += iprot->readByte(this->type_id);
-          this->__isset.type_id = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
-      case 3:
-        if (ftype == facebook::thrift::protocol::T_I32) {
-          xfer += iprot->readI32(this->device_id);
-          this->__isset.device_id = true;
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->name);
+          this->__isset.name = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -59,17 +51,72 @@ uint32_t Var::read(facebook::thrift::protocol::TProtocol* iprot) {
   return xfer;
 }
 
-uint32_t Var::write(facebook::thrift::protocol::TProtocol* oprot) const {
+uint32_t OIDType::write(facebook::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("Var");
-  xfer += oprot->writeFieldBegin("name", facebook::thrift::protocol::T_STRING, 1);
+  xfer += oprot->writeStructBegin("OIDType");
+  xfer += oprot->writeFieldBegin("id", facebook::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->id);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("name", facebook::thrift::protocol::T_STRING, 2);
   xfer += oprot->writeString(this->name);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("type_id", facebook::thrift::protocol::T_BYTE, 2);
-  xfer += oprot->writeByte(this->type_id);
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t OIDCorrelator::read(facebook::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  facebook::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == facebook::thrift::protocol::T_STOP) { 
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->id);
+          this->__isset.id = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->name);
+          this->__isset.name = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+  return xfer;
+}
+
+uint32_t OIDCorrelator::write(facebook::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("OIDCorrelator");
+  xfer += oprot->writeFieldBegin("id", facebook::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->id);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("device_id", facebook::thrift::protocol::T_I32, 3);
-  xfer += oprot->writeI32(this->device_id);
+  xfer += oprot->writeFieldBegin("name", facebook::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString(this->name);
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -109,18 +156,18 @@ uint32_t OID::read(facebook::thrift::protocol::TProtocol* iprot) {
           xfer += iprot->skip(ftype);
         }
         break;
-      case 3:
-        if (ftype == facebook::thrift::protocol::T_STRING) {
-          xfer += iprot->readString(this->storage);
-          this->__isset.storage = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
       case 4:
         if (ftype == facebook::thrift::protocol::T_I32) {
           xfer += iprot->readI32(this->oidtypeid);
           this->__isset.oidtypeid = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 5:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->oidcorrelatorid);
+          this->__isset.oidcorrelatorid = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -145,11 +192,69 @@ uint32_t OID::write(facebook::thrift::protocol::TProtocol* oprot) const {
   xfer += oprot->writeFieldBegin("name", facebook::thrift::protocol::T_STRING, 2);
   xfer += oprot->writeString(this->name);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("storage", facebook::thrift::protocol::T_STRING, 3);
-  xfer += oprot->writeString(this->storage);
-  xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldBegin("oidtypeid", facebook::thrift::protocol::T_I32, 4);
   xfer += oprot->writeI32(this->oidtypeid);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("oidcorrelatorid", facebook::thrift::protocol::T_I32, 5);
+  xfer += oprot->writeI32(this->oidcorrelatorid);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t Poller::read(facebook::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  facebook::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == facebook::thrift::protocol::T_STOP) { 
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->id);
+          this->__isset.id = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->name);
+          this->__isset.name = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+  return xfer;
+}
+
+uint32_t Poller::write(facebook::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("Poller");
+  xfer += oprot->writeFieldBegin("id", facebook::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->id);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("name", facebook::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString(this->name);
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -218,6 +323,14 @@ uint32_t _size0;
           xfer += iprot->skip(ftype);
         }
         break;
+      case 5:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->pollerid);
+          this->__isset.pollerid = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -251,6 +364,67 @@ uint32_t OIDSet::write(facebook::thrift::protocol::TProtocol* oprot) const {
     }
     xfer += oprot->writeListEnd();
   }
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("pollerid", facebook::thrift::protocol::T_I32, 5);
+  xfer += oprot->writeI32(this->pollerid);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t DeviceTag::read(facebook::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  facebook::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == facebook::thrift::protocol::T_STOP) { 
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->id);
+          this->__isset.id = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->name);
+          this->__isset.name = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+  return xfer;
+}
+
+uint32_t DeviceTag::write(facebook::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("DeviceTag");
+  xfer += oprot->writeFieldBegin("id", facebook::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->id);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("name", facebook::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString(this->name);
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -335,6 +509,27 @@ uint32_t _size7;
           xfer += iprot->skip(ftype);
         }
         break;
+      case 7:
+        if (ftype == facebook::thrift::protocol::T_LIST) {
+          {
+            this->tags.clear();
+uint32_t _size13;
+            facebook::thrift::protocol::TType _etype16;
+            iprot->readListBegin(_etype16, _size13);
+            uint32_t _i17;
+            for (_i17 = 0; _i17 < _size13; ++_i17)
+            {
+              DeviceTag _elem18;
+              xfer += _elem18.read(iprot);
+              this->tags.push_back(_elem18);
+            }
+            iprot->readListEnd();
+          }
+          this->__isset.tags = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -367,10 +562,21 @@ uint32_t Device::write(facebook::thrift::protocol::TProtocol* oprot) const {
   xfer += oprot->writeFieldBegin("oidsets", facebook::thrift::protocol::T_LIST, 6);
   {
     xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->oidsets.size());
-    std::vector<OIDSet> ::const_iterator _iter13;
-    for (_iter13 = this->oidsets.begin(); _iter13 != this->oidsets.end(); ++_iter13)
+    std::vector<OIDSet> ::const_iterator _iter19;
+    for (_iter19 = this->oidsets.begin(); _iter19 != this->oidsets.end(); ++_iter19)
     {
-      xfer += (*_iter13).write(oprot);
+      xfer += (*_iter19).write(oprot);
+    }
+    xfer += oprot->writeListEnd();
+  }
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("tags", facebook::thrift::protocol::T_LIST, 7);
+  {
+    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->tags.size());
+    std::vector<DeviceTag> ::const_iterator _iter20;
+    for (_iter20 = this->tags.begin(); _iter20 != this->tags.end(); ++_iter20)
+    {
+      xfer += (*_iter20).write(oprot);
     }
     xfer += oprot->writeListEnd();
   }
@@ -674,15 +880,15 @@ uint32_t VarList::read(facebook::thrift::protocol::TProtocol* iprot) {
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             this->counter32.clear();
-uint32_t _size14;
-            facebook::thrift::protocol::TType _etype17;
-            iprot->readListBegin(_etype17, _size14);
-            uint32_t _i18;
-            for (_i18 = 0; _i18 < _size14; ++_i18)
+uint32_t _size21;
+            facebook::thrift::protocol::TType _etype24;
+            iprot->readListBegin(_etype24, _size21);
+            uint32_t _i25;
+            for (_i25 = 0; _i25 < _size21; ++_i25)
             {
-              Counter32 _elem19;
-              xfer += _elem19.read(iprot);
-              this->counter32.push_back(_elem19);
+              Counter32 _elem26;
+              xfer += _elem26.read(iprot);
+              this->counter32.push_back(_elem26);
             }
             iprot->readListEnd();
           }
@@ -695,15 +901,15 @@ uint32_t _size14;
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             this->counter64.clear();
-uint32_t _size20;
-            facebook::thrift::protocol::TType _etype23;
-            iprot->readListBegin(_etype23, _size20);
-            uint32_t _i24;
-            for (_i24 = 0; _i24 < _size20; ++_i24)
+uint32_t _size27;
+            facebook::thrift::protocol::TType _etype30;
+            iprot->readListBegin(_etype30, _size27);
+            uint32_t _i31;
+            for (_i31 = 0; _i31 < _size27; ++_i31)
             {
-              Counter64 _elem25;
-              xfer += _elem25.read(iprot);
-              this->counter64.push_back(_elem25);
+              Counter64 _elem32;
+              xfer += _elem32.read(iprot);
+              this->counter64.push_back(_elem32);
             }
             iprot->readListEnd();
           }
@@ -716,15 +922,15 @@ uint32_t _size20;
         if (ftype == facebook::thrift::protocol::T_LIST) {
           {
             this->gauge32.clear();
-uint32_t _size26;
-            facebook::thrift::protocol::TType _etype29;
-            iprot->readListBegin(_etype29, _size26);
-            uint32_t _i30;
-            for (_i30 = 0; _i30 < _size26; ++_i30)
+uint32_t _size33;
+            facebook::thrift::protocol::TType _etype36;
+            iprot->readListBegin(_etype36, _size33);
+            uint32_t _i37;
+            for (_i37 = 0; _i37 < _size33; ++_i37)
             {
-              Gauge32 _elem31;
-              xfer += _elem31.read(iprot);
-              this->gauge32.push_back(_elem31);
+              Gauge32 _elem38;
+              xfer += _elem38.read(iprot);
+              this->gauge32.push_back(_elem38);
             }
             iprot->readListEnd();
           }
@@ -750,10 +956,10 @@ uint32_t VarList::write(facebook::thrift::protocol::TProtocol* oprot) const {
   xfer += oprot->writeFieldBegin("counter32", facebook::thrift::protocol::T_LIST, 1);
   {
     xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->counter32.size());
-    std::vector<Counter32> ::const_iterator _iter32;
-    for (_iter32 = this->counter32.begin(); _iter32 != this->counter32.end(); ++_iter32)
+    std::vector<Counter32> ::const_iterator _iter39;
+    for (_iter39 = this->counter32.begin(); _iter39 != this->counter32.end(); ++_iter39)
     {
-      xfer += (*_iter32).write(oprot);
+      xfer += (*_iter39).write(oprot);
     }
     xfer += oprot->writeListEnd();
   }
@@ -761,10 +967,10 @@ uint32_t VarList::write(facebook::thrift::protocol::TProtocol* oprot) const {
   xfer += oprot->writeFieldBegin("counter64", facebook::thrift::protocol::T_LIST, 2);
   {
     xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->counter64.size());
-    std::vector<Counter64> ::const_iterator _iter33;
-    for (_iter33 = this->counter64.begin(); _iter33 != this->counter64.end(); ++_iter33)
+    std::vector<Counter64> ::const_iterator _iter40;
+    for (_iter40 = this->counter64.begin(); _iter40 != this->counter64.end(); ++_iter40)
     {
-      xfer += (*_iter33).write(oprot);
+      xfer += (*_iter40).write(oprot);
     }
     xfer += oprot->writeListEnd();
   }
@@ -772,10 +978,190 @@ uint32_t VarList::write(facebook::thrift::protocol::TProtocol* oprot) const {
   xfer += oprot->writeFieldBegin("gauge32", facebook::thrift::protocol::T_LIST, 3);
   {
     xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRUCT, this->gauge32.size());
-    std::vector<Gauge32> ::const_iterator _iter34;
-    for (_iter34 = this->gauge32.begin(); _iter34 != this->gauge32.end(); ++_iter34)
+    std::vector<Gauge32> ::const_iterator _iter41;
+    for (_iter41 = this->gauge32.begin(); _iter41 != this->gauge32.end(); ++_iter41)
     {
-      xfer += (*_iter34).write(oprot);
+      xfer += (*_iter41).write(oprot);
+    }
+    xfer += oprot->writeListEnd();
+  }
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t SNMPPollResultPair::read(facebook::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  facebook::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == facebook::thrift::protocol::T_STOP) { 
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->OIDName);
+          this->__isset.OIDName = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->value);
+          this->__isset.value = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+  return xfer;
+}
+
+uint32_t SNMPPollResultPair::write(facebook::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("SNMPPollResultPair");
+  xfer += oprot->writeFieldBegin("OIDName", facebook::thrift::protocol::T_STRING, 1);
+  xfer += oprot->writeString(this->OIDName);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("value", facebook::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString(this->value);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t SNMPPollResult::read(facebook::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  facebook::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == facebook::thrift::protocol::T_STOP) { 
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->device_id);
+          this->__isset.device_id = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->oidset_id);
+          this->__isset.oidset_id = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->timestamp);
+          this->__isset.timestamp = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 3:
+        if (ftype == facebook::thrift::protocol::T_LIST) {
+          {
+            this->vars.clear();
+uint32_t _size42;
+            facebook::thrift::protocol::TType _etype45;
+            iprot->readListBegin(_etype45, _size42);
+            uint32_t _i46;
+            for (_i46 = 0; _i46 < _size42; ++_i46)
+            {
+              std::vector<std::string>  _elem47;
+              {
+                _elem47.clear();
+uint32_t _size48;
+                facebook::thrift::protocol::TType _etype51;
+                iprot->readListBegin(_etype51, _size48);
+                uint32_t _i52;
+                for (_i52 = 0; _i52 < _size48; ++_i52)
+                {
+                  std::string _elem53;
+                  xfer += iprot->readString(_elem53);
+                  _elem47.push_back(_elem53);
+                }
+                iprot->readListEnd();
+              }
+              this->vars.push_back(_elem47);
+            }
+            iprot->readListEnd();
+          }
+          this->__isset.vars = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+  return xfer;
+}
+
+uint32_t SNMPPollResult::write(facebook::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("SNMPPollResult");
+  xfer += oprot->writeFieldBegin("device_id", facebook::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->device_id);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("oidset_id", facebook::thrift::protocol::T_I32, 2);
+  xfer += oprot->writeI32(this->oidset_id);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("timestamp", facebook::thrift::protocol::T_I32, 2);
+  xfer += oprot->writeI32(this->timestamp);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("vars", facebook::thrift::protocol::T_LIST, 3);
+  {
+    xfer += oprot->writeListBegin(facebook::thrift::protocol::T_LIST, this->vars.size());
+    std::vector<std::vector<std::string> > ::const_iterator _iter54;
+    for (_iter54 = this->vars.begin(); _iter54 != this->vars.end(); ++_iter54)
+    {
+      {
+        xfer += oprot->writeListBegin(facebook::thrift::protocol::T_STRING, (*_iter54).size());
+        std::vector<std::string> ::const_iterator _iter55;
+        for (_iter55 = (*_iter54).begin(); _iter55 != (*_iter54).end(); ++_iter55)
+        {
+          xfer += oprot->writeString((*_iter55));
+        }
+        xfer += oprot->writeListEnd();
+      }
     }
     xfer += oprot->writeListEnd();
   }
