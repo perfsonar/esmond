@@ -517,6 +517,213 @@ class Device(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
+class IfRef(object):
+
+  def __init__(self, d=None):
+    self.id = None
+    self.deviceid = None
+    self.ifindex = None
+    self.ifdescr = None
+    self.ifalias = None
+    self.ipaddr = None
+    self.ifspeed = None
+    self.ifhighspeed = None
+    self.connection = None
+    self.conntype = None
+    self.usage = None
+    self.visibility = None
+    self.grouping = None
+    self.begin_time = None
+    self.end_time = None
+    if isinstance(d, dict):
+      if 'id' in d:
+        self.id = d['id']
+      if 'deviceid' in d:
+        self.deviceid = d['deviceid']
+      if 'ifindex' in d:
+        self.ifindex = d['ifindex']
+      if 'ifdescr' in d:
+        self.ifdescr = d['ifdescr']
+      if 'ifalias' in d:
+        self.ifalias = d['ifalias']
+      if 'ipaddr' in d:
+        self.ipaddr = d['ipaddr']
+      if 'ifspeed' in d:
+        self.ifspeed = d['ifspeed']
+      if 'ifhighspeed' in d:
+        self.ifhighspeed = d['ifhighspeed']
+      if 'connection' in d:
+        self.connection = d['connection']
+      if 'conntype' in d:
+        self.conntype = d['conntype']
+      if 'usage' in d:
+        self.usage = d['usage']
+      if 'visibility' in d:
+        self.visibility = d['visibility']
+      if 'grouping' in d:
+        self.grouping = d['grouping']
+      if 'begin_time' in d:
+        self.begin_time = d['begin_time']
+      if 'end_time' in d:
+        self.end_time = d['end_time']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.id = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.I32:
+          self.deviceid = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 3:
+        if ftype == TType.I32:
+          self.ifindex = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 4:
+        if ftype == TType.STRING:
+          self.ifdescr = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 5:
+        if ftype == TType.STRING:
+          self.ifalias = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 6:
+        if ftype == TType.STRING:
+          self.ipaddr = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 7:
+        if ftype == TType.I32:
+          self.ifspeed = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 8:
+        if ftype == TType.I32:
+          self.ifhighspeed = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 9:
+        if ftype == TType.STRING:
+          self.connection = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 10:
+        if ftype == TType.STRING:
+          self.conntype = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 11:
+        if ftype == TType.STRING:
+          self.usage = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 12:
+        if ftype == TType.STRING:
+          self.visibility = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 13:
+        if ftype == TType.STRING:
+          self.grouping = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 14:
+        if ftype == TType.I32:
+          self.begin_time = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 15:
+        if ftype == TType.I32:
+          self.end_time = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('IfRef')
+    if self.id != None:
+      oprot.writeFieldBegin('id', TType.I32, 1)
+      oprot.writeI32(self.id)
+      oprot.writeFieldEnd()
+    if self.deviceid != None:
+      oprot.writeFieldBegin('deviceid', TType.I32, 2)
+      oprot.writeI32(self.deviceid)
+      oprot.writeFieldEnd()
+    if self.ifindex != None:
+      oprot.writeFieldBegin('ifindex', TType.I32, 3)
+      oprot.writeI32(self.ifindex)
+      oprot.writeFieldEnd()
+    if self.ifdescr != None:
+      oprot.writeFieldBegin('ifdescr', TType.STRING, 4)
+      oprot.writeString(self.ifdescr)
+      oprot.writeFieldEnd()
+    if self.ifalias != None:
+      oprot.writeFieldBegin('ifalias', TType.STRING, 5)
+      oprot.writeString(self.ifalias)
+      oprot.writeFieldEnd()
+    if self.ipaddr != None:
+      oprot.writeFieldBegin('ipaddr', TType.STRING, 6)
+      oprot.writeString(self.ipaddr)
+      oprot.writeFieldEnd()
+    if self.ifspeed != None:
+      oprot.writeFieldBegin('ifspeed', TType.I32, 7)
+      oprot.writeI32(self.ifspeed)
+      oprot.writeFieldEnd()
+    if self.ifhighspeed != None:
+      oprot.writeFieldBegin('ifhighspeed', TType.I32, 8)
+      oprot.writeI32(self.ifhighspeed)
+      oprot.writeFieldEnd()
+    if self.connection != None:
+      oprot.writeFieldBegin('connection', TType.STRING, 9)
+      oprot.writeString(self.connection)
+      oprot.writeFieldEnd()
+    if self.conntype != None:
+      oprot.writeFieldBegin('conntype', TType.STRING, 10)
+      oprot.writeString(self.conntype)
+      oprot.writeFieldEnd()
+    if self.usage != None:
+      oprot.writeFieldBegin('usage', TType.STRING, 11)
+      oprot.writeString(self.usage)
+      oprot.writeFieldEnd()
+    if self.visibility != None:
+      oprot.writeFieldBegin('visibility', TType.STRING, 12)
+      oprot.writeString(self.visibility)
+      oprot.writeFieldEnd()
+    if self.grouping != None:
+      oprot.writeFieldBegin('grouping', TType.STRING, 13)
+      oprot.writeString(self.grouping)
+      oprot.writeFieldEnd()
+    if self.begin_time != None:
+      oprot.writeFieldBegin('begin_time', TType.I32, 14)
+      oprot.writeI32(self.begin_time)
+      oprot.writeFieldEnd()
+    if self.end_time != None:
+      oprot.writeFieldBegin('end_time', TType.I32, 15)
+      oprot.writeI32(self.end_time)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
+
 class Counter32(object):
 
   def __init__(self, d=None):
