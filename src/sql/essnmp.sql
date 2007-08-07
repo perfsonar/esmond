@@ -28,7 +28,7 @@ CREATE TABLE OIDType (
     name     varchar(256)
 );
 
-CREATE TABLE OIDCorrelator {
+CREATE TABLE OIDCorrelator (
     id       SERIAL PRIMARY KEY,
     name     varchar(256)
 );
@@ -42,14 +42,15 @@ CREATE TABLE OID (
 
 CREATE TABLE Poller (
     id       SERIAL PRIMARY KEY,
-    name     varchar(256)
+    name     varchar(256),
 );
-t
+
 CREATE TABLE OIDSet (
     id         SERIAL PRIMARY KEY,
     name       varchar(256),
     frequency  int,
-    pollerid   int REFERENCES Poller
+    pollerid   int REFERENCES Poller,
+    poller_args varchar(256)
 );
 
 CREATE TABLE OIDSetMember (
@@ -71,8 +72,9 @@ CREATE TABLE IfRef (
     ifIndex     int,
     ifDescr     varchar(512),
     ifAlias     varchar(512),
-    ifSpeed     int,
-    ifHighSpeed int,
+    ipAddr      inet,
+    ifSpeed     int8,  -- pg doesn't have unsigned ints
+    ifHighSpeed int8,  -- pg doesn't have unsigned ints
 
     connection  varchar(128),
     conntype    varchar(128),

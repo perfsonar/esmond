@@ -4,14 +4,13 @@ import os
 import signal
 import sys
 import time
-import logging
-import logging.handlers
 from traceback import format_exception
 
 import yapsnmp
 import sqlalchemy
 
 import essnmp.sql
+from essnmp.util import setproctitle, get_logger
 from essnmp.thrift.ttypes import IfRef
 import tsdb
 
@@ -35,6 +34,7 @@ class ESPollConfig(object):
 
         self.db_uri = None
         self.tsdb_root = None
+        self.error_email = None
 
         self.read_config()
 
@@ -49,6 +49,8 @@ class ESPollConfig(object):
                 self.db_uri = val
             elif var == "tsdb_root":
                 self.tsdb_root = val
+            elif var == "error_email":
+                self.error_email = val
             else:
                 raise ESPollError("unknown config option: %s %s" % (var,val))
 
@@ -102,10 +104,10 @@ class PollerChild(object):
 class ESSNMPPollManager(object):
     """Starts a polling process for each device"""
 
-    def __init__(self, opts, args):
+    def __init__(self, opts, args, config):
         self.opts = opts
         self.args = args
-        self.config = ESPollConfig(opts.config_file)
+        self.config = config
 
         self.running = False
 
@@ -117,10 +119,7 @@ class ESSNMPPollManager(object):
 
         self.children = {}  # dict maps device name to child pid
 
-        self.log = logging.getLogger("poll_manager")
-        self.log.addHandler(logging.handlers.SysLogHandler(('localhost', 514), logging.handlers.SysLogHandler.LOG_LOCAL7))
-        self.log.setLevel(logging.DEBUG)
-        self.log.handlers[0].setFormatter(logging.Formatter("%(name)s [%(process)d] %(message)s"))
+        self.log = get_logger("poll_manager")
 
         if not tsdb.TSDB.is_tsdb(self.config.tsdb_root):
             tsdb.TSDB.create(self.config.tsdb_root)
@@ -140,7 +139,7 @@ class ESSNMPPollManager(object):
 
         while self.running:
             (rpid,status) = os.wait()
-            if rpid != 0:
+            if rpid != 0 and self.running: # need to check self.running again, because wait blocks
                 self.log.warn("%s, pid %d died" % (self.children[rpid].name, rpid))
                 child = self.children[rpid]
                 del self.children[rpid]
@@ -153,6 +152,7 @@ class ESSNMPPollManager(object):
             self.children[pid] = child
             self.log.debug("%s started, pid %d" % (child.name,pid))
         else:
+            setproctitle("espolld: %s" % child.name)
             child.run()
             """try:
                 child.run()
@@ -190,10 +190,7 @@ class Poller(object):
         signal.signal(signal.SIGTERM, self.stop)
         signal.signal(signal.SIGHUP, self.reload)
 
-        self.log = logging.getLogger("poller " + self.name)
-        self.log.addHandler(logging.handlers.SysLogHandler(('localhost', 514), logging.handlers.SysLogHandler.LOG_LOCAL7))
-        self.log.setLevel(logging.DEBUG)
-        self.log.handlers[0].setFormatter(logging.Formatter("%(name)s [%(process)d] %(message)s"))
+        self.log = get_logger("poller " + self.name)
 
     def run(self):
         raise NotImplementedError("must implement run method")

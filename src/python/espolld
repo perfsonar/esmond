@@ -1,22 +1,35 @@
 #!/usr/bin/env python
 
+import sys
 import optparse
+import traceback
+
 from essnmp.poll import *
-from essnmp.daemonize import daemonize
+from essnmp.util import daemonize, log_exception, mail_exception, setproctitle
 
 def main(argv):
-    oparse = optparse.OptionParser()
-    oparse.add_option("-d", "--debug", dest="debug", action="store_true",
-            default=False)
-    oparse.add_option("-f", "--config-file", dest="config_file", default="./espolld.conf")
-    oparse.add_option("-p", "--pid-file", dest="pid_file", default="./esspolld.pid")
+    try:
+        oparse = optparse.OptionParser()
+        oparse.add_option("-d", "--debug", dest="debug", action="store_true",
+                default=False)
+        oparse.add_option("-f", "--config-file", dest="config_file", default="./espolld.conf")
+        oparse.add_option("-p", "--pid-file", dest="pid_file", default="./esspolld.pid")
+    
+        (opts, args) = oparse.parse_args(args=argv)
 
-    (opts, args) = oparse.parse_args(args=argv)
+        config = ESPollConfig(opts.config_file)
 
-    daemonize(opts.pid_file)
+        daemonize(opts.pid_file)
 
-    poller = ESSNMPPollManager(opts, args)
-    poller.start_polling()
+        setproctitle("espolld: manager")
+
+        poller = ESSNMPPollManager(opts, args, config)
+        poller.start_polling()
+    except Exception, e:
+        if not isinstance(e, SystemExit):
+            log_exception(name="espolld")
+            if config.error_email is not None:
+                mail_exception(config.error_email)
 
 if __name__ == "__main__":
     main(sys.argv)

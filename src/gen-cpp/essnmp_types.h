@@ -196,6 +196,54 @@ class Device {
 
 };
 
+class IfRef {
+ public:
+
+  IfRef() : id(0), deviceid(0), ifindex(0), ifdescr(""), ifalias(""), ipaddr(""), ifspeed(0), ifhighspeed(0), connection(""), conntype(""), usage(""), visibility(""), grouping(""), begin_time(0), end_time(0) {
+  } 
+
+  virtual ~IfRef() throw() {}
+
+  int32_t id;
+  int32_t deviceid;
+  int32_t ifindex;
+  std::string ifdescr;
+  std::string ifalias;
+  std::string ipaddr;
+  int32_t ifspeed;
+  int32_t ifhighspeed;
+  std::string connection;
+  std::string conntype;
+  std::string usage;
+  std::string visibility;
+  std::string grouping;
+  int32_t begin_time;
+  int32_t end_time;
+
+  struct __isset {
+    __isset() : id(false), deviceid(false), ifindex(false), ifdescr(false), ifalias(false), ipaddr(false), ifspeed(false), ifhighspeed(false), connection(false), conntype(false), usage(false), visibility(false), grouping(false), begin_time(false), end_time(false) {}
+    bool id;
+    bool deviceid;
+    bool ifindex;
+    bool ifdescr;
+    bool ifalias;
+    bool ipaddr;
+    bool ifspeed;
+    bool ifhighspeed;
+    bool connection;
+    bool conntype;
+    bool usage;
+    bool visibility;
+    bool grouping;
+    bool begin_time;
+    bool end_time;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
 class Counter32 {
  public:
 

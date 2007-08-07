@@ -586,6 +586,207 @@ uint32_t Device::write(facebook::thrift::protocol::TProtocol* oprot) const {
   return xfer;
 }
 
+uint32_t IfRef::read(facebook::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  facebook::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == facebook::thrift::protocol::T_STOP) { 
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->id);
+          this->__isset.id = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->deviceid);
+          this->__isset.deviceid = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 3:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->ifindex);
+          this->__isset.ifindex = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 4:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->ifdescr);
+          this->__isset.ifdescr = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 5:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->ifalias);
+          this->__isset.ifalias = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 6:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->ipaddr);
+          this->__isset.ipaddr = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 7:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->ifspeed);
+          this->__isset.ifspeed = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 8:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->ifhighspeed);
+          this->__isset.ifhighspeed = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 9:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->connection);
+          this->__isset.connection = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 10:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->conntype);
+          this->__isset.conntype = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 11:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->usage);
+          this->__isset.usage = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 12:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->visibility);
+          this->__isset.visibility = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 13:
+        if (ftype == facebook::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->grouping);
+          this->__isset.grouping = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 14:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->begin_time);
+          this->__isset.begin_time = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 15:
+        if (ftype == facebook::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->end_time);
+          this->__isset.end_time = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+  return xfer;
+}
+
+uint32_t IfRef::write(facebook::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("IfRef");
+  xfer += oprot->writeFieldBegin("id", facebook::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->id);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("deviceid", facebook::thrift::protocol::T_I32, 2);
+  xfer += oprot->writeI32(this->deviceid);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("ifindex", facebook::thrift::protocol::T_I32, 3);
+  xfer += oprot->writeI32(this->ifindex);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("ifdescr", facebook::thrift::protocol::T_STRING, 4);
+  xfer += oprot->writeString(this->ifdescr);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("ifalias", facebook::thrift::protocol::T_STRING, 5);
+  xfer += oprot->writeString(this->ifalias);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("ipaddr", facebook::thrift::protocol::T_STRING, 6);
+  xfer += oprot->writeString(this->ipaddr);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("ifspeed", facebook::thrift::protocol::T_I32, 7);
+  xfer += oprot->writeI32(this->ifspeed);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("ifhighspeed", facebook::thrift::protocol::T_I32, 8);
+  xfer += oprot->writeI32(this->ifhighspeed);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("connection", facebook::thrift::protocol::T_STRING, 9);
+  xfer += oprot->writeString(this->connection);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("conntype", facebook::thrift::protocol::T_STRING, 10);
+  xfer += oprot->writeString(this->conntype);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("usage", facebook::thrift::protocol::T_STRING, 11);
+  xfer += oprot->writeString(this->usage);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("visibility", facebook::thrift::protocol::T_STRING, 12);
+  xfer += oprot->writeString(this->visibility);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("grouping", facebook::thrift::protocol::T_STRING, 13);
+  xfer += oprot->writeString(this->grouping);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("begin_time", facebook::thrift::protocol::T_I32, 14);
+  xfer += oprot->writeI32(this->begin_time);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("end_time", facebook::thrift::protocol::T_I32, 15);
+  xfer += oprot->writeI32(this->end_time);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
 uint32_t Counter32::read(facebook::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;

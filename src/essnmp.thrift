@@ -49,19 +49,20 @@ struct Device {
 
 struct IfRef {
     1: i32 id,
-    2: deviceid,
-    3: i32 ifIndex,
-    4: string ifDescr,
-    5: string ifAlias,
-    6: i32 ifSpeed,
-    7: i32 ifHighSpeed,
-    8: string connection,
-    9: string conntype,
-    10: string usage,
-    11: string visibility,
-    12: string grouping,
-    13: i32 begin_time,
-    14: i32 end_time
+    2: i32 deviceid,
+    3: i32 ifindex,
+    4: string ifdescr,
+    5: string ifalias,
+    6: string ipaddr,
+    7: i32 ifspeed,
+    8: i32 ifhighspeed,
+    9: string connection,
+    10: string conntype,
+    11: string usage,
+    12: string visibility,
+    13: string grouping,
+    14: i32 begin_time,
+    15: i32 end_time
 }
 
 enum Grouping {
