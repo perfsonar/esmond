@@ -191,6 +191,7 @@ class Poller(object):
         signal.signal(signal.SIGHUP, self.reload)
 
         self.log = get_logger("poller " + self.name)
+        self.errors = 0
 
     def run(self):
         raise NotImplementedError("must implement run method")
@@ -248,19 +249,27 @@ class IfDescrCorrelatedTSDBPoller(TSDBPoller):
         while self.running:
             self.log.debug("hello from " + self.name)
 
-            self.correlator.setup()
             if self.time_to_poll():
                 self.log.debug("grabbing data")
                 self.next_poll += self.oidset.frequency
                 begin = time.time()
                 cnt = 0
-                for oid in self.oids:
-                    vars = self.snmp_session.walk(oid.name)
-                    cnt += len(vars)
-                    self.store(oid, vars)
-                self.log.debug("grabbed %d vars in %f seconds" % (cnt, time.time() - begin))
-                self.log.debug("next %d" % self.next_poll)
 
+                try:
+                    self.correlator.setup()  # might raise a yapsnmp.GetError
+
+                    for oid in self.oids:
+                        vars = self.snmp_session.walk(oid.name)
+                        cnt += len(vars)
+                        self.store(oid, vars)
+
+                    self.log.debug("grabbed %d vars in %f seconds" % (cnt, time.time() - begin))
+                    self.log.debug("next %d" % self.next_poll)
+                    self.errors = 0
+                except yapsnmp.GetError, e:
+                    self.errors += 1
+                    if self.errors < 10  or self.errors % 10 == 0:
+                        self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
             time.sleep(self.next_poll - int(time.time()))
 
     def store(self, oid, vars):
@@ -300,14 +309,20 @@ class IfRefSQLPoller(SQLPoller):
                 cnt = 0
                 ifref_data = {}
 
-                for oid in self.oids:
-                    ifref_data[oid.name] = self.snmp_session.walk(oid.name)
-                    cnt += len(ifref_data[oid.name])
+                try:
+                    for oid in self.oids:
+                        ifref_data[oid.name] = self.snmp_session.walk(oid.name)
+                        cnt += len(ifref_data[oid.name])
 
-                self.store(ifref_data)
+                    self.store(ifref_data)
 
-                self.log.debug("grabbed %d vars in %f seconds" % (cnt, time.time() - begin))
-                self.log.debug("next %d" % self.next_poll)
+                    self.log.debug("grabbed %d vars in %f seconds" % (cnt, time.time() - begin))
+                    self.log.debug("next %d" % self.next_poll)
+                    self.errors = 0
+                except yapsnmp.GetError, e:
+                    self.errors += 1
+                    if self.errors < 10  or self.errors % 10 == 0:
+                        self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
 
             time.sleep(self.next_poll - int(time.time()))
 
