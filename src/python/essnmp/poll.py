@@ -114,8 +114,8 @@ class ESSNMPPollManager(object):
         essnmp.sql.setup_db(self.config.db_uri)
         self.db_session = sqlalchemy.create_session(essnmp.sql.vars['db'])
 
-        self.devices = self.db_session.query(essnmp.sql.Device).select_by(active=True)
-        #self.devices = self.db_session.query(essnmp.sql.Device).select_by(name="atla-cr1")
+        self.devices = self.db_session.query(essnmp.sql.Device).select(
+            "active = 't' AND end_time > 'NOW'")
 
         self.children = {}  # dict maps device name to child pid
 
