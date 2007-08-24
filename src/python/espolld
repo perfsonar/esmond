@@ -8,22 +8,22 @@ from essnmp.poll import *
 from essnmp.util import daemonize, log_exception, mail_exception, setproctitle
 
 def main(argv):
+    oparse = optparse.OptionParser()
+    oparse.add_option("-d", "--debug", dest="debug", action="store_true",
+            default=False)
+    oparse.add_option("-f", "--config-file", dest="config_file", default="./espolld.conf")
+    oparse.add_option("-p", "--pid-file", dest="pid_file", default="./esspolld.pid")
+
+    (opts, args) = oparse.parse_args(args=argv)
+
+    config = ESPolldConfig(opts.config_file)
+
     try:
-        oparse = optparse.OptionParser()
-        oparse.add_option("-d", "--debug", dest="debug", action="store_true",
-                default=False)
-        oparse.add_option("-f", "--config-file", dest="config_file", default="./espolld.conf")
-        oparse.add_option("-p", "--pid-file", dest="pid_file", default="./esspolld.pid")
-    
-        (opts, args) = oparse.parse_args(args=argv)
-
-        config = ESPollConfig(opts.config_file)
-
         daemonize(opts.pid_file)
 
         setproctitle("espolld: manager")
 
-        poller = ESSNMPPollManager(opts, args, config)
+        poller =PollManager(opts, args, config)
         poller.start_polling()
     except Exception, e:
         if not isinstance(e, SystemExit):

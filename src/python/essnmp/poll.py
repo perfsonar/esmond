@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 import time
+import re
 from traceback import format_exception
 
 import yapsnmp
@@ -22,13 +23,13 @@ class ThriftClient(object):
         self.client = ESDB.Client(self.protocol)
         self.transport.open()
 
-class ESPollError(Exception):
+class PollError(Exception):
     pass
 
-class ESPollUnknownIfIndex(ESPollError):
+class PollUnknownIfIndex(PollError):
     pass
 
-class ESPollConfig(object):
+class ESPolldConfig(object):
     def __init__(self, file):
         self.file = file
 
@@ -52,17 +53,17 @@ class ESPollConfig(object):
             elif var == "error_email":
                 self.error_email = val
             else:
-                raise ESPollError("unknown config option: %s %s" % (var,val))
+                raise PollError("unknown config option: %s %s" % (var,val))
 
 
-def normalize_ifDescr(name):
+def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
     for (char,repl) in (("/", "_"), (" ", "_")):
         name = name.replace(char, repl)
     return name
 
-class ESSNMPPollCorrelator(object):
-    """polling correlators correlate an ifIndex to some other field.  this is
+class PollCorrelator(object):
+    """polling correlators correlate an oid to some other field.  this is
     typically used to generate the key needed to store the variable."""
 
     def __init__(self, session=None):
@@ -71,22 +72,43 @@ class ESSNMPPollCorrelator(object):
     def setup(self):
         raise NotImplementedError
 
-    def lookup(self, ifIndex):
+    def lookup(self, oid):
         raise NotImplementedError
 
-class ESSNMPIfDescrCorrelator(ESSNMPPollCorrelator):
+class IfDescrCorrelator(PollCorrelator):
     """correlates and ifIndex to an it's ifDescr"""
 
     def setup(self):
         self.xlate = {}
         for (var,val) in self.session.walk("ifDescr"):
-            self.xlate[var.split(".")[-1]] = normalize_ifDescr(val)
+            self.xlate[var.split(".")[-1]] = remove_metachars(val)
 
-    def lookup(self, ifIndex):
+    def lookup(self, oid, var):
+        # XXX this sucks
+        if oid.name == 'sysUpTime':
+            return 'sysUpTime'
+
+        ifIndex = var.split('.')[-1]
         try:
-            return self.xlate[ifIndex]
+            return "/".join((oid.name, self.xlate[ifIndex]))
         except:
-            raise ESPollUnknownIfIndex(ifIndex)
+            raise PollUnknownIfIndex(ifIndex)
+
+class JnxFirewallCorrelator(PollCorrelator):
+    """correlates entries in the jnxFWCounterByteCount tables to a variable
+    name"""
+
+    def __init__(self, session=None):
+        PollCorrelator.__init__(self,session)
+        self.oidex = re.compile('([^"]+)\."([^"]+)"\."([^"]+)"\.(.+)')
+
+    def setup(self):
+        pass
+
+    def lookup(self, oid, var):
+        (column, filter, counter, type) = self.oidex.search(var).groups()
+        return "/".join((type, filter, counter))
+
 
 class PollerChild(object):
     """Container for info about children of the main polling process"""
@@ -101,7 +123,7 @@ class PollerChild(object):
     def run(self):
         self.poller(self.config, self.name, self.device, self.oidset).run()
 
-class ESSNMPPollManager(object):
+class PollManager(object):
     """Starts a polling process for each device"""
 
     def __init__(self, opts, args, config):
@@ -154,13 +176,6 @@ class ESSNMPPollManager(object):
         else:
             setproctitle("espolld: %s" % child.name)
             child.run()
-            """try:
-                child.run()
-            except Exception, e:
-                self.log.info("%s died, pid %d" % (child.name, pid))
-                for line in format_exception(Exception, e):
-                    self.log.info(line)
-                sys.exit(1)"""
 
     def stop_polling(self, signum, frame):
         self.log.info("shutting down")
@@ -193,6 +208,12 @@ class Poller(object):
         self.log = get_logger("poller " + self.name)
         self.errors = 0
 
+        self.poller_args = {}
+        if self.oidset.poller_args is not None:
+            for arg in self.oidset.poller_args.split():
+                (var,val) = arg.split('=')
+                self.poller_args[var] = val
+
     def run(self):
         raise NotImplementedError("must implement run method")
 
@@ -207,21 +228,26 @@ class Poller(object):
     def time_to_poll(self):
         return time.time() >= self.next_poll
 
+    def sleep(self):
+        delay = self.next_poll - int(time.time())
+
+        if delay >= 0:
+            time.sleep(delay)
+        else:
+            self.log.warning("poll %d seconds late" % abs(delay)) 
+
 class TSDBPoller(Poller):
     def __init__(self, config, name, device, oidset):
         Poller.__init__(self, config, name, device, oidset)
 
-        # XXX should fix TSDB to allow drilling down
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
-        try:
-            self.tsdb_set = self.tsdb.get_set(self.device.name)
-        except tsdb.TSDBSetDoesNotExistError:
-            self.tsdb_set = self.tsdb.add_set(self.device.name)
 
+        set_name = "/".join((self.device.name, self.oidset.name))
         try:
-            self.tsdb_set = self.tsdb_set.get_set(self.oidset.name)
+            self.tsdb_set = self.tsdb.get_set(set_name)
         except tsdb.TSDBSetDoesNotExistError:
-            self.tsdb_set = self.tsdb_set.add_set(self.oidset.name)
+            self.tsdb_set = self.tsdb.add_set(set_name)
+
 
 class SQLPoller(Poller):
     def __init__(self, config, name, device, oidset):
@@ -234,15 +260,16 @@ class SQLPoller(Poller):
 # XXX are the oidset, etc vars burdened with sqlalchemy goo? if so, does it
 # matter?
 #
-class IfDescrCorrelatedTSDBPoller(TSDBPoller):
-    """Polls each OID individually, correlates the ifIndex to ifDescr and
-    stores the results in the TSDBSet named after the OIDSet in a TSDBVar
-    named after the ifDescr."""
-    """Handles polling of an OIDSet for a device"""
+class CorrelatedTSDBPoller(TSDBPoller):
+    """Handles polling of an OIDSet for a device and uses a correlator to
+    determine the name of the variable to use to store values."""
     def __init__(self, config, name, device, oidset):
         TSDBPoller.__init__(self, config, name, device, oidset)
 
-        self.correlator = ESSNMPIfDescrCorrelator(self.snmp_session)
+        exec("self.correlator = %s(self.snmp_session)" %
+                self.poller_args['correlator'])
+
+        exec("self.chunk_mapper = %s" % self.poller_args['chunk_mapper'])
 
 
     def run(self):
@@ -270,7 +297,7 @@ class IfDescrCorrelatedTSDBPoller(TSDBPoller):
                     self.errors += 1
                     if self.errors < 10  or self.errors % 10 == 0:
                         self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
-            time.sleep(self.next_poll - int(time.time()))
+            self.sleep()
 
     def store(self, oid, vars):
         ts = time.time()
@@ -278,15 +305,13 @@ class IfDescrCorrelatedTSDBPoller(TSDBPoller):
         exec("vartype = tsdb.%s" % oid.type.name)
 
         for (var,val) in vars:
-            if oid.name.startswith("if"):
-                var = self.correlator.lookup(var.split('.')[-1])
+            var = self.correlator.lookup(oid,var)
 
             try:
                 tsdb_var = self.tsdb_set.get_var(var)
             except tsdb.TSDBVarDoesNotExistError:
-                # XXX should allow the mapper to be configurable
                 tsdb_var = self.tsdb_set.add_var(var, vartype,
-                        self.oidset.frequency, tsdb.YYYYMMDDChunkMapper) 
+                        self.oidset.frequency, self.chunk_mapper)
 
             tsdb_var.insert(vartype(ts, tsdb.ROW_VALID, val))
             tsdb_var.flush() # XXX is this a good idea?
@@ -324,7 +349,7 @@ class IfRefSQLPoller(SQLPoller):
                     if self.errors < 10  or self.errors % 10 == 0:
                         self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
 
-            time.sleep(self.next_poll - int(time.time()))
+            self.sleep()
 
     def store(self, ifref_data):
         new_ifrefs = self._build_objs(ifref_data)
