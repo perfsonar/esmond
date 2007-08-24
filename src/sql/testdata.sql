@@ -11,16 +11,16 @@ INSERT INTO OIDType (id, name) VALUES (4, 'Gauge32');
 INSERT INTO OIDType (id, name) VALUES (5, 'TimeTicks');
 INSERT INTO OIDType (id, name) VALUES (6, 'IpAddress');
 
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (1, 'sysUpTime', 'T', 5);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (2, 'ifInOctets', 'T', 1);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (3, 'ifOutOctets', 'T', 1);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (4, 'ifHCInOctets', 'T', 2);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (5, 'ifHCOutOctets', 'T', 2);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (6, 'ifDescr', 'S', 3);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (7, 'ifAlias', 'S', 3);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (8, 'ifSpeed', 'S', 4);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (9, 'ifHighSpeed', 'S', 4);
-INSERT INTO OID (id,name,storage,oidtypeid) VALUES (10, 'ipAdEntIfIndex', 'S', 6);
+INSERT INTO OID (id,name,oidtypeid) VALUES (1, 'sysUpTime', 5);
+INSERT INTO OID (id,name,oidtypeid) VALUES (2, 'ifInOctets', 1);
+INSERT INTO OID (id,name,oidtypeid) VALUES (3, 'ifOutOctets', 1);
+INSERT INTO OID (id,name,oidtypeid) VALUES (4, 'ifHCInOctets', 2);
+INSERT INTO OID (id,name,oidtypeid) VALUES (5, 'ifHCOutOctets', 2);
+INSERT INTO OID (id,name,oidtypeid) VALUES (6, 'ifDescr', 3);
+INSERT INTO OID (id,name,oidtypeid) VALUES (7, 'ifAlias', 3);
+INSERT INTO OID (id,name,oidtypeid) VALUES (8, 'ifSpeed', 4);
+INSERT INTO OID (id,name,oidtypeid) VALUES (9, 'ifHighSpeed', 4);
+INSERT INTO OID (id,name,oidtypeid) VALUES (10, 'ipAdEntIfIndex', 6);
 
 INSERT INTO OIDSet (id,name,frequency) VALUES (1, 'FastPoll', 20);
 INSERT INTO OIDSet (id,name,frequency) VALUES (2, 'FastPollHC', 20);

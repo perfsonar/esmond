@@ -42,7 +42,7 @@ CREATE TABLE OID (
 
 CREATE TABLE Poller (
     id       SERIAL PRIMARY KEY,
-    name     varchar(256),
+    name     varchar(256)
 );
 
 CREATE TABLE OIDSet (
