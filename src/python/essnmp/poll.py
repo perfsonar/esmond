@@ -189,6 +189,17 @@ class PollManager(object):
         sys.exit()
 
 class Poller(object):
+    """The Poller class is the base for all pollers.
+
+    It provides a simple interface for subclasses:
+
+      begin()            -- called immediately before polling
+      collect(oid, data) -- called immediately before polling
+      finish()           -- called immediately after polling
+
+    All three methods MUST be defined by the subclass.
+
+    """
     def __init__(self, config, name, device, oidset):
         self.config = config
         self.name = name
@@ -199,6 +210,7 @@ class Poller(object):
         self.oids = self.oidset.oids
         self.running = True
 
+        self.count = 0
         self.snmp_session = yapsnmp.Session(self.device.name, version=2,
                 community=self.device.community)
 
@@ -215,7 +227,50 @@ class Poller(object):
                 self.poller_args[var] = val
 
     def run(self):
-        raise NotImplementedError("must implement run method")
+        while self.running:
+            self.log.debug("hello")
+            if self.time_to_poll():
+                self.log.debug("grabbing data")
+                self.next_poll += self.oidset.frequency
+                begin = time.time()
+
+                try:
+                    self.begin()
+
+                    for oid in self.oids:
+                        self.collect(oid,self.snmp_session.walk(oid.name))
+
+                    self.finish()
+
+                    self.log.debug("grabbed %d vars in %f seconds" %
+                            (self.count, time.time() - begin))
+                    self.log.debug("next %d" % self.next_poll)
+                    self.errors = 0
+                except yapsnmp.GetError, e:
+                    self.errors += 1
+                    if self.errors < 10  or self.errors % 10 == 0:
+                        self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
+
+            self.sleep()
+
+    def begin(self):
+        """begin is called immeditately before polling is done.  this is where
+        you should set up things and collect information needed during the
+        run."""
+
+        raise NotImplementedError("must implement begin method")
+
+    def collect(self, oid, data):
+        """collect is called for each oid in the oidset with the oid and data
+        collected for the oid from the device"""
+
+        raise NotImplementedError("must implement collect method")
+
+    def finish(self):
+        """finish is called immediately after polling is done.  any
+        finalization code should go here."""
+
+        raise NotImplementedError("must implement finish method")
 
     def stop(self, signum, frame):
         self.running = False
@@ -272,32 +327,16 @@ class CorrelatedTSDBPoller(TSDBPoller):
         exec("self.chunk_mapper = %s" % self.poller_args['chunk_mapper'])
 
 
-    def run(self):
-        while self.running:
-            self.log.debug("hello from " + self.name)
+    def begin(self):
+        self.count = 0
+        self.correlator.setup()  # might raise a yapsnmp.GetError
 
-            if self.time_to_poll():
-                self.log.debug("grabbing data")
-                self.next_poll += self.oidset.frequency
-                begin = time.time()
-                cnt = 0
+    def collect(self, oid, data):
+        self.count += len(data)
+        self.store(oid, data)
 
-                try:
-                    self.correlator.setup()  # might raise a yapsnmp.GetError
-
-                    for oid in self.oids:
-                        vars = self.snmp_session.walk(oid.name)
-                        cnt += len(vars)
-                        self.store(oid, vars)
-
-                    self.log.debug("grabbed %d vars in %f seconds" % (cnt, time.time() - begin))
-                    self.log.debug("next %d" % self.next_poll)
-                    self.errors = 0
-                except yapsnmp.GetError, e:
-                    self.errors += 1
-                    if self.errors < 10  or self.errors % 10 == 0:
-                        self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
-            self.sleep()
+    def finish(self):
+        pass
 
     def store(self, oid, vars):
         ts = time.time()
@@ -323,45 +362,26 @@ class IfRefSQLPoller(SQLPoller):
 
     def __init__(self, config, name, device, oidset):
         SQLPoller.__init__(self, config, name, device, oidset)
+        self.ifref_data = {}
 
-    def run(self):
-        while self.running:
-            self.log.debug("hello")
-            if self.time_to_poll():
-                self.log.debug("grabbing data")
-                self.next_poll += self.oidset.frequency
-                begin = time.time()
-                cnt = 0
-                ifref_data = {}
+    def begin(self):
+        self.count = 0
 
-                try:
-                    for oid in self.oids:
-                        ifref_data[oid.name] = self.snmp_session.walk(oid.name)
-                        cnt += len(ifref_data[oid.name])
+    def collect(self, oid, data):
+        self.ifref_data[oid.name] = data
+        self.count += len(self.ifref_data[oid.name])
 
-                    self.store(ifref_data)
+    def finish(self):
+        self.store()
 
-                    self.log.debug("grabbed %d vars in %f seconds" % (cnt, time.time() - begin))
-                    self.log.debug("next %d" % self.next_poll)
-                    self.errors = 0
-                except yapsnmp.GetError, e:
-                    self.errors += 1
-                    if self.errors < 10  or self.errors % 10 == 0:
-                        self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
-
-            self.sleep()
-
-    def store(self, ifref_data):
-        new_ifrefs = self._build_objs(ifref_data)
+    def store(self):
+        new_ifrefs = self._build_objs()
         old_ifrefs = self.db_session.query(IfRef).select(
             sqlalchemy.and_(IfRef.c.deviceid==self.device.id, IfRef.c.end_time > 'NOW')
         )
 
         # iterate through what is currently in the database
         for old_ifref in old_ifrefs:
-            import pdb
-            #pdb.set_trace()
-
             # there is an entry in new_ifrefs: has anything changed?
             if new_ifrefs.has_key(old_ifref.ifdescr):
                 new_ifref = new_ifrefs[old_ifref.ifdescr]
@@ -402,25 +422,25 @@ class IfRefSQLPoller(SQLPoller):
             setattr(i, attr, obj[attr])
         return i
 
-    def _build_objs(self, ifref_data):
+    def _build_objs(self):
         ifref_objs = {}
         ifIndex_map = {}
 
-        for name, val in ifref_data['ifDescr']:
+        for name, val in self.ifref_data['ifDescr']:
             foo, ifIndex = name.split('.')
             ifIndex_map[ifIndex] = val
             ifref_objs[val] = dict(ifdescr=val, ifindex=int(ifIndex))
 
-        for name, val in ifref_data['ipAdEntIfIndex']:
+        for name, val in self.ifref_data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
             ifref_objs[ifIndex_map[val]]['ipaddr'] = ipAddr
 
-        remaining_oids = ifref_data.keys()
+        remaining_oids = self.ifref_data.keys()
         remaining_oids.remove('ifDescr')
         remaining_oids.remove('ipAdEntIfIndex')
 
         for oid in remaining_oids:
-            for name, val in ifref_data[oid]:
+            for name, val in self.ifref_data[oid]:
                 if oid in ('ifSpeed', 'ifHighSpeed'):
                     val = int(val)
                 foo, ifIndex = name.split('.')
