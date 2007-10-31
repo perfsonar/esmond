@@ -75,6 +75,12 @@ class PollCorrelator(object):
     def lookup(self, oid):
         raise NotImplementedError
 
+    def _table_parse(self, table):
+        d = {}
+        for (var, val) in self.session.walk(table):
+            d[var.split('.')[-1]] = remove_metachars(val)
+        return d
+
 class IfDescrCorrelator(PollCorrelator):
     """correlates and ifIndex to an it's ifDescr"""
 
@@ -109,6 +115,25 @@ class JnxFirewallCorrelator(PollCorrelator):
         (column, filter, counter, type) = self.oidex.search(var).groups()
         return "/".join((type, filter, counter))
 
+class CiscoCPUCorrelator(PollCorrelator):
+    """Correlates entries in cpmCPUTotal5min to an entry in entPhysicalName
+    via cpmCPUTotalPhysicalIndex.  
+
+    See http://www.cisco.com/warp/public/477/SNMP/collect_cpu_util_snmp.html"""
+
+    def setup(self):
+        self.phys_xlate = self._table_parse('cpmCPUTotalPhysicalIndex')
+        self.name_xlate = self._table_parse('entPhysicalName')
+
+    def lookup(self, oid, var):
+        #
+        # this should only raise an exception of there aren't entries in the
+        # tables, meaning that this box has only one CPU
+        #
+        n = self.name_xlate[self.phys_xlate[var.split('.')[-1]]].replace('CPU_of_','')
+        if n == '':
+            n = 'CPU'
+        return "/".join((oid,n))
 
 class PollerChild(object):
     """Container for info about children of the main polling process"""
@@ -254,9 +279,9 @@ class Poller(object):
             self.sleep()
 
     def begin(self):
-        """begin is called immeditately before polling is done.  this is where
-        you should set up things and collect information needed during the
-        run."""
+        """begin is called immeditately before polling is started.  this is
+        where you should set up things and collect information needed during
+        the run."""
 
         raise NotImplementedError("must implement begin method")
 
