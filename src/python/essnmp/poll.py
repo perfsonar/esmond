@@ -133,7 +133,7 @@ class CiscoCPUCorrelator(PollCorrelator):
         n = self.name_xlate[self.phys_xlate[var.split('.')[-1]]].replace('CPU_of_','')
         if n == '':
             n = 'CPU'
-        return "/".join((oid,n))
+        return "/".join((oid.name,n))
 
 class PollerChild(object):
     """Container for info about children of the main polling process"""
