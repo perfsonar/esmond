@@ -256,8 +256,8 @@ class Poller(object):
             self.log.debug("hello")
             if self.time_to_poll():
                 self.log.debug("grabbing data")
-                self.next_poll += self.oidset.frequency
                 begin = time.time()
+                self.next_poll = begin + self.oidset.frequency
 
                 try:
                     self.begin()
