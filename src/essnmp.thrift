@@ -1,4 +1,4 @@
-#!/home/jdugan/sw/bin/thrift -cpp -py -r
+#!/usr/local/bin/thrift -cpp -py -r
 
 cpp_namespace ESSNMP
 
@@ -111,8 +111,17 @@ struct SNMPPollResultPair {
 struct SNMPPollResult {
     1: i32 device_id,
     2: i32 oidset_id,
-    2: i32 timestamp,
-    3: list<list<string>> vars
+    3: i32 timestamp,
+    4: list<list<string>> vars
+}
+
+struct Rate {
+    1: i32 timestamp,
+    2: double rate
+}
+
+exception ESDBError {
+    1: string what
 }
 
 service ESDB {
@@ -135,5 +144,7 @@ service ESDB {
 #    void insert_counter32(list<Var> vars, list<Counter32> values),
 #    void insert_counter64(list<Var> vars, list<Counter64> values),
 #    void insert_gauge32(list<Var> vars, list<Gauge32> values),
-    byte store_poll_result(SNMPPollResult result)
+    byte store_poll_result(SNMPPollResult result),
+
+    VarList select(1: string device, 2: string iface_name, 3: string oidset, 4: string oid, 5: string begin_time, 6: string end_time, 7: string flags, 8: string cf, 9: string resolution) throws (1: ESDBError error)
 }

@@ -5,7 +5,7 @@
  */
 #include "essnmp_constants.h"
 
-namespace ESSNMP { 
+namespace ESSNMP {
 
 const essnmpConstants g_essnmp_constants;
 

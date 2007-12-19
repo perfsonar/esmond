@@ -7,8 +7,10 @@
 
 import sys
 import pprint
+from urlparse import urlparse
 from thrift.transport import TTransport
 from thrift.transport import TSocket
+from thrift.transport import THttpClient
 from thrift.protocol import TBinaryProtocol
 
 import ESDB
@@ -16,7 +18,7 @@ from ttypes import *
 
 if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print ''
-  print 'Usage: ' + sys.argv[0] + ' [-h host:port] [-f[ramed]] function [arg1 [arg2...]]'
+  print 'Usage: ' + sys.argv[0] + ' [-h host:port] [-u url] [-f[ramed]] function [arg1 [arg2...]]'
   print ''
   print 'Functions:'
   print '   list_devices()'
@@ -33,20 +35,35 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print '   get_oidset_devices(OIDSet oidset)'
   print '  VarList get_vars_by_grouping(Grouping grouping)'
   print '  byte store_poll_result(SNMPPollResult result)'
+  print '  VarList select(string device, string iface_name, string oidset, string oid, string begin_time, string end_time, string flags, string cf, string resolution)'
   print ''
   sys.exit(0)
 
 pp = pprint.PrettyPrinter(indent = 2)
 host = 'localhost'
 port = 9090
+uri = ''
 framed = False
+http = False
 argi = 1
 
-if sys.argv[1] == '-h':
-  parts = sys.argv[2].split(':') 
+if sys.argv[argi] == '-h':
+  parts = sys.argv[argi+1].split(':') 
   host = parts[0]
   port = int(parts[1])
-  argi = 3
+  argi += 2
+
+if sys.argv[argi] == '-u':
+  url = urlparse(sys.argv[argi+1])
+  parts = url[1].split(':') 
+  host = parts[0]
+  if len(parts) > 1:
+    port = int(parts[1])
+  else:
+    port = 80
+  uri = url[2]
+  http = True
+  argi += 2
 
 if sys.argv[argi] == '-f' or sys.argv[argi] == '-framed':
   framed = True
@@ -55,11 +72,14 @@ if sys.argv[argi] == '-f' or sys.argv[argi] == '-framed':
 cmd = sys.argv[argi]
 args = sys.argv[argi+1:]
 
-socket = TSocket.TSocket(host, port)
-if framed:
-  transport = TTransport.TFramedTransport(socket)
+if http:
+  transport = THttpClient.THttpClient(host, port, uri)
 else:
-  transport = TTransport.TBufferedTransport(socket)
+  socket = TSocket.TSocket(host, port)
+  if framed:
+    transport = TTransport.TFramedTransport(socket)
+  else:
+    transport = TTransport.TBufferedTransport(socket)
 protocol = TBinaryProtocol.TBinaryProtocol(transport)
 client = ESDB.Client(protocol)
 transport.open()
@@ -147,5 +167,11 @@ elif cmd == 'store_poll_result':
     print 'store_poll_result requires 1 args'
     sys.exit(1)
   pp.pprint(client.store_poll_result(eval(args[0]),))
+
+elif cmd == 'select':
+  if len(args) != 9:
+    print 'select requires 9 args'
+    sys.exit(1)
+  pp.pprint(client.select(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7],args[8],))
 
 transport.close()

@@ -7,12 +7,13 @@
 #define essnmp_TYPES_H
 
 #include <Thrift.h>
+#include <reflection_limited_types.h>
 #include <protocol/TProtocol.h>
 #include <transport/TTransport.h>
 
 
 
-namespace ESSNMP { 
+namespace ESSNMP {
 
 enum Grouping {
   Commercial = 1,
@@ -25,8 +26,11 @@ enum Grouping {
 class OIDType {
  public:
 
+  static char* ascii_fingerprint; // = "3F5FC93B338687BC7235B1AB103F47B3";
+  static uint8_t binary_fingerprint[16]; // = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
+
   OIDType() : id(0), name("") {
-  } 
+  }
 
   virtual ~OIDType() throw() {}
 
@@ -39,6 +43,18 @@ class OIDType {
     bool name;
   } __isset;
 
+  bool operator == (const OIDType & rhs) const
+  {
+    if (!(id == rhs.id))
+      return false;
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const OIDType &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -47,8 +63,11 @@ class OIDType {
 class OIDCorrelator {
  public:
 
+  static char* ascii_fingerprint; // = "3F5FC93B338687BC7235B1AB103F47B3";
+  static uint8_t binary_fingerprint[16]; // = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
+
   OIDCorrelator() : id(0), name("") {
-  } 
+  }
 
   virtual ~OIDCorrelator() throw() {}
 
@@ -61,6 +80,18 @@ class OIDCorrelator {
     bool name;
   } __isset;
 
+  bool operator == (const OIDCorrelator & rhs) const
+  {
+    if (!(id == rhs.id))
+      return false;
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const OIDCorrelator &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -69,8 +100,11 @@ class OIDCorrelator {
 class OID {
  public:
 
+  static char* ascii_fingerprint; // = "4FFDF20C4BBE097F6867A04CBE601C32";
+  static uint8_t binary_fingerprint[16]; // = {0x4F,0xFD,0xF2,0x0C,0x4B,0xBE,0x09,0x7F,0x68,0x67,0xA0,0x4C,0xBE,0x60,0x1C,0x32};
+
   OID() : id(0), name(""), oidtypeid(0), oidcorrelatorid(0) {
-  } 
+  }
 
   virtual ~OID() throw() {}
 
@@ -87,6 +121,22 @@ class OID {
     bool oidcorrelatorid;
   } __isset;
 
+  bool operator == (const OID & rhs) const
+  {
+    if (!(id == rhs.id))
+      return false;
+    if (!(name == rhs.name))
+      return false;
+    if (!(oidtypeid == rhs.oidtypeid))
+      return false;
+    if (!(oidcorrelatorid == rhs.oidcorrelatorid))
+      return false;
+    return true;
+  }
+  bool operator != (const OID &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -95,8 +145,11 @@ class OID {
 class Poller {
  public:
 
+  static char* ascii_fingerprint; // = "3F5FC93B338687BC7235B1AB103F47B3";
+  static uint8_t binary_fingerprint[16]; // = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
+
   Poller() : id(0), name("") {
-  } 
+  }
 
   virtual ~Poller() throw() {}
 
@@ -109,6 +162,18 @@ class Poller {
     bool name;
   } __isset;
 
+  bool operator == (const Poller & rhs) const
+  {
+    if (!(id == rhs.id))
+      return false;
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const Poller &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -117,8 +182,11 @@ class Poller {
 class OIDSet {
  public:
 
+  static char* ascii_fingerprint; // = "D3B5D743738D33B8A4323CE1DF372FE6";
+  static uint8_t binary_fingerprint[16]; // = {0xD3,0xB5,0xD7,0x43,0x73,0x8D,0x33,0xB8,0xA4,0x32,0x3C,0xE1,0xDF,0x37,0x2F,0xE6};
+
   OIDSet() : id(0), name(""), frequency(0), pollerid(0) {
-  } 
+  }
 
   virtual ~OIDSet() throw() {}
 
@@ -137,6 +205,24 @@ class OIDSet {
     bool pollerid;
   } __isset;
 
+  bool operator == (const OIDSet & rhs) const
+  {
+    if (!(id == rhs.id))
+      return false;
+    if (!(name == rhs.name))
+      return false;
+    if (!(frequency == rhs.frequency))
+      return false;
+    if (!(oids == rhs.oids))
+      return false;
+    if (!(pollerid == rhs.pollerid))
+      return false;
+    return true;
+  }
+  bool operator != (const OIDSet &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -145,8 +231,11 @@ class OIDSet {
 class DeviceTag {
  public:
 
+  static char* ascii_fingerprint; // = "3F5FC93B338687BC7235B1AB103F47B3";
+  static uint8_t binary_fingerprint[16]; // = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
+
   DeviceTag() : id(0), name("") {
-  } 
+  }
 
   virtual ~DeviceTag() throw() {}
 
@@ -159,6 +248,18 @@ class DeviceTag {
     bool name;
   } __isset;
 
+  bool operator == (const DeviceTag & rhs) const
+  {
+    if (!(id == rhs.id))
+      return false;
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const DeviceTag &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -167,8 +268,11 @@ class DeviceTag {
 class Device {
  public:
 
+  static char* ascii_fingerprint; // = "6DF9EB9C770C375172E403E9353CF73C";
+  static uint8_t binary_fingerprint[16]; // = {0x6D,0xF9,0xEB,0x9C,0x77,0x0C,0x37,0x51,0x72,0xE4,0x03,0xE9,0x35,0x3C,0xF7,0x3C};
+
   Device() : id(0), name(""), begin_time(0), end_time(0), community("") {
-  } 
+  }
 
   virtual ~Device() throw() {}
 
@@ -191,6 +295,28 @@ class Device {
     bool tags;
   } __isset;
 
+  bool operator == (const Device & rhs) const
+  {
+    if (!(id == rhs.id))
+      return false;
+    if (!(name == rhs.name))
+      return false;
+    if (!(begin_time == rhs.begin_time))
+      return false;
+    if (!(end_time == rhs.end_time))
+      return false;
+    if (!(community == rhs.community))
+      return false;
+    if (!(oidsets == rhs.oidsets))
+      return false;
+    if (!(tags == rhs.tags))
+      return false;
+    return true;
+  }
+  bool operator != (const Device &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -199,8 +325,11 @@ class Device {
 class IfRef {
  public:
 
+  static char* ascii_fingerprint; // = "229734C05FBBCEE1EFB6C57FE7D97BA7";
+  static uint8_t binary_fingerprint[16]; // = {0x22,0x97,0x34,0xC0,0x5F,0xBB,0xCE,0xE1,0xEF,0xB6,0xC5,0x7F,0xE7,0xD9,0x7B,0xA7};
+
   IfRef() : id(0), deviceid(0), ifindex(0), ifdescr(""), ifalias(""), ipaddr(""), ifspeed(0), ifhighspeed(0), connection(""), conntype(""), usage(""), visibility(""), grouping(""), begin_time(0), end_time(0) {
-  } 
+  }
 
   virtual ~IfRef() throw() {}
 
@@ -239,6 +368,44 @@ class IfRef {
     bool end_time;
   } __isset;
 
+  bool operator == (const IfRef & rhs) const
+  {
+    if (!(id == rhs.id))
+      return false;
+    if (!(deviceid == rhs.deviceid))
+      return false;
+    if (!(ifindex == rhs.ifindex))
+      return false;
+    if (!(ifdescr == rhs.ifdescr))
+      return false;
+    if (!(ifalias == rhs.ifalias))
+      return false;
+    if (!(ipaddr == rhs.ipaddr))
+      return false;
+    if (!(ifspeed == rhs.ifspeed))
+      return false;
+    if (!(ifhighspeed == rhs.ifhighspeed))
+      return false;
+    if (!(connection == rhs.connection))
+      return false;
+    if (!(conntype == rhs.conntype))
+      return false;
+    if (!(usage == rhs.usage))
+      return false;
+    if (!(visibility == rhs.visibility))
+      return false;
+    if (!(grouping == rhs.grouping))
+      return false;
+    if (!(begin_time == rhs.begin_time))
+      return false;
+    if (!(end_time == rhs.end_time))
+      return false;
+    return true;
+  }
+  bool operator != (const IfRef &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -247,8 +414,11 @@ class IfRef {
 class Counter32 {
  public:
 
+  static char* ascii_fingerprint; // = "1584BE3F33D288DCC74EA52051285D05";
+  static uint8_t binary_fingerprint[16]; // = {0x15,0x84,0xBE,0x3F,0x33,0xD2,0x88,0xDC,0xC7,0x4E,0xA5,0x20,0x51,0x28,0x5D,0x05};
+
   Counter32() : flags(0), timestamp(0), value(0), version(1), type_id(1) {
-  } 
+  }
 
   virtual ~Counter32() throw() {}
 
@@ -267,6 +437,24 @@ class Counter32 {
     bool type_id;
   } __isset;
 
+  bool operator == (const Counter32 & rhs) const
+  {
+    if (!(flags == rhs.flags))
+      return false;
+    if (!(timestamp == rhs.timestamp))
+      return false;
+    if (!(value == rhs.value))
+      return false;
+    if (!(version == rhs.version))
+      return false;
+    if (!(type_id == rhs.type_id))
+      return false;
+    return true;
+  }
+  bool operator != (const Counter32 &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -275,8 +463,11 @@ class Counter32 {
 class Counter64 {
  public:
 
+  static char* ascii_fingerprint; // = "69A1F04B78C98B1472CB21557BA4DB9E";
+  static uint8_t binary_fingerprint[16]; // = {0x69,0xA1,0xF0,0x4B,0x78,0xC9,0x8B,0x14,0x72,0xCB,0x21,0x55,0x7B,0xA4,0xDB,0x9E};
+
   Counter64() : flags(0), timestamp(0), value(0), version(1), type_id(2) {
-  } 
+  }
 
   virtual ~Counter64() throw() {}
 
@@ -295,6 +486,24 @@ class Counter64 {
     bool type_id;
   } __isset;
 
+  bool operator == (const Counter64 & rhs) const
+  {
+    if (!(flags == rhs.flags))
+      return false;
+    if (!(timestamp == rhs.timestamp))
+      return false;
+    if (!(value == rhs.value))
+      return false;
+    if (!(version == rhs.version))
+      return false;
+    if (!(type_id == rhs.type_id))
+      return false;
+    return true;
+  }
+  bool operator != (const Counter64 &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -303,8 +512,11 @@ class Counter64 {
 class Gauge32 {
  public:
 
+  static char* ascii_fingerprint; // = "1584BE3F33D288DCC74EA52051285D05";
+  static uint8_t binary_fingerprint[16]; // = {0x15,0x84,0xBE,0x3F,0x33,0xD2,0x88,0xDC,0xC7,0x4E,0xA5,0x20,0x51,0x28,0x5D,0x05};
+
   Gauge32() : flags(0), timestamp(0), value(0), version(1), type_id(3) {
-  } 
+  }
 
   virtual ~Gauge32() throw() {}
 
@@ -323,6 +535,24 @@ class Gauge32 {
     bool type_id;
   } __isset;
 
+  bool operator == (const Gauge32 & rhs) const
+  {
+    if (!(flags == rhs.flags))
+      return false;
+    if (!(timestamp == rhs.timestamp))
+      return false;
+    if (!(value == rhs.value))
+      return false;
+    if (!(version == rhs.version))
+      return false;
+    if (!(type_id == rhs.type_id))
+      return false;
+    return true;
+  }
+  bool operator != (const Gauge32 &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -331,8 +561,11 @@ class Gauge32 {
 class VarList {
  public:
 
+  static char* ascii_fingerprint; // = "26D3E4151EFAFDFC816998704F3D421D";
+  static uint8_t binary_fingerprint[16]; // = {0x26,0xD3,0xE4,0x15,0x1E,0xFA,0xFD,0xFC,0x81,0x69,0x98,0x70,0x4F,0x3D,0x42,0x1D};
+
   VarList() {
-  } 
+  }
 
   virtual ~VarList() throw() {}
 
@@ -347,6 +580,20 @@ class VarList {
     bool gauge32;
   } __isset;
 
+  bool operator == (const VarList & rhs) const
+  {
+    if (!(counter32 == rhs.counter32))
+      return false;
+    if (!(counter64 == rhs.counter64))
+      return false;
+    if (!(gauge32 == rhs.gauge32))
+      return false;
+    return true;
+  }
+  bool operator != (const VarList &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -355,8 +602,11 @@ class VarList {
 class SNMPPollResultPair {
  public:
 
+  static char* ascii_fingerprint; // = "07A9615F837F7D0A952B595DD3020972";
+  static uint8_t binary_fingerprint[16]; // = {0x07,0xA9,0x61,0x5F,0x83,0x7F,0x7D,0x0A,0x95,0x2B,0x59,0x5D,0xD3,0x02,0x09,0x72};
+
   SNMPPollResultPair() : OIDName(""), value("") {
-  } 
+  }
 
   virtual ~SNMPPollResultPair() throw() {}
 
@@ -369,6 +619,18 @@ class SNMPPollResultPair {
     bool value;
   } __isset;
 
+  bool operator == (const SNMPPollResultPair & rhs) const
+  {
+    if (!(OIDName == rhs.OIDName))
+      return false;
+    if (!(value == rhs.value))
+      return false;
+    return true;
+  }
+  bool operator != (const SNMPPollResultPair &rhs) const {
+    return !(*this == rhs);
+  }
+
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
 
@@ -377,8 +639,11 @@ class SNMPPollResultPair {
 class SNMPPollResult {
  public:
 
+  static char* ascii_fingerprint; // = "A120DB3C7D3315EC9ABE6E56137F87EB";
+  static uint8_t binary_fingerprint[16]; // = {0xA1,0x20,0xDB,0x3C,0x7D,0x33,0x15,0xEC,0x9A,0xBE,0x6E,0x56,0x13,0x7F,0x87,0xEB};
+
   SNMPPollResult() : device_id(0), oidset_id(0), timestamp(0) {
-  } 
+  }
 
   virtual ~SNMPPollResult() throw() {}
 
@@ -394,6 +659,92 @@ class SNMPPollResult {
     bool timestamp;
     bool vars;
   } __isset;
+
+  bool operator == (const SNMPPollResult & rhs) const
+  {
+    if (!(device_id == rhs.device_id))
+      return false;
+    if (!(oidset_id == rhs.oidset_id))
+      return false;
+    if (!(timestamp == rhs.timestamp))
+      return false;
+    if (!(vars == rhs.vars))
+      return false;
+    return true;
+  }
+  bool operator != (const SNMPPollResult &rhs) const {
+    return !(*this == rhs);
+  }
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class Rate {
+ public:
+
+  static char* ascii_fingerprint; // = "0B663F1913C9C6F43150B524A8B76386";
+  static uint8_t binary_fingerprint[16]; // = {0x0B,0x66,0x3F,0x19,0x13,0xC9,0xC6,0xF4,0x31,0x50,0xB5,0x24,0xA8,0xB7,0x63,0x86};
+
+  Rate() : timestamp(0), rate(0) {
+  }
+
+  virtual ~Rate() throw() {}
+
+  int32_t timestamp;
+  double rate;
+
+  struct __isset {
+    __isset() : timestamp(false), rate(false) {}
+    bool timestamp;
+    bool rate;
+  } __isset;
+
+  bool operator == (const Rate & rhs) const
+  {
+    if (!(timestamp == rhs.timestamp))
+      return false;
+    if (!(rate == rhs.rate))
+      return false;
+    return true;
+  }
+  bool operator != (const Rate &rhs) const {
+    return !(*this == rhs);
+  }
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class ESDBError : public facebook::thrift::TException {
+ public:
+
+  static char* ascii_fingerprint; // = "EFB929595D312AC8F305D5A794CFEDA1";
+  static uint8_t binary_fingerprint[16]; // = {0xEF,0xB9,0x29,0x59,0x5D,0x31,0x2A,0xC8,0xF3,0x05,0xD5,0xA7,0x94,0xCF,0xED,0xA1};
+
+  ESDBError() : what("") {
+  }
+
+  virtual ~ESDBError() throw() {}
+
+  std::string what;
+
+  struct __isset {
+    __isset() : what(false) {}
+    bool what;
+  } __isset;
+
+  bool operator == (const ESDBError & rhs) const
+  {
+    if (!(what == rhs.what))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDBError &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;

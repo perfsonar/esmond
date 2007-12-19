@@ -9,11 +9,12 @@
 #include <TProcessor.h>
 #include "essnmp_types.h"
 
-namespace ESSNMP { 
+namespace ESSNMP {
 
 class ESDBIf {
- public: 
+ public:
   virtual ~ESDBIf() {}
+  static void getStaticLimitedReflection(facebook::thrift::reflection::limited::Service & _return);
   virtual void list_devices(std::vector<std::string> & _return) = 0;
   virtual void get_device(Device& _return, const std::string& name) = 0;
   virtual void get_all_devices(std::map<std::string, Device> & _return) = 0;
@@ -28,10 +29,11 @@ class ESDBIf {
   virtual void get_oidset_devices(std::vector<Device> & _return, const OIDSet& oidset) = 0;
   virtual void get_vars_by_grouping(VarList& _return, const Grouping grouping) = 0;
   virtual int8_t store_poll_result(const SNMPPollResult& result) = 0;
-}; 
+  virtual void select(VarList& _return, const std::string& device, const std::string& iface_name, const std::string& oidset, const std::string& oid, const std::string& begin_time, const std::string& end_time, const std::string& flags, const std::string& cf, const std::string& resolution) = 0;
+};
 
 class ESDBNull : virtual public ESDBIf {
- public: 
+ public:
   virtual ~ESDBNull() {}
   void list_devices(std::vector<std::string> & _return) {
     return;
@@ -76,16 +78,27 @@ class ESDBNull : virtual public ESDBIf {
     int8_t _return = 0;
     return _return;
   }
-}; 
+  void select(VarList& _return, const std::string& device, const std::string& iface_name, const std::string& oidset, const std::string& oid, const std::string& begin_time, const std::string& end_time, const std::string& flags, const std::string& cf, const std::string& resolution) {
+    return;
+  }
+};
 
 class ESDB_list_devices_args {
  public:
 
   ESDB_list_devices_args() {
-  } 
+  }
 
   virtual ~ESDB_list_devices_args() throw() {}
 
+
+  bool operator == (const ESDB_list_devices_args & rhs) const
+  {
+    return true;
+  }
+  bool operator != (const ESDB_list_devices_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -107,7 +120,7 @@ class ESDB_list_devices_result {
  public:
 
   ESDB_list_devices_result() {
-  } 
+  }
 
   virtual ~ESDB_list_devices_result() throw() {}
 
@@ -117,6 +130,16 @@ class ESDB_list_devices_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_list_devices_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_list_devices_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -144,7 +167,7 @@ class ESDB_get_device_args {
  public:
 
   ESDB_get_device_args() : name("") {
-  } 
+  }
 
   virtual ~ESDB_get_device_args() throw() {}
 
@@ -154,6 +177,16 @@ class ESDB_get_device_args {
     __isset() : name(false) {}
     bool name;
   } __isset;
+
+  bool operator == (const ESDB_get_device_args & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_device_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -176,7 +209,7 @@ class ESDB_get_device_result {
  public:
 
   ESDB_get_device_result() {
-  } 
+  }
 
   virtual ~ESDB_get_device_result() throw() {}
 
@@ -186,6 +219,16 @@ class ESDB_get_device_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_get_device_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_device_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -213,10 +256,18 @@ class ESDB_get_all_devices_args {
  public:
 
   ESDB_get_all_devices_args() {
-  } 
+  }
 
   virtual ~ESDB_get_all_devices_args() throw() {}
 
+
+  bool operator == (const ESDB_get_all_devices_args & rhs) const
+  {
+    return true;
+  }
+  bool operator != (const ESDB_get_all_devices_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -238,7 +289,7 @@ class ESDB_get_all_devices_result {
  public:
 
   ESDB_get_all_devices_result() {
-  } 
+  }
 
   virtual ~ESDB_get_all_devices_result() throw() {}
 
@@ -248,6 +299,16 @@ class ESDB_get_all_devices_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_get_all_devices_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_all_devices_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -275,7 +336,7 @@ class ESDB_add_device_args {
  public:
 
   ESDB_add_device_args() : name(""), begin_time(""), end_time("") {
-  } 
+  }
 
   virtual ~ESDB_add_device_args() throw() {}
 
@@ -289,6 +350,20 @@ class ESDB_add_device_args {
     bool begin_time;
     bool end_time;
   } __isset;
+
+  bool operator == (const ESDB_add_device_args & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    if (!(begin_time == rhs.begin_time))
+      return false;
+    if (!(end_time == rhs.end_time))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_add_device_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -313,10 +388,18 @@ class ESDB_add_device_result {
  public:
 
   ESDB_add_device_result() {
-  } 
+  }
 
   virtual ~ESDB_add_device_result() throw() {}
 
+
+  bool operator == (const ESDB_add_device_result & rhs) const
+  {
+    return true;
+  }
+  bool operator != (const ESDB_add_device_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -338,7 +421,7 @@ class ESDB_update_device_args {
  public:
 
   ESDB_update_device_args() : name(""), begin_time(""), end_time("") {
-  } 
+  }
 
   virtual ~ESDB_update_device_args() throw() {}
 
@@ -352,6 +435,20 @@ class ESDB_update_device_args {
     bool begin_time;
     bool end_time;
   } __isset;
+
+  bool operator == (const ESDB_update_device_args & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    if (!(begin_time == rhs.begin_time))
+      return false;
+    if (!(end_time == rhs.end_time))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_update_device_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -376,10 +473,18 @@ class ESDB_update_device_result {
  public:
 
   ESDB_update_device_result() {
-  } 
+  }
 
   virtual ~ESDB_update_device_result() throw() {}
 
+
+  bool operator == (const ESDB_update_device_result & rhs) const
+  {
+    return true;
+  }
+  bool operator != (const ESDB_update_device_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -401,7 +506,7 @@ class ESDB_list_device_oidsets_args {
  public:
 
   ESDB_list_device_oidsets_args() {
-  } 
+  }
 
   virtual ~ESDB_list_device_oidsets_args() throw() {}
 
@@ -411,6 +516,16 @@ class ESDB_list_device_oidsets_args {
     __isset() : device(false) {}
     bool device;
   } __isset;
+
+  bool operator == (const ESDB_list_device_oidsets_args & rhs) const
+  {
+    if (!(device == rhs.device))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_list_device_oidsets_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -433,7 +548,7 @@ class ESDB_list_device_oidsets_result {
  public:
 
   ESDB_list_device_oidsets_result() {
-  } 
+  }
 
   virtual ~ESDB_list_device_oidsets_result() throw() {}
 
@@ -443,6 +558,16 @@ class ESDB_list_device_oidsets_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_list_device_oidsets_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_list_device_oidsets_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -470,10 +595,18 @@ class ESDB_list_oids_args {
  public:
 
   ESDB_list_oids_args() {
-  } 
+  }
 
   virtual ~ESDB_list_oids_args() throw() {}
 
+
+  bool operator == (const ESDB_list_oids_args & rhs) const
+  {
+    return true;
+  }
+  bool operator != (const ESDB_list_oids_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -495,7 +628,7 @@ class ESDB_list_oids_result {
  public:
 
   ESDB_list_oids_result() {
-  } 
+  }
 
   virtual ~ESDB_list_oids_result() throw() {}
 
@@ -505,6 +638,16 @@ class ESDB_list_oids_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_list_oids_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_list_oids_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -532,7 +675,7 @@ class ESDB_get_oid_args {
  public:
 
   ESDB_get_oid_args() : name("") {
-  } 
+  }
 
   virtual ~ESDB_get_oid_args() throw() {}
 
@@ -542,6 +685,16 @@ class ESDB_get_oid_args {
     __isset() : name(false) {}
     bool name;
   } __isset;
+
+  bool operator == (const ESDB_get_oid_args & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_oid_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -564,7 +717,7 @@ class ESDB_get_oid_result {
  public:
 
   ESDB_get_oid_result() {
-  } 
+  }
 
   virtual ~ESDB_get_oid_result() throw() {}
 
@@ -574,6 +727,16 @@ class ESDB_get_oid_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_get_oid_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_oid_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -601,7 +764,7 @@ class ESDB_add_oid_args {
  public:
 
   ESDB_add_oid_args() : name(""), storage(""), oidtype("") {
-  } 
+  }
 
   virtual ~ESDB_add_oid_args() throw() {}
 
@@ -615,6 +778,20 @@ class ESDB_add_oid_args {
     bool storage;
     bool oidtype;
   } __isset;
+
+  bool operator == (const ESDB_add_oid_args & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    if (!(storage == rhs.storage))
+      return false;
+    if (!(oidtype == rhs.oidtype))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_add_oid_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -639,10 +816,18 @@ class ESDB_add_oid_result {
  public:
 
   ESDB_add_oid_result() {
-  } 
+  }
 
   virtual ~ESDB_add_oid_result() throw() {}
 
+
+  bool operator == (const ESDB_add_oid_result & rhs) const
+  {
+    return true;
+  }
+  bool operator != (const ESDB_add_oid_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -664,10 +849,18 @@ class ESDB_list_oidsets_args {
  public:
 
   ESDB_list_oidsets_args() {
-  } 
+  }
 
   virtual ~ESDB_list_oidsets_args() throw() {}
 
+
+  bool operator == (const ESDB_list_oidsets_args & rhs) const
+  {
+    return true;
+  }
+  bool operator != (const ESDB_list_oidsets_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -689,7 +882,7 @@ class ESDB_list_oidsets_result {
  public:
 
   ESDB_list_oidsets_result() {
-  } 
+  }
 
   virtual ~ESDB_list_oidsets_result() throw() {}
 
@@ -699,6 +892,16 @@ class ESDB_list_oidsets_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_list_oidsets_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_list_oidsets_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -726,7 +929,7 @@ class ESDB_get_oidset_args {
  public:
 
   ESDB_get_oidset_args() : name("") {
-  } 
+  }
 
   virtual ~ESDB_get_oidset_args() throw() {}
 
@@ -736,6 +939,16 @@ class ESDB_get_oidset_args {
     __isset() : name(false) {}
     bool name;
   } __isset;
+
+  bool operator == (const ESDB_get_oidset_args & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_oidset_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -758,7 +971,7 @@ class ESDB_get_oidset_result {
  public:
 
   ESDB_get_oidset_result() {
-  } 
+  }
 
   virtual ~ESDB_get_oidset_result() throw() {}
 
@@ -768,6 +981,16 @@ class ESDB_get_oidset_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_get_oidset_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_oidset_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -795,7 +1018,7 @@ class ESDB_get_oidset_devices_args {
  public:
 
   ESDB_get_oidset_devices_args() {
-  } 
+  }
 
   virtual ~ESDB_get_oidset_devices_args() throw() {}
 
@@ -805,6 +1028,16 @@ class ESDB_get_oidset_devices_args {
     __isset() : oidset(false) {}
     bool oidset;
   } __isset;
+
+  bool operator == (const ESDB_get_oidset_devices_args & rhs) const
+  {
+    if (!(oidset == rhs.oidset))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_oidset_devices_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -827,7 +1060,7 @@ class ESDB_get_oidset_devices_result {
  public:
 
   ESDB_get_oidset_devices_result() {
-  } 
+  }
 
   virtual ~ESDB_get_oidset_devices_result() throw() {}
 
@@ -837,6 +1070,16 @@ class ESDB_get_oidset_devices_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_get_oidset_devices_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_oidset_devices_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -863,8 +1106,8 @@ class ESDB_get_oidset_devices_presult {
 class ESDB_get_vars_by_grouping_args {
  public:
 
-  ESDB_get_vars_by_grouping_args() : grouping((Grouping)0) {
-  } 
+  ESDB_get_vars_by_grouping_args() {
+  }
 
   virtual ~ESDB_get_vars_by_grouping_args() throw() {}
 
@@ -874,6 +1117,16 @@ class ESDB_get_vars_by_grouping_args {
     __isset() : grouping(false) {}
     bool grouping;
   } __isset;
+
+  bool operator == (const ESDB_get_vars_by_grouping_args & rhs) const
+  {
+    if (!(grouping == rhs.grouping))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_vars_by_grouping_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -896,7 +1149,7 @@ class ESDB_get_vars_by_grouping_result {
  public:
 
   ESDB_get_vars_by_grouping_result() {
-  } 
+  }
 
   virtual ~ESDB_get_vars_by_grouping_result() throw() {}
 
@@ -906,6 +1159,16 @@ class ESDB_get_vars_by_grouping_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_get_vars_by_grouping_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_get_vars_by_grouping_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -933,7 +1196,7 @@ class ESDB_store_poll_result_args {
  public:
 
   ESDB_store_poll_result_args() {
-  } 
+  }
 
   virtual ~ESDB_store_poll_result_args() throw() {}
 
@@ -943,6 +1206,16 @@ class ESDB_store_poll_result_args {
     __isset() : result(false) {}
     bool result;
   } __isset;
+
+  bool operator == (const ESDB_store_poll_result_args & rhs) const
+  {
+    if (!(result == rhs.result))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_store_poll_result_args &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -965,7 +1238,7 @@ class ESDB_store_poll_result_result {
  public:
 
   ESDB_store_poll_result_result() : success(0) {
-  } 
+  }
 
   virtual ~ESDB_store_poll_result_result() throw() {}
 
@@ -975,6 +1248,16 @@ class ESDB_store_poll_result_result {
     __isset() : success(false) {}
     bool success;
   } __isset;
+
+  bool operator == (const ESDB_store_poll_result_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_store_poll_result_result &rhs) const {
+    return !(*this == rhs);
+  }
 
   uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
   uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
@@ -998,15 +1281,150 @@ class ESDB_store_poll_result_presult {
 
 };
 
+class ESDB_select_args {
+ public:
+
+  ESDB_select_args() : device(""), iface_name(""), oidset(""), oid(""), begin_time(""), end_time(""), flags(""), cf(""), resolution("") {
+  }
+
+  virtual ~ESDB_select_args() throw() {}
+
+  std::string device;
+  std::string iface_name;
+  std::string oidset;
+  std::string oid;
+  std::string begin_time;
+  std::string end_time;
+  std::string flags;
+  std::string cf;
+  std::string resolution;
+
+  struct __isset {
+    __isset() : device(false), iface_name(false), oidset(false), oid(false), begin_time(false), end_time(false), flags(false), cf(false), resolution(false) {}
+    bool device;
+    bool iface_name;
+    bool oidset;
+    bool oid;
+    bool begin_time;
+    bool end_time;
+    bool flags;
+    bool cf;
+    bool resolution;
+  } __isset;
+
+  bool operator == (const ESDB_select_args & rhs) const
+  {
+    if (!(device == rhs.device))
+      return false;
+    if (!(iface_name == rhs.iface_name))
+      return false;
+    if (!(oidset == rhs.oidset))
+      return false;
+    if (!(oid == rhs.oid))
+      return false;
+    if (!(begin_time == rhs.begin_time))
+      return false;
+    if (!(end_time == rhs.end_time))
+      return false;
+    if (!(flags == rhs.flags))
+      return false;
+    if (!(cf == rhs.cf))
+      return false;
+    if (!(resolution == rhs.resolution))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_select_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class ESDB_select_pargs {
+ public:
+
+
+  virtual ~ESDB_select_pargs() throw() {}
+
+  const std::string* device;
+  const std::string* iface_name;
+  const std::string* oidset;
+  const std::string* oid;
+  const std::string* begin_time;
+  const std::string* end_time;
+  const std::string* flags;
+  const std::string* cf;
+  const std::string* resolution;
+
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class ESDB_select_result {
+ public:
+
+  ESDB_select_result() {
+  }
+
+  virtual ~ESDB_select_result() throw() {}
+
+  VarList success;
+  ESDBError error;
+
+  struct __isset {
+    __isset() : success(false), error(false) {}
+    bool success;
+    bool error;
+  } __isset;
+
+  bool operator == (const ESDB_select_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    if (!(error == rhs.error))
+      return false;
+    return true;
+  }
+  bool operator != (const ESDB_select_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class ESDB_select_presult {
+ public:
+
+
+  virtual ~ESDB_select_presult() throw() {}
+
+  VarList* success;
+  ESDBError error;
+
+  struct __isset {
+    __isset() : success(false), error(false) {}
+    bool success;
+    bool error;
+  } __isset;
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+
+};
+
 class ESDBClient : virtual public ESDBIf {
  public:
-  ESDBClient(boost::shared_ptr<facebook::thrift::protocol::TProtocol> prot) : 
+  ESDBClient(boost::shared_ptr<facebook::thrift::protocol::TProtocol> prot) :
     piprot_(prot),
     poprot_(prot) {
     iprot_ = prot.get();
     oprot_ = prot.get();
   }
-  ESDBClient(boost::shared_ptr<facebook::thrift::protocol::TProtocol> iprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> oprot) : 
+  ESDBClient(boost::shared_ptr<facebook::thrift::protocol::TProtocol> iprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> oprot) :
     piprot_(iprot),
     poprot_(oprot) {
     iprot_ = iprot.get();
@@ -1054,6 +1472,9 @@ class ESDBClient : virtual public ESDBIf {
   int8_t store_poll_result(const SNMPPollResult& result);
   void send_store_poll_result(const SNMPPollResult& result);
   int8_t recv_store_poll_result();
+  void select(VarList& _return, const std::string& device, const std::string& iface_name, const std::string& oidset, const std::string& oid, const std::string& begin_time, const std::string& end_time, const std::string& flags, const std::string& cf, const std::string& resolution);
+  void send_select(const std::string& device, const std::string& iface_name, const std::string& oidset, const std::string& oid, const std::string& begin_time, const std::string& end_time, const std::string& flags, const std::string& cf, const std::string& resolution);
+  void recv_select(VarList& _return);
  protected:
   boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot_;
@@ -1081,7 +1502,8 @@ class ESDBProcessor : virtual public facebook::thrift::TProcessor {
   void process_get_oidset_devices(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
   void process_get_vars_by_grouping(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
   void process_store_poll_result(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
- public: 
+  void process_select(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);
+ public:
   ESDBProcessor(boost::shared_ptr<ESDBIf> iface) :
     iface_(iface) {
     processMap_["list_devices"] = &ESDBProcessor::process_list_devices;
@@ -1098,6 +1520,7 @@ class ESDBProcessor : virtual public facebook::thrift::TProcessor {
     processMap_["get_oidset_devices"] = &ESDBProcessor::process_get_oidset_devices;
     processMap_["get_vars_by_grouping"] = &ESDBProcessor::process_get_vars_by_grouping;
     processMap_["store_poll_result"] = &ESDBProcessor::process_store_poll_result;
+    processMap_["select"] = &ESDBProcessor::process_select;
   }
 
   virtual bool process(boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot);
@@ -1105,14 +1528,14 @@ class ESDBProcessor : virtual public facebook::thrift::TProcessor {
 };
 
 class ESDBMultiface : virtual public ESDBIf {
- public: 
+ public:
   ESDBMultiface(std::vector<boost::shared_ptr<ESDBIf> >& ifaces) : ifaces_(ifaces) {
   }
   virtual ~ESDBMultiface() {}
  protected:
   std::vector<boost::shared_ptr<ESDBIf> > ifaces_;
   ESDBMultiface() {}
-  void add(boost::shared_ptr<ESDBIf> iface) { 
+  void add(boost::shared_ptr<ESDBIf> iface) {
     ifaces_.push_back(iface);
   }
  public:
@@ -1264,6 +1687,18 @@ class ESDBMultiface : virtual public ESDBIf {
         return ifaces_[i]->store_poll_result(result);
       } else {
         ifaces_[i]->store_poll_result(result);
+      }
+    }
+  }
+
+  void select(VarList& _return, const std::string& device, const std::string& iface_name, const std::string& oidset, const std::string& oid, const std::string& begin_time, const std::string& end_time, const std::string& flags, const std::string& cf, const std::string& resolution) {
+    uint32_t sz = ifaces_.size();
+    for (uint32_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->select(_return, device, iface_name, oidset, oid, begin_time, end_time, flags, cf, resolution);
+        return;
+      } else {
+        ifaces_[i]->select(_return, device, iface_name, oidset, oid, begin_time, end_time, flags, cf, resolution);
       }
     }
   }

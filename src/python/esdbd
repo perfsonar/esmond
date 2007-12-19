@@ -11,58 +11,16 @@ import tsdb
 
 from essnmp.config import ESConfig
 from essnmp.sql import *
-from  essnmp.thrift import ESDB
+from essnmp.thrift import ESDB
+from essnmp.thrift.ipaclsocket import IPACLSocket
 import essnmp.thrift.ttypes
-
-class ExternalInterface(threading.Thread):
-    def __init__(self, **kwargs):
-        Threading.Thread.__init__(self, **kwargs)
-        self.setDaemon(1)
-        self.workq = Queue.Queue()
-        self.start()
-
-    def request(self, *args, **kwargs):
-        self.workq.put((args,kwargs))
-
-    def run(self):
-        while True:
-            args, kwargs = self.workq.get()
-            self.process(*args,**kwargs)
-
-    def process(self, *args, **kwargs):
-        raise NotImplementedError("subclasses MUST define process")
-
-
-class StorageThread(ExternalInterface):
-    def __init__(self, device_id):
-        ExternalInterface.__init__(self)
-        self.device_id = device_id
-        self.tsdb = tsdb.TSDB(ESConfig['TSDB_ROOT'])
-        self.device_set = tsdb.get_set(device_id, acquire_lock=True)
-        self.vars = {}
-        for var in self.device_set.list_vars():
-            self.vars[var] = self.device_set.get_var(var)
-
-    def get_var(self, name):
-        try:
-            return self.vars[name]
-        except KeyError:
-            try:
-                self.vars[name] = self.device_set.get_var(name)
-            except TSDBVarDoesNotExistError:
-                print "adding",name
-
-                self.vars[name] = self.device_set.add_var(name, type, step)
-
-            return self.vars[name]
-
-    def process(self, poll_results, **kwargs):
-        for (var, val) in poll_results.vars:
-            self.get_var(var).insert(poll_results.timestamp, val)
+from essnmp.poll import remove_metachars
 
 class ESDBHandler(object):
     def __init__(self):
-        self.session = create_session(bind_to=essnmp.sql.db)
+        essnmp.sql.setup_db("postgres:///essnmp")
+        self.session = create_session(essnmp.sql.vars['db'])
+        self.tsdb = tsdb.TSDB("/data/essnmp/tsdb")
         self.device_threads = {}
 
     def list_devices(self):
@@ -107,15 +65,52 @@ class ESDBHandler(object):
     def get_oidset(self,name):
         return self.session.query(OIDSet).select_by(name=name)[0]
 
-    def store_poll_result(self, result):
-        print "STORE"
-        if self.device_threads.has_key(result.device_id):
-            self.device_threads[result.device_id].request(result)
-        return 1
+    def select(self, device, iface_name, oidset, oid, begin_time, end_time,
+            flags, cf, resolution):
+        """
+        Returns raw data.
+
+        If resolution is None, return the native resolution of the variable.
+        """
+
+        if cf != "AVERAGE":
+            raise essnmp.thrift.ttypes.ESDBError(
+                    dict(what="unsupported consolidation function: %s" % cf))
+
+        iface_name = remove_metachars(iface_name)
+
+        var = self.tsdb.get_var("/".join((device, oidset, oid, iface_name)))
+        data = var.select(int(begin_time), int(end_time))
+
+        l = []
+
+        for datum in data:
+            l.append(datum)
+
+        result = essnmp.thrift.ttypes.VarList()
+
+        if isinstance(l[0], essnmp.thrift.ttypes.Counter32):
+            result.counter32 = l
+        elif isinstance(l[0], essnmp.thrift.ttypes.Counter64):
+            result.counter64 = l
+        elif isinstance(l[0], essnmp.thrift.ttypes.Gauge32):
+            result.gauge32 = l
+        else:
+            raise essnmp.thrift.ttypes.ESDBError(
+                    dict(what="unknown return type from TSDB select"))
+
+        return result
+
+#
+# Make tsdb types Thrifty
+#
+tsdb.Counter32.__bases__ += (essnmp.thrift.ttypes.Counter32, )
+tsdb.Counter64.__bases__ += (essnmp.thrift.ttypes.Counter64, )
+tsdb.Gauge32.__bases__ += (essnmp.thrift.ttypes.Gauge32, )
 
 handler = ESDBHandler()
 processor = ESDB.Processor(handler)
-transport = TSocket.TServerSocket(9090)
+transport = IPACLSocket(9090, []) #TSocket.TServerSocket(9090)
 tfactory = TTransport.TBufferedTransportFactory()
 pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 

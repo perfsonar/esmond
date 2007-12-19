@@ -12,6 +12,8 @@ using namespace facebook::thrift::protocol;
 using namespace facebook::thrift::transport;
 using namespace facebook::thrift::server;
 
+using boost::shared_ptr;
+
 using namespace ESSNMP;
 
 class ESDBHandler : virtual public ESDBIf {
@@ -88,6 +90,11 @@ class ESDBHandler : virtual public ESDBIf {
   int8_t store_poll_result(const SNMPPollResult& result) {
     // Your implementation goes here
     printf("store_poll_result\n");
+  }
+
+  void select(VarList& _return, const std::string& device, const std::string& iface_name, const std::string& oidset, const std::string& oid, const std::string& begin_time, const std::string& end_time, const std::string& flags, const std::string& cf, const std::string& resolution) {
+    // Your implementation goes here
+    printf("select\n");
   }
 
 };
