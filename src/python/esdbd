@@ -23,31 +23,22 @@ class ESDBHandler(object):
         self.tsdb = tsdb.TSDB("/data/essnmp/tsdb")
         self.device_threads = {}
 
-    def list_devices(self):
-        return [d.name for d in self.session.query(Device).select()]
+    def list_devices(self, active):
+        limit = ""
+        if active:
+            limit = "device.end_time > 'NOW' AND device.begin_time < 'NOW'"
+
+        return [d.name for d in self.session.query(Device).select(limit)]
 
     def get_device(self,name):
-        r = self.session.query(Device).select_by(name=name)[0]
-        print r.begin_time, r.end_time
+        return self.session.query(Device).select_by(name=name)[0]
 
-        if type(r.begin_time) is not int:
-            r.begin_time = timegm(r.begin_time.utctimetuple())
-            if r.begin_time < 0:
-                r.begin_time = 0
-    
-            r.end_time = timegm(r.end_time.utctimetuple())
-            if r.end_time > 2**31-1:
-                r.end_time = 2**31-1
-            
-        return r
-
-    def get_all_devices(self):
+    def get_all_devices(self, active):
         d = {}
-        for device in self.list_devices():
+        for device in self.list_devices(active):
             d[device] = self.get_device(device)
 
         return d
-
 
     def add_device(self, device):
         self.session.save(device)
@@ -100,6 +91,26 @@ class ESDBHandler(object):
                     dict(what="unknown return type from TSDB select"))
 
         return result
+
+    def get_active_devices(self):
+        return self.session.query(Device).select("end_time > 'NOW' and begin_time < 'NOW'")
+
+    def get_interfaces(self, device, has_descr):
+        """
+        Return a list of the most recent IfRef entry for each interface on
+        each active device.
+        """
+        # XXX might be faster to do a join, but need to read up on SQLAlchemy
+        # to do that...
+
+        d = self.session.query(Device).select_by(name=device)[0]
+        l = self.session.query(IfRef).select(
+                    """ifref.deviceid = %d
+                    AND ifref.end_time > 'NOW'
+                    AND ifref.begin_time < 'NOW'""" % d.id)
+#        import pdb
+#        pdb.set_trace()
+        return l
 
 #
 # Make tsdb types Thrifty

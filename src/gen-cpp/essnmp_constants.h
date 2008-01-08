@@ -8,7 +8,7 @@
 
 #include "essnmp_types.h"
 
-namespace ESSNMP {
+namespace ESxSNMP {
 
 class essnmpConstants {
  public:

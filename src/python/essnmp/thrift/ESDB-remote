@@ -21,9 +21,9 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print 'Usage: ' + sys.argv[0] + ' [-h host:port] [-u url] [-f[ramed]] function [arg1 [arg2...]]'
   print ''
   print 'Functions:'
-  print '   list_devices()'
+  print '   list_devices(bool active)'
   print '  Device get_device(string name)'
-  print '   get_all_devices()'
+  print '   get_all_devices(bool active)'
   print '  void add_device(string name, string begin_time, string end_time)'
   print '  void update_device(string name, string begin_time, string end_time)'
   print '   list_device_oidsets(Device device)'
@@ -36,6 +36,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print '  VarList get_vars_by_grouping(Grouping grouping)'
   print '  byte store_poll_result(SNMPPollResult result)'
   print '  VarList select(string device, string iface_name, string oidset, string oid, string begin_time, string end_time, string flags, string cf, string resolution)'
+  print '   get_interfaces(string device, bool has_descr)'
   print ''
   sys.exit(0)
 
@@ -85,10 +86,10 @@ client = ESDB.Client(protocol)
 transport.open()
 
 if cmd == 'list_devices':
-  if len(args) != 0:
-    print 'list_devices requires 0 args'
+  if len(args) != 1:
+    print 'list_devices requires 1 args'
     sys.exit(1)
-  pp.pprint(client.list_devices())
+  pp.pprint(client.list_devices(eval(args[0]),))
 
 elif cmd == 'get_device':
   if len(args) != 1:
@@ -97,10 +98,10 @@ elif cmd == 'get_device':
   pp.pprint(client.get_device(args[0],))
 
 elif cmd == 'get_all_devices':
-  if len(args) != 0:
-    print 'get_all_devices requires 0 args'
+  if len(args) != 1:
+    print 'get_all_devices requires 1 args'
     sys.exit(1)
-  pp.pprint(client.get_all_devices())
+  pp.pprint(client.get_all_devices(eval(args[0]),))
 
 elif cmd == 'add_device':
   if len(args) != 3:
@@ -173,5 +174,11 @@ elif cmd == 'select':
     print 'select requires 9 args'
     sys.exit(1)
   pp.pprint(client.select(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7],args[8],))
+
+elif cmd == 'get_interfaces':
+  if len(args) != 2:
+    print 'get_interfaces requires 2 args'
+    sys.exit(1)
+  pp.pprint(client.get_interfaces(args[0],eval(args[1]),))
 
 transport.close()

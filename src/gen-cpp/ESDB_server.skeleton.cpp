@@ -14,7 +14,7 @@ using namespace facebook::thrift::server;
 
 using boost::shared_ptr;
 
-using namespace ESSNMP;
+using namespace ESxSNMP;
 
 class ESDBHandler : virtual public ESDBIf {
  public:
@@ -22,7 +22,7 @@ class ESDBHandler : virtual public ESDBIf {
     // Your initialization goes here
   }
 
-  void list_devices(std::vector<std::string> & _return) {
+  void list_devices(std::vector<std::string> & _return, const bool active) {
     // Your implementation goes here
     printf("list_devices\n");
   }
@@ -32,7 +32,7 @@ class ESDBHandler : virtual public ESDBIf {
     printf("get_device\n");
   }
 
-  void get_all_devices(std::map<std::string, Device> & _return) {
+  void get_all_devices(std::map<std::string, Device> & _return, const bool active) {
     // Your implementation goes here
     printf("get_all_devices\n");
   }
@@ -95,6 +95,11 @@ class ESDBHandler : virtual public ESDBIf {
   void select(VarList& _return, const std::string& device, const std::string& iface_name, const std::string& oidset, const std::string& oid, const std::string& begin_time, const std::string& end_time, const std::string& flags, const std::string& cf, const std::string& resolution) {
     // Your implementation goes here
     printf("select\n");
+  }
+
+  void get_interfaces(std::vector<IfRef> & _return, const std::string& device, const bool has_descr) {
+    // Your implementation goes here
+    printf("get_interfaces\n");
   }
 
 };

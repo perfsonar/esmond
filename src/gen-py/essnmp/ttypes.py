@@ -14,14 +14,14 @@ except:
   fastbinary = None
 
 
-class Grouping:
+class Grouping(object):
   Commercial = 1
   Internal = 2
   ResearchEducation = 3
   Education = 4
   Site = 5
 
-class OIDType:
+class OIDType(object):
 
   thrift_spec = (
     None, # 0
@@ -90,7 +90,7 @@ class OIDType:
   def __ne__(self, other):
     return not (self == other)
 
-class OIDCorrelator:
+class OIDCorrelator(object):
 
   thrift_spec = (
     None, # 0
@@ -159,7 +159,7 @@ class OIDCorrelator:
   def __ne__(self, other):
     return not (self == other)
 
-class OID:
+class OID(object):
 
   thrift_spec = (
     None, # 0
@@ -167,14 +167,12 @@ class OID:
     (2, TType.STRING, 'name', None, None, ), # 2
     None, # 3
     (4, TType.I32, 'oidtypeid', None, None, ), # 4
-    (5, TType.I32, 'oidcorrelatorid', None, None, ), # 5
   )
 
   def __init__(self, d=None):
     self.id = None
     self.name = None
     self.oidtypeid = None
-    self.oidcorrelatorid = None
     if isinstance(d, dict):
       if 'id' in d:
         self.id = d['id']
@@ -182,8 +180,6 @@ class OID:
         self.name = d['name']
       if 'oidtypeid' in d:
         self.oidtypeid = d['oidtypeid']
-      if 'oidcorrelatorid' in d:
-        self.oidcorrelatorid = d['oidcorrelatorid']
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -209,11 +205,6 @@ class OID:
           self.oidtypeid = iprot.readI32();
         else:
           iprot.skip(ftype)
-      elif fid == 5:
-        if ftype == TType.I32:
-          self.oidcorrelatorid = iprot.readI32();
-        else:
-          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -236,10 +227,6 @@ class OID:
       oprot.writeFieldBegin('oidtypeid', TType.I32, 4)
       oprot.writeI32(self.oidtypeid)
       oprot.writeFieldEnd()
-    if self.oidcorrelatorid != None:
-      oprot.writeFieldBegin('oidcorrelatorid', TType.I32, 5)
-      oprot.writeI32(self.oidcorrelatorid)
-      oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -255,7 +242,7 @@ class OID:
   def __ne__(self, other):
     return not (self == other)
 
-class Poller:
+class Poller(object):
 
   thrift_spec = (
     None, # 0
@@ -324,7 +311,7 @@ class Poller:
   def __ne__(self, other):
     return not (self == other)
 
-class OIDSet:
+class OIDSet(object):
 
   thrift_spec = (
     None, # 0
@@ -441,7 +428,7 @@ class OIDSet:
   def __ne__(self, other):
     return not (self == other)
 
-class DeviceTag:
+class DeviceTag(object):
 
   thrift_spec = (
     None, # 0
@@ -510,7 +497,7 @@ class DeviceTag:
   def __ne__(self, other):
     return not (self == other)
 
-class Device:
+class Device(object):
 
   thrift_spec = (
     None, # 0
@@ -520,7 +507,6 @@ class Device:
     (4, TType.I32, 'end_time', None, None, ), # 4
     (5, TType.STRING, 'community', None, None, ), # 5
     (6, TType.LIST, 'oidsets', (TType.STRUCT,(OIDSet, OIDSet.thrift_spec)), None, ), # 6
-    (7, TType.LIST, 'tags', (TType.STRUCT,(DeviceTag, DeviceTag.thrift_spec)), None, ), # 7
   )
 
   def __init__(self, d=None):
@@ -530,7 +516,6 @@ class Device:
     self.end_time = None
     self.community = None
     self.oidsets = None
-    self.tags = None
     if isinstance(d, dict):
       if 'id' in d:
         self.id = d['id']
@@ -544,8 +529,6 @@ class Device:
         self.community = d['community']
       if 'oidsets' in d:
         self.oidsets = d['oidsets']
-      if 'tags' in d:
-        self.tags = d['tags']
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -592,17 +575,6 @@ class Device:
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
-      elif fid == 7:
-        if ftype == TType.LIST:
-          self.tags = []
-          (_etype16, _size13) = iprot.readListBegin()
-          for _i17 in xrange(_size13):
-            _elem18 = DeviceTag()
-            _elem18.read(iprot)
-            self.tags.append(_elem18)
-          iprot.readListEnd()
-        else:
-          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -636,15 +608,8 @@ class Device:
     if self.oidsets != None:
       oprot.writeFieldBegin('oidsets', TType.LIST, 6)
       oprot.writeListBegin(TType.STRUCT, len(self.oidsets))
-      for iter19 in self.oidsets:
-        iter19.write(oprot)
-      oprot.writeListEnd()
-      oprot.writeFieldEnd()
-    if self.tags != None:
-      oprot.writeFieldBegin('tags', TType.LIST, 7)
-      oprot.writeListBegin(TType.STRUCT, len(self.tags))
-      for iter20 in self.tags:
-        iter20.write(oprot)
+      for iter13 in self.oidsets:
+        iter13.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -662,12 +627,12 @@ class Device:
   def __ne__(self, other):
     return not (self == other)
 
-class IfRef:
+class IfRef(object):
 
   thrift_spec = (
     None, # 0
     (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.I32, 'deviceid', None, None, ), # 2
+    (2, TType.STRUCT, 'device', (Device, Device.thrift_spec), None, ), # 2
     (3, TType.I32, 'ifindex', None, None, ), # 3
     (4, TType.STRING, 'ifdescr', None, None, ), # 4
     (5, TType.STRING, 'ifalias', None, None, ), # 5
@@ -679,13 +644,11 @@ class IfRef:
     (11, TType.STRING, 'usage', None, None, ), # 11
     (12, TType.STRING, 'visibility', None, None, ), # 12
     (13, TType.STRING, 'grouping', None, None, ), # 13
-    (14, TType.I32, 'begin_time', None, None, ), # 14
-    (15, TType.I32, 'end_time', None, None, ), # 15
   )
 
   def __init__(self, d=None):
     self.id = None
-    self.deviceid = None
+    self.device = None
     self.ifindex = None
     self.ifdescr = None
     self.ifalias = None
@@ -697,13 +660,11 @@ class IfRef:
     self.usage = None
     self.visibility = None
     self.grouping = None
-    self.begin_time = None
-    self.end_time = None
     if isinstance(d, dict):
       if 'id' in d:
         self.id = d['id']
-      if 'deviceid' in d:
-        self.deviceid = d['deviceid']
+      if 'device' in d:
+        self.device = d['device']
       if 'ifindex' in d:
         self.ifindex = d['ifindex']
       if 'ifdescr' in d:
@@ -726,10 +687,6 @@ class IfRef:
         self.visibility = d['visibility']
       if 'grouping' in d:
         self.grouping = d['grouping']
-      if 'begin_time' in d:
-        self.begin_time = d['begin_time']
-      if 'end_time' in d:
-        self.end_time = d['end_time']
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -746,8 +703,9 @@ class IfRef:
         else:
           iprot.skip(ftype)
       elif fid == 2:
-        if ftype == TType.I32:
-          self.deviceid = iprot.readI32();
+        if ftype == TType.STRUCT:
+          self.device = Device()
+          self.device.read(iprot)
         else:
           iprot.skip(ftype)
       elif fid == 3:
@@ -805,16 +763,6 @@ class IfRef:
           self.grouping = iprot.readString();
         else:
           iprot.skip(ftype)
-      elif fid == 14:
-        if ftype == TType.I32:
-          self.begin_time = iprot.readI32();
-        else:
-          iprot.skip(ftype)
-      elif fid == 15:
-        if ftype == TType.I32:
-          self.end_time = iprot.readI32();
-        else:
-          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -829,9 +777,9 @@ class IfRef:
       oprot.writeFieldBegin('id', TType.I32, 1)
       oprot.writeI32(self.id)
       oprot.writeFieldEnd()
-    if self.deviceid != None:
-      oprot.writeFieldBegin('deviceid', TType.I32, 2)
-      oprot.writeI32(self.deviceid)
+    if self.device != None:
+      oprot.writeFieldBegin('device', TType.STRUCT, 2)
+      self.device.write(oprot)
       oprot.writeFieldEnd()
     if self.ifindex != None:
       oprot.writeFieldBegin('ifindex', TType.I32, 3)
@@ -877,14 +825,6 @@ class IfRef:
       oprot.writeFieldBegin('grouping', TType.STRING, 13)
       oprot.writeString(self.grouping)
       oprot.writeFieldEnd()
-    if self.begin_time != None:
-      oprot.writeFieldBegin('begin_time', TType.I32, 14)
-      oprot.writeI32(self.begin_time)
-      oprot.writeFieldEnd()
-    if self.end_time != None:
-      oprot.writeFieldBegin('end_time', TType.I32, 15)
-      oprot.writeI32(self.end_time)
-      oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -900,7 +840,7 @@ class IfRef:
   def __ne__(self, other):
     return not (self == other)
 
-class Counter32:
+class Counter32(object):
 
   thrift_spec = (
     None, # 0
@@ -1008,7 +948,7 @@ class Counter32:
   def __ne__(self, other):
     return not (self == other)
 
-class Counter64:
+class Counter64(object):
 
   thrift_spec = (
     None, # 0
@@ -1116,7 +1056,7 @@ class Counter64:
   def __ne__(self, other):
     return not (self == other)
 
-class Gauge32:
+class Gauge32(object):
 
   thrift_spec = (
     None, # 0
@@ -1224,7 +1164,7 @@ class Gauge32:
   def __ne__(self, other):
     return not (self == other)
 
-class VarList:
+class VarList(object):
 
   thrift_spec = (
     None, # 0
@@ -1257,33 +1197,33 @@ class VarList:
       if fid == 1:
         if ftype == TType.LIST:
           self.counter32 = []
-          (_etype24, _size21) = iprot.readListBegin()
-          for _i25 in xrange(_size21):
-            _elem26 = Counter32()
-            _elem26.read(iprot)
-            self.counter32.append(_elem26)
+          (_etype17, _size14) = iprot.readListBegin()
+          for _i18 in xrange(_size14):
+            _elem19 = Counter32()
+            _elem19.read(iprot)
+            self.counter32.append(_elem19)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
       elif fid == 2:
         if ftype == TType.LIST:
           self.counter64 = []
-          (_etype30, _size27) = iprot.readListBegin()
-          for _i31 in xrange(_size27):
-            _elem32 = Counter64()
-            _elem32.read(iprot)
-            self.counter64.append(_elem32)
+          (_etype23, _size20) = iprot.readListBegin()
+          for _i24 in xrange(_size20):
+            _elem25 = Counter64()
+            _elem25.read(iprot)
+            self.counter64.append(_elem25)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
       elif fid == 3:
         if ftype == TType.LIST:
           self.gauge32 = []
-          (_etype36, _size33) = iprot.readListBegin()
-          for _i37 in xrange(_size33):
-            _elem38 = Gauge32()
-            _elem38.read(iprot)
-            self.gauge32.append(_elem38)
+          (_etype29, _size26) = iprot.readListBegin()
+          for _i30 in xrange(_size26):
+            _elem31 = Gauge32()
+            _elem31.read(iprot)
+            self.gauge32.append(_elem31)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1300,22 +1240,22 @@ class VarList:
     if self.counter32 != None:
       oprot.writeFieldBegin('counter32', TType.LIST, 1)
       oprot.writeListBegin(TType.STRUCT, len(self.counter32))
-      for iter39 in self.counter32:
-        iter39.write(oprot)
+      for iter32 in self.counter32:
+        iter32.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.counter64 != None:
       oprot.writeFieldBegin('counter64', TType.LIST, 2)
       oprot.writeListBegin(TType.STRUCT, len(self.counter64))
-      for iter40 in self.counter64:
-        iter40.write(oprot)
+      for iter33 in self.counter64:
+        iter33.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.gauge32 != None:
       oprot.writeFieldBegin('gauge32', TType.LIST, 3)
       oprot.writeListBegin(TType.STRUCT, len(self.gauge32))
-      for iter41 in self.gauge32:
-        iter41.write(oprot)
+      for iter34 in self.gauge32:
+        iter34.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1333,7 +1273,7 @@ class VarList:
   def __ne__(self, other):
     return not (self == other)
 
-class SNMPPollResultPair:
+class SNMPPollResultPair(object):
 
   thrift_spec = (
     None, # 0
@@ -1402,7 +1342,7 @@ class SNMPPollResultPair:
   def __ne__(self, other):
     return not (self == other)
 
-class SNMPPollResult:
+class SNMPPollResult(object):
 
   thrift_spec = (
     None, # 0
@@ -1454,15 +1394,15 @@ class SNMPPollResult:
       elif fid == 4:
         if ftype == TType.LIST:
           self.vars = []
-          (_etype45, _size42) = iprot.readListBegin()
-          for _i46 in xrange(_size42):
-            _elem47 = []
-            (_etype51, _size48) = iprot.readListBegin()
-            for _i52 in xrange(_size48):
-              _elem53 = iprot.readString();
-              _elem47.append(_elem53)
+          (_etype38, _size35) = iprot.readListBegin()
+          for _i39 in xrange(_size35):
+            _elem40 = []
+            (_etype44, _size41) = iprot.readListBegin()
+            for _i45 in xrange(_size41):
+              _elem46 = iprot.readString();
+              _elem40.append(_elem46)
             iprot.readListEnd()
-            self.vars.append(_elem47)
+            self.vars.append(_elem40)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1491,10 +1431,10 @@ class SNMPPollResult:
     if self.vars != None:
       oprot.writeFieldBegin('vars', TType.LIST, 4)
       oprot.writeListBegin(TType.LIST, len(self.vars))
-      for iter54 in self.vars:
-        oprot.writeListBegin(TType.STRING, len(iter54))
-        for iter55 in iter54:
-          oprot.writeString(iter55)
+      for iter47 in self.vars:
+        oprot.writeListBegin(TType.STRING, len(iter47))
+        for iter48 in iter47:
+          oprot.writeString(iter48)
         oprot.writeListEnd()
       oprot.writeListEnd()
       oprot.writeFieldEnd()
@@ -1513,7 +1453,7 @@ class SNMPPollResult:
   def __ne__(self, other):
     return not (self == other)
 
-class Rate:
+class Rate(object):
 
   thrift_spec = (
     None, # 0

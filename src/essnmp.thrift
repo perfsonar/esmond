@@ -1,6 +1,7 @@
-#!/usr/local/bin/thrift -cpp -py -r
+#!/usr/local/bin/thrift -cpp -py -perl -r
 
-cpp_namespace ESSNMP
+cpp_namespace ESxSNMP
+perl_package ESxSNMP
 
 struct OIDType {
     1: i32 id,
@@ -15,8 +16,7 @@ struct OIDCorrelator {
 struct OID {
     1: i32 id,
     2: string name,
-    4: i32 oidtypeid,
-    5: i32 oidcorrelatorid
+    4: i32 oidtypeid
 }
 
 struct Poller {
@@ -43,13 +43,12 @@ struct Device {
     3: i32 begin_time,
     4: i32 end_time,
     5: string community,
-    6: list<OIDSet> oidsets,
-    7: list<DeviceTag> tags
+    6: list<OIDSet> oidsets
 }
 
 struct IfRef {
     1: i32 id,
-    2: i32 deviceid,
+    2: Device device,
     3: i32 ifindex,
     4: string ifdescr,
     5: string ifalias,
@@ -60,9 +59,11 @@ struct IfRef {
     10: string conntype,
     11: string usage,
     12: string visibility,
-    13: string grouping,
-    14: i32 begin_time,
-    15: i32 end_time
+    13: string grouping
+    /*
+    14: string begin_time,
+    15: string end_time,
+    */
 }
 
 enum Grouping {
@@ -125,9 +126,9 @@ exception ESDBError {
 }
 
 service ESDB {
-    list<string> list_devices(),
+    list<string> list_devices(1: bool active),
     Device get_device(1: string name),
-    map<string, Device> get_all_devices(),
+    map<string, Device> get_all_devices(1: bool active),
     void add_device(1: string name, 2: string begin_time, 3: string end_time),
     void update_device(1: string name, 2: string begin_time, 3: string end_time),
     list<OIDSet> list_device_oidsets(1: Device device),
@@ -146,5 +147,11 @@ service ESDB {
 #    void insert_gauge32(list<Var> vars, list<Gauge32> values),
     byte store_poll_result(SNMPPollResult result),
 
-    VarList select(1: string device, 2: string iface_name, 3: string oidset, 4: string oid, 5: string begin_time, 6: string end_time, 7: string flags, 8: string cf, 9: string resolution) throws (1: ESDBError error)
+    VarList select(1: string device, 2: string iface_name, 3: string oidset, 4: string oid, 5: string begin_time, 6: string end_time, 7: string flags, 8: string cf, 9: string resolution) throws (1: ESDBError error),
+
+    #
+    # get interfaces for device, limit to those with a description of
+    # has_descr is True
+    #
+    list<IfRef> get_interfaces(1: string device, 2: bool has_descr)
 }

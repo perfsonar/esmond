@@ -13,7 +13,7 @@
 
 
 
-namespace ESSNMP {
+namespace ESxSNMP {
 
 enum Grouping {
   Commercial = 1,
@@ -100,10 +100,10 @@ class OIDCorrelator {
 class OID {
  public:
 
-  static char* ascii_fingerprint; // = "4FFDF20C4BBE097F6867A04CBE601C32";
-  static uint8_t binary_fingerprint[16]; // = {0x4F,0xFD,0xF2,0x0C,0x4B,0xBE,0x09,0x7F,0x68,0x67,0xA0,0x4C,0xBE,0x60,0x1C,0x32};
+  static char* ascii_fingerprint; // = "138DB496E40E0B48699CCC3A9616CC1B";
+  static uint8_t binary_fingerprint[16]; // = {0x13,0x8D,0xB4,0x96,0xE4,0x0E,0x0B,0x48,0x69,0x9C,0xCC,0x3A,0x96,0x16,0xCC,0x1B};
 
-  OID() : id(0), name(""), oidtypeid(0), oidcorrelatorid(0) {
+  OID() : id(0), name(""), oidtypeid(0) {
   }
 
   virtual ~OID() throw() {}
@@ -111,14 +111,12 @@ class OID {
   int32_t id;
   std::string name;
   int32_t oidtypeid;
-  int32_t oidcorrelatorid;
 
   struct __isset {
-    __isset() : id(false), name(false), oidtypeid(false), oidcorrelatorid(false) {}
+    __isset() : id(false), name(false), oidtypeid(false) {}
     bool id;
     bool name;
     bool oidtypeid;
-    bool oidcorrelatorid;
   } __isset;
 
   bool operator == (const OID & rhs) const
@@ -128,8 +126,6 @@ class OID {
     if (!(name == rhs.name))
       return false;
     if (!(oidtypeid == rhs.oidtypeid))
-      return false;
-    if (!(oidcorrelatorid == rhs.oidcorrelatorid))
       return false;
     return true;
   }
@@ -182,8 +178,8 @@ class Poller {
 class OIDSet {
  public:
 
-  static char* ascii_fingerprint; // = "D3B5D743738D33B8A4323CE1DF372FE6";
-  static uint8_t binary_fingerprint[16]; // = {0xD3,0xB5,0xD7,0x43,0x73,0x8D,0x33,0xB8,0xA4,0x32,0x3C,0xE1,0xDF,0x37,0x2F,0xE6};
+  static char* ascii_fingerprint; // = "03B09FCBDDCCEB482CC7EAD8FD750E1C";
+  static uint8_t binary_fingerprint[16]; // = {0x03,0xB0,0x9F,0xCB,0xDD,0xCC,0xEB,0x48,0x2C,0xC7,0xEA,0xD8,0xFD,0x75,0x0E,0x1C};
 
   OIDSet() : id(0), name(""), frequency(0), pollerid(0) {
   }
@@ -268,8 +264,8 @@ class DeviceTag {
 class Device {
  public:
 
-  static char* ascii_fingerprint; // = "6DF9EB9C770C375172E403E9353CF73C";
-  static uint8_t binary_fingerprint[16]; // = {0x6D,0xF9,0xEB,0x9C,0x77,0x0C,0x37,0x51,0x72,0xE4,0x03,0xE9,0x35,0x3C,0xF7,0x3C};
+  static char* ascii_fingerprint; // = "ECE7686132EE207AF9BAE3CD78551DAD";
+  static uint8_t binary_fingerprint[16]; // = {0xEC,0xE7,0x68,0x61,0x32,0xEE,0x20,0x7A,0xF9,0xBA,0xE3,0xCD,0x78,0x55,0x1D,0xAD};
 
   Device() : id(0), name(""), begin_time(0), end_time(0), community("") {
   }
@@ -282,17 +278,15 @@ class Device {
   int32_t end_time;
   std::string community;
   std::vector<OIDSet>  oidsets;
-  std::vector<DeviceTag>  tags;
 
   struct __isset {
-    __isset() : id(false), name(false), begin_time(false), end_time(false), community(false), oidsets(false), tags(false) {}
+    __isset() : id(false), name(false), begin_time(false), end_time(false), community(false), oidsets(false) {}
     bool id;
     bool name;
     bool begin_time;
     bool end_time;
     bool community;
     bool oidsets;
-    bool tags;
   } __isset;
 
   bool operator == (const Device & rhs) const
@@ -309,8 +303,6 @@ class Device {
       return false;
     if (!(oidsets == rhs.oidsets))
       return false;
-    if (!(tags == rhs.tags))
-      return false;
     return true;
   }
   bool operator != (const Device &rhs) const {
@@ -325,16 +317,16 @@ class Device {
 class IfRef {
  public:
 
-  static char* ascii_fingerprint; // = "229734C05FBBCEE1EFB6C57FE7D97BA7";
-  static uint8_t binary_fingerprint[16]; // = {0x22,0x97,0x34,0xC0,0x5F,0xBB,0xCE,0xE1,0xEF,0xB6,0xC5,0x7F,0xE7,0xD9,0x7B,0xA7};
+  static char* ascii_fingerprint; // = "A6DCBB9F8A4BAABC3AD6F20494963DE4";
+  static uint8_t binary_fingerprint[16]; // = {0xA6,0xDC,0xBB,0x9F,0x8A,0x4B,0xAA,0xBC,0x3A,0xD6,0xF2,0x04,0x94,0x96,0x3D,0xE4};
 
-  IfRef() : id(0), deviceid(0), ifindex(0), ifdescr(""), ifalias(""), ipaddr(""), ifspeed(0), ifhighspeed(0), connection(""), conntype(""), usage(""), visibility(""), grouping(""), begin_time(0), end_time(0) {
+  IfRef() : id(0), ifindex(0), ifdescr(""), ifalias(""), ipaddr(""), ifspeed(0), ifhighspeed(0), connection(""), conntype(""), usage(""), visibility(""), grouping("") {
   }
 
   virtual ~IfRef() throw() {}
 
   int32_t id;
-  int32_t deviceid;
+  Device device;
   int32_t ifindex;
   std::string ifdescr;
   std::string ifalias;
@@ -346,13 +338,11 @@ class IfRef {
   std::string usage;
   std::string visibility;
   std::string grouping;
-  int32_t begin_time;
-  int32_t end_time;
 
   struct __isset {
-    __isset() : id(false), deviceid(false), ifindex(false), ifdescr(false), ifalias(false), ipaddr(false), ifspeed(false), ifhighspeed(false), connection(false), conntype(false), usage(false), visibility(false), grouping(false), begin_time(false), end_time(false) {}
+    __isset() : id(false), device(false), ifindex(false), ifdescr(false), ifalias(false), ipaddr(false), ifspeed(false), ifhighspeed(false), connection(false), conntype(false), usage(false), visibility(false), grouping(false) {}
     bool id;
-    bool deviceid;
+    bool device;
     bool ifindex;
     bool ifdescr;
     bool ifalias;
@@ -364,15 +354,13 @@ class IfRef {
     bool usage;
     bool visibility;
     bool grouping;
-    bool begin_time;
-    bool end_time;
   } __isset;
 
   bool operator == (const IfRef & rhs) const
   {
     if (!(id == rhs.id))
       return false;
-    if (!(deviceid == rhs.deviceid))
+    if (!(device == rhs.device))
       return false;
     if (!(ifindex == rhs.ifindex))
       return false;
@@ -395,10 +383,6 @@ class IfRef {
     if (!(visibility == rhs.visibility))
       return false;
     if (!(grouping == rhs.grouping))
-      return false;
-    if (!(begin_time == rhs.begin_time))
-      return false;
-    if (!(end_time == rhs.end_time))
       return false;
     return true;
   }
