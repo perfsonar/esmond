@@ -40,20 +40,15 @@ class ESPolldConfig(object):
         self.read_config()
 
     def read_config(self):
-        f = open(self.file,"r")
-        for line in f:
-            line = line.strip()
-            if line.startswith("#"):
-                continue
-            (var, val) = line.split()
-            if var == "db_uri":
-                self.db_uri = val
-            elif var == "tsdb_root":
-                self.tsdb_root = val
-            elif var == "error_email":
-                self.error_email = val
-            else:
-                raise PollError("unknown config option: %s %s" % (var,val))
+        """ read in config from INI-style file, requiring section header 'main', e.g.:
+            [main]
+            db_uri = db_example_string
+            tsdb_root = /var/db/tsdb/
+            error_email = me@my.com """
+        cfg = ConfigParser.ConfigParser()
+        cfg.read(self.file)
+        for opt in ('db_uri', 'tsdb_root', 'error_email'):
+            exec('self.%s = cfg.get("main", "%s")' % (opt, opt))
 
 
 def remove_metachars(name):
@@ -117,7 +112,7 @@ class JnxFirewallCorrelator(PollCorrelator):
 
 class CiscoCPUCorrelator(PollCorrelator):
     """Correlates entries in cpmCPUTotal5min to an entry in entPhysicalName
-    via cpmCPUTotalPhysicalIndex.  
+    via cpmCPUTotalPhysicalIndex.
 
     See http://www.cisco.com/warp/public/477/SNMP/collect_cpu_util_snmp.html"""
 
@@ -314,7 +309,7 @@ class Poller(object):
         if delay >= 0:
             time.sleep(delay)
         else:
-            self.log.warning("poll %d seconds late" % abs(delay)) 
+            self.log.warning("poll %d seconds late" % abs(delay))
 
 class TSDBPoller(Poller):
     def __init__(self, config, name, device, oidset):
@@ -424,7 +419,7 @@ class IfRefSQLPoller(SQLPoller):
                     new_row = self._new_row_from_obj(new_ifref)
                     self.db_session.save(new_row)
                     self.db_session.flush()
-                
+
                 del new_ifrefs[old_ifref.ifdescr]
             # no entry in new_ifrefs: interface is gone, update db
             else:
