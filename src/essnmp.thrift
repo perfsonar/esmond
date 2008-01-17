@@ -153,5 +153,5 @@ service ESDB {
     # get interfaces for device, limit to those with a description of
     # has_descr is True
     #
-    list<IfRef> get_interfaces(1: string device, 2: bool has_descr)
+    list<IfRef> get_interfaces(1: string device, 2: bool all_interfaces)
 }

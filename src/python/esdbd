@@ -11,9 +11,9 @@ import tsdb
 
 from essnmp.config import ESConfig
 from essnmp.sql import *
-from essnmp.thrift import ESDB
-from essnmp.thrift.ipaclsocket import IPACLSocket
-import essnmp.thrift.ttypes
+from essnmp.rpc import ESDB
+from essnmp.ipaclsocket import IPACLSocket
+import essnmp.rpc.ttypes
 from essnmp.poll import remove_metachars
 
 class ESDBHandler(object):
@@ -65,7 +65,7 @@ class ESDBHandler(object):
         """
 
         if cf != "AVERAGE":
-            raise essnmp.thrift.ttypes.ESDBError(
+            raise essnmp.rpc.ttypes.ESDBError(
                     dict(what="unsupported consolidation function: %s" % cf))
 
         iface_name = remove_metachars(iface_name)
@@ -78,16 +78,16 @@ class ESDBHandler(object):
         for datum in data:
             l.append(datum)
 
-        result = essnmp.thrift.ttypes.VarList()
+        result = essnmp.rpc.ttypes.VarList()
 
-        if isinstance(l[0], essnmp.thrift.ttypes.Counter32):
+        if isinstance(l[0], essnmp.rpc.ttypes.Counter32):
             result.counter32 = l
-        elif isinstance(l[0], essnmp.thrift.ttypes.Counter64):
+        elif isinstance(l[0], essnmp.rpc.ttypes.Counter64):
             result.counter64 = l
-        elif isinstance(l[0], essnmp.thrift.ttypes.Gauge32):
+        elif isinstance(l[0], essnmp.rpc.ttypes.Gauge32):
             result.gauge32 = l
         else:
-            raise essnmp.thrift.ttypes.ESDBError(
+            raise essnmp.rpc.ttypes.ESDBError(
                     dict(what="unknown return type from TSDB select"))
 
         return result
@@ -95,7 +95,7 @@ class ESDBHandler(object):
     def get_active_devices(self):
         return self.session.query(Device).select("end_time > 'NOW' and begin_time < 'NOW'")
 
-    def get_interfaces(self, device, has_descr):
+    def get_interfaces(self, device, all_interfaces):
         """
         Return a list of the most recent IfRef entry for each interface on
         each active device.
@@ -104,20 +104,26 @@ class ESDBHandler(object):
         # to do that...
 
         d = self.session.query(Device).select_by(name=device)[0]
-        l = self.session.query(IfRef).select(
-                    """ifref.deviceid = %d
-                    AND ifref.end_time > 'NOW'
-                    AND ifref.begin_time < 'NOW'""" % d.id)
+        q = """ifref.deviceid = %d
+                AND ifref.end_time > 'NOW'
+                AND ifref.begin_time < 'NOW'""" % d.id
+
+        if not all_interfaces:
+            q += """ AND ifref.ifalias ~* 'show:'"""
+        print q
+
+        l = self.session.query(IfRef).select(q)
 #        import pdb
 #        pdb.set_trace()
+        print len(l)
         return l
 
 #
 # Make tsdb types Thrifty
 #
-tsdb.Counter32.__bases__ += (essnmp.thrift.ttypes.Counter32, )
-tsdb.Counter64.__bases__ += (essnmp.thrift.ttypes.Counter64, )
-tsdb.Gauge32.__bases__ += (essnmp.thrift.ttypes.Gauge32, )
+tsdb.Counter32.__bases__ += (essnmp.rpc.ttypes.Counter32, )
+tsdb.Counter64.__bases__ += (essnmp.rpc.ttypes.Counter64, )
+tsdb.Gauge32.__bases__ += (essnmp.rpc.ttypes.Gauge32, )
 
 handler = ESDBHandler()
 processor = ESDB.Processor(handler)

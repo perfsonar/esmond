@@ -1,5 +1,5 @@
 from sqlalchemy import *
-from essnmp.thrift.ttypes import *
+from essnmp.rpc.ttypes import *
 from calendar import timegm
 
 vars = {}

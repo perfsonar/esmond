@@ -85,7 +85,7 @@ my( $in, $out, $file, $intdesc, $rtr, $intname, $ip, $dns, $speed, @ips, @dns,
     $key, $oidset, $prefix );
 #local $/; # Enable "slurp" mode
 
-my $socket    = new Thrift::Socket('localhost',9090);
+my $socket    = new Thrift::Socket('localhost', 9090);
 my $transport = new Thrift::BufferedTransport($socket,1024,1024);
 my $protocol  = new Thrift::BinaryProtocol($transport);
 my $client    = new ESDBClient($protocol);
@@ -94,7 +94,7 @@ eval {
     $transport->open();
 
     foreach my $device ( @{$client->list_devices(1)} ) {
-        my $interfaces = $client->get_interfaces($device, 1);
+        my $interfaces = $client->get_interfaces($device, 0);
         foreach my $iface (@{$interfaces}) {
             $ip = $iface->{ipaddr};
             if(defined($ip)) {
@@ -105,47 +105,51 @@ eval {
                     $dns = "";
                 }
             } else {
+                $ip = "";
                 $dns = "";
             }
     
             $rtr = $iface->{device}->{name};
-    
+
             if (exists $OIDSET{$rtr}) {
                 $oidset = $OIDSET{$rtr};
             } else {
                 foreach my $set (@{$iface->{device}->{oidsets}}) {
                     if($set->{name} eq "FastPoll") {
                         $oidset = "FastPoll";
+                        $OIDSET{$rtr} = $oidset;
                         last;
                     } elsif ($set->{name} eq "FastPollHC") {
                         $oidset = "FastPollHC";
+                        $OIDSET{$rtr} = $oidset;
                         last;
                     }
-                    $OIDSET{$rtr} = $oidset;
                 }
             }
-    
+   
             if($oidset eq "FastPollHC") {
                 $prefix = "ifHC";
             } elsif ($oidset eq "FastPoll") {
                 $prefix = "if";
             } else {
-                print "No OIDSet for $rtr.  PANIC!!!\n";
-                exit(1);
+                print "<!-- No OIDSet for $rtr.  -->\n";
+                next;
             }
                 
             $intname = $iface->{ifdescr};
-            $intname =~ s/ /_/g;
-            $intname =~ s/\//_/g;
             $key = "$rtr:$intname";
-            $FILE{$key} = "$rtr/$oidset";
-            $DSIN{$key} = $prefix . "InOctets/$intname";
-            $DSOUT{$key} = $prefix . "OutOctets/$intname";
+            $FILE{$key} = "$rtr,$oidset,$intname";
+            $DSIN{$key} = $prefix . "InOctets";
+            $DSOUT{$key} = $prefix . "OutOctets";
             $INTDESC{$key} = $iface->{ifalias};
             $RTR{$key} = $rtr;
             $INTNAME{$key} = $intname;
             $DNS{$key} = $dns;
-            $SPEED{$key} = $iface->{ifhighspeed} * 8; # XXX is this the right one?
+            if($iface->{ifhighspeed} < 1) {
+                $SPEED{$key} = $iface->{ifspeed};
+            } else {
+                $SPEED{$key} = $iface->{ifhighspeed} * 1000000;
+            }
             $IP{$key} = $ip;
         }
     }

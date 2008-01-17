@@ -9,6 +9,13 @@ from email.MIMEText import MIMEText
 from StringIO import StringIO
 import traceback
 
+from thrift.transport import TTransport
+from thrift.transport import TSocket
+from thrift.transport import THttpClient
+from thrift.protocol import TBinaryProtocol
+
+from essnmp.rpc import ESDB
+
 def daemonize(pidfile=None):
     '''Forks the current process into a daemon.
         derived from the ASPN recipe:
@@ -114,3 +121,8 @@ def mail_exception(to):
     traceback.print_exception(x,y,z,None,body)
     subj = 'ESSNMP Exception: ' + time.ctime()
     send_mail('ESSNMP Exception Monkey <emonkey@es.net>', to, subj, body.getvalue())
+
+def get_ESDB_client(server='localhost', port=9090):
+    transport = TTransport.TBufferedTransport(TSocket.TSocket(server, port))
+    client = ESDB.Client(TBinaryProtocol.TBinaryProtocol(transport))
+    return (transport, client)
