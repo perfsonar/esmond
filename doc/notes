@@ -1,5 +1,6 @@
-polling does not try to correlate ifIndexes at all.  it is always stored with
-the raw ifIndex returned from the SNMP queries.  the interface history is used
-to assemble the data for any given interface.
-
+We may have a LOT of files open at any given time and during the transition
+between chunks we may have 2 * $LOTS open.  Set your system resources
+appropriately.  On FreeBSD this is done by tuning sys.maxfiles using sysctl.
+May also need to tune kern.maxfilesperproc once me move from the process per
+polling group per device model.
 

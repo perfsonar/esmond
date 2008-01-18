@@ -9,7 +9,6 @@ from thrift.server import TServer
 
 import tsdb
 
-from essnmp.config import ESConfig
 from essnmp.sql import *
 from essnmp.rpc import ESDB
 from essnmp.ipaclsocket import IPACLSocket
