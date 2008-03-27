@@ -6,14 +6,6 @@
 
 from thrift.Thrift import *
 
-from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
-try:
-  from thrift.protocol import fastbinary
-except:
-  fastbinary = None
-
-
 class Grouping(object):
   Commercial = 1
   Internal = 2
@@ -22,12 +14,6 @@ class Grouping(object):
   Site = 5
 
 class OIDType(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.STRING, 'name', None, None, ), # 2
-  )
 
   def __init__(self, d=None):
     self.id = None
@@ -39,9 +25,6 @@ class OIDType(object):
         self.name = d['name']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -63,9 +46,6 @@ class OIDType(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('OIDType')
     if self.id != None:
       oprot.writeFieldBegin('id', TType.I32, 1)
@@ -84,19 +64,7 @@ class OIDType(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class OIDCorrelator(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.STRING, 'name', None, None, ), # 2
-  )
 
   def __init__(self, d=None):
     self.id = None
@@ -108,9 +76,6 @@ class OIDCorrelator(object):
         self.name = d['name']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -132,9 +97,6 @@ class OIDCorrelator(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('OIDCorrelator')
     if self.id != None:
       oprot.writeFieldBegin('id', TType.I32, 1)
@@ -153,21 +115,7 @@ class OIDCorrelator(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class OID(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.STRING, 'name', None, None, ), # 2
-    None, # 3
-    (4, TType.I32, 'oidtypeid', None, None, ), # 4
-  )
 
   def __init__(self, d=None):
     self.id = None
@@ -182,9 +130,6 @@ class OID(object):
         self.oidtypeid = d['oidtypeid']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -211,9 +156,6 @@ class OID(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('OID')
     if self.id != None:
       oprot.writeFieldBegin('id', TType.I32, 1)
@@ -236,19 +178,7 @@ class OID(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class Poller(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.STRING, 'name', None, None, ), # 2
-  )
 
   def __init__(self, d=None):
     self.id = None
@@ -260,9 +190,6 @@ class Poller(object):
         self.name = d['name']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -284,9 +211,6 @@ class Poller(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('Poller')
     if self.id != None:
       oprot.writeFieldBegin('id', TType.I32, 1)
@@ -305,22 +229,7 @@ class Poller(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class OIDSet(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.STRING, 'name', None, None, ), # 2
-    (3, TType.I32, 'frequency', None, None, ), # 3
-    (4, TType.LIST, 'oids', (TType.STRUCT,(OID, OID.thrift_spec)), None, ), # 4
-    (5, TType.I32, 'pollerid', None, None, ), # 5
-  )
 
   def __init__(self, d=None):
     self.id = None
@@ -341,9 +250,6 @@ class OIDSet(object):
         self.pollerid = d['pollerid']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -386,9 +292,6 @@ class OIDSet(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('OIDSet')
     if self.id != None:
       oprot.writeFieldBegin('id', TType.I32, 1)
@@ -422,19 +325,7 @@ class OIDSet(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class DeviceTag(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.STRING, 'name', None, None, ), # 2
-  )
 
   def __init__(self, d=None):
     self.id = None
@@ -446,9 +337,6 @@ class DeviceTag(object):
         self.name = d['name']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -470,9 +358,6 @@ class DeviceTag(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('DeviceTag')
     if self.id != None:
       oprot.writeFieldBegin('id', TType.I32, 1)
@@ -491,23 +376,7 @@ class DeviceTag(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class Device(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.STRING, 'name', None, None, ), # 2
-    (3, TType.I32, 'begin_time', None, None, ), # 3
-    (4, TType.I32, 'end_time', None, None, ), # 4
-    (5, TType.STRING, 'community', None, None, ), # 5
-    (6, TType.LIST, 'oidsets', (TType.STRUCT,(OIDSet, OIDSet.thrift_spec)), None, ), # 6
-  )
 
   def __init__(self, d=None):
     self.id = None
@@ -531,9 +400,6 @@ class Device(object):
         self.oidsets = d['oidsets']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -581,9 +447,6 @@ class Device(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('Device')
     if self.id != None:
       oprot.writeFieldBegin('id', TType.I32, 1)
@@ -621,30 +484,7 @@ class Device(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class IfRef(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'id', None, None, ), # 1
-    (2, TType.STRUCT, 'device', (Device, Device.thrift_spec), None, ), # 2
-    (3, TType.I32, 'ifindex', None, None, ), # 3
-    (4, TType.STRING, 'ifdescr', None, None, ), # 4
-    (5, TType.STRING, 'ifalias', None, None, ), # 5
-    (6, TType.STRING, 'ipaddr', None, None, ), # 6
-    (7, TType.I32, 'ifspeed', None, None, ), # 7
-    (8, TType.I32, 'ifhighspeed', None, None, ), # 8
-    (9, TType.STRING, 'connection', None, None, ), # 9
-    (10, TType.STRING, 'conntype', None, None, ), # 10
-    (11, TType.STRING, 'usage', None, None, ), # 11
-    (12, TType.STRING, 'visibility', None, None, ), # 12
-    (13, TType.STRING, 'grouping', None, None, ), # 13
-  )
 
   def __init__(self, d=None):
     self.id = None
@@ -689,9 +529,6 @@ class IfRef(object):
         self.grouping = d['grouping']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -769,9 +606,6 @@ class IfRef(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('IfRef')
     if self.id != None:
       oprot.writeFieldBegin('id', TType.I32, 1)
@@ -834,22 +668,7 @@ class IfRef(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class Counter32(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'flags', None, None, ), # 1
-    (2, TType.I32, 'timestamp', None, None, ), # 2
-    (3, TType.I32, 'value', None, None, ), # 3
-    (4, TType.BYTE, 'version', None, None, ), # 4
-    (5, TType.BYTE, 'type_id', None, None, ), # 5
-  )
 
   def __init__(self, d=None):
     self.flags = None
@@ -870,9 +689,6 @@ class Counter32(object):
         self.type_id = d['type_id']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -909,9 +725,6 @@ class Counter32(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('Counter32')
     if self.flags != None:
       oprot.writeFieldBegin('flags', TType.I32, 1)
@@ -942,22 +755,7 @@ class Counter32(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class Counter64(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'flags', None, None, ), # 1
-    (2, TType.I32, 'timestamp', None, None, ), # 2
-    (3, TType.I64, 'value', None, None, ), # 3
-    (4, TType.BYTE, 'version', None, None, ), # 4
-    (5, TType.BYTE, 'type_id', None, None, ), # 5
-  )
 
   def __init__(self, d=None):
     self.flags = None
@@ -978,9 +776,6 @@ class Counter64(object):
         self.type_id = d['type_id']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -1017,9 +812,6 @@ class Counter64(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('Counter64')
     if self.flags != None:
       oprot.writeFieldBegin('flags', TType.I32, 1)
@@ -1050,22 +842,7 @@ class Counter64(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class Gauge32(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'flags', None, None, ), # 1
-    (2, TType.I32, 'timestamp', None, None, ), # 2
-    (3, TType.I32, 'value', None, None, ), # 3
-    (4, TType.BYTE, 'version', None, None, ), # 4
-    (5, TType.BYTE, 'type_id', None, None, ), # 5
-  )
 
   def __init__(self, d=None):
     self.flags = None
@@ -1086,9 +863,6 @@ class Gauge32(object):
         self.type_id = d['type_id']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -1125,9 +899,6 @@ class Gauge32(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('Gauge32')
     if self.flags != None:
       oprot.writeFieldBegin('flags', TType.I32, 1)
@@ -1158,25 +929,136 @@ class Gauge32(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+class Aggregate(object):
 
-  def __ne__(self, other):
-    return not (self == other)
+  def __init__(self, d=None):
+    self.flags = None
+    self.timestamp = None
+    self.average = None
+    self.delta = None
+    self.min = None
+    self.max = None
+    self.version = 1
+    self.type_id = 5
+    if isinstance(d, dict):
+      if 'flags' in d:
+        self.flags = d['flags']
+      if 'timestamp' in d:
+        self.timestamp = d['timestamp']
+      if 'average' in d:
+        self.average = d['average']
+      if 'delta' in d:
+        self.delta = d['delta']
+      if 'min' in d:
+        self.min = d['min']
+      if 'max' in d:
+        self.max = d['max']
+      if 'version' in d:
+        self.version = d['version']
+      if 'type_id' in d:
+        self.type_id = d['type_id']
+
+  def read(self, iprot):
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.flags = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.I32:
+          self.timestamp = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 3:
+        if ftype == TType.DOUBLE:
+          self.average = iprot.readDouble();
+        else:
+          iprot.skip(ftype)
+      elif fid == 4:
+        if ftype == TType.DOUBLE:
+          self.delta = iprot.readDouble();
+        else:
+          iprot.skip(ftype)
+      elif fid == 5:
+        if ftype == TType.DOUBLE:
+          self.min = iprot.readDouble();
+        else:
+          iprot.skip(ftype)
+      elif fid == 6:
+        if ftype == TType.DOUBLE:
+          self.max = iprot.readDouble();
+        else:
+          iprot.skip(ftype)
+      elif fid == 7:
+        if ftype == TType.BYTE:
+          self.version = iprot.readByte();
+        else:
+          iprot.skip(ftype)
+      elif fid == 8:
+        if ftype == TType.BYTE:
+          self.type_id = iprot.readByte();
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    oprot.writeStructBegin('Aggregate')
+    if self.flags != None:
+      oprot.writeFieldBegin('flags', TType.I32, 1)
+      oprot.writeI32(self.flags)
+      oprot.writeFieldEnd()
+    if self.timestamp != None:
+      oprot.writeFieldBegin('timestamp', TType.I32, 2)
+      oprot.writeI32(self.timestamp)
+      oprot.writeFieldEnd()
+    if self.average != None:
+      oprot.writeFieldBegin('average', TType.DOUBLE, 3)
+      oprot.writeDouble(self.average)
+      oprot.writeFieldEnd()
+    if self.delta != None:
+      oprot.writeFieldBegin('delta', TType.DOUBLE, 4)
+      oprot.writeDouble(self.delta)
+      oprot.writeFieldEnd()
+    if self.min != None:
+      oprot.writeFieldBegin('min', TType.DOUBLE, 5)
+      oprot.writeDouble(self.min)
+      oprot.writeFieldEnd()
+    if self.max != None:
+      oprot.writeFieldBegin('max', TType.DOUBLE, 6)
+      oprot.writeDouble(self.max)
+      oprot.writeFieldEnd()
+    if self.version != None:
+      oprot.writeFieldBegin('version', TType.BYTE, 7)
+      oprot.writeByte(self.version)
+      oprot.writeFieldEnd()
+    if self.type_id != None:
+      oprot.writeFieldBegin('type_id', TType.BYTE, 8)
+      oprot.writeByte(self.type_id)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def __str__(self): 
+    return str(self.__dict__)
+
+  def __repr__(self): 
+    return repr(self.__dict__)
 
 class VarList(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.LIST, 'counter32', (TType.STRUCT,(Counter32, Counter32.thrift_spec)), None, ), # 1
-    (2, TType.LIST, 'counter64', (TType.STRUCT,(Counter64, Counter64.thrift_spec)), None, ), # 2
-    (3, TType.LIST, 'gauge32', (TType.STRUCT,(Gauge32, Gauge32.thrift_spec)), None, ), # 3
-  )
 
   def __init__(self, d=None):
     self.counter32 = None
     self.counter64 = None
     self.gauge32 = None
+    self.aggregate = None
     if isinstance(d, dict):
       if 'counter32' in d:
         self.counter32 = d['counter32']
@@ -1184,11 +1066,10 @@ class VarList(object):
         self.counter64 = d['counter64']
       if 'gauge32' in d:
         self.gauge32 = d['gauge32']
+      if 'aggregate' in d:
+        self.aggregate = d['aggregate']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -1227,35 +1108,50 @@ class VarList(object):
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
+      elif fid == 4:
+        if ftype == TType.LIST:
+          self.aggregate = []
+          (_etype35, _size32) = iprot.readListBegin()
+          for _i36 in xrange(_size32):
+            _elem37 = Aggregate()
+            _elem37.read(iprot)
+            self.aggregate.append(_elem37)
+          iprot.readListEnd()
+        else:
+          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('VarList')
     if self.counter32 != None:
       oprot.writeFieldBegin('counter32', TType.LIST, 1)
       oprot.writeListBegin(TType.STRUCT, len(self.counter32))
-      for iter32 in self.counter32:
-        iter32.write(oprot)
+      for iter38 in self.counter32:
+        iter38.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.counter64 != None:
       oprot.writeFieldBegin('counter64', TType.LIST, 2)
       oprot.writeListBegin(TType.STRUCT, len(self.counter64))
-      for iter33 in self.counter64:
-        iter33.write(oprot)
+      for iter39 in self.counter64:
+        iter39.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     if self.gauge32 != None:
       oprot.writeFieldBegin('gauge32', TType.LIST, 3)
       oprot.writeListBegin(TType.STRUCT, len(self.gauge32))
-      for iter34 in self.gauge32:
-        iter34.write(oprot)
+      for iter40 in self.gauge32:
+        iter40.write(oprot)
+      oprot.writeListEnd()
+      oprot.writeFieldEnd()
+    if self.aggregate != None:
+      oprot.writeFieldBegin('aggregate', TType.LIST, 4)
+      oprot.writeListBegin(TType.STRUCT, len(self.aggregate))
+      for iter41 in self.aggregate:
+        iter41.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -1267,19 +1163,7 @@ class VarList(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class SNMPPollResultPair(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.STRING, 'OIDName', None, None, ), # 1
-    (2, TType.STRING, 'value', None, None, ), # 2
-  )
 
   def __init__(self, d=None):
     self.OIDName = None
@@ -1291,9 +1175,6 @@ class SNMPPollResultPair(object):
         self.value = d['value']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -1315,9 +1196,6 @@ class SNMPPollResultPair(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('SNMPPollResultPair')
     if self.OIDName != None:
       oprot.writeFieldBegin('OIDName', TType.STRING, 1)
@@ -1336,21 +1214,7 @@ class SNMPPollResultPair(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class SNMPPollResult(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'device_id', None, None, ), # 1
-    (2, TType.I32, 'oidset_id', None, None, ), # 2
-    (3, TType.I32, 'timestamp', None, None, ), # 3
-    (4, TType.LIST, 'vars', (TType.LIST,(TType.STRING,None)), None, ), # 4
-  )
 
   def __init__(self, d=None):
     self.device_id = None
@@ -1368,9 +1232,6 @@ class SNMPPollResult(object):
         self.vars = d['vars']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -1394,15 +1255,15 @@ class SNMPPollResult(object):
       elif fid == 4:
         if ftype == TType.LIST:
           self.vars = []
-          (_etype38, _size35) = iprot.readListBegin()
-          for _i39 in xrange(_size35):
-            _elem40 = []
-            (_etype44, _size41) = iprot.readListBegin()
-            for _i45 in xrange(_size41):
-              _elem46 = iprot.readString();
-              _elem40.append(_elem46)
+          (_etype45, _size42) = iprot.readListBegin()
+          for _i46 in xrange(_size42):
+            _elem47 = []
+            (_etype51, _size48) = iprot.readListBegin()
+            for _i52 in xrange(_size48):
+              _elem53 = iprot.readString();
+              _elem47.append(_elem53)
             iprot.readListEnd()
-            self.vars.append(_elem40)
+            self.vars.append(_elem47)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -1412,9 +1273,6 @@ class SNMPPollResult(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('SNMPPollResult')
     if self.device_id != None:
       oprot.writeFieldBegin('device_id', TType.I32, 1)
@@ -1431,10 +1289,10 @@ class SNMPPollResult(object):
     if self.vars != None:
       oprot.writeFieldBegin('vars', TType.LIST, 4)
       oprot.writeListBegin(TType.LIST, len(self.vars))
-      for iter47 in self.vars:
-        oprot.writeListBegin(TType.STRING, len(iter47))
-        for iter48 in iter47:
-          oprot.writeString(iter48)
+      for iter54 in self.vars:
+        oprot.writeListBegin(TType.STRING, len(iter54))
+        for iter55 in iter54:
+          oprot.writeString(iter55)
         oprot.writeListEnd()
       oprot.writeListEnd()
       oprot.writeFieldEnd()
@@ -1447,19 +1305,7 @@ class SNMPPollResult(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class Rate(object):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'timestamp', None, None, ), # 1
-    (2, TType.DOUBLE, 'rate', None, None, ), # 2
-  )
 
   def __init__(self, d=None):
     self.timestamp = None
@@ -1471,9 +1317,6 @@ class Rate(object):
         self.rate = d['rate']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -1495,9 +1338,6 @@ class Rate(object):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('Rate')
     if self.timestamp != None:
       oprot.writeFieldBegin('timestamp', TType.I32, 1)
@@ -1516,18 +1356,7 @@ class Rate(object):
   def __repr__(self): 
     return repr(self.__dict__)
 
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class ESDBError(Exception):
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.STRING, 'what', None, None, ), # 1
-  )
 
   def __init__(self, d=None):
     self.what = None
@@ -1536,9 +1365,6 @@ class ESDBError(Exception):
         self.what = d['what']
 
   def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
@@ -1555,9 +1381,6 @@ class ESDBError(Exception):
     iprot.readStructEnd()
 
   def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
     oprot.writeStructBegin('ESDBError')
     if self.what != None:
       oprot.writeFieldBegin('what', TType.STRING, 1)
@@ -1571,10 +1394,4 @@ class ESDBError(Exception):
 
   def __repr__(self): 
     return repr(self.__dict__)
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
 

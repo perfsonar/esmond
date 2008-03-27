@@ -17,11 +17,11 @@ from essnmp.ipaclsocket import IPACLSocket
 import essnmp.rpc.ttypes
 from essnmp.poll import remove_metachars
 
-essnmp.sql.setup_db("postgres:///essnmp")
+essnmp.sql.setup_db("postgres:///esxsnmp")
 class ESDBHandler(object):
     def __init__(self):
         self.session = create_session(essnmp.sql.vars['db'])
-        self.tsdb = tsdb.TSDB("/data/essnmp/tsdb")
+        self.tsdb = tsdb.TSDB("/data/esxsnmp/data")
         self.device_threads = {}
 
     def list_devices(self, active):
@@ -75,13 +75,19 @@ class ESDBHandler(object):
         iface_name = remove_metachars(iface_name)
 
         var = self.tsdb.get_var("/".join((device, oidset, oid, iface_name)))
+        aggs = var.list_aggregates()
+        resolution = str(resolution)
+        if resolution in aggs:
+            var = var.get_aggregate(resolution)
+            print "AGG", var
+
         data = var.select(int(begin_time), int(end_time))
 
         l = []
 
         for datum in data:
             l.append(datum)
-
+       
         result = essnmp.rpc.ttypes.VarList()
 
         if isinstance(l[0], essnmp.rpc.ttypes.Counter32):
@@ -90,17 +96,13 @@ class ESDBHandler(object):
             result.counter64 = l
         elif isinstance(l[0], essnmp.rpc.ttypes.Gauge32):
             result.gauge32 = l
+        elif isinstance(l[0], essnmp.rpc.ttypes.Aggregate):
+            result.aggregate = l
         else:
             raise essnmp.rpc.ttypes.ESDBError(
                     dict(what="unknown return type from TSDB select"))
 
-        result_len = 0
-        for a in ('counter32', 'counter64', 'gauge32'):
-            x = getattr(result, a)
-            if x is not None:
-                result_len += len(x)
-
-        print "select took: %fs returned %d items" % (time.time() - begin, result_len)
+        print "select took: %fs returned %d items" % (time.time() - begin, len(l))
         return result
 
     def get_active_devices(self):
@@ -135,6 +137,7 @@ class ESDBHandler(object):
 tsdb.Counter32.__bases__ += (essnmp.rpc.ttypes.Counter32, )
 tsdb.Counter64.__bases__ += (essnmp.rpc.ttypes.Counter64, )
 tsdb.Gauge32.__bases__ += (essnmp.rpc.ttypes.Gauge32, )
+tsdb.Aggregate.__bases__ += (essnmp.rpc.ttypes.Aggregate, )
 
 handler = ESDBHandler()
 processor = ESDB.Processor(handler)
@@ -187,7 +190,6 @@ class HandlerPerThreadThreadedServer(TServer.TServer):
     
         itrans.close()
         otrans.close()
-        print "Kbye."
 
 #server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
 server = HandlerPerThreadThreadedServer(ESDBProcessorFactory(), transport, tfactory, pfactory)

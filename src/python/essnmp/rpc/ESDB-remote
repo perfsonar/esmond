@@ -36,7 +36,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print '  VarList get_vars_by_grouping(Grouping grouping)'
   print '  byte store_poll_result(SNMPPollResult result)'
   print '  VarList select(string device, string iface_name, string oidset, string oid, string begin_time, string end_time, string flags, string cf, string resolution)'
-  print '   get_interfaces(string device, bool has_descr)'
+  print '   get_interfaces(string device, bool all_interfaces)'
   print ''
   sys.exit(0)
 
