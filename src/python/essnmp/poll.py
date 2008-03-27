@@ -48,7 +48,7 @@ class ESPolldConfig(object):
         cfg = ConfigParser.ConfigParser()
         cfg.read(self.file)
         for opt in ('db_uri', 'tsdb_root', 'error_email'):
-            exec('self.%s = cfg.get("espolld", "%s")' % (opt, opt))
+            setattr(self, opt, cfg.get("espolld", opt))
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
@@ -66,7 +66,7 @@ class PollCorrelator(object):
     def setup(self):
         raise NotImplementedError
 
-    def lookup(self, oid):
+    def lookup(self, oid, var):
         raise NotImplementedError
 
     def _table_parse(self, table):
@@ -106,8 +106,8 @@ class JnxFirewallCorrelator(PollCorrelator):
         pass
 
     def lookup(self, oid, var):
-        (column, filter, counter, type) = self.oidex.search(var).groups()
-        return "/".join((type, filter, counter))
+        (column, filter_name, counter, filter_type) = self.oidex.search(var).groups()
+        return "/".join((filter_type, filter_name, counter))
 
 class CiscoCPUCorrelator(PollCorrelator):
     """Correlates entries in cpmCPUTotal5min to an entry in entPhysicalName
@@ -170,7 +170,7 @@ class PollManager(object):
         for device in self.devices:
             for oidset in device.oidsets:
                 # what kind of poller do we need for this OIDSet?
-                exec("poller = %s" % oidset.poller.name)
+                poller = eval(oidset.poller.name)
                 name = device.name + "_" + oidset.name
                 self._start_child(PollerChild(self.config, poller, name, device, oidset))
 
@@ -340,10 +340,10 @@ class CorrelatedTSDBPoller(TSDBPoller):
     def __init__(self, config, name, device, oidset):
         TSDBPoller.__init__(self, config, name, device, oidset)
 
-        exec("self.correlator = %s(self.snmp_session)" %
-                self.poller_args['correlator'])
-
-        exec("self.chunk_mapper = %s" % self.poller_args['chunk_mapper'])
+        # this is a little hairy, but ends up with an instance of the
+        # correlator class initialized with our snmp_session
+        self.correlator = eval(self.poller_args['correlator'])(self.snmp_session)
+        self.chunk_mapper = eval(self.poller_args['chunk_mapper'])
 
 
     def begin(self):
@@ -360,7 +360,7 @@ class CorrelatedTSDBPoller(TSDBPoller):
     def store(self, oid, vars):
         ts = time.time()
         # XXX might want to use the ID here instead of expensive exec
-        exec("vartype = tsdb.%s" % oid.type.name)
+        vartype = eval("tsdb.%s" % oid.type.name)
 
         for (var,val) in vars:
             var = self.correlator.lookup(oid,var)

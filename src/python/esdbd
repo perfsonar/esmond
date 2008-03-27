@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import threading
+import time
+import traceback
 from calendar import timegm
 
 from thrift.transport import TSocket, TTransport
@@ -15,9 +17,9 @@ from essnmp.ipaclsocket import IPACLSocket
 import essnmp.rpc.ttypes
 from essnmp.poll import remove_metachars
 
+essnmp.sql.setup_db("postgres:///essnmp")
 class ESDBHandler(object):
     def __init__(self):
-        essnmp.sql.setup_db("postgres:///essnmp")
         self.session = create_session(essnmp.sql.vars['db'])
         self.tsdb = tsdb.TSDB("/data/essnmp/tsdb")
         self.device_threads = {}
@@ -62,6 +64,9 @@ class ESDBHandler(object):
 
         If resolution is None, return the native resolution of the variable.
         """
+        begin = time.time()
+
+        print "Q:", device, iface_name, oidset, oid, begin_time, end_time, flags, cf, resolution
 
         if cf != "AVERAGE":
             raise essnmp.rpc.ttypes.ESDBError(
@@ -89,6 +94,13 @@ class ESDBHandler(object):
             raise essnmp.rpc.ttypes.ESDBError(
                     dict(what="unknown return type from TSDB select"))
 
+        result_len = 0
+        for a in ('counter32', 'counter64', 'gauge32'):
+            x = getattr(result, a)
+            if x is not None:
+                result_len += len(x)
+
+        print "select took: %fs returned %d items" % (time.time() - begin, result_len)
         return result
 
     def get_active_devices(self):
@@ -128,8 +140,56 @@ handler = ESDBHandler()
 processor = ESDB.Processor(handler)
 transport = IPACLSocket(9090, []) #TSocket.TServerSocket(9090)
 tfactory = TTransport.TBufferedTransportFactory()
-pfactory = TBinaryProtocol.TBinaryProtocolFactory()
+pfactory = TBinaryProtocol.TBinaryProtocolAcceleratedFactory()
 
-server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
+class ESDBProcessorFactory(object):
+    """Factory for ESDBHandlers."""
+
+    def __init__(self):
+        pass 
+
+    def getProcessor(self):
+        return ESDB.Processor(ESDBHandler())
+
+class HandlerPerThreadThreadedServer(TServer.TServer):
+    def __init__(self, processorFactory, transport, transportFactory,
+            protocolFactory):
+
+        self.processorFactory = processorFactory
+
+        TServer.TServer.__initArgs__(self, None, transport, transportFactory,
+                transportFactory, protocolFactory, protocolFactory)
+        
+    def serve(self):
+        self.serverTransport.listen()
+        while True:
+            try:
+                client = self.serverTransport.accept()
+                t = threading.Thread(target = self.handle, args=(client,))
+                t.start()
+            except Exception, x:
+                print '%s, %s, %s,' % (type(x), x, traceback.format_exc())
+    
+    def handle(self, client):
+        itrans = self.inputTransportFactory.getTransport(client)
+        otrans = self.outputTransportFactory.getTransport(client)
+        iprot = self.inputProtocolFactory.getProtocol(itrans)
+        oprot = self.outputProtocolFactory.getProtocol(otrans)
+        proc = self.processorFactory.getProcessor()
+        print itrans, otrans, iprot, oprot, proc
+        try:
+            while True:
+                proc.process(iprot, oprot)
+        except TTransport.TTransportException, tx:
+            pass
+        except Exception, x:
+            print '%s, %s, %s' % (type(x), x, traceback.format_exc())
+    
+        itrans.close()
+        otrans.close()
+        print "Kbye."
+
+#server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
+server = HandlerPerThreadThreadedServer(ESDBProcessorFactory(), transport, tfactory, pfactory)
 
 server.serve()
