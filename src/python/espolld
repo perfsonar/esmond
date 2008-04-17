@@ -23,7 +23,7 @@ def main(argv):
 
         setproctitle("espolld: manager")
 
-        poller =PollManager(opts, args, config)
+        poller = PollManager(opts, args, config)
         poller.start_polling()
     except Exception, e:
         if not isinstance(e, SystemExit):
