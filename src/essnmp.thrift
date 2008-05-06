@@ -98,10 +98,22 @@ struct Gauge32 {
     5: byte type_id = 3
 }
 
+struct Aggregate {
+    1: i32 flags,
+    2: i32 timestamp,
+    3: double average,
+    4: double delta,
+    5: double min,
+    6: double max,
+    7: byte version = 1,
+    8: byte type_id = 5
+}
+
 struct VarList {
     1: list<Counter32> counter32,
     2: list<Counter64> counter64,
-    3: list<Gauge32> gauge32
+    3: list<Gauge32> gauge32,
+    4: list<Aggregate> aggregate
 }
 
 struct SNMPPollResultPair {
