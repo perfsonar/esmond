@@ -4,10 +4,10 @@ import sys
 import optparse
 import traceback
 
-from essnmp.poll import PollManager
-from essnmp.util import daemonize, setup_exc_handler, setproctitle
-from essnmp.config import get_opt_parser, get_config, get_config_path
-from essnmp.error import ConfigError
+from esxsnmp.poll import PollManager
+from esxsnmp.util import daemonize, setup_exc_handler, setproctitle
+from esxsnmp.config import get_opt_parser, get_config, get_config_path
+from esxsnmp.error import ConfigError
 
 
 def main(argv):

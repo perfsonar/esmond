@@ -11,9 +11,9 @@ from traceback import format_exception
 import yapsnmp
 import sqlalchemy
 
-import essnmp.sql
-from essnmp.util import setproctitle, get_logger, remove_metachars
-from essnmp.rpc.ttypes import IfRef
+import esxsnmp.sql
+from esxsnmp.util import setproctitle, get_logger, remove_metachars
+from esxsnmp.rpc.ttypes import IfRef
 import tsdb
 
 class ThriftClient(object):
@@ -128,8 +128,8 @@ class PollManager(object):
 
         self.running = False
 
-        essnmp.sql.setup_db(self.config.db_uri)
-        self.db_session = sqlalchemy.create_session(essnmp.sql.vars['db'])
+        esxsnmp.sql.setup_db(self.config.db_uri)
+        self.db_session = sqlalchemy.create_session(esxsnmp.sql.vars['db'])
 
         self.devices = self._get_devices()
 
@@ -142,7 +142,7 @@ class PollManager(object):
             tsdb.TSDB.create(self.config.tsdb_root)
 
     def _get_devices(self):
-        return self.db_session.query(essnmp.sql.Device).select( "active = 't' AND end_time > 'NOW'")
+        return self.db_session.query(esxsnmp.sql.Device).select( "active = 't' AND end_time > 'NOW'")
 
     def _start_oidset(self, device, oidset):
         poller = eval(oidset.poller.name) # what kind of poller do we need for this OIDSet?
@@ -344,8 +344,8 @@ class SQLPoller(Poller):
     def __init__(self, config, name, device, oidset):
         Poller.__init__(self, config, name, device, oidset)
 
-        essnmp.sql.vars['db'].dispose() # XXX this bears further investigation
-        self.db_session = sqlalchemy.create_session(bind_to=essnmp.sql.vars['db'].connect())
+        esxsnmp.sql.vars['db'].dispose() # XXX this bears further investigation
+        self.db_session = sqlalchemy.create_session(bind_to=esxsnmp.sql.vars['db'].connect())
 
 #
 # XXX are the oidset, etc vars burdened with sqlalchemy goo? if so, does it

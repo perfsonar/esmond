@@ -16,7 +16,7 @@ from thrift.transport import TSocket
 from thrift.transport import THttpClient
 from thrift.protocol import TBinaryProtocol
 
-from essnmp.rpc import ESDB
+from esxsnmp.rpc import ESDB
 
 proctitle = None
 

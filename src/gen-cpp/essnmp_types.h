@@ -7,7 +7,6 @@
 #define essnmp_TYPES_H
 
 #include <Thrift.h>
-#include <reflection_limited_types.h>
 #include <protocol/TProtocol.h>
 #include <transport/TTransport.h>
 
@@ -25,9 +24,6 @@ enum Grouping {
 
 class OIDType {
  public:
-
-  static char* ascii_fingerprint; // = "3F5FC93B338687BC7235B1AB103F47B3";
-  static uint8_t binary_fingerprint[16]; // = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
 
   OIDType() : id(0), name("") {
   }
@@ -63,9 +59,6 @@ class OIDType {
 class OIDCorrelator {
  public:
 
-  static char* ascii_fingerprint; // = "3F5FC93B338687BC7235B1AB103F47B3";
-  static uint8_t binary_fingerprint[16]; // = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
-
   OIDCorrelator() : id(0), name("") {
   }
 
@@ -99,9 +92,6 @@ class OIDCorrelator {
 
 class OID {
  public:
-
-  static char* ascii_fingerprint; // = "138DB496E40E0B48699CCC3A9616CC1B";
-  static uint8_t binary_fingerprint[16]; // = {0x13,0x8D,0xB4,0x96,0xE4,0x0E,0x0B,0x48,0x69,0x9C,0xCC,0x3A,0x96,0x16,0xCC,0x1B};
 
   OID() : id(0), name(""), oidtypeid(0) {
   }
@@ -141,9 +131,6 @@ class OID {
 class Poller {
  public:
 
-  static char* ascii_fingerprint; // = "3F5FC93B338687BC7235B1AB103F47B3";
-  static uint8_t binary_fingerprint[16]; // = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
-
   Poller() : id(0), name("") {
   }
 
@@ -177,9 +164,6 @@ class Poller {
 
 class OIDSet {
  public:
-
-  static char* ascii_fingerprint; // = "03B09FCBDDCCEB482CC7EAD8FD750E1C";
-  static uint8_t binary_fingerprint[16]; // = {0x03,0xB0,0x9F,0xCB,0xDD,0xCC,0xEB,0x48,0x2C,0xC7,0xEA,0xD8,0xFD,0x75,0x0E,0x1C};
 
   OIDSet() : id(0), name(""), frequency(0), pollerid(0) {
   }
@@ -227,9 +211,6 @@ class OIDSet {
 class DeviceTag {
  public:
 
-  static char* ascii_fingerprint; // = "3F5FC93B338687BC7235B1AB103F47B3";
-  static uint8_t binary_fingerprint[16]; // = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
-
   DeviceTag() : id(0), name("") {
   }
 
@@ -263,9 +244,6 @@ class DeviceTag {
 
 class Device {
  public:
-
-  static char* ascii_fingerprint; // = "ECE7686132EE207AF9BAE3CD78551DAD";
-  static uint8_t binary_fingerprint[16]; // = {0xEC,0xE7,0x68,0x61,0x32,0xEE,0x20,0x7A,0xF9,0xBA,0xE3,0xCD,0x78,0x55,0x1D,0xAD};
 
   Device() : id(0), name(""), begin_time(0), end_time(0), community("") {
   }
@@ -316,9 +294,6 @@ class Device {
 
 class IfRef {
  public:
-
-  static char* ascii_fingerprint; // = "A6DCBB9F8A4BAABC3AD6F20494963DE4";
-  static uint8_t binary_fingerprint[16]; // = {0xA6,0xDC,0xBB,0x9F,0x8A,0x4B,0xAA,0xBC,0x3A,0xD6,0xF2,0x04,0x94,0x96,0x3D,0xE4};
 
   IfRef() : id(0), ifindex(0), ifdescr(""), ifalias(""), ipaddr(""), ifspeed(0), ifhighspeed(0), connection(""), conntype(""), usage(""), visibility(""), grouping("") {
   }
@@ -398,9 +373,6 @@ class IfRef {
 class Counter32 {
  public:
 
-  static char* ascii_fingerprint; // = "1584BE3F33D288DCC74EA52051285D05";
-  static uint8_t binary_fingerprint[16]; // = {0x15,0x84,0xBE,0x3F,0x33,0xD2,0x88,0xDC,0xC7,0x4E,0xA5,0x20,0x51,0x28,0x5D,0x05};
-
   Counter32() : flags(0), timestamp(0), value(0), version(1), type_id(1) {
   }
 
@@ -446,9 +418,6 @@ class Counter32 {
 
 class Counter64 {
  public:
-
-  static char* ascii_fingerprint; // = "69A1F04B78C98B1472CB21557BA4DB9E";
-  static uint8_t binary_fingerprint[16]; // = {0x69,0xA1,0xF0,0x4B,0x78,0xC9,0x8B,0x14,0x72,0xCB,0x21,0x55,0x7B,0xA4,0xDB,0x9E};
 
   Counter64() : flags(0), timestamp(0), value(0), version(1), type_id(2) {
   }
@@ -496,9 +465,6 @@ class Counter64 {
 class Gauge32 {
  public:
 
-  static char* ascii_fingerprint; // = "1584BE3F33D288DCC74EA52051285D05";
-  static uint8_t binary_fingerprint[16]; // = {0x15,0x84,0xBE,0x3F,0x33,0xD2,0x88,0xDC,0xC7,0x4E,0xA5,0x20,0x51,0x28,0x5D,0x05};
-
   Gauge32() : flags(0), timestamp(0), value(0), version(1), type_id(3) {
   }
 
@@ -542,11 +508,66 @@ class Gauge32 {
 
 };
 
-class VarList {
+class Aggregate {
  public:
 
-  static char* ascii_fingerprint; // = "26D3E4151EFAFDFC816998704F3D421D";
-  static uint8_t binary_fingerprint[16]; // = {0x26,0xD3,0xE4,0x15,0x1E,0xFA,0xFD,0xFC,0x81,0x69,0x98,0x70,0x4F,0x3D,0x42,0x1D};
+  Aggregate() : flags(0), timestamp(0), average(0), delta(0), min(0), max(0), version(1), type_id(5) {
+  }
+
+  virtual ~Aggregate() throw() {}
+
+  int32_t flags;
+  int32_t timestamp;
+  double average;
+  double delta;
+  double min;
+  double max;
+  int8_t version;
+  int8_t type_id;
+
+  struct __isset {
+    __isset() : flags(false), timestamp(false), average(false), delta(false), min(false), max(false), version(false), type_id(false) {}
+    bool flags;
+    bool timestamp;
+    bool average;
+    bool delta;
+    bool min;
+    bool max;
+    bool version;
+    bool type_id;
+  } __isset;
+
+  bool operator == (const Aggregate & rhs) const
+  {
+    if (!(flags == rhs.flags))
+      return false;
+    if (!(timestamp == rhs.timestamp))
+      return false;
+    if (!(average == rhs.average))
+      return false;
+    if (!(delta == rhs.delta))
+      return false;
+    if (!(min == rhs.min))
+      return false;
+    if (!(max == rhs.max))
+      return false;
+    if (!(version == rhs.version))
+      return false;
+    if (!(type_id == rhs.type_id))
+      return false;
+    return true;
+  }
+  bool operator != (const Aggregate &rhs) const {
+    return !(*this == rhs);
+  }
+
+  uint32_t read(facebook::thrift::protocol::TProtocol* iprot);
+  uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class VarList {
+ public:
 
   VarList() {
   }
@@ -556,12 +577,14 @@ class VarList {
   std::vector<Counter32>  counter32;
   std::vector<Counter64>  counter64;
   std::vector<Gauge32>  gauge32;
+  std::vector<Aggregate>  aggregate;
 
   struct __isset {
-    __isset() : counter32(false), counter64(false), gauge32(false) {}
+    __isset() : counter32(false), counter64(false), gauge32(false), aggregate(false) {}
     bool counter32;
     bool counter64;
     bool gauge32;
+    bool aggregate;
   } __isset;
 
   bool operator == (const VarList & rhs) const
@@ -571,6 +594,8 @@ class VarList {
     if (!(counter64 == rhs.counter64))
       return false;
     if (!(gauge32 == rhs.gauge32))
+      return false;
+    if (!(aggregate == rhs.aggregate))
       return false;
     return true;
   }
@@ -585,9 +610,6 @@ class VarList {
 
 class SNMPPollResultPair {
  public:
-
-  static char* ascii_fingerprint; // = "07A9615F837F7D0A952B595DD3020972";
-  static uint8_t binary_fingerprint[16]; // = {0x07,0xA9,0x61,0x5F,0x83,0x7F,0x7D,0x0A,0x95,0x2B,0x59,0x5D,0xD3,0x02,0x09,0x72};
 
   SNMPPollResultPair() : OIDName(""), value("") {
   }
@@ -622,9 +644,6 @@ class SNMPPollResultPair {
 
 class SNMPPollResult {
  public:
-
-  static char* ascii_fingerprint; // = "A120DB3C7D3315EC9ABE6E56137F87EB";
-  static uint8_t binary_fingerprint[16]; // = {0xA1,0x20,0xDB,0x3C,0x7D,0x33,0x15,0xEC,0x9A,0xBE,0x6E,0x56,0x13,0x7F,0x87,0xEB};
 
   SNMPPollResult() : device_id(0), oidset_id(0), timestamp(0) {
   }
@@ -668,9 +687,6 @@ class SNMPPollResult {
 class Rate {
  public:
 
-  static char* ascii_fingerprint; // = "0B663F1913C9C6F43150B524A8B76386";
-  static uint8_t binary_fingerprint[16]; // = {0x0B,0x66,0x3F,0x19,0x13,0xC9,0xC6,0xF4,0x31,0x50,0xB5,0x24,0xA8,0xB7,0x63,0x86};
-
   Rate() : timestamp(0), rate(0) {
   }
 
@@ -704,9 +720,6 @@ class Rate {
 
 class ESDBError : public facebook::thrift::TException {
  public:
-
-  static char* ascii_fingerprint; // = "EFB929595D312AC8F305D5A794CFEDA1";
-  static uint8_t binary_fingerprint[16]; // = {0xEF,0xB9,0x29,0x59,0x5D,0x31,0x2A,0xC8,0xF3,0x05,0xD5,0xA7,0x94,0xCF,0xED,0xA1};
 
   ESDBError() : what("") {
   }

@@ -11,16 +11,16 @@ from thrift.server import TServer
 
 import tsdb
 
-from essnmp.sql import *
-from essnmp.rpc import ESDB
-from essnmp.ipaclsocket import IPACLSocket
-import essnmp.rpc.ttypes
-from essnmp.util import run_server, remove_metachars
+from esxsnmp.sql import *
+from esxsnmp.rpc import ESDB
+from esxsnmp.ipaclsocket import IPACLSocket
+import esxsnmp.rpc.ttypes
+from esxsnmp.util import run_server, remove_metachars
 
-essnmp.sql.setup_db("postgres:///esxsnmp")
+esxsnmp.sql.setup_db("postgres:///esxsnmp")
 class ESDBHandler(object):
     def __init__(self):
-        self.session = create_session(essnmp.sql.vars['db'])
+        self.session = create_session(esxsnmp.sql.vars['db'])
         self.tsdb = tsdb.TSDB("/data/esxsnmp/data")
         self.device_threads = {}
 
@@ -69,7 +69,7 @@ class ESDBHandler(object):
         print "Q:", device, iface_name, oidset, oid, begin_time, end_time, flags, cf, resolution
 
         if cf != "AVERAGE":
-            raise essnmp.rpc.ttypes.ESDBError(
+            raise esxsnmp.rpc.ttypes.ESDBError(
                     dict(what="unsupported consolidation function: %s" % cf))
 
         iface_name = remove_metachars(iface_name)
@@ -88,18 +88,18 @@ class ESDBHandler(object):
         for datum in data:
             l.append(datum)
        
-        result = essnmp.rpc.ttypes.VarList()
+        result = esxsnmp.rpc.ttypes.VarList()
 
-        if isinstance(l[0], essnmp.rpc.ttypes.Counter32):
+        if isinstance(l[0], esxsnmp.rpc.ttypes.Counter32):
             result.counter32 = l
-        elif isinstance(l[0], essnmp.rpc.ttypes.Counter64):
+        elif isinstance(l[0], esxsnmp.rpc.ttypes.Counter64):
             result.counter64 = l
-        elif isinstance(l[0], essnmp.rpc.ttypes.Gauge32):
+        elif isinstance(l[0], esxsnmp.rpc.ttypes.Gauge32):
             result.gauge32 = l
-        elif isinstance(l[0], essnmp.rpc.ttypes.Aggregate):
+        elif isinstance(l[0], esxsnmp.rpc.ttypes.Aggregate):
             result.aggregate = l
         else:
-            raise essnmp.rpc.ttypes.ESDBError(
+            raise esxsnmp.rpc.ttypes.ESDBError(
                     dict(what="unknown return type from TSDB select"))
 
         print "select took: %fs returned %d items" % (time.time() - begin, len(l))
@@ -134,10 +134,10 @@ class ESDBHandler(object):
 #
 # Make tsdb types Thrifty
 #
-tsdb.Counter32.__bases__ += (essnmp.rpc.ttypes.Counter32, )
-tsdb.Counter64.__bases__ += (essnmp.rpc.ttypes.Counter64, )
-tsdb.Gauge32.__bases__ += (essnmp.rpc.ttypes.Gauge32, )
-tsdb.Aggregate.__bases__ += (essnmp.rpc.ttypes.Aggregate, )
+tsdb.Counter32.__bases__ += (esxsnmp.rpc.ttypes.Counter32, )
+tsdb.Counter64.__bases__ += (esxsnmp.rpc.ttypes.Counter64, )
+tsdb.Gauge32.__bases__ += (esxsnmp.rpc.ttypes.Gauge32, )
+tsdb.Aggregate.__bases__ += (esxsnmp.rpc.ttypes.Aggregate, )
 
 handler = ESDBHandler()
 processor = ESDB.Processor(handler)

@@ -97,7 +97,7 @@ class ESDBHandler : virtual public ESDBIf {
     printf("select\n");
   }
 
-  void get_interfaces(std::vector<IfRef> & _return, const std::string& device, const bool has_descr) {
+  void get_interfaces(std::vector<IfRef> & _return, const std::string& device, const bool all_interfaces) {
     // Your implementation goes here
     printf("get_interfaces\n");
   }
