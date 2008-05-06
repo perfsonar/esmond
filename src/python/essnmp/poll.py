@@ -2,6 +2,7 @@
 
 import os
 import signal
+import errno
 import sys
 import time
 import re
@@ -11,7 +12,7 @@ import yapsnmp
 import sqlalchemy
 
 import essnmp.sql
-from essnmp.util import setproctitle, get_logger
+from essnmp.util import setproctitle, get_logger, remove_metachars
 from essnmp.rpc.ttypes import IfRef
 import tsdb
 
@@ -28,33 +29,6 @@ class PollError(Exception):
 
 class PollUnknownIfIndex(PollError):
     pass
-
-class ESPolldConfig(object):
-    def __init__(self, file):
-        self.file = file
-
-        self.db_uri = None
-        self.tsdb_root = None
-        self.error_email = None
-
-        self.read_config()
-
-    def read_config(self):
-        """ read in config from INI-style file, requiring section header 'espolld', e.g.:
-            [espolld]
-            db_uri = db_example_string
-            tsdb_root = /var/db/tsdb/
-            error_email = me@my.com """
-        cfg = ConfigParser.ConfigParser()
-        cfg.read(self.file)
-        for opt in ('db_uri', 'tsdb_root', 'error_email'):
-            setattr(self, opt, cfg.get("espolld", opt))
-
-def remove_metachars(name):
-    """remove troublesome metacharacters from ifDescr"""
-    for (char,repl) in (("/", "_"), (" ", "_")):
-        name = name.replace(char, repl)
-    return name
 
 class PollCorrelator(object):
     """polling correlators correlate an oid to some other field.  this is
@@ -138,6 +112,7 @@ class PollerChild(object):
         self.name = name
         self.device = device
         self.oidset = oidset
+        self.pid = None
 
     def run(self):
         self.poller(self.config, self.name, self.device, self.oidset).run()
@@ -145,7 +120,8 @@ class PollerChild(object):
 class PollManager(object):
     """Starts a polling process for each device"""
 
-    def __init__(self, opts, args, config):
+    def __init__(self, name, opts, args, config):
+        self.name = name
         self.opts = opts
         self.args = args
         self.config = config
@@ -155,57 +131,98 @@ class PollManager(object):
         essnmp.sql.setup_db(self.config.db_uri)
         self.db_session = sqlalchemy.create_session(essnmp.sql.vars['db'])
 
-        self.devices = self.db_session.query(essnmp.sql.Device).select(
-            "active = 't' AND end_time > 'NOW'")
+        self.devices = self._get_devices()
 
-        self.children = {}  # dict maps device name to child pid
+        self.child_pid_map = {}  # dict maps child pid to PollerChild object
+        self.child_name_map = {}
 
-        self.log = get_logger("poll_manager")
+        self.log = get_logger(self.name, config.syslog_facility)
 
         if not tsdb.TSDB.is_tsdb(self.config.tsdb_root):
             tsdb.TSDB.create(self.config.tsdb_root)
 
+    def _get_devices(self):
+        return self.db_session.query(essnmp.sql.Device).select( "active = 't' AND end_time > 'NOW'")
+
+    def _start_oidset(self, device, oidset):
+        poller = eval(oidset.poller.name) # what kind of poller do we need for this OIDSet?
+        name = device.name + "_" + oidset.name
+        self._start_child(PollerChild(self.config, poller, name, device, oidset))
+
+    def _stop_oidset(self, device, oidset):
+        name = device.name + "_" + oidset.name
+        if child_pid_map.has_key(name):
+            self._stop_child(child_pid_map[name])
+
     def start_polling(self):
         """Begin polling all routers for all OIDSets"""
+        self.log.debug("starting")
         for device in self.devices:
             for oidset in device.oidsets:
-                # what kind of poller do we need for this OIDSet?
-                poller = eval(oidset.poller.name)
-                name = device.name + "_" + oidset.name
-                self._start_child(PollerChild(self.config, poller, name, device, oidset))
+                self._start_oidset(device, oidset)
 
         signal.signal(signal.SIGINT, self.stop_polling)
         signal.signal(signal.SIGTERM, self.stop_polling)
+        signal.signal(signal.SIGHUP, self.reload)
         self.running = True
 
         while self.running:
-            (rpid,status) = os.wait()
-            if rpid != 0 and self.running: # need to check self.running again, because wait blocks
-                self.log.warn("%s, pid %d died" % (self.children[rpid].name, rpid))
-                child = self.children[rpid]
-                del self.children[rpid]
-                self._start_child(child)
-                time.sleep(1)  # don't spin if process keeps dying
+            self.log.debug("waiting for a child to die (how morbid!)")
+            if len(self.child_pid_map.keys()) > 0:
+                try:
+                    (rpid,status) = os.wait()
+                except OSError, e:
+                    if e.errno == errno.EINTR:
+                        self.log.debug("ignoring EINTR")
+                        continue
+                    else:
+                        raise
+
+                if rpid != 0 and self.running: # need to check self.running again, because wait blocks
+                    self.log.warn("%s, pid %d died" % (self.child_pid_map[rpid].name, rpid))
+                    if self.child_pid_map.has_key(rpid):
+                        child = self.child_pid_map[rpid]
+                        del self.child_pid_map[rpid]
+                        del self.child_name_map[child.name]
+                        self._start_child(child)
+                    self.log.debug("observing 1 second of silence for our lost child")
+                    time.sleep(1)  # don't spin if process keeps dying
 
     def _start_child(self, child):
         pid = os.fork()
         if pid:
-            self.children[pid] = child
+            self.child_pid_map[pid] = child
+            self.child_name_map[child.name] = child
             self.log.debug("%s started, pid %d" % (child.name,pid))
+            child.pid = pid
         else:
             setproctitle("espolld: %s" % child.name)
             child.run()
 
+    def _stop_child(self, child):
+        self.log.debug("killing %s %d" % (child.name, child.pid))
+        os.kill(child.pid, signal.SIGTERM)
+        (rpid,status) = os.waitpid(child.pid, os.WNOHANG)
+        del self.child_pid_map[child.pid]
+        del self.child_name_map[child.name]
+
+    def reload(self, sig, frame):
+        self.log.info("reloading")
+        return True
+
     def stop_polling(self, signum, frame):
         self.log.info("shutting down")
-        self.log.debug(self.children)
+        self.log.debug(self.child_pid_map)
         self.running = False
-        for pid in self.children:
-            self.log.debug("killing %s %d" % (self.children[pid].name, pid))
-            os.kill(pid, signal.SIGTERM)
-            (rpid,status) = os.waitpid(pid, os.WNOHANG)
+        for child in self.child_pid_map.values():
+            self._stop_child(child)
         self.log.debug("exiting")
         sys.exit()
+
+    def __del__(self):
+        if len(self.child_pid_map.keys()) > 0:
+            self.stop_polling(None, None)
+
 
 class Poller(object):
     """The Poller class is the base for all pollers.
@@ -236,7 +253,7 @@ class Poller(object):
         signal.signal(signal.SIGTERM, self.stop)
         signal.signal(signal.SIGHUP, self.reload)
 
-        self.log = get_logger("poller " + self.name)
+        self.log = get_logger("espolld: " + self.name, config.syslog_facility)
         self.errors = 0
 
         self.poller_args = {}

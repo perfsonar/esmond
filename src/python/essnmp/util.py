@@ -20,7 +20,7 @@ from essnmp.rpc import ESDB
 
 proctitle = None
 
-def daemonize(pidfile=None):
+def daemonize(name, pidfile=None, logfile=None):
     '''Forks the current process into a daemon.
         derived from the ASPN recipe:
             http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/66012
@@ -36,7 +36,7 @@ def daemonize(pidfile=None):
         except:
             pass
         else:
-            raise "process still running as pid %d.  aborting." % pid
+            raise Exception("process still running as pid %d.  aborting." % pid) 
 
     # Do first fork.
     try: 
@@ -63,7 +63,7 @@ def daemonize(pidfile=None):
     pid = str(os.getpid())
 
     if pidfile:
-        f = file(pidfile,'w+')
+        f = file(pidfile,'w')
         f.write("%s\n" % pid)
         f.close()
   
@@ -73,34 +73,38 @@ def daemonize(pidfile=None):
         os.close(fd)
 
     # Redirect standard file descriptors.
-    os.open("/tmp/espolld.log", os.O_RDWR|os.O_CREAT)
-    os.dup2(0, sys.stdout.fileno())
-    os.dup2(0, sys.stderr.fileno())
+    if logfile:
+        os.open(logfile, os.O_RDWR|os.O_CREAT)
+        os.dup2(0, sys.stdout.fileno())
+        os.dup2(0, sys.stderr.fileno())
 
 
 def setproctitle(name):
     """Set the title of the current process to name.  This also sets the
     proctitle global variable.
 
-    XXX Presently only works on FreeBSD 6.x.  Silently fails elsewhere.
+    XXX Presently only works on FreeBSD => 6.x.  Silently fails elsewhere.
     """
-    if os.uname()[0] == 'FreeBSD' and os.path.exists('/lib/libc.so.6'):
-        libc = dl.open('/lib/libc.so.6')
-        libc.call('setproctitle', name + "\0")
-        libc.close()
+    if os.uname()[0] == 'FreeBSD':
+        for libc_ver in range(7, 5, -1):
+            libc_file = '/lib/libc.so.%d' % libc_ver
+            if os.path.exists(libc_file):
+                libc = dl.open(libc_file)
+                libc.call('setproctitle', name + "\0")
+                libc.close()
 
     global proctitle
     proctitle = name
 
-def get_logger(name):
+def get_logger(name, facility):
     log = logging.getLogger(name)
-    log.addHandler(logging.handlers.SysLogHandler(('localhost', 514), logging.handlers.SysLogHandler.LOG_LOCAL7))
+    log.addHandler(logging.handlers.SysLogHandler(('localhost', 514), facility))
     log.setLevel(logging.DEBUG)
     log.handlers[0].setFormatter(logging.Formatter("%(name)s [%(process)d] %(message)s"))
 
     return log
 
-def send_mail(sender,to,subject,body, relay='localhost'):
+def send_mail(sender, to, subject, body, relay='localhost'):
     if type(to) != list and type(to) != tuple:
         to = [to]
 
@@ -108,34 +112,17 @@ def send_mail(sender,to,subject,body, relay='localhost'):
     msg['Subject'] = subject
     msg['To'] = ", ".join(to)
     msg['From'] = sender
-    srv = smtplib.SMTP(host=relay)
-    srv.connect()
+    srv = smtplib.SMTP()
+    srv.connect(host=relay)
     srv.sendmail(sender, to, msg.as_string())
     srv.close()
-
-def log_exception(log=None,name='essnmp'):
-    if log == None:
-        log = get_logger(name)
-
-    (x,y,z) = sys.exc_info()
-    lines = traceback.format_exception(x,y,z)
-    log.error("Uncaught exception: " + lines[-1])
-    for line in lines:
-        log.error(line)
-
-def mail_exception(to):
-    body = StringIO()
-    (x,y,z) = sys.exc_info()
-    traceback.print_exception(x,y,z,None,body)
-    subj = 'ESSNMP Exception: ' + time.ctime()
-    send_mail('ESSNMP Exception Monkey <emonkey@es.net>', to, subj, body.getvalue())
 
 def get_ESDB_client(server='localhost', port=9090):
     transport = TTransport.TBufferedTransport(TSocket.TSocket(server, port))
     client = ESDB.Client(TBinaryProtocol.TBinaryProtocol(transport))
     return (transport, client)
 
-class ExceptHook(object):
+class ExceptionHandler(object):
     """Flexible exception hook with detailed messages.
 
     This exception hook reports the exception encountered along with a
@@ -162,24 +149,33 @@ class ExceptHook(object):
         self.e_val = None
 
     def __call__(self, *args):
-        self.handle(args)
+        self.handle(*args)
 
     def install(self):
         sys.excepthook = self
 
-    def handle(self, e_info=None):
-        e_info = e_info or sys.exc_info()
+    def handle(self, *args):
+        if len(args) == 3:
+            e_info = args
+        else:
+            e_info = sys.exc_info()
+
         if e_info[0] in self.ignore:
             return
 
         body = ''
 
-        e_val = repr(e_info[1])
-        if isinstance(e_info[1], str):
-            e_name = e_info[1]
-        elif hasattr(e_info[1], '__class__'):
-            e_name = e_info[1].__class__.__name__
+        if len(e_info) > 1:
+            e_val = repr(e_info[1])
+
+            if isinstance(e_info[1], str):
+                e_name = e_info[1]
+            elif hasattr(e_info[1], '__class__'):
+                e_name = e_info[1].__class__.__name__
+            else:
+                e_name = e_val
         else:
+            e_val = "<undefined>"
             e_name = e_val
 
         log_msg = "exception=%s" % e_name
@@ -194,9 +190,9 @@ class ExceptHook(object):
         body += self.format(*e_info)
 
         if self.email is not None:
-            subj = "%s: %s" % (self.email, log_msg)
-            if email.has_key('relay'):
-                relay = email['relay']
+            subj = "%s: %s" % (self.email['subject'], log_msg)
+            if self.email.has_key('relay'):
+                relay = self.email['relay']
             else:
                 relay = 'localhost'
 
@@ -208,7 +204,7 @@ class ExceptHook(object):
                 body += msg + "\n"
 
                 if self.log:
-                    log.error(msg)
+                    self.log.error(msg)
 
         if self.output_dir is not None:
             log_id = self.log_to_dir(log_msg, body)
@@ -229,7 +225,7 @@ class ExceptHook(object):
             s += "\n"
             for line in ctx:
                 if i == lineno+idx:
-                    s += "    >"
+                    s += "====>"
                 else:
                     s += "     "
                 s += "%4d %s" % (i, line)
@@ -262,3 +258,78 @@ class ExceptHook(object):
             return None
 
         return name
+
+def setup_exc_handler(name, config, ignore=[SystemExit]):
+    email = None
+    if config.send_error_email:
+        email = {}
+        email['from'] = config.error_email_from
+        email['to'] = config.error_email_to
+        email['subject'] = config.error_email_subject
+
+    log = None
+    if config.syslog_facility is not None:
+        log = get_logger(name, config.syslog_facility)
+
+    output_dir = None
+    if config.traceback_dir is not None:
+        output_dir = config.traceback_dir
+
+    return ExceptionHandler(ignore=ignore, email=email, log=log, output_dir=output_dir)
+
+def try_harder(callable_, exc_handler, restart_delay=10, restart_attempts=5,
+        restart_timer=30):
+    """Try to keep callable_ running.
+
+    `callable_` is a callable for which we are trying harder. if `callable_`
+    returns nothing is done we just exit.  if `callable_` raises and exception
+    the exception is logged using `exc_handler` (also a callable) and
+    `callable_` is restarted after `restart_delay` seconds.  if `callable_`
+    rasises an exception in less than `restart_timer` seconds the attempts
+    counter is incremented.  if the attempts counter is greater than
+    `restart_attempts` try_harder logs an exception saying that it is exiting
+    and then exits.  The code is shorter than the docstring.
+
+    If you need to call `callable_` with arguments a closure is a handy way to
+    accomplish that.
+    """
+
+    attempts = 0
+    while True:
+        start = time.time()
+        try:
+            callable_()
+            break
+        except Exception, e:
+            exc_handler()
+            if time.time() - start < restart_timer:
+                attempts += 1
+            else:
+                attempts = 0
+
+            if attempts >= restart_attempts:
+                # XXX for some reason this exception is munged when it gets to
+                # the exception handler.  why?!?!
+                raise Exception("too many restart attempts, exiting")
+
+            time.sleep(restart_delay)
+
+def run_server(callable_, name, config):
+    exc_hook = setup_exc_handler(name, config)
+    exc_hook.install()
+    print "exc hook installed"
+
+    daemonize(name, config.run_dir)
+
+    setproctitle(name)
+
+    callable_()
+    #print "trying harder"
+    #try_harder(callable_, exc_hook, restart_attempts=2)
+
+
+def remove_metachars(name):
+    """remove troublesome metacharacters from ifDescr"""
+    for (char,repl) in (("/", "_"), (" ", "_")):
+        name = name.replace(char, repl)
+    return name

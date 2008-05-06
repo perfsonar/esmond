@@ -4,32 +4,34 @@ import sys
 import optparse
 import traceback
 
-from essnmp.poll import *
-from essnmp.util import daemonize, log_exception, mail_exception, setproctitle
+from essnmp.poll import PollManager
+from essnmp.util import daemonize, setup_exc_handler, setproctitle
+from essnmp.config import get_opt_parser, get_config, get_config_path
+from essnmp.error import ConfigError
+
 
 def main(argv):
-    oparse = optparse.OptionParser()
-    oparse.add_option("-d", "--debug", dest="debug", action="store_true",
-            default=False)
-    oparse.add_option("-f", "--config-file", dest="config_file", default="./espolld.conf")
-    oparse.add_option("-p", "--pid-file", dest="pid_file", default="./esspolld.pid")
-
+    oparse = get_opt_parser(default_config_file=get_config_path())
     (opts, args) = oparse.parse_args(args=argv)
 
-    config = ESPolldConfig(opts.config_file)
-
     try:
-        daemonize(opts.pid_file)
+        config = get_config(opts.config_file, opts)
+    except ConfigError, e:
+        print e
+        sys.exit(1)
 
-        setproctitle("espolld: manager")
+    name = "espolld_manager_quux"
 
-        poller = PollManager(opts, args, config)
-        poller.start_polling()
-    except Exception, e:
-        if not isinstance(e, SystemExit):
-            log_exception(name="espolld")
-            if config.error_email is not None:
-                mail_exception(config.error_email)
+    exc_handler = setup_exc_handler(name, config)
+    exc_handler.install()
+
+    setproctitle(name)
+
+    daemonize(name, config.pid_file)
+
+    poller = PollManager(name, opts, args, config)
+    poller.start_polling()
 
 if __name__ == "__main__":
     main(sys.argv)
+

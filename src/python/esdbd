@@ -15,7 +15,7 @@ from essnmp.sql import *
 from essnmp.rpc import ESDB
 from essnmp.ipaclsocket import IPACLSocket
 import essnmp.rpc.ttypes
-from essnmp.poll import remove_metachars
+from essnmp.util import run_server, remove_metachars
 
 essnmp.sql.setup_db("postgres:///esxsnmp")
 class ESDBHandler(object):
@@ -193,5 +193,4 @@ class HandlerPerThreadThreadedServer(TServer.TServer):
 
 #server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
 server = HandlerPerThreadThreadedServer(ESDBProcessorFactory(), transport, tfactory, pfactory)
-
-server.serve()
+try_harder(server.serve, exc_handler)
