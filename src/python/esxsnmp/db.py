@@ -17,7 +17,6 @@ from esxsnmp.ipaclsocket import IPACLSocket
 import esxsnmp.rpc.ttypes
 from esxsnmp.util import run_server, remove_metachars
 
-esxsnmp.sql.setup_db("postgres:///esxsnmp")
 class ESDBHandler(object):
     def __init__(self):
         self.session = create_session(esxsnmp.sql.vars['db'])
@@ -126,8 +125,6 @@ class ESDBHandler(object):
         print q
 
         l = self.session.query(IfRef).select(q)
-#        import pdb
-#        pdb.set_trace()
         print len(l)
         return l
 
@@ -138,12 +135,6 @@ tsdb.Counter32.__bases__ += (esxsnmp.rpc.ttypes.Counter32, )
 tsdb.Counter64.__bases__ += (esxsnmp.rpc.ttypes.Counter64, )
 tsdb.Gauge32.__bases__ += (esxsnmp.rpc.ttypes.Gauge32, )
 tsdb.Aggregate.__bases__ += (esxsnmp.rpc.ttypes.Aggregate, )
-
-handler = ESDBHandler()
-processor = ESDB.Processor(handler)
-transport = IPACLSocket(9090, []) #TSocket.TServerSocket(9090)
-tfactory = TTransport.TBufferedTransportFactory()
-pfactory = TBinaryProtocol.TBinaryProtocolAcceleratedFactory()
 
 class ESDBProcessorFactory(object):
     """Factory for ESDBHandlers."""
@@ -191,6 +182,14 @@ class HandlerPerThreadThreadedServer(TServer.TServer):
         itrans.close()
         otrans.close()
 
-#server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
-server = HandlerPerThreadThreadedServer(ESDBProcessorFactory(), transport, tfactory, pfactory)
-try_harder(server.serve, exc_handler)
+def esdbd():
+    """Entry point for esdbd."""
+    esxsnmp.sql.setup_db("postgres:///esxsnmp")
+    handler = ESDBHandler()
+    processor = ESDB.Processor(handler)
+    transport = IPACLSocket(9090, []) #TSocket.TServerSocket(9090)
+    tfactory = TTransport.TBufferedTransportFactory()
+    pfactory = TBinaryProtocol.TBinaryProtocolAcceleratedFactory()
+
+    server = HandlerPerThreadThreadedServer(ESDBProcessorFactory(), transport, tfactory, pfactory)
+    try_harder(server.serve, exc_handler)

@@ -99,5 +99,7 @@ def main(argv):
    
     output_data(fetch_data(device, iface_name, oidset, opts.begin, opts.end, CF, opts.resolution))
 
-if __name__ == '__main__':
+def esfetch():
+    """Entry point for the esfetch script."""
+    import sys
     main(sys.argv[1:])

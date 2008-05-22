@@ -15,7 +15,7 @@ def get_config_path():
 
 def get_config(config_file, opts):
     if not os.path.exists(config_file):
-        raise ConfigError("config file not found: " % config_file)
+        raise ConfigError("config file not found: %s" % config_file)
 
     try:
         conf = ESxSNMPConfig(config_file)

@@ -1,0 +1,12 @@
+2008-05-21 Jon Dugan <jdugan@es.net>
+
+* Started this ChangeLog
+* added zc.buildout support (bootstrap.py, buildout.cfg)
+* intial attempt at documentation in doc/ESxSNMP.txt (in ReStructured Text)
+* removed esdbd, espolld, esfetch and added them as entrypoints via distutils
+* moved to SQLAlchemy 0.4
+* sql.py, poll.py: reworked database access to avoid problems with children using the same
+database connection as their parents
+* poll.py: added protection for children that keep dying
+* poll.py: added dynamic reconfig including adding and removing oidsets,
+devices and community string changes

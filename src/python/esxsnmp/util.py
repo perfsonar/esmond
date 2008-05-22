@@ -218,11 +218,22 @@ class ExceptionHandler(object):
         for (frame, filename, lineno, func, ctx, idx) in \
                 inspect.getinnerframes(tb, context_lines):
             (args,varargs,varkw,locals) = inspect.getargvalues(frame)
+            if idx is None:
+                # sometimes idx is None, see ctx comments below
+                # report what info we can
+                idx = 0
+
             s += "%s:%s %s%s\n" % (filename, lineno+idx,
                     func,inspect.formatargvalues(args, varargs, varkw, locals))
     
             i = lineno
             s += "\n"
+            if ctx is None:
+                # sometimes ctx is None
+                # report what info we can
+                # seems to be happening with some eggs
+                s += "     [ no context available ]\n\n"
+                continue
             for line in ctx:
                 if i == lineno+idx:
                     s += "====>"
