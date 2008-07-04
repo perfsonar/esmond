@@ -10,8 +10,11 @@ import sets
 
 import sqlalchemy
 import yapsnmp
+import rrdtool
 
 import tsdb
+import tsdb.row
+from tsdb.util import rrd_from_tsdb_var
 
 import esxsnmp.sql
 
@@ -125,10 +128,13 @@ class PollerChild(object):
         self.name = name
         self.device = device
         self.oidset = oidset
-        self.pid = None
+        self.pid = 0
         self.last_restart = 0
         self.spin_cycles = 0
         self.state = PollerChild.NEW
+
+    def __repr__(self):
+        return '<PollerChild: %s %d state=%d>' % (self.name, self.pid, self.state)
 
     def record(self, pid):
         self.pid = pid
@@ -311,11 +317,19 @@ class PollManager(object):
             child.record(pid)
         else:
             setproctitle("espolld: %s" % child.name)
+            #import cProfile
+            #cProfile.run(child.run, "/tmp/%s" % child.name)
+
+            #import hotshot
+            #prof = hotshot.Profile("/tmp/%s" % child.name)
+            #prof.runcall(child.run)
+            #prof.close()
             child.run()
 
     def _stop_child(self, child):
-        self.log.info("stopping %s, pid %d" % (child.name, child.pid))
-        os.kill(child.pid, signal.SIGTERM)
+        if child.pid:
+            self.log.info("stopping %s, pid %d" % (child.name, child.pid))
+            os.kill(child.pid, signal.SIGTERM)
 
     def _stop_all_children(self):
         for child in self.children.itervalues():
@@ -521,8 +535,18 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
         # this is a little hairy, but ends up with an instance of the
         # correlator class initialized with our snmp_session
+        # XXX might want to move these into the OIDSet class
         self.correlator = eval(self.poller_args['correlator'])(self.snmp_session)
         self.chunk_mapper = eval(self.poller_args['chunk_mapper'])
+        if self.poller_args.has_key('aggregates'):
+            self.aggregates = self.poller_args['aggregates'].split(',')
+        else:
+            self.aggregates = None
+
+        if self.config.use_rrd:
+            self.rrd_path = os.path.join(self.config.rrd_path,
+                    self.device.name, self.oidset.name)
+
 
 
     def begin(self):
@@ -538,8 +562,8 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
     def store(self, oid, vars):
         ts = time.time()
-        # XXX might want to use the ID here instead of expensive exec
-        vartype = eval("tsdb.%s" % oid.type.name)
+        # XXX:refactor might want to use the ID here instead of expensive exec
+        vartype = eval("tsdb.row.%s" % oid.type.name)
 
         for (var,val) in vars:
             var = self.correlator.lookup(oid,var)
@@ -549,10 +573,33 @@ class CorrelatedTSDBPoller(TSDBPoller):
             except tsdb.TSDBVarDoesNotExistError:
                 tsdb_var = self.tsdb_set.add_var(var, vartype,
                         self.oidset.frequency, self.chunk_mapper)
+                if oid.aggregate and self.aggregates:
+                    tsdb_var.add_aggregate(str(self.oidset.frequency),
+                        self.chunk_mapper, ['average', 'delta'])
+                    for agg in self.aggregates:
+                        tsdb_var.add_aggregate(agg, self.chunk_mapper,
+                                ['average', 'delta', 'min', 'max'])
+
+                    if self.config.use_rrd:
+                        begin = int(time.time()) - 2 * tsdb_var.metadata['STEP']
+                        rrd_args = rrd_from_tsdb_var(tsdb_var, begin,
+                                os.path.join(self.rrd_path, oid.name),
+                                ds_name=oid.name)
+                        rrd_file = rrd_args[0]
+                        if not os.path.exists(os.path.dirname(rrd_file)):
+                            os.makedirs(os.path.dirname(rrd_file))
+
+                        rrdtool.create(*rrd_args)
+                        tsdb_var.metadata['RRD_FILE'] = rrd_args[0]
+                        self.log.debug("created RRD file: %s" % rrd_args[0])
 
             tsdb_var.insert(vartype(ts, tsdb.ROW_VALID, val))
             tsdb_var.flush() # XXX is this a good idea?
-            #print vartype, var, ts, val, vartype.unpack(vartype(ts, tsdb.ROW_VALID, val).pack())
+            if oid.aggregate:
+                tsdb_var.update_aggregate(str(self.oidset.frequency))
+                if self.config.use_rrd:
+                    rrdtool.update(tsdb_var.metadata['RRD_FILE'], "%d:%s" % (int(ts), val))
+            # XXX:dbg print vartype, var, ts, val, vartype.unpack(vartype(ts, tsdb.ROW_VALID, val).pack()) 
 
 class IfRefSQLPoller(SQLPoller):
     """Polls all OIDS and creates a IfRef entry then sees if the IfRef entry
@@ -608,7 +655,7 @@ class IfRefSQLPoller(SQLPoller):
         # anything left in new_ifrefs is a new interface
         for new_ifref in new_ifrefs:
             new_row = self._new_row_from_obj(new_ifrefs[new_ifref])
-            b_session.save(new_row)
+            db_session.save(new_row)
 
         db_session.flush()
         db_session.close()
