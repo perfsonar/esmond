@@ -310,6 +310,8 @@ class PollManager(object):
 
     def _start_child(self, child):
         self.children[child.name] = child
+        # close out SQLAlchemy state
+        esxsnmp.sql.engine.dispose()
         pid = os.fork()
         if pid:
             self.child_pid_map[pid] = child.name
@@ -516,12 +518,9 @@ class TSDBPoller(Poller):
         except tsdb.TSDBSetDoesNotExistError:
             self.tsdb_set = self.tsdb.add_set(set_name)
 
-
 class SQLPoller(Poller):
     def __init__(self, config, name, device, oidset):
         Poller.__init__(self, config, name, device, oidset)
-        esxsnmp.sql.reconnect()
-
 
 #
 # XXX are the oidset, etc vars burdened with sqlalchemy goo? if so, does it

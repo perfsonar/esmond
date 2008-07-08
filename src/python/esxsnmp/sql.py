@@ -66,8 +66,3 @@ def setup_db(db_uri):
         }, extension=DateConvMapper())
 
     mapper(IfRef, tables['ifref'], properties={'device': relation(Device, lazy=False)})
-
-def reconnect():
-    global engine, conn
-    conn.close()
-    conn = engine.connect()
