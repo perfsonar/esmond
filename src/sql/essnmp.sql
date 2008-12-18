@@ -8,7 +8,8 @@ CREATE TABLE Device (
     begin_time  timestamp,
     end_time    timestamp,
     community   varchar(128),
-    active      boolean
+    active      boolean,
+    collectorGroupId int REFERENCES CollectorGroup ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE DeviceTag (
@@ -59,10 +60,21 @@ CREATE TABLE OIDSetMember (
     OIDSetId int REFERENCES OIDSet
 );
 
+CREATE TABLE CollectorGroup (
+    id     SERIAL PRIMARY KEY,
+    name   varchar(32)
+);
+
+CREATE TABLE CollectorGroupMemebership (
+    id               SERIAL PRIMARY KEY,
+    hostname         varchar(128),
+    collectorGroupId int REFERENCES CollectorGroup ON UPDATE CASCADE ON DELETE CASCADE
+);
+
 CREATE TABLE DeviceOIDSetMap (
-    id       SERIAL PRIMARY KEY,
-    deviceId int REFERENCES Device ON UPDATE CASCADE ON DELETE CASCADE,
-    OIDSetId int REFERENCES OIDSet ON UPDATE CASCADE ON DELETE CASCADE
+    id               SERIAL PRIMARY KEY,
+    deviceId         int REFERENCES Device ON UPDATE CASCADE ON DELETE CASCADE,
+    OIDSetId         int REFERENCES OIDSet ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE IfRef (

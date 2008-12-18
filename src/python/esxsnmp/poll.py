@@ -7,6 +7,7 @@ import sys
 import time
 import re
 import sets
+import socket
 
 import sqlalchemy
 import yapsnmp
@@ -175,6 +176,8 @@ class PollManager(object):
         self.opts = opts
         self.args = args
         self.config = config
+        
+        self.hostname = socket.gethostname()
 
         self.log = get_logger(self.name, config.syslog_facility)
 
@@ -201,7 +204,12 @@ class PollManager(object):
         session = esxsnmp.sql.Session()
 
         devices = session.query(
-                esxsnmp.sql.Device).select("active = 't' AND end_time > 'NOW'")
+                esxsnmp.sql.Device).select("""
+                    collectorGroupid in (SELECT collectorGroupId 
+                                                        FROM CollectorGroupMemebership
+                                                        WHERE host = '%s')
+                    AND active = 't' 
+                    AND end_time > 'NOW'""" % self.hostname)
 
         for device in devices:
             d[device.name] = device
@@ -233,7 +241,7 @@ class PollManager(object):
                     else:
                         raise
 
-                if rpid != 0 and self.running: # need to check self.running again, because wait blocks
+                if rpid != 0 and self.running: # need to check self.running again, because we might be shutting down
                     if self.child_pid_map.has_key(rpid):
                         self.log.warn("%s, pid %d died" % (self.children[self.child_pid_map[rpid]].name, rpid))
                         child = self.children[self.child_pid_map[rpid]]
@@ -561,7 +569,7 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
     def store(self, oid, vars):
         ts = time.time()
-        # XXX:refactor might want to use the ID here instead of expensive exec
+        # XXX:refactor might want to use the ID here instead of expensive eval
         vartype = eval("tsdb.row.%s" % oid.type.name)
 
         for (var,val) in vars:
