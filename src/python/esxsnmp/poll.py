@@ -204,12 +204,17 @@ class PollManager(object):
         session = esxsnmp.sql.Session()
 
         devices = session.query(
-                esxsnmp.sql.Device).select("""
-                    collectorGroupid in (SELECT collectorGroupId 
-                                                        FROM CollectorGroupMemebership
-                                                        WHERE host = '%s')
-                    AND active = 't' 
-                    AND end_time > 'NOW'""" % self.hostname)
+            esxsnmp.sql.Device).select("""
+                active = 't' 
+                AND end_time > 'NOW'
+                AND device.id IN
+                    (SELECT deviceid
+                        FROM devicetagmap
+                       WHERE devicetagid =
+                       (SELECT devicetag.id
+                          FROM devicetag
+                         WHERE name = '%s'))
+            """ % self.config.polling_tag)
 
         for device in devices:
             d[device.name] = device
@@ -405,7 +410,7 @@ class PollManager(object):
 
     def shutdown(self):
         self._stop_all_children()
-        self.log.debug("exiting")
+        self.log.info("exiting")
         sys.exit()
 
     def __del__(self):

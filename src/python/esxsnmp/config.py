@@ -54,6 +54,7 @@ class ESxSNMPConfig(object):
         self.pid_file = None
         self.use_rrd = False
         self.rrd_path = None
+        self.polling_tag = None
 
         self.send_error_email = False
 
@@ -67,7 +68,7 @@ class ESxSNMPConfig(object):
         for opt in ('db_uri', 'tsdb_root', 'error_email_to',
                 'error_email_subject', 'error_email_from', 'traceback_dir',
                 'syslog_facility', 'syslog_verbosity', 'pid_file',
-                'use_rrd', 'rrd_path'):
+                'use_rrd', 'rrd_path', 'polling_tag'):
             setattr(self, opt, cfg.get("main", opt))
 
     def validate_config(self):
