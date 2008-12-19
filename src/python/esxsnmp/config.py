@@ -65,11 +65,13 @@ class ESxSNMPConfig(object):
         """ read in config from INI-style file, requiring section header 'main'"""
         cfg = ConfigParser.ConfigParser()
         cfg.read(self.file)
+        config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in ('db_uri', 'tsdb_root', 'error_email_to',
                 'error_email_subject', 'error_email_from', 'traceback_dir',
                 'syslog_facility', 'syslog_verbosity', 'pid_file',
                 'use_rrd', 'rrd_path', 'polling_tag'):
-            setattr(self, opt, cfg.get("main", opt))
+            if opt in config_items:
+                setattr(self, opt, cfg.get("main", opt))
 
     def validate_config(self):
         for attr in ('tsdb_root', 'db_uri'):
