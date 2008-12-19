@@ -7,6 +7,7 @@ import sys
 import time
 import re
 import sets
+import random
 import socket
 
 import sqlalchemy
@@ -16,6 +17,7 @@ import rrdtool
 import tsdb
 import tsdb.row
 from tsdb.util import rrd_from_tsdb_var
+from tsdb.error import TSDBAggregateDoesNotExistError
 
 import esxsnmp.sql
 
@@ -179,6 +181,8 @@ class PollManager(object):
         
         self.hostname = socket.gethostname()
 
+        self.root_pid = os.getpid()
+
         self.log = get_logger(self.name, config.syslog_facility)
 
         self.running = False
@@ -235,7 +239,7 @@ class PollManager(object):
         self._start_all_devices()
 
         while self.running:
-            self.log.debug("waiting for a child to die (how morbid!)")
+#            self.log.debug("waiting for a child to die (how morbid!)")
             if len(self.child_pid_map.keys()) > 0:
                 try:
                     (rpid,status) = os.waitpid(0, os.WNOHANG)
@@ -344,7 +348,11 @@ class PollManager(object):
     def _stop_child(self, child):
         if child.pid:
             self.log.info("stopping %s, pid %d" % (child.name, child.pid))
-            os.kill(child.pid, signal.SIGTERM)
+            try:
+                os.kill(child.pid, signal.SIGTERM)
+            except OSError, e:
+                self.log.info("tried to kill a dead pid %d, %s: %s" %
+                        (child.pid, child.name, e.strerror))
 
     def _stop_all_children(self):
         for child in self.children.itervalues():
@@ -374,6 +382,7 @@ class PollManager(object):
             self._start_device(new_devices[name])
 
         for name in old_set.difference(new_set):
+            self.log.debug("remove dev: %s" % name)
             self._remove_device(self.devices[name])
 
         for name in new_set.intersection(old_set):
@@ -399,6 +408,7 @@ class PollManager(object):
                 self._start_oidset(old_device, oidset)
 
             for oidset in old_oidset_names.difference(new_oidset_names):
+                self.log.debug("remove oidset: %s %s" % (old_device, name))
                 self._remove_oidset(old_device, oidset)
 
         self.devices = new_devices
@@ -414,7 +424,7 @@ class PollManager(object):
         sys.exit()
 
     def __del__(self):
-        if len(self.child_pid_map.keys()) > 0:
+        if os.getpid() == self.root_pid and len(self.child_pid_map.keys()) > 0:
             self.shutdown()
 
 
@@ -456,10 +466,12 @@ class Poller(object):
                 (var,val) = arg.split('=')
                 self.poller_args[var] = val
 
+        self.polling_round = 0
+
     def run(self):
         while self.running:
             if self.time_to_poll():
-                self.log.debug("grabbing data")
+#                self.log.debug("grabbing data")
                 begin = time.time()
                 self.next_poll = begin + self.oidset.frequency
 
@@ -479,7 +491,12 @@ class Poller(object):
                     if self.errors < 10  or self.errors % 10 == 0:
                         self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
 
+            self.polling_round += 1
             self.sleep()
+            # XXX kludge hack ick!  exit after 120 cycles as
+            # a workaround for a memeory leak
+            if self.polling_round > 120:
+                sys.exit()
 
     def begin(self):
         """begin is called immeditately before polling is started.  this is
@@ -559,6 +576,9 @@ class CorrelatedTSDBPoller(TSDBPoller):
             self.rrd_path = os.path.join(self.config.rrd_path,
                     self.device.name, self.oidset.name)
 
+        random.seed()
+        self.rank = random.randint(0,19)
+        self.log.debug("rank %d" % self.rank)
 
 
     def begin(self):
@@ -603,14 +623,32 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
                         rrdtool.create(*rrd_args)
                         tsdb_var.metadata['RRD_FILE'] = rrd_args[0]
-                        self.log.debug("created RRD file: %s" % rrd_args[0])
+                        #self.log.debug("created RRD file: %s" % rrd_args[0])
+                    tsdb_var.flush()
 
-            tsdb_var.insert(vartype(ts, tsdb.ROW_VALID, val))
-            tsdb_var.flush() # XXX is this a good idea?
+            #tsdb_var.insert(vartype(ts, tsdb.ROW_VALID, val))
+            if self.polling_round % 20 == self.rank:
+                tsdb_var.flush() # XXX is this a good idea?
             if oid.aggregate:
-                tsdb_var.update_aggregate(str(self.oidset.frequency))
+                # XXX:refactor uptime should be handled better
+                uptime = self.tsdb_set.get_var('sysUpTime')
+                try:
+                    pass
+                    #tsdb_var.update_aggregate(str(self.oidset.frequency),
+                        #uptime_var=uptime)
+                except TSDBAggregateDoesNotExistError:
+                    self.log.error("bad aggregate for %s/%s/%s/%s" % (self.device.name,
+                        self.oidset.name, oid.name, var))
                 if self.config.use_rrd:
-                    rrdtool.update(tsdb_var.metadata['RRD_FILE'], "%d:%s" % (int(ts), val))
+                    if tsdb_var.metadata.has_key('RRD_FILE'):
+                        try:
+                            rrdtool.update(tsdb_var.metadata['RRD_FILE'], "%d:%s" % (int(ts), val))
+                        except Exception, e:
+                            self.log.error("RRD error for %s/%s/%s/%s: %s" % (self.device.name,
+                                self.oidset.name, oid.name, var, e))
+                    else:
+                        self.log.error("no RRD file for %s/%s/%s/%s" % (self.device.name,
+                            self.oidset.name, oid.name, var))
             # XXX:dbg print vartype, var, ts, val, vartype.unpack(vartype(ts, tsdb.ROW_VALID, val).pack()) 
 
 class IfRefSQLPoller(SQLPoller):
