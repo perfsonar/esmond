@@ -10,8 +10,10 @@ from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
 import tsdb
+import tsdb.row
 
-from esxsnmp.sql import *
+import esxsnmp.sql
+from esxsnmp.sql import Device, OID, OIDSet, IfRef
 from esxsnmp.rpc import ESDB
 from esxsnmp.ipaclsocket import IPACLSocket
 import esxsnmp.rpc.ttypes
@@ -19,16 +21,16 @@ from esxsnmp.util import run_server, remove_metachars
 
 class ESDBHandler(object):
     def __init__(self):
-        self.session = create_session(esxsnmp.sql.vars['db'])
+        self.session = esxsnmp.sql.Session()
         self.tsdb = tsdb.TSDB("/data/esxsnmp/data")
         self.device_threads = {}
 
     def list_devices(self, active):
         limit = ""
         if active:
-            limit = "device.end_time > 'NOW' AND device.begin_time < 'NOW'"
+            limit = "device.end_time > 'NOW' AND device.begin_time < 'NOW' AND active = 't'"
 
-        return [d.name for d in self.session.query(Device).select(limit)]
+        return [d.name for d in self.session.query(esxsnmp.sql.Device).select(limit)]
 
     def get_device(self,name):
         return self.session.query(Device).select_by(name=name)[0]
@@ -131,10 +133,10 @@ class ESDBHandler(object):
 #
 # Make tsdb types Thrifty
 #
-tsdb.Counter32.__bases__ += (esxsnmp.rpc.ttypes.Counter32, )
-tsdb.Counter64.__bases__ += (esxsnmp.rpc.ttypes.Counter64, )
-tsdb.Gauge32.__bases__ += (esxsnmp.rpc.ttypes.Gauge32, )
-tsdb.Aggregate.__bases__ += (esxsnmp.rpc.ttypes.Aggregate, )
+tsdb.row.Counter32.__bases__ += (esxsnmp.rpc.ttypes.Counter32, )
+tsdb.row.Counter64.__bases__ += (esxsnmp.rpc.ttypes.Counter64, )
+tsdb.row.Gauge32.__bases__ += (esxsnmp.rpc.ttypes.Gauge32, )
+tsdb.row.Aggregate.__bases__ += (esxsnmp.rpc.ttypes.Aggregate, )
 
 class ESDBProcessorFactory(object):
     """Factory for ESDBHandlers."""
@@ -192,4 +194,5 @@ def esdbd():
     pfactory = TBinaryProtocol.TBinaryProtocolAcceleratedFactory()
 
     server = HandlerPerThreadThreadedServer(ESDBProcessorFactory(), transport, tfactory, pfactory)
-    try_harder(server.serve, exc_handler)
+    #try_harder(server.serve, exc_handler)
+    server.serve()
