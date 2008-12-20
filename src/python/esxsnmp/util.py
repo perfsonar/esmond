@@ -20,7 +20,15 @@ from esxsnmp.rpc import ESDB
 
 proctitle = None
 
-def daemonize(name, pidfile=None, logfile=None):
+class LoggerIO(object):
+    """file like class which logs writes to the logging module"""
+    def __init__(self, log):
+        self.log = log
+
+    def write(self, buf):
+        self.log.debug(buf)
+
+def daemonize(name, pidfile=None, logfile=None, log_stdout_stderr=None):
     '''Forks the current process into a daemon.
         derived from the ASPN recipe:
             http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/66012
@@ -77,6 +85,9 @@ def daemonize(name, pidfile=None, logfile=None):
         os.open(logfile, os.O_RDWR|os.O_CREAT)
         os.dup2(0, sys.stdout.fileno())
         os.dup2(0, sys.stderr.fileno())
+
+    if log_stdout_stderr:
+        sys.stdout = sys.stderr = LoggerIO(log_stdout_stderr)
 
 
 def setproctitle(name):
@@ -328,16 +339,12 @@ def try_harder(callable_, exc_handler, restart_delay=10, restart_attempts=5,
 def run_server(callable_, name, config):
     exc_hook = setup_exc_handler(name, config)
     exc_hook.install()
-    print "exc hook installed"
 
-    daemonize(name, config.run_dir)
+    daemonize(name, config.run_dir, log_stdout_stderr=exc_hook.log)
 
     setproctitle(name)
 
     callable_()
-    #print "trying harder"
-    #try_harder(callable_, exc_hook, restart_attempts=2)
-
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""

@@ -137,7 +137,10 @@ class PollerChild(object):
         self.state = PollerChild.NEW
 
     def __repr__(self):
-        return '<PollerChild: %s %d state=%d>' % (self.name, self.pid, self.state)
+        try:
+            return '<PollerChild: %s %d state=%d>' % (self.name, self.pid, self.state)
+        except:
+            return '<PollerChild: BOGUS!>'
 
     def record(self, pid):
         self.pid = pid
@@ -189,8 +192,8 @@ class PollManager(object):
         self.last_reload = time.time()
         self.last_penalty_empty = time.time()
 
-        self.reload_interval = 10
-        self.penalty_interval = 45
+        self.reload_interval = 90
+        self.penalty_interval = 300
 
         esxsnmp.sql.setup_db(self.config.db_uri)
 
@@ -471,7 +474,7 @@ class Poller(object):
     def run(self):
         while self.running:
             if self.time_to_poll():
-#                self.log.debug("grabbing data")
+                #self.log.debug("grabbing data")
                 begin = time.time()
                 self.next_poll = begin + self.oidset.frequency
 
@@ -492,11 +495,11 @@ class Poller(object):
                         self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
 
             self.polling_round += 1
-            self.sleep()
-            # XXX kludge hack ick!  exit after 120 cycles as
+            # XXX kludge hack ick!  exit after 480 cycles as
             # a workaround for a memeory leak
-            if self.polling_round > 120:
+            if self.polling_round >= 480:
                 sys.exit()
+            self.sleep()
 
     def begin(self):
         """begin is called immeditately before polling is started.  this is
@@ -592,10 +595,46 @@ class CorrelatedTSDBPoller(TSDBPoller):
     def finish(self):
         pass
 
+    def create_rrd(self, tsdb_var, oid):
+        """Create a RRD that mirrors the TSDB"""
+        begin = int(time.time()) - 2 * tsdb_var.metadata['STEP']
+
+        rrd_args = rrd_from_tsdb_var(tsdb_var, begin,
+                os.path.join(self.rrd_path, oid.name),
+                ds_name=oid.name)
+        rrd_file = rrd_args[0]
+
+        self.log.debug("creating RRD file: %s" % rrd_args[0])
+
+        if not os.path.exists(os.path.dirname(rrd_file)):
+            os.makedirs(os.path.dirname(rrd_file))
+        try:
+            rrdtool.create(*rrd_args)
+        except Exception, e:
+            self.log.error("RRD creation failed for %s: %s" % (rrd_args[0],
+                str(e)))
+            raise
+
+        tsdb_var.metadata['RRD_FILE'] = rrd_args[0]
+
+    def update_rrd(self, tsdb_var, ts, val):
+        if tsdb_var.metadata.has_key('RRD_FILE'):
+            try:
+                rrdtool.update(tsdb_var.metadata['RRD_FILE'], "%d:%s" % (int(ts), val))
+            except Exception, e:
+                self.log.error("RRD error for %s/%s/%s/%s: %s" % (self.device.name,
+                    self.oidset.name, oid.name, var, e))
+        else:
+            self.log.error("no RRD file for %s/%s/%s/%s" % (self.device.name,
+                self.oidset.name, oid.name, var))
+
     def store(self, oid, vars):
         ts = time.time()
         # XXX:refactor might want to use the ID here instead of expensive eval
         vartype = eval("tsdb.row.%s" % oid.type.name)
+
+        if self.polling_round % 20 == self.rank:
+            self.log.debug("flush!")
 
         for (var,val) in vars:
             var = self.correlator.lookup(oid,var)
@@ -603,8 +642,10 @@ class CorrelatedTSDBPoller(TSDBPoller):
             try:
                 tsdb_var = self.tsdb_set.get_var(var)
             except tsdb.TSDBVarDoesNotExistError:
+                self.log.debug("creating TSDB: %s" % str(var))
                 tsdb_var = self.tsdb_set.add_var(var, vartype,
                         self.oidset.frequency, self.chunk_mapper)
+
                 if oid.aggregate and self.aggregates:
                     tsdb_var.add_aggregate(str(self.oidset.frequency),
                         self.chunk_mapper, ['average', 'delta'])
@@ -613,43 +654,28 @@ class CorrelatedTSDBPoller(TSDBPoller):
                                 ['average', 'delta', 'min', 'max'])
 
                     if self.config.use_rrd:
-                        begin = int(time.time()) - 2 * tsdb_var.metadata['STEP']
-                        rrd_args = rrd_from_tsdb_var(tsdb_var, begin,
-                                os.path.join(self.rrd_path, oid.name),
-                                ds_name=oid.name)
-                        rrd_file = rrd_args[0]
-                        if not os.path.exists(os.path.dirname(rrd_file)):
-                            os.makedirs(os.path.dirname(rrd_file))
+                        self.create_rrd(tsdb_var, oid)
 
-                        rrdtool.create(*rrd_args)
-                        tsdb_var.metadata['RRD_FILE'] = rrd_args[0]
-                        #self.log.debug("created RRD file: %s" % rrd_args[0])
-                    tsdb_var.flush()
+	    	tsdb_var.flush()
 
-            #tsdb_var.insert(vartype(ts, tsdb.ROW_VALID, val))
+            tsdb_var.insert(vartype(ts, tsdb.ROW_VALID, val))
+
             if self.polling_round % 20 == self.rank:
-                tsdb_var.flush() # XXX is this a good idea?
+                tsdb_var.flush()
+
             if oid.aggregate:
                 # XXX:refactor uptime should be handled better
                 uptime = self.tsdb_set.get_var('sysUpTime')
+
                 try:
-                    pass
-                    #tsdb_var.update_aggregate(str(self.oidset.frequency),
-                        #uptime_var=uptime)
+                    tsdb_var.update_aggregate(str(self.oidset.frequency),
+                        uptime_var=uptime)
                 except TSDBAggregateDoesNotExistError:
                     self.log.error("bad aggregate for %s/%s/%s/%s" % (self.device.name,
                         self.oidset.name, oid.name, var))
+
                 if self.config.use_rrd:
-                    if tsdb_var.metadata.has_key('RRD_FILE'):
-                        try:
-                            rrdtool.update(tsdb_var.metadata['RRD_FILE'], "%d:%s" % (int(ts), val))
-                        except Exception, e:
-                            self.log.error("RRD error for %s/%s/%s/%s: %s" % (self.device.name,
-                                self.oidset.name, oid.name, var, e))
-                    else:
-                        self.log.error("no RRD file for %s/%s/%s/%s" % (self.device.name,
-                            self.oidset.name, oid.name, var))
-            # XXX:dbg print vartype, var, ts, val, vartype.unpack(vartype(ts, tsdb.ROW_VALID, val).pack()) 
+                    self.update_rrd(tsdb_var, ts, val)
 
 class IfRefSQLPoller(SQLPoller):
     """Polls all OIDS and creates a IfRef entry then sees if the IfRef entry
@@ -764,7 +790,7 @@ def espolld():
 
     setproctitle(name)
 
-    daemonize(name, config.pid_file, logfile="/tmp/plog")
+    daemonize(name, config.pid_file, log_stdout_stderr=exc_handler.log)
 
     poller = PollManager(name, opts, args, config)
     poller.start_polling()
