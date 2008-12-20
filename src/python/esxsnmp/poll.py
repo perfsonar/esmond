@@ -617,7 +617,7 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
         tsdb_var.metadata['RRD_FILE'] = rrd_args[0]
 
-    def update_rrd(self, tsdb_var, ts, val):
+    def update_rrd(self, tsdb_var, ts, val, oid, var):
         if tsdb_var.metadata.has_key('RRD_FILE'):
             try:
                 rrdtool.update(tsdb_var.metadata['RRD_FILE'], "%d:%s" % (int(ts), val))
@@ -675,7 +675,7 @@ class CorrelatedTSDBPoller(TSDBPoller):
                         self.oidset.name, oid.name, var))
 
                 if self.config.use_rrd:
-                    self.update_rrd(tsdb_var, ts, val)
+                    self.update_rrd(tsdb_var, ts, val, oid, var)
 
 class IfRefSQLPoller(SQLPoller):
     """Polls all OIDS and creates a IfRef entry then sees if the IfRef entry
@@ -784,6 +784,8 @@ def espolld():
         sys.exit(1)
 
     name = "espolld_manager_quux"
+
+    os.umask(0022)
 
     exc_handler = setup_exc_handler(name, config)
     exc_handler.install()
