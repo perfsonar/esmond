@@ -110,7 +110,7 @@ def setproctitle(name):
 def get_logger(name, facility):
     log = logging.getLogger(name)
     log.addHandler(logging.handlers.SysLogHandler(('localhost', 514), facility))
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.INFO)
     log.handlers[0].setFormatter(logging.Formatter("%(name)s [%(process)d] %(message)s"))
 
     return log

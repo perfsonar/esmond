@@ -498,8 +498,12 @@ class Poller(object):
             # XXX kludge hack ick!  exit after 480 cycles as
             # a workaround for a memeory leak
             if self.polling_round >= 480:
+                self.shutdown()
                 sys.exit()
+
             self.sleep()
+
+        self.shutdown()
 
     def begin(self):
         """begin is called immeditately before polling is started.  this is
@@ -519,6 +523,11 @@ class Poller(object):
         finalization code should go here."""
 
         raise NotImplementedError("must implement finish method")
+
+    def shudown(self):
+        """shutdown is called as the poller is shutting down
+        it can be used to flush unwritten data before exiting."""
+        pass
 
     def stop(self, signum, frame):
         self.running = False
@@ -575,7 +584,7 @@ class CorrelatedTSDBPoller(TSDBPoller):
         else:
             self.aggregates = None
 
-        if self.config.use_rrd:
+        if self.config.rrd_path:
             self.rrd_path = os.path.join(self.config.rrd_path,
                     self.device.name, self.oidset.name)
 
@@ -617,16 +626,21 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
         tsdb_var.metadata['RRD_FILE'] = rrd_args[0]
 
-    def update_rrd(self, tsdb_var, ts, val, oid, var):
+    def update_rrd(self, tsdb_var, ts, val, var):
         if tsdb_var.metadata.has_key('RRD_FILE'):
             try:
                 rrdtool.update(tsdb_var.metadata['RRD_FILE'], "%d:%s" % (int(ts), val))
             except Exception, e:
-                self.log.error("RRD error for %s/%s/%s/%s: %s" % (self.device.name,
-                    self.oidset.name, oid.name, var, e))
+                self.log.error("RRD error for %s/%s/%s: %s" % (self.device.name,
+                    self.oidset.name, var, e))
         else:
-            self.log.error("no RRD file for %s/%s/%s/%s" % (self.device.name,
-                self.oidset.name, oid.name, var))
+            self.log.error("no RRD file for %s/%s/%s" % (self.device.name,
+                self.oidset.name, var))
+
+    def shutdown(self):
+        self.log.debug("flush all!")
+        for var in self.tsdb_set.vars:
+            var.flush()
 
     def store(self, oid, vars):
         ts = time.time()
@@ -653,7 +667,7 @@ class CorrelatedTSDBPoller(TSDBPoller):
                         tsdb_var.add_aggregate(agg, self.chunk_mapper,
                                 ['average', 'delta', 'min', 'max'])
 
-                    if self.config.use_rrd:
+                    if self.config.rrd_path:
                         self.create_rrd(tsdb_var, oid)
 
 	    	tsdb_var.flush()
@@ -663,19 +677,19 @@ class CorrelatedTSDBPoller(TSDBPoller):
             if self.polling_round % 20 == self.rank:
                 tsdb_var.flush()
 
-            if oid.aggregate:
-                # XXX:refactor uptime should be handled better
-                uptime = self.tsdb_set.get_var('sysUpTime')
-
-                try:
-                    tsdb_var.update_aggregate(str(self.oidset.frequency),
-                        uptime_var=uptime)
-                except TSDBAggregateDoesNotExistError:
-                    self.log.error("bad aggregate for %s/%s/%s/%s" % (self.device.name,
-                        self.oidset.name, oid.name, var))
-
-                if self.config.use_rrd:
-                    self.update_rrd(tsdb_var, ts, val, oid, var)
+                if oid.aggregate:
+                    # XXX:refactor uptime should be handled better
+                    uptime = self.tsdb_set.get_var('sysUpTime')
+    
+                    try:
+                        tsdb_var.update_aggregate(str(self.oidset.frequency),
+                            uptime_var=uptime)
+                    except TSDBAggregateDoesNotExistError:
+                        self.log.error("bad aggregate for %s/%s/%s" % (self.device.name,
+                            self.oidset.name, var))
+    
+                    if self.config.rrd_path:
+                        self.update_rrd(tsdb_var, ts, val, var)
 
 class IfRefSQLPoller(SQLPoller):
     """Polls all OIDS and creates a IfRef entry then sees if the IfRef entry
