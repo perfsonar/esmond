@@ -785,14 +785,14 @@ def espolld():
 
     name = "espolld_manager_quux"
 
-    os.umask(0022)
-
     exc_handler = setup_exc_handler(name, config)
     exc_handler.install()
 
     setproctitle(name)
 
     daemonize(name, config.pid_file, log_stdout_stderr=exc_handler.log)
+
+    os.umask(0022)
 
     poller = PollManager(name, opts, args, config)
     poller.start_polling()

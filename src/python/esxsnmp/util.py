@@ -273,7 +273,6 @@ class ExceptionHandler(object):
 
         try:
             (fd,name) = tempfile.mkstemp(dir=self.output_dir, prefix="traceback_")
-            os.umask(0022)
             f = os.fdopen(fd, 'w')
             f.write(body)
             f.close()
