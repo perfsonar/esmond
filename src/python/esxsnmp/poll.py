@@ -639,7 +639,7 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
     def shutdown(self):
         self.log.debug("flush all!")
-        for var in self.tsdb_set.vars:
+        for var in self.tsdb_set.vars.itervalues():
             var.flush()
 
     def store(self, oid, vars):
