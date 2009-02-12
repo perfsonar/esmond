@@ -1,6 +1,6 @@
 import os
 import sys
-import dl
+import ctypes
 import time
 import logging
 import logging.handlers
@@ -100,9 +100,9 @@ def setproctitle(name):
         for libc_ver in range(7, 5, -1):
             libc_file = '/lib/libc.so.%d' % libc_ver
             if os.path.exists(libc_file):
-                libc = dl.open(libc_file)
-                libc.call('setproctitle', name + "\0")
-                libc.close()
+                libc = ctypes.CDLL(libc_file)
+                libc.setproctitle(name + "\0")
+                break
 
     global proctitle
     proctitle = name
@@ -130,7 +130,7 @@ def send_mail(sender, to, subject, body, relay='localhost'):
 
 def get_ESDB_client(server='localhost', port=9090):
     transport = TTransport.TBufferedTransport(TSocket.TSocket(server, port))
-    client = ESDB.Client(TBinaryProtocol.TBinaryProtocol(transport))
+    client = ESDB.Client(TBinaryProtocol.TBinaryProtocolAccelerated(transport))
     return (transport, client)
 
 class ExceptionHandler(object):
