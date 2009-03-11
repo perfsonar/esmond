@@ -91,6 +91,8 @@ class ESxSNMPConfig(object):
 
         if self.traceback_dir is not None:
             if not os.path.isdir(self.traceback_dir):
-                raise ConfigError("invalid config: traceback_dir %s does not exist")
+                raise ConfigError("invalid config: traceback_dir %s does not exist" % self.traceback_dir)
+            if not os.access(self.traceback_dir, os.W_OK):
+                raise ConfigError("invalid config: traceback_dir %s is not writable" % self.traceback_dir)
 
 
