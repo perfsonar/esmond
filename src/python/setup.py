@@ -9,7 +9,7 @@ setup(name='ESxSNMP',
         author_email='jdugan@es.net',
         url='http://code.google.com/p/esxsnmp/',
         packages=['esxsnmp'],
-        install_requires=['tsdb', 'SQLAlchemy==0.4.6'],
+        install_requires=['tsdb', 'SQLAlchemy==0.5.2'],
         entry_points = {
             'console_scripts': [
                 'espolld = esxsnmp.poll:espolld',
