@@ -13,17 +13,20 @@ Currently the only consolidation function understood is AVERAGE
 """
 
 import sys
+import time
 import optparse
 from pprint import pprint
 
 import tsdb
-from essnmp.util import get_ESDB_client
+from esxsnmp.util import get_ESDB_client
 
 def output_data(data):
+    import pdb
+    pdb.set_trace()
     counters = {}
     if data.has_key('ifHCInOctets'):
-        counters['in'] = data["ifHCInOctets"].counter64
-        counters['out'] = data["ifHCOutOctets"].counter64
+        counters['in'] = data["ifHCInOctets"].aggregate
+        counters['out'] = data["ifHCOutOctets"].aggregate
         print "                   ifHCInOctets       ifHCOutOctets"
     else:
         counters['in'] = data["ifInOctets"].counter32
@@ -40,24 +43,26 @@ def output_data(data):
 #
     val = {}
     for i in range(1, len(counters['in'])):
-        for dir in counters.keys():
-            if counters[dir][i].flags & tsdb.ROW_VALID and \
-                    counters[dir][i-1].flags & tsdb.ROW_VALID:
+        print "%d: %s %s" % (counters['in'][i].timestamp,
+                counters['in'][i].average,
+                counters['out'][i].average)
+#            if counters[dir][i].flags & tsdb.ROW_VALID and \
+#                    counters[dir][i-1].flags & tsdb.ROW_VALID:
 #                if last_good[dir] is None:
 #                    val[dir] = "nan"
 #                else:
-                val[dir] = str(8 * (counters[dir][i].value - counters[dir][i-1].value) \
-                        / float(counters[dir][i].timestamp - counters[dir][i-1].timestamp))
+#                val[dir] = str(8 * (counters[dir][i].value - counters[dir][i-1].value) \
+#                        / float(counters[dir][i].timestamp - counters[dir][i-1].timestamp))
 #                    val[dir] = str(8 * (counters[dir][i].value - last_good[dir].value) \
 #                            / float(counters[dir][i].timestamp - last_good[dir].timestamp))
 
 #                last_good[dir] = counters[dir][i]
-            else:
-                val[dir] = "nan"
-                if not counters[dir][i].flags & tsdb.ROW_VALID:
-                    counters[dir][i].timestamp = counters[dir][i-1].timestamp + 30
+#            else:
+#                val[dir] = "nan"
+#                if not counters[dir][i].flags & tsdb.ROW_VALID:
+#                    counters[dir][i].timestamp = counters[dir][i-1].timestamp + 30
 
-        print "%d: %s %s" % (counters['in'][i].timestamp, val['in'], val['out'])
+#        print "%d: %s %s" % (counters['in'][i].timestamp, val['in'], val['out'])
 
 def fetch_data(device, iface_name, oidset, begin, end, CF, resolution):
     (transport, client) = get_ESDB_client()
@@ -77,12 +82,15 @@ def fetch_data(device, iface_name, oidset, begin, end, CF, resolution):
     return data
 
 def main(argv):
+    now = int(time.time())
+
     oparse = optparse.OptionParser(usage="%prog fetch file CF [options]")
     oparse.add_option("-d", "--debug", dest="debug", action="store_true",
             default=False, help="enable debugging")
     oparse.add_option("-b", "--begin", dest="begin", help="begin time",
-            default=None)
-    oparse.add_option("-e", "--end", dest="end", help="end time", default=None)
+            default=str(now-3600))
+    oparse.add_option("-e", "--end", dest="end", help="end time",
+        default=str(now))
     oparse.add_option("-r", "--resolution", dest="resolution", default=None,
             help="resolution of dataset (default is native resolution)")
 
