@@ -35,7 +35,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print '   get_oidset_devices(OIDSet oidset)'
   print '  VarList get_vars_by_grouping(Grouping grouping)'
   print '  byte store_poll_result(SNMPPollResult result)'
-  print '  VarList select(string device, string iface_name, string oidset, string oid, string begin_time, string end_time, string flags, string cf, string resolution)'
+  print '  VarList select(string path, string begin_time, string end_time, string flags, string cf, string resolution)'
   print '   get_interfaces(string device, bool all_interfaces)'
   print ''
   sys.exit(0)
@@ -81,7 +81,7 @@ else:
     transport = TTransport.TFramedTransport(socket)
   else:
     transport = TTransport.TBufferedTransport(socket)
-protocol = TBinaryProtocol.TBinaryProtocol(transport)
+protocol = TBinaryProtocol.TBinaryProtocolAccelerated(transport)
 client = ESDB.Client(protocol)
 transport.open()
 
@@ -170,10 +170,10 @@ elif cmd == 'store_poll_result':
   pp.pprint(client.store_poll_result(eval(args[0]),))
 
 elif cmd == 'select':
-  if len(args) != 9:
-    print 'select requires 9 args'
+  if len(args) != 6:
+    print 'select requires 6 args'
     sys.exit(1)
-  pp.pprint(client.select(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7],args[8],))
+  pp.pprint(client.select(args[0],args[1],args[2],args[3],args[4],args[5],))
 
 elif cmd == 'get_interfaces':
   if len(args) != 2:

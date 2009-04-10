@@ -7,3 +7,11 @@
 from thrift.Thrift import *
 from ttypes import *
 
+ESDBErrors = [
+  'unknown device',
+  'unknown oidset',
+  'unknown var',
+  'unknown consolidation function',
+  'resolution unavailable',
+]
+
