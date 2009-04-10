@@ -1,5 +1,6 @@
 import os
 import optparse
+import logging
 from logging.handlers import SysLogHandler
 import ConfigParser
 
@@ -45,12 +46,13 @@ class ESxSNMPConfig(object):
 
         self.db_uri = None
         self.tsdb_root = None
+        self.tsdb_chunk_prefixes = None
         self.error_email_to = None
         self.error_email_subject = None
         self.error_email_from = None
         self.traceback_dir = None
         self.syslog_facility = None
-        self.syslog_verbosity = 0
+        self.syslog_level = 0
         self.pid_file = None
         self.rrd_path = None
         self.polling_tag = None
@@ -65,9 +67,9 @@ class ESxSNMPConfig(object):
         cfg = ConfigParser.ConfigParser()
         cfg.read(self.file)
         config_items = map(lambda x: x[0], cfg.items("main"))
-        for opt in ('db_uri', 'tsdb_root', 'error_email_to',
+        for opt in ('db_uri', 'tsdb_root', 'tsdb_chunk_prefixes', 'error_email_to',
                 'error_email_subject', 'error_email_from', 'traceback_dir',
-                'syslog_facility', 'syslog_verbosity', 'pid_file',
+                'syslog_facility', 'syslog_level', 'pid_file',
                 'rrd_path', 'polling_tag'):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
@@ -77,6 +79,13 @@ class ESxSNMPConfig(object):
             if getattr(self, attr) == None:
                 raise ConfigError("invalid config: %s: %s must be specified",
                         self.file, attr)
+
+        if not os.path.isdir(self.tsdb_root):
+            raise ConfigError("invalid config: tsdb_root does not exist: %s" % self.tsdb_root)
+        if not os.access(self.tsdb_root, os.W_OK):
+            raise ConfigError("invalid config: tsdb_root %s is not writable" % self.tsdb_root)
+        if self.tsdb_chunk_prefixes:
+            self.tsdb_chunk_prefixes = self.tsdb_chunk_prefixes.split(',')
 
         if self.error_email_to is not None \
                 and self.error_email_subject is not None \
@@ -94,5 +103,13 @@ class ESxSNMPConfig(object):
                 raise ConfigError("invalid config: traceback_dir %s does not exist" % self.traceback_dir)
             if not os.access(self.traceback_dir, os.W_OK):
                 raise ConfigError("invalid config: traceback_dir %s is not writable" % self.traceback_dir)
+
+        if self.syslog_level is None:
+            syslog_level = logging.INFO
+        else:
+            if not logging._levelNames.has_key(self.syslog_level):
+                raise ConfigError("invaild config: unknown syslog_level %s" %
+                        self.syslog_level)
+            self.syslog_level = logging._levelNames[self.syslog_level]
 
 
