@@ -34,6 +34,14 @@ def daemonize(name, pidfile=None, logfile=None, log_stdout_stderr=None):
             http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/66012
     '''
 
+    if not os.path.exists(os.path.dirname(pidfile)):
+        try:
+            os.makedirs(os.path.dirname(pidfile))
+        except:
+            raise Exception("pid file directory does not exist %s.  aborting." % pidfile) 
+    if not os.access(os.path.dirname(pidfile), os.W_OK):
+        raise Exception("pid file directory %s is not writable.  aborting." % pidfile) 
+
     if os.path.exists(pidfile):
         f = open(pidfile)
         pid = f.readline()
@@ -107,11 +115,12 @@ def setproctitle(name):
     global proctitle
     proctitle = name
 
-def get_logger(name, facility):
+def get_logger(name, facility, level=logging.INFO,
+        format="%(name)s [%(process)d] %(message)s"):
     log = logging.getLogger(name)
     log.addHandler(logging.handlers.SysLogHandler(('localhost', 514), facility))
-    log.setLevel(logging.INFO)
-    log.handlers[0].setFormatter(logging.Formatter("%(name)s [%(process)d] %(message)s"))
+    log.setLevel(level)
+    log.handlers[0].setFormatter(logging.Formatter(format))
 
     return log
 
