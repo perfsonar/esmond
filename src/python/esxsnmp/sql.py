@@ -46,8 +46,8 @@ def setup_db(db_uri):
                 t = timegm(t.utctimetuple())
                 if t < 0:
                     t = 0
-                if t > 2**32-1:
-                    t = 2**32-1
+                if t > 2**31-1:
+                    t = 2**31-1
 
             return t
 
