@@ -5,7 +5,7 @@
 #include <protocol/TBinaryProtocol.h>
 #include <server/TSimpleServer.h>
 #include <transport/TServerSocket.h>
-#include <transport/TTransportUtils.h>
+#include <transport/TBufferTransports.h>
 
 using namespace facebook::thrift;
 using namespace facebook::thrift::protocol;

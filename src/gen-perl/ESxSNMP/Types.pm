@@ -8,13 +8,16 @@ use strict;
 use warnings;
 use Thrift;
 
-package Grouping;
+package ESxSNMP::Grouping;
 use constant Commercial => 1;
 use constant Internal => 2;
 use constant ResearchEducation => 3;
 use constant Education => 4;
 use constant Site => 5;
 package ESxSNMP::OIDType;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::OIDType->mk_accessors( qw( id name ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -93,6 +96,9 @@ sub write {
 }
 
 package ESxSNMP::OIDCorrelator;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::OIDCorrelator->mk_accessors( qw( id name ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -171,6 +177,9 @@ sub write {
 }
 
 package ESxSNMP::OID;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::OID->mk_accessors( qw( id name oidtypeid ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -264,6 +273,9 @@ sub write {
 }
 
 package ESxSNMP::Poller;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::Poller->mk_accessors( qw( id name ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -342,6 +354,9 @@ sub write {
 }
 
 package ESxSNMP::OIDSet;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::OIDSet->mk_accessors( qw( id name frequency oids pollerid ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -487,6 +502,9 @@ sub write {
 }
 
 package ESxSNMP::DeviceTag;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::DeviceTag->mk_accessors( qw( id name ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -565,6 +583,9 @@ sub write {
 }
 
 package ESxSNMP::Device;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::Device->mk_accessors( qw( id name begin_time end_time community oidsets ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -630,14 +651,14 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == TType::I32) {
-        $xfer += $input->readI32(\$self->{begin_time});
+      /^3$/ && do{      if ($ftype == TType::I64) {
+        $xfer += $input->readI64(\$self->{begin_time});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == TType::I32) {
-        $xfer += $input->readI32(\$self->{end_time});
+      /^4$/ && do{      if ($ftype == TType::I64) {
+        $xfer += $input->readI64(\$self->{end_time});
       } else {
         $xfer += $input->skip($ftype);
       }
@@ -691,13 +712,13 @@ sub write {
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{begin_time}) {
-    $xfer += $output->writeFieldBegin('begin_time', TType::I32, 3);
-    $xfer += $output->writeI32($self->{begin_time});
+    $xfer += $output->writeFieldBegin('begin_time', TType::I64, 3);
+    $xfer += $output->writeI64($self->{begin_time});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{end_time}) {
-    $xfer += $output->writeFieldBegin('end_time', TType::I32, 4);
-    $xfer += $output->writeI32($self->{end_time});
+    $xfer += $output->writeFieldBegin('end_time', TType::I64, 4);
+    $xfer += $output->writeI64($self->{end_time});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{community}) {
@@ -725,6 +746,9 @@ sub write {
 }
 
 package ESxSNMP::IfRef;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::IfRef->mk_accessors( qw( id device ifindex ifdescr ifalias ipaddr ifspeed ifhighspeed connection conntype usage visibility grouping ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -843,14 +867,14 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^7$/ && do{      if ($ftype == TType::I32) {
-        $xfer += $input->readI32(\$self->{ifspeed});
+      /^7$/ && do{      if ($ftype == TType::I64) {
+        $xfer += $input->readI64(\$self->{ifspeed});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^8$/ && do{      if ($ftype == TType::I32) {
-        $xfer += $input->readI32(\$self->{ifhighspeed});
+      /^8$/ && do{      if ($ftype == TType::I64) {
+        $xfer += $input->readI64(\$self->{ifhighspeed});
       } else {
         $xfer += $input->skip($ftype);
       }
@@ -929,13 +953,13 @@ sub write {
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ifspeed}) {
-    $xfer += $output->writeFieldBegin('ifspeed', TType::I32, 7);
-    $xfer += $output->writeI32($self->{ifspeed});
+    $xfer += $output->writeFieldBegin('ifspeed', TType::I64, 7);
+    $xfer += $output->writeI64($self->{ifspeed});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ifhighspeed}) {
-    $xfer += $output->writeFieldBegin('ifhighspeed', TType::I32, 8);
-    $xfer += $output->writeI32($self->{ifhighspeed});
+    $xfer += $output->writeFieldBegin('ifhighspeed', TType::I64, 8);
+    $xfer += $output->writeI64($self->{ifhighspeed});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{connection}) {
@@ -969,6 +993,9 @@ sub write {
 }
 
 package ESxSNMP::Counter32;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::Counter32->mk_accessors( qw( flags timestamp value version type_id ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -1092,6 +1119,9 @@ sub write {
 }
 
 package ESxSNMP::Counter64;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::Counter64->mk_accessors( qw( flags timestamp value version type_id ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -1215,6 +1245,9 @@ sub write {
 }
 
 package ESxSNMP::Gauge32;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::Gauge32->mk_accessors( qw( flags timestamp value version type_id ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -1338,6 +1371,9 @@ sub write {
 }
 
 package ESxSNMP::Aggregate;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::Aggregate->mk_accessors( qw( flags timestamp average delta min max version type_id ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -1506,6 +1542,9 @@ sub write {
 }
 
 package ESxSNMP::VarList;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::VarList->mk_accessors( qw( counter32 counter64 gauge32 aggregate ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -1702,6 +1741,9 @@ sub write {
 }
 
 package ESxSNMP::SNMPPollResultPair;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::SNMPPollResultPair->mk_accessors( qw( OIDName value ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -1780,6 +1822,9 @@ sub write {
 }
 
 package ESxSNMP::SNMPPollResult;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::SNMPPollResult->mk_accessors( qw( device_id oidset_id timestamp vars ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -1930,6 +1975,9 @@ sub write {
 }
 
 package ESxSNMP::Rate;
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::Rate->mk_accessors( qw( timestamp rate ) );
 sub new {
 my $classname = shift;
 my $self      = {};
@@ -2009,14 +2057,21 @@ sub write {
 
 package ESxSNMP::ESDBError;
 use base('Thrift::TException');
+use Class::Accessor;
+use base('Class::Accessor');
+ESxSNMP::ESDBError->mk_accessors( qw( error details ) );
 sub new {
 my $classname = shift;
 my $self      = {};
 my $vals      = shift || {};
-$self->{what} = undef;
+$self->{error} = undef;
+$self->{details} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{what}) {
-      $self->{what} = $vals->{what};
+    if (defined $vals->{error}) {
+      $self->{error} = $vals->{error};
+    }
+    if (defined $vals->{details}) {
+      $self->{details} = $vals->{details};
     }
   }
 return bless($self,$classname);
@@ -2043,7 +2098,13 @@ sub read {
     SWITCH: for($fid)
     {
       /^1$/ && do{      if ($ftype == TType::STRING) {
-        $xfer += $input->readString(\$self->{what});
+        $xfer += $input->readString(\$self->{error});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^2$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{details});
       } else {
         $xfer += $input->skip($ftype);
       }
@@ -2061,9 +2122,14 @@ sub write {
   my $output = shift;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('ESDBError');
-  if (defined $self->{what}) {
-    $xfer += $output->writeFieldBegin('what', TType::STRING, 1);
-    $xfer += $output->writeString($self->{what});
+  if (defined $self->{error}) {
+    $xfer += $output->writeFieldBegin('error', TType::STRING, 1);
+    $xfer += $output->writeString($self->{error});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{details}) {
+    $xfer += $output->writeFieldBegin('details', TType::STRING, 2);
+    $xfer += $output->writeString($self->{details});
     $xfer += $output->writeFieldEnd();
   }
   $xfer += $output->writeFieldStop();

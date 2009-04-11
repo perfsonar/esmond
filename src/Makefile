@@ -2,7 +2,6 @@
 all: thrift
 
 thrift:
-	./esxsnmp.thrift
-	sed -i.bak -e 's/^class \([^(]*\):/class \1(object):/' gen-py/esxsnmp/ttypes.py
-	rm gen-py/esxsnmp/ttypes.py.bak
+	thrift --gen py:new_style --gen perl -r ./esxsnmp.thrift
 	cp gen-py/esxsnmp/* python/esxsnmp/rpc
+	sed s/TBinaryProtocol.TBinaryProtocol/TBinaryProtocol.TBinaryProtocolAccelerated/ gen-py/esxsnmp/ESDB-remote > python/esxsnmp/rpc/ESDB-remote

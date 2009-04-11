@@ -1,7 +1,8 @@
-#!/usr/local/bin/thrift -cpp -py -perl -r
+#!/usr/local/bin/thrift -r --gen py --gen cpp --gen perl
 
-cpp_namespace ESxSNMP
-perl_package ESxSNMP
+namespace cpp ESxSNMP
+namespace perl ESxSNMP
+namespace py esxsnmp
 
 struct OIDType {
     1: i32 id,
@@ -40,8 +41,8 @@ struct DeviceTag {
 struct Device {
     1: i32 id,
     2: string name,
-    3: i32 begin_time,
-    4: i32 end_time,
+    3: i64 begin_time,  // use i64 due to lack of unsigned i32   
+    4: i64 end_time,    // use i64 due to lack of unsigned i32
     5: string community,
     6: list<OIDSet> oidsets
 }
@@ -53,8 +54,8 @@ struct IfRef {
     4: string ifdescr,
     5: string ifalias,
     6: string ipaddr,
-    7: i32 ifspeed,
-    8: i32 ifhighspeed,
+    7: i64 ifspeed,     // use i64 due to lack of unsigned i32
+    8: i64 ifhighspeed, // use i64 due to lack of unsigned i32
     9: string connection,
     10: string conntype,
     11: string usage,
@@ -134,8 +135,19 @@ struct Rate {
 }
 
 exception ESDBError {
-    1: string what
+    1: string error,
+    2: string details
 }
+
+
+const list<string> ESDBErrors = 
+[
+    'unknown device',
+    'unknown oidset',
+    'unknown var',
+    'unknown consolidation function',
+    'resolution unavailable'
+]
 
 service ESDB {
     list<string> list_devices(1: bool active),
@@ -159,7 +171,7 @@ service ESDB {
 #    void insert_gauge32(list<Var> vars, list<Gauge32> values),
     byte store_poll_result(SNMPPollResult result),
 
-    VarList select(1: string device, 2: string iface_name, 3: string oidset, 4: string oid, 5: string begin_time, 6: string end_time, 7: string flags, 8: string cf, 9: string resolution) throws (1: ESDBError error),
+    VarList select(1: string path, 2: string begin_time, 3: string end_time, 4: string flags, 5: string cf, 6: string resolution) throws (1: ESDBError error),
 
     #
     # get interfaces for device, limit to those with a description of

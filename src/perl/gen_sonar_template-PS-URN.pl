@@ -80,9 +80,9 @@ my $bogusIP="BOGUS1";
 
 print $HEADER;
 
-my (%FILE, %DSIN, %DSOUT, %INTDESC, %RTR, %INTNAME, %DNS, %SPEED, %IP, %OIDSET);
+my (%OIDSET, %NAMEIN, %NAMEOUT, %INTDESC, %DEVICE, %INTNAME, %DNS, %SPEED, %IP);
 my( $in, $out, $file, $intdesc, $rtr, $intname, $ip, $dns, $speed, @ips, @dns,
-    $key, $oidset, $prefix );
+    $key, $oidset, $prefix, $intpath );
 #local $/; # Enable "slurp" mode
 
 my $socket    = new Thrift::Socket('localhost', 9090);
@@ -90,12 +90,19 @@ my $transport = new Thrift::BufferedTransport($socket,1024,1024);
 my $protocol  = new Thrift::BinaryProtocol($transport);
 my $client    = new ESDBClient($protocol);
 
+$socket->setRecvTimeout(2000); # 2 sec timeout
+$socket->setSendTimeout(2000); # 2 sec timeout
+
 eval {
     $transport->open();
 
     foreach my $device ( @{$client->list_devices(1)} ) {
+        print STDERR "starting $device\n";
         my $interfaces = $client->get_interfaces($device, 0);
         foreach my $iface (@{$interfaces}) {
+            if ($device eq "star-cr1") {
+                print STDERR "$iface->{ifdescr}\n";
+            }
             $ip = $iface->{ipaddr};
             if(defined($ip)) {
                 my $answer = $res->search($ip);
@@ -137,12 +144,16 @@ eval {
             }
                 
             $intname = $iface->{ifdescr};
+            $intpath = $intname;
+            $intpath =~ s/\//_/g;
+            $intpath =~ s/ /_/g;
             $key = "$rtr:$intname";
-            $FILE{$key} = "$rtr,$oidset,$intname";
-            $DSIN{$key} = $prefix . "InOctets";
-            $DSOUT{$key} = $prefix . "OutOctets";
+            $NAMEIN{$key} = $rtr . "/" . $oidset . "/";
+            $NAMEIN{$key} .= $prefix . "InOctets" . "/" .  $intpath;
+            $NAMEOUT{$key} = $rtr . "/" . $oidset . "/";
+            $NAMEOUT{$key} .= $prefix . "OutOctets" . "/" .  $intpath;
             $INTDESC{$key} = $iface->{ifalias};
-            $RTR{$key} = $rtr;
+            $DEVICE{$key} = $rtr;
             $INTNAME{$key} = $intname;
             $DNS{$key} = $dns;
             if($iface->{ifhighspeed} < 1) {
@@ -152,6 +163,7 @@ eval {
             }
             $IP{$key} = $ip;
         }
+        print STDERR "done with $device\n";
     }
 };
 
@@ -182,9 +194,9 @@ foreach $key ( sort keys %INTDESC )
 	$META .= qq(\t<nmwg:metadata  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="meta$i">\n);
 	$META .= qq(\t\t<netutil:subject  xmlns:netutil="http://ggf.org/ns/nmwg/characteristic/utilization/2.0/" id="subj$i">\n);
         $META .= qq(\t\t\t<nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">\n);
-        $META .= qq(\t\t\t\t<nmwgt3:urn>urn:ogf:network:domain=$DOMAIN:node=$RTR{$key}:port=$INTNAME{$key}</nmwgt3:urn>\n);
+        $META .= qq(\t\t\t\t<nmwgt3:urn>urn:ogf:network:domain=$DOMAIN:node=$DEVICE{$key}:port=$INTNAME{$key}</nmwgt3:urn>\n);
         $META .= qq(\t\t\t\t<nmwgt:ifAddress type="ipv4">$IP{$key}</nmwgt:ifAddress>\n) unless ( $IP{$key} eq "" );
-        $META .= qq(\t\t\t\t<nmwgt:hostName>$RTR{$key}</nmwgt:hostName>\n);
+        $META .= qq(\t\t\t\t<nmwgt:hostName>$DEVICE{$key}</nmwgt:hostName>\n);
         $META .= qq(\t\t\t\t<nmwgt:ifName>$INTNAME{$key}</nmwgt:ifName>\n);
         $META .= qq(\t\t\t\t<nmwgt:ifDescription>$INTDESC{$key}</nmwgt:ifDescription>\n);
         $META .= qq(\t\t\t\t<nmwgt:capacity>$SPEED{$key}</nmwgt:capacity>\n);
@@ -204,10 +216,9 @@ foreach $key ( sort keys %INTDESC )
 	$DATA .= qq(\t<nmwg:data  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="data$i" metadataIdRef="meta$i">\n);
 	$DATA .= qq(\t\t<nmwg:key id="keyid$i">\n);
 	$DATA .= qq(\t\t\t<nmwg:parameters id="dataparam$i">\n);
-	$DATA .= qq(\t\t\t\t<nmwg:parameter name="type">rrd</nmwg:parameter>\n);
+	$DATA .= qq(\t\t\t\t<nmwg:parameter name="type">esxsnmp</nmwg:parameter>\n);
 	$DATA .= qq(\t\t\t\t<nmwg:parameter name="valueUnits">Bps</nmwg:parameter>\n);
-	$DATA .= qq(\t\t\t\t<nmwg:parameter name="file">$FILE{$key}</nmwg:parameter>\n);
-	$DATA .= qq(\t\t\t\t<nmwg:parameter name="dataSource">$DSIN{$key}</nmwg:parameter>\n);
+	$DATA .= qq(\t\t\t\t<nmwg:parameter name="name">$NAMEIN{$key}</nmwg:parameter>\n);
 	$DATA .= qq(\t\t\t\t<nmwg:parameter name="eventType">http://ggf.org/ns/nmwg/characteristic/utilization/2.0</nmwg:parameter>\n);
 	$DATA .= qq(\t\t\t</nmwg:parameters>\n);
         $DATA .= qq(\t\t</nmwg:key>\n);
@@ -221,9 +232,9 @@ foreach $key ( sort keys %INTDESC )
 	$META .= qq(\t<nmwg:metadata  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="meta$i">\n);
 	$META .= qq(\t\t<netutil:subject  xmlns:netutil="http://ggf.org/ns/nmwg/characteristic/utilization/2.0/" id="subj$i">\n);
         $META .= qq(\t\t\t<nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">\n);
-        $META .= qq(\t\t\t\t<nmwgt3:urn>urn:ogf:network:domain=$DOMAIN:node=$RTR{$key}:port=$INTNAME{$key}</nmwgt3:urn>\n);
+        $META .= qq(\t\t\t\t<nmwgt3:urn>urn:ogf:network:domain=$DOMAIN:node=$DEVICE{$key}:port=$INTNAME{$key}</nmwgt3:urn>\n);
         $META .= qq(\t\t\t\t<nmwgt:ifAddress type="ipv4">$IP{$key}</nmwgt:ifAddress>\n) unless ( $IP{$key} eq "" );
-        $META .= qq(\t\t\t\t<nmwgt:hostName>$RTR{$key}</nmwgt:hostName>\n);
+        $META .= qq(\t\t\t\t<nmwgt:hostName>$DEVICE{$key}</nmwgt:hostName>\n);
         $META .= qq(\t\t\t\t<nmwgt:ifName>$INTNAME{$key}</nmwgt:ifName>\n);
         $META .= qq(\t\t\t\t<nmwgt:ifDescription>$INTDESC{$key}</nmwgt:ifDescription>\n);
         $META .= qq(\t\t\t\t<nmwgt:capacity>$SPEED{$key}</nmwgt:capacity>\n);
@@ -243,10 +254,9 @@ foreach $key ( sort keys %INTDESC )
 	$DATA .= qq(\t<nmwg:data  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="data$i" metadataIdRef="meta$i">\n);
 	$DATA .= qq(\t\t<nmwg:key id="keyid$i">\n);
 	$DATA .= qq(\t\t\t<nmwg:parameters id="dataparam$i">\n);
-	$DATA .= qq(\t\t\t\t<nmwg:parameter name="type">rrd</nmwg:parameter>\n);
+	$DATA .= qq(\t\t\t\t<nmwg:parameter name="type">esxsnmp</nmwg:parameter>\n);
 	$DATA .= qq(\t\t\t\t<nmwg:parameter name="valueUnits">Bps</nmwg:parameter>\n);
-	$DATA .= qq(\t\t\t\t<nmwg:parameter name="file">$FILE{$key}</nmwg:parameter>\n);
-	$DATA .= qq(\t\t\t\t<nmwg:parameter name="dataSource">$DSOUT{$key}</nmwg:parameter>\n);
+	$DATA .= qq(\t\t\t\t<nmwg:parameter name="name">$NAMEOUT{$key}</nmwg:parameter>\n);
 	$DATA .= qq(\t\t\t\t<nmwg:parameter name="eventType">http://ggf.org/ns/nmwg/characteristic/utilization/2.0</nmwg:parameter>\n);
 	$DATA .= qq(\t\t\t</nmwg:parameters>\n);
         $DATA .= qq(\t\t</nmwg:key>\n);
