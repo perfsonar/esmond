@@ -85,7 +85,14 @@ class ESxSNMPConfig(object):
         if not os.access(self.tsdb_root, os.W_OK):
             raise ConfigError("invalid config: tsdb_root %s is not writable" % self.tsdb_root)
         if self.tsdb_chunk_prefixes:
-            self.tsdb_chunk_prefixes = self.tsdb_chunk_prefixes.split(',')
+            self.tsdb_chunk_prefixes = map(str.strip,
+                    self.tsdb_chunk_prefixes.split(','))
+            for cdir in self.tsdb_chunk_prefixes:
+                if not os.path.isdir(cdir):
+                    raise ConfigError("invalid config: tsdb_chunk_prefixes doesn't exist: %s" % cdir)
+                if not os.access(cdir, os.W_OK):
+                    raise ConfigError("invalid config: tsdb_chunk_prefixes %s not writable" % cdir)
+
 
         if self.error_email_to is not None \
                 and self.error_email_subject is not None \
