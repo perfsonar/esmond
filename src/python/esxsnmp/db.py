@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 import traceback
+import socket
 from calendar import timegm
 
 from thrift.transport import TSocket, TTransport
@@ -250,7 +251,8 @@ def esdbd():
     #handler = ESDBHandler(config)
     #processor = ESDB.Processor(handler)
     log = get_logger("esdbd", config.syslog_facility)
-    transport = IPACLSocket(9090, [], log=log) #TSocket.TServerSocket(9090)
+    transport = IPACLSocket(9090, [], log=log,
+            hints={'family': socket.AF_INET})
     tfactory = TTransport.TBufferedTransportFactory()
     pfactory = TBinaryProtocol.TBinaryProtocolAcceleratedFactory()
 
