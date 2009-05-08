@@ -202,16 +202,16 @@ class PollManager(object):
         self.children = {}       # maps name to PollerChild instance
         self.child_pid_map = {}  # maps child pid to child name
 
-
-        if not tsdb.TSDB.is_tsdb(self.config.tsdb_root):
-            tsdb.TSDB.create(self.config.tsdb_root)
+        if not tsdb.TSDB.is_tsdb(None, self.config.tsdb_root):
+            tsdb.TSDB.create(self.config.tsdb_root,
+                chunk_prefixes=self.config.tsdb_chunk_prefixes)
 
     def _get_devices(self):
         d = {}
         session = esxsnmp.sql.Session()
 
         devices = session.query(
-            esxsnmp.sql.Device).select("""
+            esxsnmp.sql.Device).filter("""
                 active = 't' 
                 AND end_time > 'NOW'
                 AND device.id IN
@@ -460,7 +460,8 @@ class Poller(object):
         signal.signal(signal.SIGTERM, self.stop)
         signal.signal(signal.SIGHUP, self.reload)
 
-        self.log = get_logger("espolld: " + self.name, config.syslog_facility)
+        self.log = get_logger("espolld: " + self.name, config.syslog_facility,
+                level=config.syslog_level)
         self.errors = 0
 
         self.poller_args = {}
@@ -552,7 +553,10 @@ class TSDBPoller(Poller):
     def __init__(self, config, name, device, oidset):
         Poller.__init__(self, config, name, device, oidset)
 
-        self.tsdb = tsdb.TSDB(self.config.tsdb_root)
+        if self.config.tsdb_chunk_prefixes:
+            self.tsdb = tsdb.TSDB(self.config.tsdb_root)
+        else:
+            self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
         set_name = "/".join((self.device.name, self.oidset.name))
         try:
@@ -675,15 +679,21 @@ class CorrelatedTSDBPoller(TSDBPoller):
             tsdb_var.insert(vartype(ts, tsdb.ROW_VALID, val))
 
             if self.polling_round % 20 == self.rank:
-                tsdb_var.flush()
+                #tsdb_var.flush()
 
                 if oid.aggregate:
                     # XXX:refactor uptime should be handled better
                     uptime = self.tsdb_set.get_var('sysUpTime')
-    
+
+                    # update at most 10 rows in the aggregate
+                    min_last_update = ts - self.oidset.frequency * 40 
                     try:
+                        self.log.debug("updating agg %s" % \
+                                "/".join((self.device.name, self.oidset.name,
+                                    var)))
                         tsdb_var.update_aggregate(str(self.oidset.frequency),
-                            uptime_var=uptime)
+                            uptime_var=uptime,
+                            min_last_update=min_last_update)
                     except TSDBAggregateDoesNotExistError:
                         self.log.error("bad aggregate for %s/%s/%s" % (self.device.name,
                             self.oidset.name, var))
@@ -712,8 +722,8 @@ class IfRefSQLPoller(SQLPoller):
     def store(self):
         db_session = esxsnmp.sql.Session()
         new_ifrefs = self._build_objs()
-        old_ifrefs = db_session.query(IfRef).select(
-            sqlalchemy.and_(IfRef.c.deviceid==self.device.id, IfRef.c.end_time > 'NOW')
+        old_ifrefs = db_session.query(IfRef).filter(
+            sqlalchemy.and_(IfRef.deviceid==self.device.id, IfRef.end_time > 'NOW')
         )
 
         # iterate through what is currently in the database
@@ -797,7 +807,7 @@ def espolld():
         print e
         sys.exit(1)
 
-    name = "espolld_manager_quux"
+    name = "espolld_manager"
 
     exc_handler = setup_exc_handler(name, config)
     exc_handler.install()
