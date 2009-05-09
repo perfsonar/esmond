@@ -115,17 +115,20 @@ def setproctitle(name):
     global proctitle
     proctitle = name
 
-log = None
-
 def get_logger(name, facility, level=logging.INFO,
-        format="%(name)s [%(process)d] %(message)s"):
-    global log
+        format="%(name)s [%(process)d] %(message)s", debug=False):
 
-    if not log:
-        log = logging.getLogger(name)
-        log.addHandler(logging.handlers.SysLogHandler(('localhost', 514), facility))
+    log = logging.getLogger(name)
+    log.setLevel(level)
+    syslog = logging.handlers.SysLogHandler(('localhost', 514), facility)
+    syslog.setFormatter(logging.Formatter(format))
+    log.addHandler(syslog)
+
+    if debug:
         log.setLevel(logging.DEBUG)
-        log.handlers[0].setFormatter(logging.Formatter("%(name)s [%(process)d] %(message)s"))
+        console = logging.StreamHandler()
+        console.setFormatter(logging.Formatter(format))
+        log.addHandler(console)
 
     return log
 

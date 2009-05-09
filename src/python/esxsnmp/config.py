@@ -52,7 +52,7 @@ class ESxSNMPConfig(object):
         self.error_email_from = None
         self.traceback_dir = None
         self.syslog_facility = None
-        self.syslog_level = 0
+        self.syslog_level = None
         self.pid_file = None
         self.rrd_path = None
         self.polling_tag = None

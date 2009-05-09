@@ -94,6 +94,34 @@ class JnxFirewallCorrelator(PollCorrelator):
         (column, filter_name, counter, filter_type) = self.oidex.search(var).groups()
         return "/".join((filter_type, filter_name, counter))
 
+class JnxCOSCorrelator(IfDescrCorrelator):
+    """Correlates entries from the COS MIB.
+
+    This is known to work for:
+
+        jnxCosIfqQedBytes
+        jnxCosIfqTxedBytes
+        jnxCosIfqTailDropPkts
+        jnxCosIfqTotalRedDropPkts
+    """
+    def __init__(self, session=None):
+        PollCorrelator.__init__(self,session)
+        self.oidex = re.compile('([^.]+)\.(\d+)\."([^"]+)"')
+
+    def lookup(self, oid, var):
+        m = self.oidex.search(var)
+        if not m:
+            raise UnableToCorrelate("%s does not match" % var)
+
+        (oid_name, ifindex, queue) = m.groups()
+
+        try:
+            if_name = self.xlate[ifindex]
+        except:
+            raise PollUnknownIfIndex(ifIndex)
+
+        return "/".join((if_name, oid_name, queue))
+
 class CiscoCPUCorrelator(PollCorrelator):
     """Correlates entries in cpmCPUTotal5min to an entry in entPhysicalName
     via cpmCPUTotalPhysicalIndex.  
@@ -186,7 +214,8 @@ class PollManager(object):
 
         self.root_pid = os.getpid()
 
-        self.log = get_logger(self.name, config.syslog_facility)
+        self.log = get_logger(self.name, config.syslog_facility,
+                level=config.syslog_level, debug=opts.debug)
 
         self.running = False
         self.last_reload = time.time()
@@ -210,10 +239,8 @@ class PollManager(object):
         d = {}
         session = esxsnmp.sql.Session()
 
-        devices = session.query(
-            esxsnmp.sql.Device).filter("""
-                active = 't' 
-                AND end_time > 'NOW'
+        if self.config.polling_tag:
+            extra = """
                 AND device.id IN
                     (SELECT deviceid
                         FROM devicetagmap
@@ -221,7 +248,14 @@ class PollManager(object):
                        (SELECT devicetag.id
                           FROM devicetag
                          WHERE name = '%s'))
-            """ % self.config.polling_tag)
+            """ % self.config.polling_tag
+        else:
+            extra = ''
+
+        devices = session.query(
+            esxsnmp.sql.Device).filter("""
+                active = 't' 
+                AND end_time > 'NOW'""" + extra)
 
         for device in devices:
             d[device.name] = device
@@ -232,7 +266,7 @@ class PollManager(object):
 
     def start_polling(self):
         """Begin polling all routers for all OIDSets"""
-        self.log.debug("starting")
+        self.log.debug("starting, %d devices configured" % len(self.devices))
 
         signal.signal(signal.SIGINT, self.stop_polling)
         signal.signal(signal.SIGTERM, self.stop_polling)
@@ -755,7 +789,7 @@ class IfRefSQLPoller(SQLPoller):
         # anything left in new_ifrefs is a new interface
         for new_ifref in new_ifrefs:
             new_row = self._new_row_from_obj(new_ifrefs[new_ifref])
-            db_session.save(new_row)
+            db_session.add(new_row)
 
         db_session.flush()
         db_session.close()
@@ -809,12 +843,13 @@ def espolld():
 
     name = "espolld_manager"
 
-    exc_handler = setup_exc_handler(name, config)
-    exc_handler.install()
-
     setproctitle(name)
 
-    daemonize(name, config.pid_file, log_stdout_stderr=exc_handler.log)
+    if not opts.debug:
+        exc_handler = setup_exc_handler(name, config)
+        exc_handler.install()
+
+        daemonize(name, config.pid_file, log_stdout_stderr=exc_handler.log)
 
     os.umask(0022)
 
