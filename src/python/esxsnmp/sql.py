@@ -17,7 +17,7 @@ def setup_db(db_uri):
     engine = create_engine(db_uri)
     conn = engine.connect()
     metadata = MetaData(engine)
-    Session = sessionmaker(autoflush=True, transactional=True)
+    Session = sessionmaker(autoflush=True, autocommit=False)
 
     for table in ( 'oidtype', 'oid', 'poller', 'oidsetmember', 'oidset',
             'device', 'devicetag', 'deviceoidsetmap', 'devicetagmap', 'ifref'):
