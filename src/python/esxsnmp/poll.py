@@ -221,7 +221,7 @@ class PollManager(object):
         self.last_reload = time.time()
         self.last_penalty_empty = time.time()
 
-        self.reload_interval = 90
+        self.reload_interval = 30
         self.penalty_interval = 300
 
         esxsnmp.sql.setup_db(self.config.db_uri)
@@ -442,12 +442,13 @@ class PollManager(object):
             old_oidset_names = sets.Set(old_oidset.iterkeys())
             new_oidset_names = sets.Set(new_oidset.iterkeys())
 
-            for oidset in new_oidset_names.difference(old_oidset_names):
-                self._start_oidset(old_device, oidset)
+            for oidset_name in new_oidset_names.difference(old_oidset_names):
+                self.log.debug("start oidset: %s %s" % (new_device.name, oidset_name))
+                self._start_oidset(old_device, new_oidset[oidset_name])
 
-            for oidset in old_oidset_names.difference(new_oidset_names):
-                self.log.debug("remove oidset: %s %s" % (old_device, name))
-                self._remove_oidset(old_device, oidset)
+            for oidset_name in old_oidset_names.difference(new_oidset_names):
+                self.log.debug("remove oidset: %s %s" % (old_device.name, oidset_name))
+                self._remove_oidset(old_device, old_oidset[oidset_name])
 
         self.devices = new_devices
         self.last_reload = time.time()

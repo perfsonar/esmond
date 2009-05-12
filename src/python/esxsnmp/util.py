@@ -10,6 +10,7 @@ from StringIO import StringIO
 import traceback
 import inspect
 import tempfile
+from optparse import OptionParser
 
 from thrift.transport import TTransport
 from thrift.transport import TSocket
@@ -368,3 +369,32 @@ def remove_metachars(name):
     for (char,repl) in (("/", "_"), (" ", "_")):
         name = name.replace(char, repl)
     return name
+
+class NagiosCheck(object):
+    def __init__(self):
+        self.parser = OptionParser()
+        self.parser.add_option("-c", "--critical", dest="critical",
+                help="Critical Threshhold", metavar="CRITICAL")
+        self.parser.add_option("-w", "--warning", dest="warning",
+                help="Warning threshhold", metavar="WARNING")
+
+    def add_option(self, *args, **kwargs):
+        self.parser.add_option(*args, **kwargs)
+
+    def run(self):
+        pass
+
+
+class IfRefNagiosCheck(NagiosCheck):
+    def run(self):
+        q = """
+        SELECT count(*)
+          FROM ifref
+         WHERE begin_time > timestamp 'NOW'  - interval '1 weeks'
+            OR (end_time < 'NOW'
+                AND end_time > timestamp 'NOW' - interval '1 weeks')"""
+
+
+def check_ifref():
+    check = IfRefNagiosCheck().setup().run()
+
