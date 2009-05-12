@@ -276,7 +276,6 @@ class PollManager(object):
         self._start_all_devices()
 
         while self.running:
-#            self.log.debug("waiting for a child to die (how morbid!)")
             if len(self.child_pid_map.keys()) > 0:
                 try:
                     (rpid,status) = os.waitpid(0, os.WNOHANG)
@@ -287,9 +286,11 @@ class PollManager(object):
                     else:
                         raise
 
-                if rpid != 0 and self.running: # need to check self.running again, because we might be shutting down
+                if rpid != 0 and self.running:
+                    # need to check self.running again, because we might be shutting down
                     if self.child_pid_map.has_key(rpid):
-                        self.log.warn("%s, pid %d died" % (self.children[self.child_pid_map[rpid]].name, rpid))
+                        self.log.warn("%s, pid %d died" % (
+                            self.children[self.child_pid_map[rpid]].name, rpid))
                         child = self.children[self.child_pid_map[rpid]]
                         del self.child_pid_map[rpid]
                         self.log.debug("%s has spun %d times %f" %
@@ -778,20 +779,18 @@ class IfRefSQLPoller(SQLPoller):
                     old_ifref.end_time = 'NOW'
                     new_row = self._new_row_from_obj(new_ifref)
                     db_session.save(new_row)
-                    db_session.flush()
                 
                 del new_ifrefs[old_ifref.ifdescr]
             # no entry in new_ifrefs: interface is gone, update db
             else:
                 old_ifref.end_time = 'NOW'
-                db_session.flush()
 
         # anything left in new_ifrefs is a new interface
         for new_ifref in new_ifrefs:
             new_row = self._new_row_from_obj(new_ifrefs[new_ifref])
             db_session.add(new_row)
 
-        db_session.flush()
+        db_session.commit()
         db_session.close()
 
     def _new_row_from_obj(self, obj):
