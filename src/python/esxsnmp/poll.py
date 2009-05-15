@@ -153,16 +153,22 @@ class PollerChild(object):
     PENALTY = 2
     REMOVE = 3
 
-    def __init__(self, config, poller, name, device, oidset):
+    def __init__(self, config, device):
         self.config = config
-        self.poller = poller
-        self.name = name
         self.device = device
-        self.oidset = oidset
+        self.name = self.device.name
         self.pid = 0
         self.last_restart = 0
         self.spin_cycles = 0
         self.state = PollerChild.NEW
+        self.pollers = {}
+
+        self.log = get_logger("espolld_" + self.name, config.syslog_facility,
+                level=config.syslog_level)
+
+        for oidset in device.oidsets:
+            poller = eval(oidset.poller.name)
+            self.pollers[oidset.name] = poller(self.config, device, oidset)
 
     def __repr__(self):
         try:
@@ -181,9 +187,6 @@ class PollerChild(object):
         self.last_restart = now
         self.state = PollerChild.RUN
 
-    def run(self):
-        self.poller(self.config, self.name, self.device, self.oidset).run()
-
     def is_spinning(self):
         return self.spin_cycles >= PollerChild.MAX_SPIN_CYCLES
 
@@ -200,6 +203,38 @@ class PollerChild(object):
 
     def remove(self):
         self.state = PollerChild.REMOVE
+
+    # --- these methods are used inside the child process only ---
+
+    def run(self):
+        signal.signal(signal.SIGTERM, self.stop)
+        signal.signal(signal.SIGHUP, self.reload)
+
+        self.state = PollerChild.RUN
+
+        while self.state == PollerChild.RUN:
+            for oidset in self.device.oidsets:
+                self.pollers[oidset.name].run_once()
+
+            delay = 999999
+            for poller in self.pollers.itervalues():
+                if poller.seconds_until_next_poll() < delay:
+                    delay = poller.seconds_until_next_poll()
+
+            if delay > 0:
+                self.log.debug("sleeping for %d seconds" % delay)
+                time.sleep(delay)
+            elif delay < 0:
+                self.log.info("%d seconds late")
+
+    def stop(self, signum, frame):
+        self.state = PollerChild.REMOVE
+        self.log.info("stopping")
+        sys.exit()
+
+    def reload(self, signum, frame):
+        self.log.info("if it was implemented, i'd be reloading")
+
 
 class PollManager(object):
     """Starts a polling process for each device"""
@@ -293,15 +328,15 @@ class PollManager(object):
                             self.children[self.child_pid_map[rpid]].name, rpid))
                         child = self.children[self.child_pid_map[rpid]]
                         del self.child_pid_map[rpid]
-                        self.log.debug("%s has spun %d times %f" %
-                                (child.name, child.spin_cycles,
-                                    child.last_restart))
                         if child.is_spinning():
                             child.penalize()
                             self.log.error("putting %s in penalty box" % child.name)
                         elif child.is_removed():
                             del self.children[child.name]
                         else:
+                            self.log.debug("%s has spun %d times %f %d" %
+                                (child.name, child.spin_cycles,
+                                    child.last_restart, child.state))
                             self._start_child(child)
 
             if time.time() - self.last_reload > self.reload_interval:
@@ -314,50 +349,25 @@ class PollManager(object):
 
         self.shutdown()
 
-    def _get_child_by_name(self, name):
-        for child in self.children.itervalues():
-            if child.name == name:
-                return child
-        
-        return None
-
-    def _get_children_by_device(self, device):
-        return filter(
-                lambda x: x.name == device.name,
-                self.children.itervalues())
-
-    def _start_oidset(self, device, oidset):
-        poller = eval(oidset.poller.name) # what kind of poller do we need for this OIDSet?
-        name = device.name + "_" + oidset.name
-        self._start_child(PollerChild(self.config, poller, name, device, oidset))
-
-    def _stop_oidset(self, device, oidset):
-        name = device.name + "_" + oidset.name
-        child = self._get_child_by_name(name)
-        if child is not None:
-            self._stop_child(child)
-
-    def _remove_oidset(self, device, oidset):
-        name = device.name + "_" + oidset.name
-        self.log.info("removing %s" % (name))
-        child = self._get_child_by_name(name)
-        if child.state == PollerChild.RUN:
-            child.remove()
-            self._stop_child(child)
-        else: # if the child isn't running just dispose of it
-            del self.children[child.name]
-
     def _start_device(self, device):
-        for oidset in device.oidsets:
-            self._start_oidset(device, oidset)
+        self._start_child(PollerChild(self.config, device))
 
     def _stop_device(self, device):
-        for child in self._get_children_by_device(device):
-            self._stop_child(child)
+        try:
+            child = self.children[device.name]
+        except KeyError:
+            return
+        self._stop_child(child)
 
-    def _remove_device(self, device):
-        for oidset in device.oidsets:
-            self._remove_oidset(device, oidset)
+    def _restart_device(self, old_device, new_device):
+        # XXX ick this is messy
+        oname = old_device.name
+        old_child = self.children[oname]
+        self.children[oname + '_restarted'] = self.children[oname]
+        del self.children[oname]
+        self.child_pid_map[old_child.pid] = oname + '_restarted'
+        self._stop_child(old_child)
+        self._start_device(new_device)
 
     def _start_all_devices(self):
         for device in self.devices.itervalues():
@@ -374,16 +384,10 @@ class PollManager(object):
             child.record(pid)
         else:
             setproctitle("espolld: %s" % child.name)
-            #import cProfile
-            #cProfile.run(child.run, "/tmp/%s" % child.name)
-
-            #import hotshot
-            #prof = hotshot.Profile("/tmp/%s" % child.name)
-            #prof.runcall(child.run)
-            #prof.close()
             child.run()
 
     def _stop_child(self, child):
+        child.remove()
         if child.pid:
             self.log.info("stopping %s, pid %d" % (child.name, child.pid))
             try:
@@ -412,24 +416,24 @@ class PollManager(object):
         self.log.info("reload")
 
         new_devices = self._get_devices()
-        new_set = sets.Set(new_devices.iterkeys())
-        old_set = sets.Set(self.devices.iterkeys())
+        new_device_set = sets.Set(new_devices.iterkeys())
+        old_device_set = sets.Set(self.devices.iterkeys())
 
-
-        for name in new_set.difference(old_set):
+        for name in new_device_set.difference(old_device_set):
             self._start_device(new_devices[name])
 
-        for name in old_set.difference(new_set):
-            self.log.debug("remove dev: %s" % name)
+        for name in old_device_set.difference(new_device_set):
+            self.log.debug("remove device: %s" % name)
             self._remove_device(self.devices[name])
 
-        for name in new_set.intersection(old_set):
+        # XXX should probably move this into PollerChild
+        for name in new_device_set.intersection(old_device_set):
             old_device = self.devices[name]
             new_device = new_devices[name]
 
             if new_device.community != old_device.community:
-                self._stop_device(old_device)
-                self._start_device(new_device)
+                self._restart_device(old_device, new_device)
+                break
 
             old_oidset = {}
             for oidset in old_device.oidsets:
@@ -442,13 +446,20 @@ class PollManager(object):
             old_oidset_names = sets.Set(old_oidset.iterkeys())
             new_oidset_names = sets.Set(new_oidset.iterkeys())
 
+            done = False
             for oidset_name in new_oidset_names.difference(old_oidset_names):
                 self.log.debug("start oidset: %s %s" % (new_device.name, oidset_name))
-                self._start_oidset(old_device, new_oidset[oidset_name])
+                self._restart_device(old_device, new_device)
+                done = True
+                break
+
+            if done:
+                break
 
             for oidset_name in old_oidset_names.difference(new_oidset_names):
                 self.log.debug("remove oidset: %s %s" % (old_device.name, oidset_name))
-                self._remove_oidset(old_device, old_oidset[oidset_name])
+                self._restart_device(old_device, new_device)
+                break
 
         self.devices = new_devices
         self.last_reload = time.time()
@@ -479,11 +490,11 @@ class Poller(object):
     All three methods MUST be defined by the subclass.
 
     """
-    def __init__(self, config, name, device, oidset):
+    def __init__(self, config, device, oidset):
         self.config = config
-        self.name = name
         self.device = device
         self.oidset = oidset
+        self.name = "espolld_" + self.device.name + "_" + self.oidset.name
 
         self.next_poll = int(time.time() - 1)
         self.oids = self.oidset.oids
@@ -493,10 +504,7 @@ class Poller(object):
         self.snmp_session = yapsnmp.Session(self.device.name, version=2,
                 community=self.device.community)
 
-        signal.signal(signal.SIGTERM, self.stop)
-        signal.signal(signal.SIGHUP, self.reload)
-
-        self.log = get_logger("espolld: " + self.name, config.syslog_facility,
+        self.log = get_logger(self.name, config.syslog_facility,
                 level=config.syslog_level)
         self.errors = 0
 
@@ -508,30 +516,34 @@ class Poller(object):
 
         self.polling_round = 0
 
-    def run(self):
-        while self.running:
-            if self.time_to_poll():
-                #self.log.debug("grabbing data")
-                begin = time.time()
-                self.next_poll = begin + self.oidset.frequency
+    def run_once(self):
+        if self.time_to_poll():
+            #self.log.debug("grabbing data")
+            begin = time.time()
+            self.next_poll = begin + self.oidset.frequency
 
-                try:
-                    self.begin()
+            try:
+                self.begin()
 
-                    for oid in self.oids:
-                        self.collect(oid,self.snmp_session.walk(oid.name))
+                for oid in self.oids:
+                    self.collect(oid,self.snmp_session.walk(oid.name))
 
-                    self.finish()
+                self.finish()
 
-                    self.log.debug("grabbed %d vars in %f seconds" %
-                            (self.count, time.time() - begin))
-                    self.errors = 0
-                except yapsnmp.GetError, e:
-                    self.errors += 1
-                    if self.errors < 10  or self.errors % 10 == 0:
-                        self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
+                self.log.debug("grabbed %d vars in %f seconds" %
+                        (self.count, time.time() - begin))
+                self.errors = 0
+            except yapsnmp.GetError, e:
+                self.errors += 1
+                if self.errors < 10  or self.errors % 10 == 0:
+                    self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
 
             self.polling_round += 1
+
+    def run(self):
+        while self.running:
+            self.run_once()
+
             # XXX kludge hack ick!  exit after 480 cycles as
             # a workaround for a memeory leak
             if self.polling_round >= 480:
@@ -566,16 +578,11 @@ class Poller(object):
         it can be used to flush unwritten data before exiting."""
         pass
 
-    def stop(self, signum, frame):
-        self.running = False
-        self.log.info("stopping")
-        sys.exit()
-
-    def reload(self, signum, frame):
-        self.log.info("if it was implemented, i'd be reloading")
-
     def time_to_poll(self):
         return time.time() >= self.next_poll
+
+    def seconds_until_next_poll(self):
+        return int(self.next_poll - time.time())
 
     def sleep(self):
         delay = self.next_poll - int(time.time())
@@ -586,8 +593,8 @@ class Poller(object):
             self.log.warning("poll %d seconds late" % abs(delay)) 
 
 class TSDBPoller(Poller):
-    def __init__(self, config, name, device, oidset):
-        Poller.__init__(self, config, name, device, oidset)
+    def __init__(self, config, device, oidset):
+        Poller.__init__(self, config, device, oidset)
 
         if self.config.tsdb_chunk_prefixes:
             self.tsdb = tsdb.TSDB(self.config.tsdb_root)
@@ -601,8 +608,8 @@ class TSDBPoller(Poller):
             self.tsdb_set = self.tsdb.add_set(set_name)
 
 class SQLPoller(Poller):
-    def __init__(self, config, name, device, oidset):
-        Poller.__init__(self, config, name, device, oidset)
+    def __init__(self, config, device, oidset):
+        Poller.__init__(self, config, device, oidset)
 
 #
 # XXX are the oidset, etc vars burdened with sqlalchemy goo? if so, does it
@@ -611,8 +618,8 @@ class SQLPoller(Poller):
 class CorrelatedTSDBPoller(TSDBPoller):
     """Handles polling of an OIDSet for a device and uses a correlator to
     determine the name of the variable to use to store values."""
-    def __init__(self, config, name, device, oidset):
-        TSDBPoller.__init__(self, config, name, device, oidset)
+    def __init__(self, config, device, oidset):
+        TSDBPoller.__init__(self, config, device, oidset)
 
         # this is a little hairy, but ends up with an instance of the
         # correlator class initialized with our snmp_session
@@ -741,8 +748,8 @@ class IfRefSQLPoller(SQLPoller):
     """Polls all OIDS and creates a IfRef entry then sees if the IfRef entry
     differs from the lastest in the database."""
 
-    def __init__(self, config, name, device, oidset):
-        SQLPoller.__init__(self, config, name, device, oidset)
+    def __init__(self, config, device, oidset):
+        SQLPoller.__init__(self, config, device, oidset)
         self.ifref_data = {}
 
     def begin(self):
