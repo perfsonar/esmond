@@ -1,6 +1,5 @@
 import socket 
 from thrift.transport.TSocket import TSocket, TServerSocket
-from esxsnmp.util import get_logger
 
 class IPACLSocket(TServerSocket):
     def _resolveAddr(self):

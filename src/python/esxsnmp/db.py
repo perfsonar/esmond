@@ -21,7 +21,7 @@ from esxsnmp.rpc import ESDB
 from esxsnmp.rpc.ttypes import ESDBError
 from esxsnmp.ipaclsocket import IPACLSocket
 import esxsnmp.rpc.ttypes
-from esxsnmp.util import run_server, remove_metachars, get_logger
+from esxsnmp.util import run_server, remove_metachars, init_logging, get_logger
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
 
@@ -31,7 +31,7 @@ class ESDBHandler(object):
         self.session = esxsnmp.sql.Session()
         self.tsdb = tsdb.TSDB(config.tsdb_root)
         self.device_threads = {}
-        self.log = get_logger("esdbd", config.syslog_facility)
+        self.log = get_logger("esdbd")
         self.log.info("starting ESDBHandler")
 
     def __del__(self):
@@ -200,7 +200,7 @@ class HandlerPerThreadThreadedServer(TServer.TServer):
                 transportFactory, protocolFactory, protocolFactory)
 
         self.config = config
-        self.log = get_logger("esdbd", config.syslog_facility)
+        self.log = get_logger("esdbd")
         self.log.info("starting HandlerPerThreadThreadedServer")
         
     def serve(self):
@@ -247,10 +247,11 @@ def esdbd():
         sys.exit(1)
 
     esxsnmp.sql.setup_db(config.db_uri)
+    init_logging(config.syslog_facility, level=config.syslog_level)
 
     #handler = ESDBHandler(config)
     #processor = ESDB.Processor(handler)
-    log = get_logger("esdbd", config.syslog_facility)
+    log = get_logger("esdbd")
     transport = IPACLSocket(9090, [], log=log,
             hints={'family': socket.AF_INET})
     tfactory = TTransport.TBufferedTransportFactory()

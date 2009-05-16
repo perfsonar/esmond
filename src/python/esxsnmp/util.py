@@ -116,10 +116,10 @@ def setproctitle(name):
     global proctitle
     proctitle = name
 
-def get_logger(name, facility, level=logging.INFO,
+def init_logging(facility, level=logging.INFO,
         format="%(name)s [%(process)d] %(message)s", debug=False):
 
-    log = logging.getLogger(name)
+    log = logging.getLogger()
     log.setLevel(level)
     syslog = logging.handlers.SysLogHandler(('localhost', 514), facility)
     syslog.setFormatter(logging.Formatter(format))
@@ -131,7 +131,8 @@ def get_logger(name, facility, level=logging.INFO,
         console.setFormatter(logging.Formatter(format))
         log.addHandler(console)
 
-    return log
+def get_logger(name):
+    return logging.getLogger(name)
 
 def send_mail(sender, to, subject, body, relay='localhost'):
     if type(to) != list and type(to) != tuple:
