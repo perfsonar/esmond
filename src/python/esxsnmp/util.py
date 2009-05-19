@@ -310,7 +310,7 @@ def setup_exc_handler(name, config, ignore=[SystemExit]):
 
     log = None
     if config.syslog_facility is not None:
-        log = get_logger(name, config.syslog_facility)
+        log = get_logger(name)
 
     output_dir = None
     if config.traceback_dir is not None:

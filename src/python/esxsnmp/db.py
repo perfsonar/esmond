@@ -247,7 +247,8 @@ def esdbd():
         sys.exit(1)
 
     esxsnmp.sql.setup_db(config.db_uri)
-    init_logging(config.syslog_facility, level=config.syslog_level)
+    init_logging(config.syslog_facility, level=config.syslog_level,
+            debug=opts.debug)
 
     #handler = ESDBHandler(config)
     #processor = ESDB.Processor(handler)

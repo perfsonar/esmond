@@ -709,7 +709,7 @@ class CorrelatedTSDBPoller(TSDBPoller):
             try:
                 tsdb_var = self.tsdb_set.get_var(var)
             except tsdb.TSDBVarDoesNotExistError:
-                self.log.debug("creating TSDB: %s" % str(var))
+                self.log.debug("creating TSDBVar: %s" % str(var))
                 tsdb_var = self.tsdb_set.add_var(var, vartype,
                         self.oidset.frequency, self.chunk_mapper)
 
@@ -858,7 +858,9 @@ def espolld():
         print e
         sys.exit(1)
 
-    init_logging(config.syslog_facility, level=config.syslog_level)
+    init_logging(config.syslog_facility, level=config.syslog_level,
+            debug=opts.debug)
+
     name = "espolld.manager"
 
     setproctitle(name)
