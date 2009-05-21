@@ -46,3 +46,9 @@ INSERT INTO OIDSetMember (OIDId, OIDSetID) VALUES (7, 3);
 INSERT INTO OIDSetMember (OIDId, OIDSetID) VALUES (8, 3);
 INSERT INTO OIDSetMember (OIDId, OIDSetID) VALUES (9, 3);
 INSERT INTO OIDSetMember (OIDId, OIDSetID) VALUES (10, 3);
+
+-- add your devices using inserts like below,
+--   be sure to set your community and device name
+
+-- INSERT INTO device (name, begin_time, end_time, community, active)
+--     VALUES ('test-router', 'NOW', 'infinity', 'public', true);
