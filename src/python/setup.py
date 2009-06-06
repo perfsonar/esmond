@@ -15,6 +15,7 @@ setup(name='ESxSNMP',
                 'espolld = esxsnmp.poll:espolld',
                 'esdbd = esxsnmp.db:esdbd',
                 'esfetch = esxsnmp.fetch:esfetch',
+                'gen_ma_storefile = esxsnmp.perfsonar:gen_ma_storefile',
             ]
         }
     )
