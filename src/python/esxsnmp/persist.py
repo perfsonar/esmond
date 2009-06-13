@@ -235,7 +235,7 @@ class TSDBPollPersister(PollPersister):
         try:
             uptime = self.tsdb.get_var(uptime_name)
         except TSDBVarDoesNotExistError:
-            self.log.warning("unable to get uptime for %s" % oid.name)
+            self.log.warning("unable to get uptime for %s" % var_name)
             uptime = None
 
         min_last_update = timestamp - oidset.frequency * 40 
