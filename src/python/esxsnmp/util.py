@@ -29,11 +29,13 @@ class LoggerIO(object):
     def write(self, buf):
         self.log.debug(buf)
 
-def daemonize(name, pidfile=None, logfile=None, log_stdout_stderr=None):
+def daemonize(name, piddir=None, logfile=None, log_stdout_stderr=None):
     '''Forks the current process into a daemon.
         derived from the ASPN recipe:
             http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/66012
     '''
+
+    pidfile = os.path.join(piddir, name + ".pid")
 
     if not os.path.exists(os.path.dirname(pidfile)):
         try:
