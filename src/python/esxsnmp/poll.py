@@ -9,6 +9,8 @@ import re
 import sets
 import random
 import socket
+import threading
+import Queue
 
 import sqlalchemy
 import yapsnmp
@@ -26,6 +28,7 @@ from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
 from esxsnmp.rpc.ttypes import IfRef
+from esxsnmp.persist import PollResult, PersistClient
 
 class ThriftClient(object):
     def __init__(self):
@@ -142,7 +145,7 @@ class CiscoCPUCorrelator(PollCorrelator):
             n = 'CPU'
         return "/".join((oid.name,n))
 
-class PollerChild(object):
+class PollerThread(threading.Thread):
     """Container for info about children of the main polling process"""
 
     SPIN_CYCLE_PERIOD = 30
@@ -153,14 +156,17 @@ class PollerChild(object):
     PENALTY = 2
     REMOVE = 3
 
-    def __init__(self, config, device):
+    def __init__(self, config, device, persistq):
+        threading.Thread.__init__(self)
+
         self.config = config
         self.device = device
+        self.persistq = persistq
         self.name = self.device.name
         self.pid = 0
         self.last_restart = 0
         self.spin_cycles = 0
-        self.state = PollerChild.NEW
+        self.state = PollerThread.NEW
         self.pollers = {}
 
         self.log = get_logger("espolld." + self.name)
@@ -170,13 +176,15 @@ class PollerChild(object):
 
     def __repr__(self):
         try:
-            return '<PollerChild: %s %d state=%d>' % (self.name, self.pid, self.state)
+            return '<PollerThread: %s %d state=%d>' % (
+                    self.name, self.pid, self.state)
         except:
-            return '<PollerChild: BOGUS!>'
+            return '<PollerThread: BOGUS!>'
 
     def add_oidset(self, device, oidset):
         poller = eval(oidset.poller.name)
-        self.pollers[oidset.name] = poller(self.config, device, oidset)
+        self.pollers[oidset.name] = poller(self.config, device, oidset,
+                self.persistq)
         self.log.debug("add_oidset: %s" % self.pollers.keys())
 
     def remove_oidset(self, device, oidset):
@@ -184,8 +192,7 @@ class PollerChild(object):
             del self.pollers[oidset.name]
         self.log.debug("remove_oidset: %s" % self.pollers.keys())
 
-    def record(self, pid):
-        self.pid = pid
+    def record(self):
         now = time.time()
         if now - self.last_restart < self.SPIN_CYCLE_PERIOD:
             self.spin_cycles += 1
@@ -193,56 +200,185 @@ class PollerChild(object):
             self.spin_cycles = 0
 
         self.last_restart = now
-        self.state = PollerChild.RUN
+        self.state = self.RUN
 
     def is_spinning(self):
-        return self.spin_cycles >= PollerChild.MAX_SPIN_CYCLES
+        return self.spin_cycles >= self.MAX_SPIN_CYCLES
 
     def is_penalized(self):
-        return self.state == PollerChild.PENALTY
+        return self.state == self.PENALTY
 
     def is_removed(self):
-        return self.state == PollerChild.REMOVE
+        return self.state == self.REMOVE
 
     def penalize(self):
         """Put this child in the penalty box."""
-        self.state = PollerChild.PENALTY
+        self.state = self.PENALTY
         self.pid = None
 
     def remove(self):
-        self.state = PollerChild.REMOVE
+        self.state = self.REMOVE
 
-    # --- these methods are used inside the child process only ---
+    # --- these methods are used inside the child thread only ---
 
     def run(self):
-        signal.signal(signal.SIGTERM, self.stop)
-        signal.signal(signal.SIGHUP, self.reload)
+        self.state = self.RUN
 
-        self.state = PollerChild.RUN
-
-        while self.state == PollerChild.RUN:
+        while self.state == self.RUN:
             for oidset in self.device.oidsets:
                 self.pollers[oidset.name].run_once()
 
-            delay = 999999
+            delay = 999
             for poller in self.pollers.itervalues():
                 if poller.seconds_until_next_poll() < delay:
                     delay = poller.seconds_until_next_poll()
 
+            if delay > 10:
+                delay = 10
+
             if delay > 0:
-                self.log.debug("sleeping for %d seconds" % delay)
                 time.sleep(delay)
             elif delay < 0:
                 self.log.info("%d seconds late" % abs(delay))
 
-    def stop(self, signum, frame):
-        self.state = PollerChild.REMOVE
-        self.log.info("stopping")
-        sys.exit()
+        self.log.info("thread exiting")
 
-    def reload(self, signum, frame):
+    def stop(self):
+        self.state = self.REMOVE
+        self.log.info("stopping")
+
+    def reload(self):
         self.log.info("if it was implemented, i'd be reloading")
 
+class PersistThread(threading.Thread):
+    INIT = 0
+    RUN = 1
+    REMOVE = 2
+
+    def __init__(self, config, persistq):
+        threading.Thread.__init__(self)
+
+        self.config = config
+        self.persistq = persistq
+
+        self.state = self.INIT
+
+        self.persister = PersistClient(config)
+
+    def run(self):
+        self.state = self.RUN
+        while self.state == self.RUN:
+            try:
+                task = self.persistq.get(block=True)
+            except Queue.Empty:
+                pass
+            else:
+                self.persister.put(task)
+
+    def stop(self):
+        self.state = self.REMOVE
+
+class ThreadedPollManager(object):
+    """Starts a polling thread for each device."""
+    def __init__(self, name, opts, args, config):
+        self.name = name
+        self.opts = opts
+        self.args = args
+        self.config = config
+        
+        self.hostname = socket.gethostname()
+
+        self.root_pid = os.getpid()
+
+        self.log = get_logger(self.name)
+
+        self.running = False
+        self.last_reload = time.time()
+        self.last_penalty_empty = time.time()
+
+        self.reload_interval = 30
+        self.penalty_interval = 300
+
+        esxsnmp.sql.setup_db(self.config.db_uri)
+
+        self.devices = esxsnmp.sql.get_devices(
+                polling_tag=self.config.polling_tag)
+
+        self.persistq = Queue.Queue()
+
+        if not tsdb.TSDB.is_tsdb(None, self.config.tsdb_root):
+            tsdb.TSDB.create(self.config.tsdb_root,
+                chunk_prefixes=self.config.tsdb_chunk_prefixes)
+
+
+    def start_polling(self):
+        self.log.debug("starting, %d devices configured" % len(self.devices))
+
+        signal.signal(signal.SIGINT, self.stop_polling)
+        signal.signal(signal.SIGTERM, self.stop_polling)
+        signal.signal(signal.SIGHUP, self.empty_penalty_box)
+        self.running = True
+
+        self.threads = {}
+        t = PersistThread(self.config, self.persistq)
+        self._start_thread('persist_thread', t)
+
+        for device in self.devices.itervalues():
+            t = PollerThread(self.config, device, self.persistq)
+            self._start_thread(device.name, t)
+
+        self.running = True
+
+        while self.running:
+            time.sleep(30)
+            self.log.debug("PING!")
+            self.log.info("%d items in persistq" % self.persistq.qsize())
+            for n,t in self.threads.iteritems():
+                t.join(0.0)
+                if not t.isAlive() and t.state != t.REMOVE:
+                    self.log.error("%s thread died" % n)
+                    if t.is_spinning():
+                        t.penalize()
+
+        self.shutdown()
+
+    def _start_thread(self, name, t):
+        t.setDaemon(True)
+        t.setName(name)
+        self.threads[name] = t
+        self.log.debug("started thread %s" % name)
+        t.start()
+
+    def stop_polling(self, signum, frame):
+        self.log.info("stopping (signal: %d)" % (signum, ))
+        self.running = False
+
+    def shutdown(self):
+        self.log.info("shutting down")
+
+        for n,t in self.threads.iteritems():
+            if n == 'persist_thread':
+                continue
+            t.stop()
+
+        for n,t in self.threads.iteritems():
+            if n == 'persist_thread':
+                continue
+            self.log.debug("joining %s" % t.getName())
+            t.join()
+
+        self.log.info("draining persistq")
+        self.persistq.join()
+        self.log.info("sucessful shutdown: exiting")
+
+    def empty_penalty_box(self, signum=None, frame=None):
+        self.log.info("emptying penalty box")
+        for child in self.children.itervalues():
+            if child.is_penalized():
+                self.log.debug("unpenalizing %s" % child.name)
+                self.start_thread(child)
+
+        self.last_penalty_empty = time.time()
 
 class PollManager(object):
     """Starts a polling process for each device"""
@@ -270,7 +406,7 @@ class PollManager(object):
 
         self.devices = self._get_devices()
 
-        self.children = {}       # maps name to PollerChild instance
+        self.children = {}       # maps name to PollerThread instance
         self.child_pid_map = {}  # maps child pid to child name
 
         if not tsdb.TSDB.is_tsdb(None, self.config.tsdb_root):
@@ -357,7 +493,7 @@ class PollManager(object):
         self.shutdown()
 
     def _start_device(self, device):
-        self._start_child(PollerChild(self.config, device))
+        self._start_child(PollerThread(self.config, device))
 
     def _stop_device(self, device):
         try:
@@ -431,7 +567,7 @@ class PollManager(object):
             self.log.debug("remove device: %s" % name)
             self._remove_device(self.devices[name])
 
-        # XXX should probably move this into PollerChild
+        # XXX should probably move this into PollerThread
         for name in new_device_set.intersection(old_device_set):
             old_device = self.devices[name]
             new_device = new_devices[name]
@@ -497,10 +633,12 @@ class Poller(object):
     All three methods MUST be defined by the subclass.
 
     """
-    def __init__(self, config, device, oidset):
+    def __init__(self, config, device, oidset, persistq):
         self.config = config
         self.device = device
         self.oidset = oidset
+        self.persistq = persistq
+
         self.name = "espolld." + self.device.name + "." + self.oidset.name
 
         self.next_poll = int(time.time() - 1)
@@ -599,8 +737,8 @@ class Poller(object):
             self.log.warning("poll %d seconds late" % abs(delay)) 
 
 class TSDBPoller(Poller):
-    def __init__(self, config, device, oidset):
-        Poller.__init__(self, config, device, oidset)
+    def __init__(self, config, device, oidset, persistq):
+        Poller.__init__(self, config, device, oidset, persistq)
 
         if self.config.tsdb_chunk_prefixes:
             self.tsdb = tsdb.TSDB(self.config.tsdb_root)
@@ -614,8 +752,8 @@ class TSDBPoller(Poller):
             self.tsdb_set = self.tsdb.add_set(set_name)
 
 class SQLPoller(Poller):
-    def __init__(self, config, device, oidset):
-        Poller.__init__(self, config, device, oidset)
+    def __init__(self, config, device, oidset, persistq):
+        Poller.__init__(self, config, device, persistq)
 
 #
 # XXX are the oidset, etc vars burdened with sqlalchemy goo? if so, does it
@@ -624,27 +762,17 @@ class SQLPoller(Poller):
 class CorrelatedTSDBPoller(TSDBPoller):
     """Handles polling of an OIDSet for a device and uses a correlator to
     determine the name of the variable to use to store values."""
-    def __init__(self, config, device, oidset):
-        TSDBPoller.__init__(self, config, device, oidset)
+    def __init__(self, config, device, oidset, persistq):
+        TSDBPoller.__init__(self, config, device, oidset, persistq)
 
-        # this is a little hairy, but ends up with an instance of the
-        # correlator class initialized with our snmp_session
-        # XXX might want to move these into the OIDSet class
         self.correlator = eval(self.poller_args['correlator'])(self.snmp_session)
-        self.chunk_mapper = eval(self.poller_args['chunk_mapper'])
+
         if self.poller_args.has_key('aggregates'):
             self.aggregates = self.poller_args['aggregates'].split(',')
         else:
             self.aggregates = None
 
-        if self.config.rrd_path:
-            self.rrd_path = os.path.join(self.config.rrd_path,
-                    self.device.name, self.oidset.name)
-
-        random.seed()
-        self.rank = random.randint(0,19)
-        self.log.debug("rank %d" % self.rank)
-
+        self.results = {}
 
     def begin(self):
         self.count = 0
@@ -652,114 +780,28 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
     def collect(self, oid, data):
         self.count += len(data)
-        self.store(oid, data)
+        ts = time.time()
+        dataout = []
+        metadata = dict(tsdb_flags=tsdb.ROW_VALID)
+
+        for (var,val) in data:
+            var = self.correlator.lookup(oid,var)
+            dataout.append((var,val))
+
+        pr = PollResult(self.oidset.name, self.device.name, oid.name,
+                    ts, dataout, metadata)
+
+        self.persistq.put(pr)
 
     def finish(self):
         pass
-
-    def create_rrd(self, tsdb_var, oid):
-        """Create a RRD that mirrors the TSDB"""
-        begin = int(time.time()) - 2 * tsdb_var.metadata['STEP']
-
-        rrd_args = rrd_from_tsdb_var(tsdb_var, begin,
-                os.path.join(self.rrd_path, oid.name),
-                ds_name=oid.name)
-        rrd_file = rrd_args[0]
-
-        self.log.debug("creating RRD file: %s" % rrd_args[0])
-
-        if not os.path.exists(os.path.dirname(rrd_file)):
-            os.makedirs(os.path.dirname(rrd_file))
-        try:
-            rrdtool.create(*rrd_args)
-        except Exception, e:
-            self.log.error("RRD creation failed for %s: %s" % (rrd_args[0],
-                str(e)))
-            raise
-
-        tsdb_var.metadata['RRD_FILE'] = rrd_args[0]
-
-    def update_rrd(self, tsdb_var, ts, val, var):
-        if tsdb_var.metadata.has_key('RRD_FILE'):
-            try:
-                rrdtool.update(tsdb_var.metadata['RRD_FILE'], "%d:%s" % (int(ts), val))
-            except Exception, e:
-                self.log.error("RRD error for %s/%s/%s: %s" % (self.device.name,
-                    self.oidset.name, var, e))
-        else:
-            self.log.error("no RRD file for %s/%s/%s" % (self.device.name,
-                self.oidset.name, var))
-
-    def shutdown(self):
-        self.log.debug("flush all!")
-        for var in self.tsdb_set.vars.itervalues():
-            var.flush()
-
-    def store(self, oid, vars):
-        ts = time.time()
-        # XXX:refactor might want to use the ID here instead of expensive eval
-        vartype = eval("tsdb.row.%s" % oid.type.name)
-
-        if self.polling_round % 20 == self.rank:
-            self.log.debug("flush!")
-
-        for (var,val) in vars:
-            var = self.correlator.lookup(oid,var)
-
-            try:
-                tsdb_var = self.tsdb_set.get_var(var)
-            except tsdb.TSDBVarDoesNotExistError:
-                self.log.debug("creating TSDBVar: %s" % str(var))
-                tsdb_var = self.tsdb_set.add_var(var, vartype,
-                        self.oidset.frequency, self.chunk_mapper)
-
-                if oid.aggregate and self.aggregates:
-                    tsdb_var.add_aggregate(str(self.oidset.frequency),
-                        self.chunk_mapper, ['average', 'delta'])
-                    for agg in self.aggregates:
-                        tsdb_var.add_aggregate(agg, self.chunk_mapper,
-                                ['average', 'delta', 'min', 'max'])
-
-                    if self.config.rrd_path:
-                        self.create_rrd(tsdb_var, oid)
-
-	    	tsdb_var.flush()
-
-            tsdb_var.insert(vartype(ts, tsdb.ROW_VALID, val))
-
-            if self.polling_round % 20 == self.rank:
-                #tsdb_var.flush()
-
-                if oid.aggregate:
-                    # XXX:refactor uptime should be handled better
-                    try:
-                        uptime = self.tsdb_set.get_var('sysUpTime')
-                    except TSDBVarDoesNotExistError:
-                        self.log.warning("unable to get uptime for %s" % oid.name)
-                        uptime = None
-
-                    # update at most 10 rows in the aggregate
-                    min_last_update = ts - self.oidset.frequency * 40 
-                    try:
-                        self.log.debug("updating agg %s" % \
-                                "/".join((self.device.name, self.oidset.name,
-                                    var)))
-                        tsdb_var.update_aggregate(str(self.oidset.frequency),
-                            uptime_var=uptime,
-                            min_last_update=min_last_update)
-                    except TSDBAggregateDoesNotExistError:
-                        self.log.error("bad aggregate for %s/%s/%s" % (self.device.name,
-                            self.oidset.name, var))
-    
-                    if self.config.rrd_path:
-                        self.update_rrd(tsdb_var, ts, val, var)
 
 class IfRefSQLPoller(SQLPoller):
     """Polls all OIDS and creates a IfRef entry then sees if the IfRef entry
     differs from the lastest in the database."""
 
-    def __init__(self, config, device, oidset):
-        SQLPoller.__init__(self, config, device, oidset)
+    def __init__(self, config, device, oidset, persistq):
+        SQLPoller.__init__(self, config, device, oidset, persistq)
         self.ifref_data = {}
 
     def begin(self):
@@ -869,10 +911,10 @@ def espolld():
         exc_handler = setup_exc_handler(name, config)
         exc_handler.install()
 
-        daemonize(name, config.pid_file, log_stdout_stderr=exc_handler.log)
+        daemonize(name, config.pid_dir, log_stdout_stderr=exc_handler.log)
 
     os.umask(0022)
 
-    poller = PollManager(name, opts, args, config)
+    poller = ThreadedPollManager(name, opts, args, config)
     poller.start_polling()
 

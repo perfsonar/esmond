@@ -24,19 +24,19 @@ def get_config(config_file, opts):
         raise ConfigError("unable to parse config: %s" % e)
 
     # the command line overrides the config file
-    if opts.pid_file:
-        conf.pid_file = opts.pid_file
+    if opts.pid_dir:
+        conf.pid_dir = opts.pid_dir
 
     return conf
 
-def get_opt_parser(default_config_file=None, default_pid_file=None):
+def get_opt_parser(default_config_file=None, default_pid_dir=None):
     oparse = optparse.OptionParser()
     oparse.add_option("-d", "--debug", dest="debug", action="store_true",
             default=False)
     oparse.add_option("-f", "--config-file", dest="config_file",
             default=default_config_file)
-    oparse.add_option("-p", "--pid-file", dest="pid_file",
-            default=default_pid_file)
+    oparse.add_option("-p", "--pid-dir", dest="pid_dir",
+            default=default_pid_dir)
 
     return oparse
 
@@ -53,10 +53,13 @@ class ESxSNMPConfig(object):
         self.traceback_dir = None
         self.syslog_facility = None
         self.syslog_level = None
-        self.pid_file = None
+        self.pid_dir = None
         self.rrd_path = None
         self.polling_tag = None
-
+        self.rpc_user = None
+        self.rpc_password = None
+        self.espersistd_uri = None
+        self.espoll_persist_uri = None
         self.send_error_email = False
 
         self.read_config()
@@ -69,10 +72,25 @@ class ESxSNMPConfig(object):
         config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in ('db_uri', 'tsdb_root', 'tsdb_chunk_prefixes', 'error_email_to',
                 'error_email_subject', 'error_email_from', 'traceback_dir',
-                'syslog_facility', 'syslog_level', 'pid_file',
-                'rrd_path', 'polling_tag'):
+                'syslog_facility', 'syslog_level', 'pid_dir',
+                'rrd_path', 'polling_tag', 'rpc_user', 'rpc_password',
+                'espersistd_uri', 'espoll_persist_uri'):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
+
+        self.persist_map = {}
+        for key, val in cfg.items("persist_map"):
+            self.persist_map[key] = val.replace(" ", "").split(",")
+
+        self.persist_queues = {}
+        for key, val in cfg.items("persist_queues"):
+            self.persist_queues[key] = val.split(':', 1)
+            self.persist_queues[key][1] = int(self.persist_queues[key][1])
+
+        if self.espoll_persist_uri:
+            self.espoll_persist_uri = \
+                self.espoll_persist_uri.replace(' ', '').split(',')
+
 
     def validate_config(self):
         for attr in ('tsdb_root', 'db_uri'):
@@ -118,5 +136,15 @@ class ESxSNMPConfig(object):
                 raise ConfigError("invaild config: unknown syslog_level %s" %
                         self.syslog_level)
             self.syslog_level = logging._levelNames[self.syslog_level]
+
+        errors = []
+        for oidset, queues in self.persist_map.iteritems():
+            for queue in queues:
+                if not self.persist_queues.has_key(queue):
+                    errors.append("%s for %s" % (queue, oidset))
+
+        if errors:
+            raise ConfigError("unknown persist queue(s): %s" \
+                    % ", ".join(errors))
 
 
