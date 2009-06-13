@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, MetaData, Table
-from sqlalchemy.orm import sessionmaker, mapper, relation, MapperExtension, EXT_CONTINUE
+from sqlalchemy.orm import sessionmaker, mapper, relation, MapperExtension, EXT_CONTINUE, scoped_session
 from calendar import timegm
 
 from esxsnmp.rpc.ttypes import *
@@ -14,10 +14,13 @@ metadata = None
 def setup_db(db_uri):
     global engine, conn, metadata, Session
 
+    if engine:
+        return
+
     engine = create_engine(db_uri)
     conn = engine.connect()
     metadata = MetaData(engine)
-    Session = sessionmaker(autoflush=True, autocommit=False)
+    Session = scoped_session(sessionmaker(autoflush=True, autocommit=False))
 
     for table in ( 'oidtype', 'oid', 'poller', 'oidsetmember', 'oidset',
             'device', 'devicetag', 'deviceoidsetmap', 'devicetagmap', 'ifref'):
@@ -66,3 +69,32 @@ def setup_db(db_uri):
         }, extension=DateConvMapper())
 
     mapper(IfRef, tables['ifref'], properties={'device': relation(Device, lazy=False)})
+
+
+def get_devices(active=True, polling_tag=None):
+    d = {}
+    session = Session()
+
+    if polling_tag:
+        extra = """
+            AND device.id IN
+                (SELECT deviceid
+                    FROM devicetagmap
+                   WHERE devicetagid =
+                   (SELECT devicetag.id
+                      FROM devicetag
+                     WHERE name = '%s'))
+        """ % self.config.polling_tag
+    else:
+        extra = ''
+
+    devices = session.query(Device).filter("""
+            active = '%s' 
+            AND end_time > 'NOW'""" % (str(active),) + extra)
+
+    for device in devices:
+        d[device.name] = device
+
+    session.close()
+
+    return d
