@@ -12,6 +12,8 @@ import cPickle as pickle
 
 import cjson
 
+import sqlalchemy
+
 import tsdb
 import tsdb.row
 from tsdb.error import TSDBAggregateDoesNotExistError, TSDBVarDoesNotExistError, InvalidMetaData
@@ -77,7 +79,7 @@ class PollResult(object):
 class PollPersister(object):
     """A PollPersister implements a storage method for PollResults."""
     def __init__(self, config, qname):
-        self.log = get_logger(self.__class__.__name__)
+        self.log = get_logger("espersistd.%s" % self.__class__.__name__)
         self.config = config
         self.qname = qname
         self.running = False
@@ -119,10 +121,6 @@ class StreamingPollPersister(PollPersister):
         the log file is created to create a timestamp to append to
         ``log_path``.
     """
-    def __init__(self, config, q):
-        PollPersister.__init__(self, config, q)
-
-class IfRefPollPersister(PollPersister):
     def __init__(self, config, q):
         PollPersister.__init__(self, config, q)
 
@@ -249,29 +247,90 @@ class TSDBPollPersister(PollPersister):
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
 
+class IfRefPollPersister(PollPersister):
+    def __init__(self, config, qname):
+        PollPersister.__init__(self, config, qname)
+        self.db_session = esxsnmp.sql.Session()
 
-"""
-class AsyncPersistService(asyncore.dispatcher):
-    def __init__(self, port=9091):
-        asyncore.dispatcher.__init__(self)
-        self.port = port
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.set_reuse_addr()
-        self.bind(('localhost', port))
-        self.listen(16)
+    def store(self, result):
+        t0 = time.time()
+        self.ifref_data = result.data
 
-    def handle_accept(self):
-        channel, addr = self.accept()
-        AsyncPersistChannel(channel)
+        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
+                esxsnmp.sql.Device.name == result.device_name).one()
 
-class AsyncPersistChannel(asyncore.dispatcher):
-    def __init__(self, sock=None, map=None):
-        asyncore.dispatcher.__init__(self, soc=sock, map=map)
+        new_ifrefs = self._build_objs()
+        nvar = len(new_ifrefs)
+        old_ifrefs = self.db_session.query(IfRef).filter(
+            sqlalchemy.and_(IfRef.deviceid == self.device.id, IfRef.end_time > 'NOW')
+        )
 
-    def handle_write(self):
-        pass
-"""
+        # iterate through what is currently in the database
+        for old_ifref in old_ifrefs:
+            # there is an entry in new_ifrefs: has anything changed?
+            if new_ifrefs.has_key(old_ifref.ifdescr):
+                new_ifref = new_ifrefs[old_ifref.ifdescr]
+                attrs = new_ifref.keys()
+                attrs.remove('ifdescr')
+                changed = False
+                # iterate through all attributes
+                for attr in attrs:
+                    # if the old and new differ update the old
+                    if getattr(old_ifref, attr) != new_ifref[attr]:
+                        changed = True
 
+                if changed:
+                    old_ifref.end_time = 'NOW'
+                    new_row = self._new_row_from_obj(new_ifref)
+                    self.db_session.add(new_row)
+                
+                del new_ifrefs[old_ifref.ifdescr]
+            # no entry in new_ifrefs: interface is gone, update db
+            else:
+                old_ifref.end_time = 'NOW'
+
+        # anything left in new_ifrefs is a new interface
+        for new_ifref in new_ifrefs:
+            new_row = self._new_row_from_obj(new_ifrefs[new_ifref])
+            self.db_session.add(new_row)
+
+        self.db_session.commit()
+        self.log.debug("stored %d vars in %f seconds" % (nvar, time.time()-t0))
+
+    def _new_row_from_obj(self, obj):
+        i = IfRef()
+        i.deviceid = self.device.id
+        i.begin_time = 'NOW'
+        i.end_time = 'Infinity'
+        for attr in obj.keys():
+            setattr(i, attr, obj[attr])
+        return i
+
+    def _build_objs(self):
+        ifref_objs = {}
+        ifIndex_map = {}
+
+        for name, val in self.ifref_data['ifDescr']:
+            foo, ifIndex = name.split('.')
+            ifIndex_map[ifIndex] = val
+            ifref_objs[val] = dict(ifdescr=val, ifindex=int(ifIndex))
+
+        for name, val in self.ifref_data['ipAdEntIfIndex']:
+            foo, ipAddr = name.split('.', 1)
+            ifref_objs[ifIndex_map[val]]['ipaddr'] = ipAddr
+
+        remaining_oids = self.ifref_data.keys()
+        remaining_oids.remove('ifDescr')
+        remaining_oids.remove('ipAdEntIfIndex')
+
+        for oid in remaining_oids:
+            for name, val in self.ifref_data[oid]:
+                if oid in ('ifSpeed', 'ifHighSpeed'):
+                    val = int(val)
+                foo, ifIndex = name.split('.')
+                ifref_objs[ifIndex_map[ifIndex]][oid.lower()] = val
+
+        return ifref_objs
 
 class PersistQueue(object):
     """Abstract base class for a persistence service."""
@@ -289,7 +348,6 @@ class PersistQueue(object):
 
     def deserialize(self, val):
         return pickle.loads(val) #cjson.decode(val)
-
 
 class MemcachedPersistQueue(PersistQueue):
     """A simple queue based on memcached.
@@ -429,7 +487,7 @@ class MemcachedPersistHandler(object):
                 self.queues[qname] = MultiWorkerQueue(qname, 
                         MemcachedPersistQueue, uri, num_workers)
             else:
-                self.queues[qname] = MemcachedPersistQueue()
+                self.queues[qname] = MemcachedPersistQueue(qname, uri)
 
     def put(self, result):
         try:
@@ -568,9 +626,10 @@ class PersistSupervisor(object):
                 self.start_child(qname, qclass, i)
 
     def start_child(self, qname, qclass, index):
-        self.log.debug("argv[0] " + sys.argv[0])
-        args = [sys.executable,'/data/esxsnmp/esxsnmp/bin/espersistd',
-                '-r', 'worker', '-q', qname, '-f', self.opts.config_file]
+        args = [sys.executable, sys.argv[0],
+                '-r', 'worker',
+                '-q', qname,
+                '-f', self.opts.config_file]
 
         if self.config.persist_queues[qname][1] > 1:
             args.extend(['-n', str(index)])

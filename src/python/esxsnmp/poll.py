@@ -330,8 +330,8 @@ class ThreadedPollManager(object):
         self.running = True
 
         while self.running:
-            time.sleep(30)
-            self.log.debug("PING!")
+            time.sleep(5)
+
             self.log.info("%d items in persistq" % self.persistq.qsize())
             for n,t in self.threads.iteritems():
                 t.join(0.0)
@@ -339,6 +339,8 @@ class ThreadedPollManager(object):
                     self.log.error("%s thread died" % n)
                     if t.is_spinning():
                         t.penalize()
+                    else:
+                        self._start_thread(n, t)
 
         self.shutdown()
 
@@ -753,7 +755,7 @@ class TSDBPoller(Poller):
 
 class SQLPoller(Poller):
     def __init__(self, config, device, oidset, persistq):
-        Poller.__init__(self, config, device, persistq)
+        Poller.__init__(self, config, device, oidset, persistq)
 
 #
 # XXX are the oidset, etc vars burdened with sqlalchemy goo? if so, does it
@@ -815,78 +817,42 @@ class IfRefSQLPoller(SQLPoller):
         self.store()
 
     def store(self):
-        db_session = esxsnmp.sql.Session()
-        new_ifrefs = self._build_objs()
-        old_ifrefs = db_session.query(IfRef).filter(
-            sqlalchemy.and_(IfRef.deviceid==self.device.id, IfRef.end_time > 'NOW')
-        )
+        ts = time.time()
+        pr = PollResult(self.oidset.name, self.device.name, "",
+                ts, self.ifref_data, {})
 
-        # iterate through what is currently in the database
-        for old_ifref in old_ifrefs:
-            # there is an entry in new_ifrefs: has anything changed?
-            if new_ifrefs.has_key(old_ifref.ifdescr):
-                new_ifref = new_ifrefs[old_ifref.ifdescr]
-                attrs = new_ifref.keys()
-                attrs.remove('ifdescr')
-                changed = False
-                # iterate through all attributes
-                for attr in attrs:
-                    # if the old and new differ update the old
-                    if getattr(old_ifref, attr) != new_ifref[attr]:
-                        changed = True
+        self.persistq.put(pr)
 
-                if changed:
-                    old_ifref.end_time = 'NOW'
-                    new_row = self._new_row_from_obj(new_ifref)
-                    db_session.save(new_row)
-                
-                del new_ifrefs[old_ifref.ifdescr]
-            # no entry in new_ifrefs: interface is gone, update db
-            else:
-                old_ifref.end_time = 'NOW'
+def espoll():
+    argv = sys.argv
+    oparse = get_opt_parser(default_config_file=get_config_path())
+    oparse.add_option("-D", "--device", dest="device", default=None)
+    oparse.add_option("-o", "--oid-set", dest="oidset", default=None)
+    (opts, args) = oparse.parse_args(args=argv)
 
-        # anything left in new_ifrefs is a new interface
-        for new_ifref in new_ifrefs:
-            new_row = self._new_row_from_obj(new_ifrefs[new_ifref])
-            db_session.add(new_row)
+    try:
+        config = get_config(opts.config_file, opts)
+    except ConfigError, e:
+        print e
+        sys.exit(1)
 
-        db_session.commit()
-        db_session.close()
+    esxsnmp.sql.setup_db(config.db_uri)
+    session = esxsnmp.sql.Session()
 
-    def _new_row_from_obj(self, obj):
-        i = IfRef()
-        i.deviceid = self.device.id
-        i.begin_time = 'NOW'
-        i.end_time = 'Infinity'
-        for attr in obj.keys():
-            setattr(i, attr, obj[attr])
-        return i
+    devices = session.query(esxsnmp.sql.Device)
 
-    def _build_objs(self):
-        ifref_objs = {}
-        ifIndex_map = {}
+    if opts.device:
+        devices = devices.filter(esxsnmp.sql.Device.name == opts.device)
 
-        for name, val in self.ifref_data['ifDescr']:
-            foo, ifIndex = name.split('.')
-            ifIndex_map[ifIndex] = val
-            ifref_objs[val] = dict(ifdescr=val, ifindex=int(ifIndex))
-
-        for name, val in self.ifref_data['ipAdEntIfIndex']:
-            foo, ipAddr = name.split('.', 1)
-            ifref_objs[ifIndex_map[val]]['ipaddr'] = ipAddr
-
-        remaining_oids = self.ifref_data.keys()
-        remaining_oids.remove('ifDescr')
-        remaining_oids.remove('ipAdEntIfIndex')
-
-        for oid in remaining_oids:
-            for name, val in self.ifref_data[oid]:
-                if oid in ('ifSpeed', 'ifHighSpeed'):
-                    val = int(val)
-                foo, ifIndex = name.split('.')
-                ifref_objs[ifIndex_map[ifIndex]][oid.lower()] = val
-
-        return ifref_objs
+    for device in devices:
+        oidsets = device.oidsets
+        if opts.oidset:
+            if opts.oidset in [o.name for o in oidsets]:
+                print device.name
+        elif opts.device:
+            print "\n".join([o.name for o in device.oidsets])
+        else:
+            print device.name, ", ".join([o.name for o in device.oidsets])
 
 def espolld():
     """Entry point for espolld."""
