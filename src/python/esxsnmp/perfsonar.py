@@ -112,7 +112,7 @@ Notes:
             if iface.ifhighspeed == 0:
                 speed = iface.ifspeed
             else:
-                speed = iface.ifhighspeed
+                speed = iface.ifhighspeed * int(1e6)
 
             d = dict(
                     intname=iface.ifdescr,
@@ -148,7 +148,7 @@ Notes:
 
         if iface['ipaddr']:
             iface['ipaddr_line'] = """
-\t\t\t\t<nmwgt:ifAddress type="ipv4">%s</nmwgt:ifAddress>\n""" % iface['ipaddr']
+\t\t\t\t<nmwgt:ifAddress type="ipv4">%s</nmwgt:ifAddress>""" % iface['ipaddr']
         else:
             iface['ipaddr_line'] = ''
 
@@ -165,7 +165,7 @@ Notes:
 \t<nmwg:metadata  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="meta%(i)d">
 \t\t<netutil:subject  xmlns:netutil="http://ggf.org/ns/nmwg/characteristic/utilization/2.0/" id="subj%(i)d">
 \t\t\t<nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">
-\t\t\t\t<nmwgt3:urn>urn:ogf:network:domain=%(domain)s:node=%(device)s:port=%(intname)s</nmwgt3:urn>%(ipaddr_line)s
+\t\t\t\t<nmwgt3:urn xmlns:nmwgt3="http://ggf.org/ns/nmwg/topology/base/3.0/">urn:ogf:network:domain=%(domain)s:node=%(device)s:port=%(intname)s</nmwgt3:urn>%(ipaddr_line)s
 \t\t\t\t<nmwgt:hostName>%(device)s</nmwgt:hostName>
 \t\t\t\t<nmwgt:ifName>%(intname)s</nmwgt:ifName>
 \t\t\t\t<nmwgt:ifDescription>%(intdesc)s</nmwgt:ifDescription>
