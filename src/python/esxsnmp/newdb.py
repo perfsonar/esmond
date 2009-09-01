@@ -1,4 +1,4 @@
-"""Implement a RESTish API to SNMP data.
+"""Implement a RESTish API to ESxSNMP data.
 
 
 """
@@ -70,6 +70,19 @@ def get_traffic_oidset(device):
 def encode_device(dev, uri, children=[]):
     return dict(begin_time=dev.begin_time, end_time=dev.end_time,
             name=dev.name, active=dev.active, children=children, uri=uri)
+
+def encode_ifref(ifref, uri, children=[]):
+    return dict(
+            begin_time=ifref.begin_time,
+            end_time=ifref.end_time,
+            ifIndex=ifref.ifIndex,
+            ifDescr=ifref.ifDescr,
+            ifAlias=ifref.ifAlias,
+            ifSpeed=ifref.ifSpeed,
+            ifHighSpeed=ifref.ifHighSpeed,
+            ipAddr=ifref.ipAddr,
+            uri=ifref.uri,
+            device_uri=ifref.device_uri)
 
 def make_children(uri_prefix, children):
     return [ dict(name=child, uri="%s/%s" % (uri_prefix, child)) for child in
@@ -180,7 +193,6 @@ class SNMPHandler:
         ifset = map(lambda x: x.ifdescr, ifaces)
 
         if not rest:
-
             l = map(lambda iface: 
                 dict(name=iface.ifdescr,
                     uri="%s/%s/interface/%s/" % (ROOT_URI, device.name,
@@ -192,19 +204,57 @@ class SNMPHandler:
             next, rest = split_url(rest)
             next = urllib.unquote(next)
             print ">>>>", next, rest
-            if next in ifset:
+            try:
+                ifref = ifaces.filter_by(name=device_name).one()
                 return self.get_interface(device, next, rest)
-            else:
+            except NOTFOUND: # XXX check this
                 return web.notfound()
 
     def get_interface(self, device, iface, rest):
+        """Returns a JSON object representing an interface.
+
+        An interface JSON object has the following fields:
+
+            :param ifIndex: SNMP ifIndex
+            :param ifDescr: SNMP ifDescr, the interface name
+            :param ifAlias: SNMP ifAlias, the interface description
+            :param ipAddr: SNMP ipAddr, IP address of interface
+            :param ifSpeed: SNMP ifSpeed, interface speed in bit/sec
+            :param ifHighSpeed: SNMP ifHighSpeed, interface speed in Mbit/sec
+            :param begin_time: start time in seconds since the epoch
+            :param end_time: start time in seconds since the epoch
+            :param subsets: an array of available subsets
+            :param uri: URI for this interface
+            :param device_uri: URI for the device this interface belongs to
+
+        For ``begin_time`` and ``end_time`` the values 0 and 2147483647 have
+        special significance.  0 represents -infinity and 2147483647
+        represents infinity.  This should be fixed.
+
+        Example:
+
+             { 'ifIndex': 1,
+               'ifDescr': 'xe-2/0/0',
+               'ifAlias': '10Gig to Timbuktu',
+               'ipAddr': '10.255.255.1',
+               'ifSpeed': 0,
+               'ifHighSpeed': 10000,
+               'begin_time': 0,
+               'end_time': 2147483647,
+               'subsets': ['in', 'out'],
+               'uri': 'http://example.com/snmp/router1/interface/xe-2%2F0%2F0', }
+               'device_uri': 'http://example.com/snmp/router1/' }
+        """
+
         # XXX fill in ifref info
         children = ['in', 'out']
 
+
         if not rest:
-            kids = make_children('%s/%s/interface/%s' % (ROOT_URI,
-                    device.name, urllib.quote(iface, safe='')), children)
-            return simplejson.dumps(dict(children=kids))
+            uri = '%s/%s/interface/%s' % (ROOT_URI, device.name,
+                    urllib.quote(iface.ifDescr, safe=''))
+            kids = make_children(uri, children)
+            return simplejson.dumps(encode_ifref(iface, uri, children=kids))
         else:
             next, rest = split_url(rest)
             if next in children:
@@ -250,7 +300,8 @@ class SNMPHandler:
         print ">>> B:", time.ctime(begin), "E:", time.ctime(end)
 
         path = '%s/%s/if%s%sOctets/%s/%s' % (device.name, traffic_oidset,
-                traffic_mod, dataset.capitalize(), remove_metachars(iface), suffix)
+                traffic_mod, dataset.capitalize(),
+                remove_metachars(iface.ifDescr), suffix)
 
         v = self.db.get_var(path)
         data = v.select(begin=begin, end=end)
@@ -265,7 +316,6 @@ class SNMPHandler:
 
     def get_system(self, device, rest):
         pass
-
 
 if __name__ == '__main__':
     from esxsnmp.config import get_opt_parser, get_config, get_config_path
