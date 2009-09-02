@@ -68,21 +68,23 @@ def get_traffic_oidset(device):
         return 'FastPoll', ''
 
 def encode_device(dev, uri, children=[]):
+    print dev.end_time
     return dict(begin_time=dev.begin_time, end_time=dev.end_time,
             name=dev.name, active=dev.active, children=children, uri=uri)
 
-def encode_ifref(ifref, uri, children=[]):
+def encode_ifref(ifref, uri, device, children=[]):
+    print ifref
     return dict(
             begin_time=ifref.begin_time,
             end_time=ifref.end_time,
-            ifIndex=ifref.ifIndex,
-            ifDescr=ifref.ifDescr,
-            ifAlias=ifref.ifAlias,
-            ifSpeed=ifref.ifSpeed,
-            ifHighSpeed=ifref.ifHighSpeed,
-            ipAddr=ifref.ipAddr,
-            uri=ifref.uri,
-            device_uri=ifref.device_uri)
+            ifIndex=ifref.ifindex,
+            ifDescr=ifref.ifdescr,
+            ifAlias=ifref.ifalias,
+            ifSpeed=ifref.ifspeed,
+            ifHighSpeed=ifref.ifhighspeed,
+            ipAddr=ifref.ipaddr,
+            uri=uri,
+            device_uri='%s/%s' % (ROOT_URI, device.name))
 
 def make_children(uri_prefix, children):
     return [ dict(name=child, uri="%s/%s" % (uri_prefix, child)) for child in
@@ -189,7 +191,7 @@ class SNMPHandler:
 
         print ">>>",limit
 
-        ifaces = self.session.query(IfRef).filter(limit).all()
+        ifaces = self.session.query(IfRef).filter(limit)
         ifset = map(lambda x: x.ifdescr, ifaces)
 
         if not rest:
@@ -198,19 +200,15 @@ class SNMPHandler:
                     uri="%s/%s/interface/%s/" % (ROOT_URI, device.name,
                         urllib.quote(iface.ifdescr, safe='')),
                     descr=iface.ifalias),
-                ifaces)
+                ifaces.all())
             return simplejson.dumps(dict(children=l))
         else:
             next, rest = split_url(rest)
             next = urllib.unquote(next)
             print ">>>>", next, rest
-            try:
-                ifref = ifaces.filter_by(name=device_name).one()
-                return self.get_interface(device, next, rest)
-            except NOTFOUND: # XXX check this
-                return web.notfound()
+            return self.get_interface(device, ifaces, next, rest)
 
-    def get_interface(self, device, iface, rest):
+    def get_interface(self, device, ifaces, iface, rest):
         """Returns a JSON object representing an interface.
 
         An interface JSON object has the following fields:
@@ -251,10 +249,15 @@ class SNMPHandler:
 
 
         if not rest:
-            uri = '%s/%s/interface/%s' % (ROOT_URI, device.name,
-                    urllib.quote(iface.ifDescr, safe=''))
-            kids = make_children(uri, children)
-            return simplejson.dumps(encode_ifref(iface, uri, children=kids))
+            ifrefs = ifaces.filter_by(ifdescr=iface)
+            print ifrefs.all()
+            l = []
+            for ifref in ifrefs:
+                uri = '%s/%s/interface/%s' % (ROOT_URI, device.name,
+                        urllib.quote(iface, safe=''))
+                kids = make_children(uri, children)
+                l.append(encode_ifref(ifref, uri, device, children=kids))
+            return simplejson.dumps(l)
         else:
             next, rest = split_url(rest)
             if next in children:
