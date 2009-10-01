@@ -5,25 +5,38 @@
 
 import sys
 import time
+import os
+os.environ['PYTHON_EGG_CACHE'] = '/tmp/apache_eggs'
 
 sys.path.extend([
     '/data/esxsnmp/esxsnmp/src/python',
     '/data/esxsnmp/esxsnmp/eggs/web.py-0.32-py2.5.egg',
     '/data/esxsnmp/esxsnmp/eggs/simplejson-2.0.9-py2.5-freebsd-7.1-RELEASE-amd64.egg',
     '/data/esxsnmp/esxsnmp/parts/tsdb-svn/tsdb',
-    '/data/esxsnmp/esxsnmp/eggs/fs-0.1.0-py2.5.egg'
+    '/data/esxsnmp/esxsnmp/eggs/fs-0.1.0-py2.5.egg',
+    '/data/esxsnmp/esxsnmp/eggs/fpconst-0.7.2-py2.5.egg'
 ])
 
 import web
+from web.webapi import HTTPError
 import simplejson
 import urllib
+from fpconst import isNaN
+import logging
 
 import tsdb
 from tsdb.error import *
 import esxsnmp.sql
 from esxsnmp.sql import Device, OID, OIDSet, IfRef
+from esxsnmp.util import get_logger
 
-urls = ('/snmp/([\-a-zA-Z0-9]+)?/?(.+)?/?', 'SNMPHandler')
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+
+urls = (
+        '/snmp/.*', 'SNMPHandler',
+        '/bulk/?', 'BulkHandler',
+        )
+
 
 ROOT_URI = 'http://snmp-west.es.net:8001/snmp'
 
@@ -68,12 +81,12 @@ def get_traffic_oidset(device):
         return 'FastPoll', ''
 
 def encode_device(dev, uri, children=[]):
-    print dev.end_time
+#    print dev.end_time
     return dict(begin_time=dev.begin_time, end_time=dev.end_time,
             name=dev.name, active=dev.active, children=children, uri=uri)
 
 def encode_ifref(ifref, uri, device, children=[]):
-    print ifref
+#    print ifref
     return dict(
             begin_time=ifref.begin_time,
             end_time=ifref.end_time,
@@ -90,17 +103,71 @@ def make_children(uri_prefix, children):
     return [ dict(name=child, uri="%s/%s" % (uri_prefix, child)) for child in
             children ]
 
+class BulkHandler:
+    def __init__(self):
+        self.uris = []
+        self.snmp_handler = SNMPHandler()
+
+    def GET(self):
+        return web.notfound() # GET not supported
+
+    def POST(self):
+        data = web.input()
+        if not data.has_key('uris'):
+            return web.webapi.BadRequest()
+
+        try:
+            self.uris = simplejson.loads(data['uris'])
+        except ValueError, e:
+#            print ">>> BAD JSON:", data['uris'], str(e)
+            return web.webapi.BadRequest()
+
+        r = {}
+
+        for uri in self.uris:
+            uri = uri.replace(ROOT_URI + '/', '')
+            dev, rest = uri.split('/', 1)
+            out = self.snmp_handler.GET(dev, rest)
+            if isinstance(out, HTTPError):
+                r[uri] = dict(result=None, error=str(out))
+            else:
+                r[uri] = dict(result=out, error=None)
+
+        return simplejson.dumps(r)
+        
 class SNMPHandler:
     def __init__(self):
         self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
         self.session = esxsnmp.sql.Session()
+        self.log = get_logger("newdb", "local7", level=logging.DEBUG)
+        self.log.info("hello")
 
-    def GET(self, device_name, rest):
-        print "QQQ", device_name, rest, web.ctx.query
+    def __del__(self):
+        self.session.close()
+
+    def GET(self): #, device_name, rest):
+        # XXX hack because Apache performs a URL decode on PATH_INFO
+        # we need /'s encoded as %2F
+        # also apache config option: AllowEncodedSlashes On
+        # see http://wsgi.org/wsgi/WSGI_2.0
+        try:
+            path, args = web.ctx.environ['REQUEST_URI'].split('?')
+        except ValueError:
+            path = web.ctx.environ['REQUEST_URI']
+        parts = path.split('/')
+        device_name = parts[2]
+        rest = '/'.join(parts[3:])
+
+        self.log.debug( "QQQ: " + " ". join((str(device_name), str(rest),
+            str(web.ctx.query))))
+
         if not device_name:
             return self.list_devices()
 
-        device = self.session.query(Device).filter_by(name=device_name).one()
+        try:
+            device = self.session.query(Device).filter_by(name=device_name).one()
+        except NoResultFound:
+            return web.notfound()
 
         if not rest:
             return self.get_device(device)
@@ -136,7 +203,7 @@ class SNMPHandler:
             AND device.begin_time < %(end)s
             AND active = '%(active)s'""" % locals()
 
-        print ">>>",limit
+#        print ">>>",limit
         devices = self.session.query(esxsnmp.sql.Device).filter(limit)
         r = [dict(name=d.name, uri="%s/%s" % (ROOT_URI, d.name))
                 for d in devices]
@@ -179,7 +246,7 @@ class SNMPHandler:
     def get_interface_set(self, device, rest):
         active='t'
 
-        print ">>> XXQ", web.ctx.query, rest
+#        print ">>> XXQ", web.ctx.query, rest
         args = parse_query_string()
         begin, end = get_time_range(args)
         deviceid = device.id
@@ -189,7 +256,7 @@ class SNMPHandler:
             AND ifref.begin_time < %(end)s
             AND ifref.deviceid = %(deviceid)s""" % locals()
 
-        print ">>>",limit
+#        print ">>>",limit
 
         ifaces = self.session.query(IfRef).filter(limit)
         ifset = map(lambda x: x.ifdescr, ifaces)
@@ -205,7 +272,7 @@ class SNMPHandler:
         else:
             next, rest = split_url(rest)
             next = urllib.unquote(next)
-            print ">>>>", next, rest
+#            print ">>>>", next, rest
             return self.get_interface(device, ifaces, next, rest)
 
     def get_interface(self, device, ifaces, iface, rest):
@@ -250,14 +317,18 @@ class SNMPHandler:
 
         if not rest:
             ifrefs = ifaces.filter_by(ifdescr=iface)
-            print ifrefs.all()
+#            print ifrefs.all()
             l = []
             for ifref in ifrefs:
                 uri = '%s/%s/interface/%s' % (ROOT_URI, device.name,
                         urllib.quote(iface, safe=''))
                 kids = make_children(uri, children)
                 l.append(encode_ifref(ifref, uri, device, children=kids))
-            return simplejson.dumps(l)
+
+            if l:
+                return simplejson.dumps(l)
+            else:
+                return web.notfound()
         else:
             next, rest = split_url(rest)
             if next in children:
@@ -300,25 +371,47 @@ class SNMPHandler:
 
         traffic_oidset, traffic_mod = get_traffic_oidset(device)
         begin, end = int(begin), int(end)
-        print ">>> B:", time.ctime(begin), "E:", time.ctime(end)
+#        print ">>> B:", time.ctime(begin), "E:", time.ctime(end)
 
         path = '%s/%s/if%s%sOctets/%s/%s' % (device.name, traffic_oidset,
                 traffic_mod, dataset.capitalize(),
-                remove_metachars(iface.ifDescr), suffix)
+                remove_metachars(iface), suffix)
 
         v = self.db.get_var(path)
         data = v.select(begin=begin, end=end)
         r = []
         for datum in data:
             if cf != 'raw':
-                r.append((datum.timestamp, getattr(datum, cf)))
+                d = [datum.timestamp, getattr(datum, cf)]
             else:
-                r.append((datum.timestamp, datum.value))
+                d = [datum.timestamp, datum.value]
+
+            if isNaN(d[1]):
+                d[1] = None
+
+            r.append(d)
 
         return simplejson.dumps(dict(data=r))
 
     def get_system(self, device, rest):
         pass
+
+import pprint
+
+class LoggingMiddleware:
+
+    def __init__(self, application):
+        self.__application = application
+
+    def __call__(self, environ, start_response):
+        errors = environ['wsgi.errors']
+        pprint.pprint(('REQUEST', environ), stream=errors)
+
+        def _start_response(status, headers):
+            pprint.pprint(('RESPONSE', status, headers), stream=errors)
+            return start_response(status, headers)
+
+        return self.__application(environ, _start_response)
 
 if __name__ == '__main__':
     from esxsnmp.config import get_opt_parser, get_config, get_config_path
@@ -336,5 +429,10 @@ if __name__ == '__main__':
     """
 
     esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
-    app = web.application(urls, globals())
-    app.run()
+    application = web.application(urls, globals())
+    application.run()
+else:
+    esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
+    application = web.application(urls, globals()).wsgifunc()
+    sys.stdout = sys.stderr
+    application = LoggingMiddleware(application)
