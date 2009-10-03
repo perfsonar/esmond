@@ -38,7 +38,8 @@ urls = (
         )
 
 
-ROOT_URI = 'http://snmp-west.es.net:8001/snmp'
+ROOT_URI = 'http://snmp-west.es.net:8001'
+SNMP_URI = ROOT_URI + '/snmp'
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
@@ -97,7 +98,7 @@ def encode_ifref(ifref, uri, device, children=[]):
             ifHighSpeed=ifref.ifhighspeed,
             ipAddr=ifref.ipaddr,
             uri=uri,
-            device_uri='%s/%s' % (ROOT_URI, device.name))
+            device_uri='%s/%s' % (SNMP_URI, device.name))
 
 def make_children(uri_prefix, children):
     return [ dict(name=child, uri="%s/%s" % (uri_prefix, child)) for child in
@@ -119,15 +120,15 @@ class BulkHandler:
         try:
             self.uris = simplejson.loads(data['uris'])
         except ValueError, e:
-#            print ">>> BAD JSON:", data['uris'], str(e)
+            print ">>> BAD JSON:", data['uris'], str(e)
             return web.webapi.BadRequest()
 
         r = {}
 
         for uri in self.uris:
-            uri = uri.replace(ROOT_URI + '/', '')
-            dev, rest = uri.split('/', 1)
-            out = self.snmp_handler.GET(dev, rest)
+            short_uri = uri.replace(ROOT_URI, '')
+            print ">>> grabbing ", short_uri
+            out = self.snmp_handler.GET(uri=short_uri)
             if isinstance(out, HTTPError):
                 r[uri] = dict(result=None, error=str(out))
             else:
@@ -145,15 +146,22 @@ class SNMPHandler:
     def __del__(self):
         self.session.close()
 
-    def GET(self): #, device_name, rest):
+    def GET(self, uri=None, raw=False): #, device_name, rest):
         # XXX hack because Apache performs a URL decode on PATH_INFO
         # we need /'s encoded as %2F
         # also apache config option: AllowEncodedSlashes On
         # see http://wsgi.org/wsgi/WSGI_2.0
+
+        if not uri:
+            uri = web.ctx.environ['REQUEST_URI']
+
+        print ">>> URI", uri
+
         try:
-            path, args = web.ctx.environ['REQUEST_URI'].split('?')
+            path, args = uri.split('?')
         except ValueError:
-            path = web.ctx.environ['REQUEST_URI']
+            path = uri
+
         parts = path.split('/')
         device_name = parts[2]
         rest = '/'.join(parts[3:])
@@ -174,11 +182,17 @@ class SNMPHandler:
         else:
             next, rest = split_url(rest)
             if next == 'interface':
-                return self.get_interface_set(device, rest)
+                r = self.get_interface_set(device, rest)
             elif next == 'system':
-                return self.get_system(device, rest)
+                r = self.get_system(device, rest)
             else:
-                return web.notfound()
+                r = web.notfound()
+
+        if raw:
+            return r
+        else:
+            return simplejson.dumps(r)
+
 
     def list_devices(self, active=True):
         """Returns a JSON array of objests representing device names and URIs.
@@ -205,9 +219,9 @@ class SNMPHandler:
 
 #        print ">>>",limit
         devices = self.session.query(esxsnmp.sql.Device).filter(limit)
-        r = [dict(name=d.name, uri="%s/%s" % (ROOT_URI, d.name))
+        r = [dict(name=d.name, uri="%s/%s" % (SNMP_URI, d.name))
                 for d in devices]
-        return simplejson.dumps(dict(children=r))
+        return dict(children=r)
 
     def get_device(self, device):
         """Returns a JSON object representing a device.
@@ -238,10 +252,9 @@ class SNMPHandler:
 
         # XXX once database is rearranged this will be dynamic
         subsets=['interface', 'system']
-        r = make_children('%s/%s' % (ROOT_URI, device.name), subsets)
-        return simplejson.dumps(encode_device(device,
-            '%s/%s' % (ROOT_URI, device.name),
-            children=r))
+        r = make_children('%s/%s' % (SNMP_URI, device.name), subsets)
+        return encode_device(device, '%s/%s' % (SNMP_URI, device.name),
+            children=r)
 
     def get_interface_set(self, device, rest):
         active='t'
@@ -264,11 +277,11 @@ class SNMPHandler:
         if not rest:
             l = map(lambda iface: 
                 dict(name=iface.ifdescr,
-                    uri="%s/%s/interface/%s/" % (ROOT_URI, device.name,
+                    uri="%s/%s/interface/%s/" % (SNMP_URI, device.name,
                         urllib.quote(iface.ifdescr, safe='')),
                     descr=iface.ifalias),
                 ifaces.all())
-            return simplejson.dumps(dict(children=l))
+            return dict(children=l)
         else:
             next, rest = split_url(rest)
             next = urllib.unquote(next)
@@ -298,7 +311,7 @@ class SNMPHandler:
 
         Example:
 
-             { 'ifIndex': 1,
+             [{ 'ifIndex': 1,
                'ifDescr': 'xe-2/0/0',
                'ifAlias': '10Gig to Timbuktu',
                'ipAddr': '10.255.255.1',
@@ -308,7 +321,7 @@ class SNMPHandler:
                'end_time': 2147483647,
                'subsets': ['in', 'out'],
                'uri': 'http://example.com/snmp/router1/interface/xe-2%2F0%2F0', }
-               'device_uri': 'http://example.com/snmp/router1/' }
+               'device_uri': 'http://example.com/snmp/router1/' }]
         """
 
         # XXX fill in ifref info
@@ -320,13 +333,13 @@ class SNMPHandler:
 #            print ifrefs.all()
             l = []
             for ifref in ifrefs:
-                uri = '%s/%s/interface/%s' % (ROOT_URI, device.name,
+                uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
                         urllib.quote(iface, safe=''))
                 kids = make_children(uri, children)
                 l.append(encode_ifref(ifref, uri, device, children=kids))
 
             if l:
-                return simplejson.dumps(l)
+                return l
             else:
                 return web.notfound()
         else:
@@ -337,10 +350,31 @@ class SNMPHandler:
                 return web.notfound()
 
     def get_interface_data(self, device, iface, dataset, rest):
+        """Returns a JSON object representing counter data for an interface.
+
+        An interface data JSON object has the following fields:
+
+            :param data: a list of tuples.  each tuple is [timestamp, value]
+            :param begin_time: the requested begin_time
+            :param end_time: the requested end_time
+            :param agg: the requested aggregation period
+            :param cf: the requestion consolidation function
+
+        Example:
+
+            {"agg": "30",
+             "end_time": 1254350090,
+             "data": [[1254349980, 163.0],
+                      [1254350010, 28.133333333333333],
+                      [1254350040, 96.966666666666669],
+                      [1254350070, 110.03333333333333]],
+             "cf": "average",
+             "begin_time": 1254350000}
+        """
         if rest:
             if rest == 'aggs' or rest == 'aggs/':
                 # XXX list actual aggs
-                return simplejson.dumps(dict(aggregates=[30], cf=['average']))
+                return ict(aggregates=[30], cf=['average'])
             else:
                 return web.notfound("nope")
 
@@ -362,12 +396,15 @@ class SNMPHandler:
             cf = 'average'
 
         if args.has_key('agg'):
+            agg = args['agg']
             suffix = 'TSDBAggregates/%s/' % (args['agg'], )
         else:
             if cf == 'raw':
                 suffix = ''
+                agg = ''
             else:
                 suffix = 'TSDBAggregates/30/'
+                agg = '30'
 
         traffic_oidset, traffic_mod = get_traffic_oidset(device)
         begin, end = int(begin), int(end)
@@ -391,7 +428,7 @@ class SNMPHandler:
 
             r.append(d)
 
-        return simplejson.dumps(dict(data=r))
+        return dict(data=r, begin_time=begin, end_time=end, cf=cf, agg=agg)
 
     def get_system(self, device, rest):
         pass
