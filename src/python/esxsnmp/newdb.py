@@ -38,8 +38,7 @@ urls = (
         )
 
 
-ROOT_URI = 'http://snmp-west.es.net:8001'
-SNMP_URI = ROOT_URI + '/snmp'
+SNMP_URI = '/snmp'
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
@@ -126,9 +125,8 @@ class BulkHandler:
         r = {}
 
         for uri in self.uris:
-            short_uri = uri.replace(ROOT_URI, '')
-            print ">>> grabbing ", short_uri
-            out = self.snmp_handler.GET(uri=short_uri)
+            print ">>> grabbing ", uri
+            out = self.snmp_handler.GET(uri=uri, raw=True)
             if isinstance(out, HTTPError):
                 r[uri] = dict(result=None, error=str(out))
             else:
@@ -141,12 +139,11 @@ class SNMPHandler:
         self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
         self.session = esxsnmp.sql.Session()
         self.log = get_logger("newdb", "local7", level=logging.DEBUG)
-        self.log.info("hello")
 
     def __del__(self):
         self.session.close()
 
-    def GET(self, uri=None, raw=False): #, device_name, rest):
+    def GET(self, uri=None, raw=False, args=None):
         # XXX hack because Apache performs a URL decode on PATH_INFO
         # we need /'s encoded as %2F
         # also apache config option: AllowEncodedSlashes On
@@ -155,14 +152,19 @@ class SNMPHandler:
         if not uri:
             uri = web.ctx.environ['REQUEST_URI']
 
-        print ">>> URI", uri
-
         try:
-            path, args = uri.split('?')
+            uri, args = uri.split('?')
         except ValueError:
-            path = uri
+            pass
 
-        parts = path.split('/')
+        print ">>> URI ", uri
+
+        if args:
+            web.ctx.query = "?" + args
+
+        print ">>> ARGS ", web.ctx.query, type(web.ctx.query)
+
+        parts = uri.split('/')
         device_name = parts[2]
         rest = '/'.join(parts[3:])
 
@@ -170,25 +172,27 @@ class SNMPHandler:
             str(web.ctx.query))))
 
         if not device_name:
-            return self.list_devices()
-
-        try:
-            device = self.session.query(Device).filter_by(name=device_name).one()
-        except NoResultFound:
-            return web.notfound()
-
-        if not rest:
-            return self.get_device(device)
+            r =  self.list_devices()
         else:
-            next, rest = split_url(rest)
-            if next == 'interface':
-                r = self.get_interface_set(device, rest)
-            elif next == 'system':
-                r = self.get_system(device, rest)
-            else:
-                r = web.notfound()
+            try:
+                device = self.session.query(Device).filter_by(name=device_name).one()
+            except NoResultFound:
+                return web.notfound()
 
-        if raw:
+            if not rest:
+                return self.get_device(device)
+            else:
+                next, rest = split_url(rest)
+                if next == 'interface':
+                    r = self.get_interface_set(device, rest)
+                elif next == 'system':
+                    r = self.get_system(device, rest)
+                else:
+                    r = web.notfound()
+
+        print ">>> R: ", type(r)
+
+        if raw or isinstance(r, HTTPError):
             return r
         else:
             return simplejson.dumps(r)
@@ -327,14 +331,14 @@ class SNMPHandler:
         # XXX fill in ifref info
         children = ['in', 'out']
 
-
+        iface = iface.replace('_', '/')
         if not rest:
             ifrefs = ifaces.filter_by(ifdescr=iface)
 #            print ifrefs.all()
             l = []
             for ifref in ifrefs:
                 uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
-                        urllib.quote(iface, safe=''))
+                        iface.replace('/','_'))
                 kids = make_children(uri, children)
                 l.append(encode_ifref(ifref, uri, device, children=kids))
 
