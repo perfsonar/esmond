@@ -175,7 +175,8 @@ class SNMPHandler:
             r =  self.list_devices()
         else:
             try:
-                device = self.session.query(Device).filter_by(name=device_name).one()
+                device = self.session.query(Device).filter_by(name=device_name)
+                device = device.order_by('end_time').all()[-1]
             except NoResultFound:
                 return web.notfound()
 
