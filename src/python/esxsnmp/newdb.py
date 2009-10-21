@@ -421,6 +421,7 @@ class SNMPHandler:
         v = self.db.get_var(path)
         data = v.select(begin=begin, end=end)
         r = []
+
         for datum in data:
             if cf != 'raw':
                 d = [datum.timestamp, getattr(datum, cf)]
@@ -432,7 +433,61 @@ class SNMPHandler:
 
             r.append(d)
 
-        return dict(data=r, begin_time=begin, end_time=end, cf=cf, agg=agg)
+        result = dict(data=r, begin_time=begin, end_time=end, cf=cf, agg=agg)
+
+        if args.has_key('calc'):
+            if args.has_key('calc_func'):
+                calc_func = args['calc_func']
+            else:
+                calc_func = 'average'
+
+            r = self.calculate(args['calc'], agg, calc_func, r)
+            if isinstance(r, HTTPError):
+                return r
+
+            result['data'] = r
+            result['calc'] = args['calc']
+            result['calc_func'] = calc_func
+
+        return result
+            
+
+    def calculate(self, period, base_period, cf, data):
+        points_per_step = int(period)/int(base_period)
+
+        try:
+            f = getattr(self, "calculate_%s" % cf)
+        except AttributeError:
+            return web.webapi.BadRequest() # invalid consolidation function
+
+        r = []
+        for i in range(0, len(data), points_per_step):
+            r.append(f(data[i:i+points_per_step]))
+
+        return r
+
+    def calculate_average(self, data):
+        total = 0
+        for d in data:
+            total += d[1]
+
+        return (data[0][0], total/len(data))
+
+    def calculate_max(self, data):
+        max = data[0][1]
+        for d in data[1:]:
+            if d[1] > max:
+                max = d[1]
+
+        return [data[0][0], max]
+
+    def calculate_min(self, data):
+        min = data[0][1]
+        for d in data[1:]:
+            if d[1] < min:
+                min = d[1]
+
+        return (data[0][0], min)
 
     def get_system(self, device, rest):
         pass
