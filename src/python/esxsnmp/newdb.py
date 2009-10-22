@@ -419,7 +419,11 @@ class SNMPHandler:
                 traffic_mod, dataset.capitalize(),
                 remove_metachars(iface), suffix)
 
-        v = self.db.get_var(path)
+        try:
+            v = self.db.get_var(path)
+        except TSDBVarDoesNotExistError:
+            return web.notfound()  # Requested variable does not exist
+
         data = v.select(begin=begin, end=end)
         r = []
 
