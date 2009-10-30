@@ -13,7 +13,9 @@ setup(name='ESxSNMP',
         entry_points = {
             'console_scripts': [
                 'espolld = esxsnmp.poll:espolld',
+                'espoll = esxsnmp.poll:espoll',
                 'esdbd = esxsnmp.db:esdbd',
+                'espersistd = esxsnmp.persist:espersistd',
                 'esfetch = esxsnmp.fetch:esfetch',
                 'gen_ma_storefile = esxsnmp.perfsonar:gen_ma_storefile',
             ]
