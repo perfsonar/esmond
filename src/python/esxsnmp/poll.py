@@ -15,6 +15,7 @@ import Queue
 import sqlalchemy
 import yapsnmp
 import rrdtool
+#from guppy import hpy
 
 import tsdb
 import tsdb.row
@@ -26,7 +27,7 @@ import esxsnmp.sql
 from esxsnmp.util import setproctitle, init_logging, get_logger, remove_metachars
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
-from esxsnmp.error import ConfigError
+from esxsnmp.error import ConfigError, PollerError
 from esxsnmp.rpc.ttypes import IfRef
 from esxsnmp.persist import PollResult, PersistClient
 
@@ -43,6 +44,7 @@ class PollError(Exception):
 
 class PollUnknownIfIndex(PollError):
     pass
+
 
 class PollCorrelator(object):
     """polling correlators correlate an oid to some other field.  this is
@@ -67,9 +69,16 @@ class IfDescrCorrelator(PollCorrelator):
     """correlates and ifIndex to an it's ifDescr"""
 
     def setup(self):
-        self.xlate = {}
+        self.xlate = self._table_parse('ifDescr')
         for (var,val) in self.session.walk("ifDescr"):
-            self.xlate[var.split(".")[-1]] = remove_metachars(val)
+            ifIndex = var.split(".")[-1]
+            self.xlate[ifIndex] = remove_metachars(val)
+
+        for (var,val) in self.session.walk("ifAlias"):
+            ifIndex = var.split(".")[-1]
+            if not val:
+                self.xlate[ifIndex] = None
+
 
     def lookup(self, oid, var):
         # XXX this sucks
@@ -77,9 +86,15 @@ class IfDescrCorrelator(PollCorrelator):
             return 'sysUpTime'
 
         ifIndex = var.split('.')[-1]
+
         try:
-            return "/".join((oid.name, self.xlate[ifIndex]))
-        except:
+            r = self.xlate[ifIndex]
+            if r:
+                return "/".join((oid.name, r))
+            else:
+                return None
+
+        except KeyError:
             raise PollUnknownIfIndex(ifIndex)
 
 class JnxFirewallCorrelator(PollCorrelator):
@@ -112,18 +127,22 @@ class JnxCOSCorrelator(IfDescrCorrelator):
         self.oidex = re.compile('([^.]+)\.(\d+)\."([^"]+)"')
 
     def lookup(self, oid, var):
-        m = self.oidex.search(var)
-        if not m:
-            raise UnableToCorrelate("%s does not match" % var)
-
-        (oid_name, ifindex, queue) = m.groups()
-
+        ifIndex = var.split(".")[-2]
         try:
-            if_name = self.xlate[ifindex]
-        except:
+            if_name = self.xlate[ifIndex]
+        except KeyError:
             raise PollUnknownIfIndex(ifIndex)
 
-        return "/".join((if_name, oid_name, queue))
+        if if_name:
+            m = self.oidex.search(var)
+            if not m:
+                raise UnableToCorrelate("%s does not match" % var)
+
+            (oid_name, ifindex, queue) = m.groups()
+
+            return "/".join((if_name, oid_name, queue))
+        else:
+            return None
 
 class CiscoCPUCorrelator(PollCorrelator):
     """Correlates entries in cpmCPUTotal5min to an entry in entPhysicalName
@@ -183,8 +202,12 @@ class PollerThread(threading.Thread):
 
     def add_oidset(self, device, oidset):
         poller = eval(oidset.poller.name)
-        self.pollers[oidset.name] = poller(self.config, device, oidset,
+        try:
+            self.pollers[oidset.name] = poller(self.config, device, oidset,
                 self.persistq)
+        except PollerError, e:
+            self.log.error(str(e))
+            self.state = self.REMOVE
         self.log.debug("add_oidset: %s" % self.pollers.keys())
 
     def remove_oidset(self, device, oidset):
@@ -222,7 +245,8 @@ class PollerThread(threading.Thread):
     # --- these methods are used inside the child thread only ---
 
     def run(self):
-        self.state = self.RUN
+        if self.state == self.NEW:
+            self.state = self.RUN
 
         while self.state == self.RUN:
             for oidset in self.device.oidsets:
@@ -310,6 +334,8 @@ class ThreadedPollManager(object):
             tsdb.TSDB.create(self.config.tsdb_root,
                 chunk_prefixes=self.config.tsdb_chunk_prefixes)
 
+        #self.heapy = hpy()
+        #self.heapy.setrelheap()
 
     def start_polling(self):
         self.log.debug("starting, %d devices configured" % len(self.devices))
@@ -329,6 +355,8 @@ class ThreadedPollManager(object):
 
         self.running = True
 
+        #self.last_heap = time.time()
+
         while self.running:
             time.sleep(5)
 
@@ -340,7 +368,21 @@ class ThreadedPollManager(object):
                     if t.is_spinning():
                         t.penalize()
                     else:
-                        self._start_thread(n, t)
+                        self._restart_thread(n, t)
+
+            """
+            now = time.time()
+            if now > self.last_heap + 60:
+                fname = "/tmp/heapy-%f" % now
+                f = open(fname, "w")
+                h = self.heapy.heap()
+                f.write(str(h))
+                f.close()
+                self.log.debug(
+                    "heap_info: %d objs, %d bytes, file %s" % (len(h.nodes),
+                        h.size, fname))
+                self.last_heap = now
+            """
 
         self.shutdown()
 
@@ -350,6 +392,18 @@ class ThreadedPollManager(object):
         self.threads[name] = t
         self.log.debug("started thread %s" % name)
         t.start()
+
+    # XXX this repeats some of the logic from above, proably should be
+    # refactored, but a simple refactoring doesn't leap to mind
+    def _restart_thread(self, name, old_t):
+        del self.threads[name]
+
+        if isinstance(old_t, PollerThread):
+            t = PollerThread(self.config, old_t.device, self.persistq)
+        elif isinstance(old_t, PersistThread):
+            t = PersistThread(self.config, self.persistq)
+
+        self._start_thread(name, t)
 
     def stop_polling(self, signum, frame):
         self.log.info("stopping (signal: %d)" % (signum, ))
@@ -369,7 +423,8 @@ class ThreadedPollManager(object):
             self.log.debug("joining %s" % t.getName())
             t.join()
 
-        self.log.info("draining persistq")
+        self.log.info("draining persistq: %d items remain" % (
+            self.persistq.qsize(), ))
         self.persistq.join()
         self.log.info("sucessful shutdown: exiting")
 
@@ -646,12 +701,16 @@ class Poller(object):
         self.next_poll = int(time.time() - 1)
         self.oids = self.oidset.oids
         self.running = True
+        self.log = get_logger(self.name)
+
+        try:
+            self.snmp_session = yapsnmp.Session(self.device.name, version=2,
+                community=self.device.community)
+        except socket.gaierror, e:
+            raise PollerError("host %s unknown: %s" % (self.device.name,
+                str(e)))
 
         self.count = 0
-        self.snmp_session = yapsnmp.Session(self.device.name, version=2,
-                community=self.device.community)
-
-        self.log = get_logger(self.name)
         self.errors = 0
 
         self.poller_args = {}
@@ -676,8 +735,8 @@ class Poller(object):
 
                 self.finish()
 
-                self.log.debug("grabbed %d vars in %f seconds %d" %
-                        (self.count, time.time() - begin, id(self)))
+                self.log.debug("grabbed %d vars in %f seconds" %
+                        (self.count, time.time() - begin))
                 self.errors = 0
             except yapsnmp.GetError, e:
                 self.errors += 1
@@ -787,8 +846,17 @@ class CorrelatedTSDBPoller(TSDBPoller):
         metadata = dict(tsdb_flags=tsdb.ROW_VALID)
 
         for (var,val) in data:
-            var = self.correlator.lookup(oid,var)
-            dataout.append((var,val))
+            try:
+                varname = self.correlator.lookup(oid,var)
+            except PollUnknownIfIndex:
+                self.log.error("unknown ifIndex: %s %s" % (var, str(val)))
+                continue
+
+            if varname:
+                dataout.append((varname, val))
+            else:
+                if val != "0":
+                    self.log.error("ignore: %s %s" % (var, str(val)))
 
         pr = PollResult(self.oidset.name, self.device.name, oid.name,
                     ts, dataout, metadata)
@@ -840,7 +908,6 @@ def espoll():
     session = esxsnmp.sql.Session()
 
     devices = session.query(esxsnmp.sql.Device)
-
     if opts.device:
         devices = devices.filter(esxsnmp.sql.Device.name == opts.device)
 

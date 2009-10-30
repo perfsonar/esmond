@@ -5,3 +5,7 @@ class ESxSNMPError(Exception):
 class ConfigError(ESxSNMPError):
     """Unable to find config file."""
     pass
+
+class PollerError(ESxSNMPError):
+    """Problem with a poller."""
+    pass

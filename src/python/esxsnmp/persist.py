@@ -78,6 +78,8 @@ class PollResult(object):
 
 class PollPersister(object):
     """A PollPersister implements a storage method for PollResults."""
+    STATS_INTERVAL = 60
+
     def __init__(self, config, qname):
         self.log = get_logger("espersistd.%s" % self.__class__.__name__)
         self.config = config
@@ -85,6 +87,9 @@ class PollPersister(object):
         self.running = False
 
         self.persistq = MemcachedPersistQueue(qname, config.espersistd_uri)
+
+        self.data_count = 0
+        self.last_stats = time.time()
 
     def store(self, result):
         pass
@@ -103,6 +108,14 @@ class PollPersister(object):
             task = self.persistq.get()
             if task:
                 self.store(task)
+                self.data_count += len(task.data)
+                now = time.time()
+                if now > self.last_stats + self.STATS_INTERVAL:
+                    self.log.info("%d records written, %f records/sec" % \
+                            (self.data_count,
+                                float(self.data_count)/self.STATS_INTERVAL))
+                    self.data_count = 0
+                    self.last_stats = now
                 del task
             else:
                 time.sleep(PERSIST_SLEEP_TIME)
@@ -237,11 +250,18 @@ class TSDBPollPersister(PollPersister):
             uptime = None
 
         min_last_update = timestamp - oidset.frequency * 40 
+
+        def log_bad(ancestor, agg, rate, prev, curr):
+            self.log.debug("bad data for %s at %d: %f" % (ancestor.path,
+                curr.timestamp, rate))
+
         try:
             #self.log.debug("updating agg %s" % var_name)
             tsdb_var.update_aggregate(str(oidset.frequency),
                 uptime_var=uptime,
-                min_last_update=min_last_update)
+                min_last_update=min_last_update,
+                max_rate=int(11e9),
+                max_rate_callback=log_bad)
         except TSDBAggregateDoesNotExistError:
             self.log.error("bad aggregate for %s" % var_name)
         except InvalidMetaData:
@@ -535,7 +555,8 @@ class QueueStats:
 
     def update_stats(self):
         for k in ('last_read', 'last_added'):
-            v = self.mc.get('%s_%s_%s' % (self.prefix, self.qname, k))
+            kk = '%s_%s_%s' % (self.prefix, self.qname, k)
+            v = self.mc.get(kk)
             l = getattr(self, k)
             l.pop()
             l.insert(0, int(v))
@@ -554,17 +575,21 @@ def stats(name, config, opts):
 
     for qname, qinfo in config.persist_queues.iteritems():
         (qclass, nworkers) = qinfo
-        for i in range(1, nworkers+1):
-            k = "%s_%d" % (qname, i)
-            stats[k] = QueueStats(mc, k)
-            stats[k].update_stats()
+        if nworkers == 1:
+                stats[qname] = QueueStats(mc, qname)
+                stats[qname].update_stats()
+        else:
+            for i in range(1, nworkers+1):
+                k = "%s_%d" % (qname, i)
+                stats[k] = QueueStats(mc, k)
+                stats[k].update_stats()
 
     keys = stats.keys()
     keys.sort()
     while True:
         for k in keys:
             stats[k].update_stats()
-            print "%-10s % 4d % 4d % 4d % 8d" % stats[k].get_stats()
+            print "%-10s % 6d % 6d % 6d % 8d" % stats[k].get_stats()
         print ""
         time.sleep(1)
 
