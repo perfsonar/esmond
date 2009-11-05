@@ -48,7 +48,10 @@ def remove_metachars(name):
 
 def split_url(rest):
     parts = rest.split('/', 1)
-    return parts[0], parts[1]
+    if len(parts) == 1:
+        return parts[0], ''
+    else:
+        return parts[0], parts[1]
 
 def parse_query_string():
     d = {}
@@ -74,11 +77,18 @@ def get_time_range(args):
 
     return begin, end
 
-def get_traffic_oidset(device):
-    if 'FastPollHC' in [x.name for x in device.oidsets]:
-        return 'FastPollHC', 'HC'
-    else:
-        return 'FastPoll', ''
+device_oidset = {}
+def get_traffic_oidset(device_name):
+    global DB
+
+    try:
+        DB.get_set('/%s/FastPollHC' % (device_name))
+        r = ('FastPollHC', 'HC')
+    except:
+        r = ('FastPoll', '')
+
+    return r
+
 
 def encode_device(dev, uri, children=[]):
 #    print dev.end_time
@@ -113,6 +123,59 @@ class BulkHandler:
 
     def POST(self):
         data = web.input()
+        if data.has_key('uris'):
+            return self.OLDPOST()
+
+        if not data.has_key('q'):
+            print ">>> No q argument:", ",".join(data.keys())
+            return web.webapi.BadRequest()
+
+        print ">>> Q ", data['q']
+
+        try:
+            self.queries = simplejson.loads(data['q'])
+        except ValueError, e:
+            print ">>> BAD JSON:", data['q'], str(e)
+            return web.webapi.BadRequest()
+
+        r = {}
+
+        for q in self.queries:
+            try:
+                id, uri = self.uri_from_json(q)
+            except BadQuery, e:
+                r[id] = dict(result=None, error=str(e))
+                continue
+
+            out = self.snmp_handler.GET(uri=uri, raw=True)
+
+            if isinstance(out, HTTPError):
+                r[id] = dict(result=None, error=str(out))
+            else:
+                r[id] = dict(result=out, error=None)
+
+        return simplejson.dumps(r)
+
+    def uri_from_json(self, q):
+        try:
+            uri = q['uri']
+        except KeyError:
+            raise BadQuery("query does not contain a uri")
+
+        try:
+            id = q['id']
+        except KeyError:
+            raise BadQuery("query does not contain an id")
+
+        del q['uri']
+        del q['id']
+
+        args = ["%s=%s" % (k, v) for k,v in q.iteritems()]
+
+        return id, uri + '?' + '&'.join(args)
+
+    def OLDPOST(self):
+        data = web.input()
         if not data.has_key('uris'):
             return web.webapi.BadRequest()
 
@@ -136,8 +199,12 @@ class BulkHandler:
         
 class SNMPHandler:
     def __init__(self):
-        self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
-        self.session = esxsnmp.sql.Session()
+        global DB
+        global SESSION
+        #self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
+        #self.session = esxsnmp.sql.Session()
+        self.session = SESSION
+        self.db = DB
         self.log = get_logger("newdb", "local7", level=logging.DEBUG)
 
     def __del__(self):
@@ -157,12 +224,11 @@ class SNMPHandler:
         except ValueError:
             pass
 
-        print ">>> URI ", uri
 
         if args:
             web.ctx.query = "?" + args
 
-        print ">>> ARGS ", web.ctx.query, type(web.ctx.query)
+        print ">>> ", uri, web.ctx.query
 
         parts = uri.split('/')
         device_name = parts[2]
@@ -173,6 +239,8 @@ class SNMPHandler:
 
         if not device_name:
             r =  self.list_devices()
+        elif parts[3] == 'interface' and len(parts) > 4:
+            r = self.get_interface_data(device_name, parts[4], parts[5], '')
         else:
             try:
                 device = self.session.query(Device).filter_by(name=device_name)
@@ -190,8 +258,6 @@ class SNMPHandler:
                     r = self.get_system(device, rest)
                 else:
                     r = web.notfound()
-
-        print ">>> R: ", type(r)
 
         if raw or isinstance(r, HTTPError):
             return r
@@ -350,11 +416,11 @@ class SNMPHandler:
         else:
             next, rest = split_url(rest)
             if next in children:
-                return self.get_interface_data(device, iface, next, rest)
+                return self.get_interface_data(device.name, iface, next, rest)
             else:
                 return web.notfound()
 
-    def get_interface_data(self, device, iface, dataset, rest):
+    def get_interface_data(self, devicename, iface, dataset, rest):
         """Returns a JSON object representing counter data for an interface.
 
         An interface data JSON object has the following fields:
@@ -379,7 +445,7 @@ class SNMPHandler:
         if rest:
             if rest == 'aggs' or rest == 'aggs/':
                 # XXX list actual aggs
-                return ict(aggregates=[30], cf=['average'])
+                return dict(aggregates=[30], cf=['average'])
             else:
                 return web.notfound("nope")
 
@@ -411,11 +477,11 @@ class SNMPHandler:
                 suffix = 'TSDBAggregates/30/'
                 agg = '30'
 
-        traffic_oidset, traffic_mod = get_traffic_oidset(device)
+        traffic_oidset, traffic_mod = get_traffic_oidset(devicename)
         begin, end = int(begin), int(end)
 #        print ">>> B:", time.ctime(begin), "E:", time.ctime(end)
 
-        path = '%s/%s/if%s%sOctets/%s/%s' % (device.name, traffic_oidset,
+        path = '%s/%s/if%s%sOctets/%s/%s' % (devicename, traffic_oidset,
                 traffic_mod, dataset.capitalize(),
                 remove_metachars(iface), suffix)
 
@@ -453,6 +519,10 @@ class SNMPHandler:
             result['data'] = r
             result['calc'] = args['calc']
             result['calc_func'] = calc_func
+
+            # these don't make sense if we're using calc
+            del result['agg']
+            del result['cf']
 
         return result
             
@@ -534,6 +604,9 @@ if __name__ == '__main__':
     application.run()
 else:
     esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
+    DB = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
+    SESSION = esxsnmp.sql.Session()
     application = web.application(urls, globals()).wsgifunc()
     sys.stdout = sys.stderr
-    application = LoggingMiddleware(application)
+    #application = LoggingMiddleware(application)
+    #application = web.profiler(application)
