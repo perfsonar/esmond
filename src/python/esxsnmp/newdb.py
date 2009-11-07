@@ -119,6 +119,7 @@ class BulkHandler:
         self.snmp_handler = SNMPHandler()
 
     def GET(self):
+        print "ERR> GET not allowed for bulk"
         return web.notfound() # GET not supported
 
     def POST(self):
@@ -127,7 +128,7 @@ class BulkHandler:
             return self.OLDPOST()
 
         if not data.has_key('q'):
-            print ">>> No q argument:", ",".join(data.keys())
+            print "ERR> No q argument:", ",".join(data.keys())
             return web.webapi.BadRequest()
 
         print ">>> Q ", data['q']
@@ -135,7 +136,7 @@ class BulkHandler:
         try:
             self.queries = simplejson.loads(data['q'])
         except ValueError, e:
-            print ">>> BAD JSON:", data['q'], str(e)
+            print "ERR> BAD JSON:", data['q'], str(e)
             return web.webapi.BadRequest()
 
         r = {}
@@ -177,6 +178,7 @@ class BulkHandler:
     def OLDPOST(self):
         data = web.input()
         if not data.has_key('uris'):
+            print "ERR> no uris in POST"
             return web.webapi.BadRequest()
 
         try:
@@ -246,6 +248,7 @@ class SNMPHandler:
                 device = self.session.query(Device).filter_by(name=device_name)
                 device = device.order_by('end_time').all()[-1]
             except NoResultFound:
+                print "ERR> NoResultFound"
                 return web.notfound()
 
             if not rest:
@@ -488,7 +491,11 @@ class SNMPHandler:
         try:
             v = self.db.get_var(path)
         except TSDBVarDoesNotExistError:
+            print "ERR> var doesn't exist: %s" % path
             return web.notfound()  # Requested variable does not exist
+
+        # XXX HACK HACK HACK -- say that the max time stamp is now
+        v.metadata['MAX_TIMESTAMP'] = int(time.time())
 
         data = v.select(begin=begin, end=end)
         r = []
@@ -533,6 +540,7 @@ class SNMPHandler:
         try:
             f = getattr(self, "calculate_%s" % cf)
         except AttributeError:
+            print "ERR> unknown calc function: %s" % cf
             return web.webapi.BadRequest() # invalid consolidation function
 
         r = []
@@ -544,7 +552,8 @@ class SNMPHandler:
     def calculate_average(self, data):
         total = 0
         for d in data:
-            total += d[1]
+            if d[1]:
+                total += d[1]
 
         return (data[0][0], total/len(data))
 
