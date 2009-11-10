@@ -155,6 +155,7 @@ class BulkHandler:
             else:
                 r[id] = dict(result=out, error=None)
 
+        web.ctx.status = "200 OK"
         return simplejson.dumps(r)
 
     def uri_from_json(self, q):
@@ -201,12 +202,9 @@ class BulkHandler:
         
 class SNMPHandler:
     def __init__(self):
-        global DB
-        global SESSION
-        #self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
-        #self.session = esxsnmp.sql.Session()
-        self.session = SESSION
-        self.db = DB
+        self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
+        self.session = esxsnmp.sql.Session()
+
         self.log = get_logger("newdb", "local7", level=logging.DEBUG)
 
     def __del__(self):
@@ -445,6 +443,7 @@ class SNMPHandler:
              "cf": "average",
              "begin_time": 1254350000}
         """
+
         if rest:
             if rest == 'aggs' or rest == 'aggs/':
                 # XXX list actual aggs
@@ -482,7 +481,6 @@ class SNMPHandler:
 
         traffic_oidset, traffic_mod = get_traffic_oidset(devicename)
         begin, end = int(begin), int(end)
-#        print ">>> B:", time.ctime(begin), "E:", time.ctime(end)
 
         path = '%s/%s/if%s%sOctets/%s/%s' % (devicename, traffic_oidset,
                 traffic_mod, dataset.capitalize(),
@@ -494,10 +492,8 @@ class SNMPHandler:
             print "ERR> var doesn't exist: %s" % path
             return web.notfound()  # Requested variable does not exist
 
-        # XXX HACK HACK HACK -- say that the max time stamp is now
-        v.metadata['MAX_TIMESTAMP'] = int(time.time())
-
         data = v.select(begin=begin, end=end)
+        data = [d for d in data]
         r = []
 
         for datum in data:
