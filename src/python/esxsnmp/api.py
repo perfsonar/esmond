@@ -2,6 +2,7 @@ import time
 import httplib2
 import urllib
 import simplejson
+from esxsnmp.util import remove_metachars
 
 class ESxSNMPAPI(object):
     def __init__(self, url):
@@ -16,6 +17,12 @@ class ESxSNMPAPI(object):
 
     def get_interfaces(self, router):
         url = self.url + "/snmp/%s/interface/" % router
+        response, content = self.http.request(url, 'GET')
+        return self._deserialize(content)
+
+    def get_interface(self, router, iface):
+        iface = remove_metachars(iface)
+        url = self.url + "/snmp/%s/interface/%s/" % (router, iface)
         response, content = self.http.request(url, 'GET')
         return self._deserialize(content)
 
