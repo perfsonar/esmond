@@ -28,7 +28,7 @@ import tsdb
 from tsdb.error import *
 import esxsnmp.sql
 from esxsnmp.sql import Device, OID, OIDSet, IfRef
-from esxsnmp.util import get_logger
+from esxsnmp.util import get_logger, remove_metachars
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
@@ -241,7 +241,7 @@ class SNMPHandler:
 
         if not device_name:
             r =  self.list_devices()
-        elif parts[3] == 'interface' and len(parts) > 5:
+        elif parts[3] == 'interface' and len(parts) > 6:
             r = self.get_interface_data(device_name, parts[4], parts[5], '')
         else:
             try:
@@ -352,7 +352,7 @@ class SNMPHandler:
             l = map(lambda iface: 
                 dict(name=iface.ifdescr,
                     uri="%s/%s/interface/%s/" % (SNMP_URI, device.name,
-                        urllib.quote(iface.ifdescr, safe='')),
+                        remove_metachars(iface.ifdescr)),
                     descr=iface.ifalias),
                 ifaces.all())
             return dict(children=l)
@@ -394,7 +394,7 @@ class SNMPHandler:
                'begin_time': 0,
                'end_time': 2147483647,
                'subsets': ['in', 'out'],
-               'uri': 'http://example.com/snmp/router1/interface/xe-2%2F0%2F0', }
+               'uri': 'http://example.com/snmp/router1/interface/xe-2_0_0', }
                'device_uri': 'http://example.com/snmp/router1/' }]
         """
 
