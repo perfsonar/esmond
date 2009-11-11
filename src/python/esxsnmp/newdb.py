@@ -123,6 +123,7 @@ class BulkHandler:
         return web.notfound() # GET not supported
 
     def POST(self):
+        t0 = time.time()
         data = web.input()
         if data.has_key('uris'):
             return self.OLDPOST()
@@ -131,7 +132,7 @@ class BulkHandler:
             print "ERR> No q argument:", ",".join(data.keys())
             return web.webapi.BadRequest()
 
-        print ">>> Q ", data['q']
+        #print ">>> Q ", data['q']
 
         try:
             self.queries = simplejson.loads(data['q'])
@@ -156,6 +157,7 @@ class BulkHandler:
                 r[id] = dict(result=out, error=None)
 
         web.ctx.status = "200 OK"
+        print "grabbed %d vars in %f sec" % (len(r), time.time()-t0)
         return simplejson.dumps(r)
 
     def uri_from_json(self, q):
@@ -191,7 +193,7 @@ class BulkHandler:
         r = {}
 
         for uri in self.uris:
-            print ">>> grabbing ", uri
+            #print ">>> grabbing ", uri
             out = self.snmp_handler.GET(uri=uri, raw=True)
             if isinstance(out, HTTPError):
                 r[uri] = dict(result=None, error=str(out))
@@ -228,7 +230,7 @@ class SNMPHandler:
         if args:
             web.ctx.query = "?" + args
 
-        print ">>> ", uri, web.ctx.query
+        #print ">>> ", uri, web.ctx.query
 
         parts = uri.split('/')
         device_name = parts[2]
@@ -239,7 +241,7 @@ class SNMPHandler:
 
         if not device_name:
             r =  self.list_devices()
-        elif parts[3] == 'interface' and len(parts) > 4:
+        elif parts[3] == 'interface' and len(parts) > 5:
             r = self.get_interface_data(device_name, parts[4], parts[5], '')
         else:
             try:
