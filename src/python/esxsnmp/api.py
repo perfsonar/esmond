@@ -51,7 +51,12 @@ class ESxSNMPAPI(object):
         return self._deserialize(content)
 
     def _deserialize(self, data):
-        return simplejson.loads(data)
+        try:
+            return simplejson.loads(data)
+        except ValueError:
+            print "BOGUS DATA"
+            print data
+            raise
 
 if __name__ == '__main__':
     api = ESxSNMPAPI('http://snmp-west.es.net:8001/')
