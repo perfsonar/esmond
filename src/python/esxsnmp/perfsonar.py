@@ -203,7 +203,7 @@ Notes:
     print ''.join(META)
     print ''.join(DATA)
     print '</nmwg:store>'
-            
+           
 def gen_ma_storefile_http():
     """Translated from the original Perl by jdugan"""
     params = {}
@@ -269,24 +269,26 @@ Notes:
     devices = [ x['name'] for x in rtrs['children']]
 
     for device in devices:
+        try:
+            device_fqdn = socket.gethostbyaddr(device)[0]
+        except socket.herror:
+            device_fqdn = device
+
         if debug:
             print >>sys.stderr, "starting %s" % device
 
         ifaces = filter(lambda x: x['descr'] != '',
                 client.get_interfaces(device)['children'])
 
-        d = dict()
+        l = []
         for iface in ifaces:
-            d[iface['uri']] = iface['uri']
+            l.append(dict(id=iface['uri'], uri=iface['uri']))
 
-        print client.get_bulk(d)
+        ifaces = client.get_bulk(l)
 
-        continue
+        for k, iface in ifaces.iteritems():
+            iface = iface['result'][0]
 
-        for i in ifaces:
-            print i
-            continue
-            iface = client.get_interface(device, i['name'])[0]
             if iface['ipAddr']:
                 try:
                     iface['dns'] = socket.gethostbyaddr(iface['ipAddr'])[0]
@@ -298,6 +300,7 @@ Notes:
             iface['key'] = '%s:%s' % (device, iface['ifDescr'])
 
             iface['device'] = device
+            iface['device_fqdn'] = device_fqdn
             
             if iface['ifHighSpeed'] == 0:
                 iface['speed'] = iface['ifSpeed']
@@ -340,7 +343,7 @@ Notes:
     i = 0
 
     for iface in interfaces:
-        if not iface['intname']:
+        if not iface['ifDescr']:
             continue
 
         if iface['ipAddr']:
@@ -362,10 +365,10 @@ Notes:
 \t<nmwg:metadata  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="meta%(i)d">
 \t\t<netutil:subject  xmlns:netutil="http://ggf.org/ns/nmwg/characteristic/utilization/2.0/" id="subj%(i)d">
 \t\t\t<nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">
-\t\t\t\t<nmwgt3:urn xmlns:nmwgt3="http://ggf.org/ns/nmwg/topology/base/3.0/">urn:ogf:network:domain=%(domain)s:node=%(device)s:port=%(intname)s</nmwgt3:urn>%(ipaddr_line)s
-\t\t\t\t<nmwgt:hostName>%(device)s</nmwgt:hostName>
-\t\t\t\t<nmwgt:ifName>%(intname)s</nmwgt:ifName>
-\t\t\t\t<nmwgt:ifDescription>%(intdesc)s</nmwgt:ifDescription>
+\t\t\t\t<nmwgt3:urn xmlns:nmwgt3="http://ggf.org/ns/nmwg/topology/base/3.0/">urn:ogf:network:domain=%(domain)s:node=%(device)s:port=%(ifDescr)s</nmwgt3:urn>%(ipaddr_line)s
+\t\t\t\t<nmwgt:hostName>%(device_fqdn)s</nmwgt:hostName>
+\t\t\t\t<nmwgt:ifName>%(ifDescr)s</nmwgt:ifName>
+\t\t\t\t<nmwgt:ifDescription>%(ifAlias)s</nmwgt:ifDescription>
 \t\t\t\t<nmwgt:capacity>%(speed)s</nmwgt:capacity>
 \t\t\t\t<nmwgt:direction>%(dir)s</nmwgt:direction>
 \t\t\t\t<nmwgt:authRealm>%(authrealm)s</nmwgt:authRealm>
@@ -399,4 +402,4 @@ Notes:
     print ''.join(META)
     print ''.join(DATA)
     print '</nmwg:store>'
-            
+           
