@@ -6,7 +6,7 @@ import socket
 import time
 
 from esxsnmp.util import get_ESDB_client
-from  esxsnmp.api ESxSNMPAPI
+from esxsnmp.api import ESxSNMPAPI
 
 def gen_ma_storefile():
     """Translated from the original Perl by jdugan"""
@@ -259,57 +259,57 @@ Notes:
 
     print HEADER
 
-    api = ESxSNMPAPI('http://snmp-west.es.net:8001')
+    client = ESxSNMPAPI('http://monitor.sc09.org:8001')
 
     oidset_rtr_map = {}
     interfaces = []
 
-    for device in client.list_devices(1):
+    debug = True
+    rtrs = client.get_routers()
+    devices = [ x['name'] for x in rtrs['children']]
+
+    for device in devices:
         if debug:
             print >>sys.stderr, "starting %s" % device
 
-        for iface in client.get_interfaces(device, 0):
-            if iface.ipaddr:
+        ifaces = filter(lambda x: x['descr'] != '',
+                client.get_interfaces(device)['children'])
+
+        d = dict()
+        for iface in ifaces:
+            d[iface['uri']] = iface['uri']
+
+        print client.get_bulk(d)
+
+        continue
+
+        for i in ifaces:
+            print i
+            continue
+            iface = client.get_interface(device, i['name'])[0]
+            if iface['ipAddr']:
                 try:
-                    iface.dns = socket.gethostbyaddr(iface.ipaddr)[0]
+                    iface['dns'] = socket.gethostbyaddr(iface['ipAddr'])[0]
                 except socket.herror:
-                    iface.dns = ''
+                    iface['dns'] = ''
             else:
-                iface.dns = ''
+                iface['dns'] = ''
 
-            try:
-                oidset = oidset_rtr_map[iface.device.name]
-            except KeyError:
-                for oidset in iface.device.oidsets:
-                    if oidset.name == 'FastPoll':
-                        oidset_rtr_map[iface.device.name] = oidset
-                        break
-                    elif oidset.name == 'FastPollHC':
-                        oidset_rtr_map[iface.device.name] = oidset
-                        break
-      
-            if oidset.name == 'FastPollHC':
-                prefix = 'ifHC'
-            elif oidset.name == 'FastPoll':
-                prefix = 'if'
-            else:
-                print "<!-- No OIDSet for %s %s -->" % (iface.device.name,
-                        iface.ifdescr)
-                print >>sys.stderr, "No OIDSet for %s %s: %s" % (iface.device.name,
-                        iface.ifdescr, ",".join([o.name for o in iface.device.oidsets]))
+            iface['key'] = '%s:%s' % (device, iface['ifDescr'])
 
-            iface.intpath = iface.ifdescr;
-            iface.intpath = iface.intpath.replace("/","_")
-            iface.intpath = iface.intpath.replace(" ","_")
-            iface.key = '%s:%s' % (iface.device.name, iface.ifdescr)
-
-            rtr = iface.device.name
+            iface['device'] = device
             
-            if iface.ifhighspeed == 0:
-                speed = iface.ifspeed
+            if iface['ifHighSpeed'] == 0:
+                iface['speed'] = iface['ifSpeed']
             else:
-                speed = iface.ifhighspeed * int(1e6)
+                iface['speed'] = iface['ifHighSpeed'] * int(1e6)
 
+            iface['domain'] = DOMAIN
+            iface['authrealm'] = AUTHREALM
+            iface['namein'] = iface['uri'] + '/in'
+            iface['nameout'] = iface['uri'] + '/out'
+
+            """
             d = dict(
                     intname=iface.ifdescr,
                     namein='%s/%s/%sInOctets/%s' % (rtr, oidset.name, prefix,
@@ -323,8 +323,9 @@ Notes:
                     ipaddr=iface.ipaddr,
                     domain=DOMAIN,
                     authrealm=AUTHREALM)
+            """
 
-            interfaces.append(d)
+            interfaces.append(iface)
 
         if debug:
             print >>sys.stderr, "done with %s" % (device)
@@ -342,9 +343,9 @@ Notes:
         if not iface['intname']:
             continue
 
-        if iface['ipaddr']:
+        if iface['ipAddr']:
             iface['ipaddr_line'] = """
-\t\t\t\t<nmwgt:ifAddress type="ipv4">%s</nmwgt:ifAddress>""" % iface['ipaddr']
+\t\t\t\t<nmwgt:ifAddress type="ipv4">%s</nmwgt:ifAddress>""" % iface['ipAddr']
         else:
             iface['ipaddr_line'] = ''
 
