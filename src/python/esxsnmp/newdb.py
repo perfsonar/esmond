@@ -77,6 +77,8 @@ def get_time_range(args):
 
     return begin, end
 
+# XXX this should be reworked, can we do it with metadata alone?  probably
+# once TSDB uses SQLite for metadata
 device_oidset = {}
 def get_traffic_oidset(device_name):
     global DB
@@ -241,7 +243,7 @@ class SNMPHandler:
 
         if not device_name:
             r =  self.list_devices()
-        elif parts[3] == 'interface' and len(parts) > 6:
+        elif parts[3] == 'interface' and len(parts) > 5 and parts[-1]:
             r = self.get_interface_data(device_name, parts[4], parts[5], '')
         else:
             try:
@@ -612,7 +614,6 @@ if __name__ == '__main__':
 else:
     esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
     DB = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
-    SESSION = esxsnmp.sql.Session()
     application = web.application(urls, globals()).wsgifunc()
     sys.stdout = sys.stderr
     #application = LoggingMiddleware(application)
