@@ -2,7 +2,13 @@ import time
 import httplib2
 import urllib
 import simplejson
-from esxsnmp.util import remove_metachars
+#from esxsnmp.util import remove_metachars
+
+def remove_metachars(name):
+    """remove troublesome metacharacters from ifDescr"""
+    for (char,repl) in (("/", "_"), (" ", "_")):
+        name = name.replace(char, repl)
+    return name
 
 class ESxSNMPAPI(object):
     def __init__(self, url):
@@ -27,26 +33,34 @@ class ESxSNMPAPI(object):
         return self._deserialize(content)
 
     @classmethod
-    def build_interface_data_uri(self, url, router, interface, begin, end, direction, agg):
-        uri = "%s/snmp/%s/interface/%s/%s/?begin=%s&end=%s" % (url, router,
-                urllib.quote(interface, safe=''),
+    def build_interface_data_uri(self, url, router, interface, begin, end,
+            direction, agg=None, dataset="traffic"):
+        if dataset == "traffic":
+            uri = "%s/snmp/%s/interface/%s/%s/?begin=%s&end=%s" % (url, router,
+                remove_metachars(interface, safe=''),
                 direction, int(begin), int(end))
+        else:
+            uri = "%s/snmp/%s/interface/%s/%s/%s/?begin=%s&end=%s" % (url, router,
+                remove_metachars(interface, safe=''),
+                dataset, direction, int(begin), int(end))
+
         if agg:
             uri += "&agg=%d" % agg
 
         return uri
 
     def get_interface_data(self, router, interface, begin, end, direction,
-            agg=30):
+            agg=None, dataset='traffic'):
 
-        uri = self.build_interface_data_uri(self.url, router, interface, begin, end, direction, agg)
+        uri = self.build_interface_data_uri(self.url, router, interface,
+                begin, end, direction, agg=agg, dataset=dataset)
 
         response, content = self.http.request(uri, 'GET')
         return self._deserialize(content)
 
     def get_bulk(self, uri_list):
         response, content = self.http.request(self.url + "/bulk/", 'POST',
-                urllib.urlencode(dict(uris=simplejson.dumps(uri_list))))
+                urllib.urlencode(dict(q=simplejson.dumps(uri_list))))
 
         return self._deserialize(content)
 
