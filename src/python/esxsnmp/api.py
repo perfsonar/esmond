@@ -37,11 +37,11 @@ class ESxSNMPAPI(object):
             direction, agg=None, dataset="traffic"):
         if dataset == "traffic":
             uri = "%s/snmp/%s/interface/%s/%s/?begin=%s&end=%s" % (url, router,
-                remove_metachars(interface, safe=''),
+                remove_metachars(interface),
                 direction, int(begin), int(end))
         else:
             uri = "%s/snmp/%s/interface/%s/%s/%s/?begin=%s&end=%s" % (url, router,
-                remove_metachars(interface, safe=''),
+                remove_metachars(interface),
                 dataset, direction, int(begin), int(end))
 
         if agg:
