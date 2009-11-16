@@ -6,17 +6,6 @@
 import sys
 import time
 import os
-os.environ['PYTHON_EGG_CACHE'] = '/tmp/apache_eggs'
-
-sys.path.extend([
-    '/data/esxsnmp/esxsnmp/src/python',
-    '/data/esxsnmp/esxsnmp/eggs/web.py-0.32-py2.5.egg',
-    '/data/esxsnmp/esxsnmp/eggs/simplejson-2.0.9-py2.5-freebsd-7.1-RELEASE-amd64.egg',
-    '/data/esxsnmp/esxsnmp/parts/tsdb-svn/tsdb',
-    '/data/esxsnmp/esxsnmp/eggs/fs-0.1.0-py2.5.egg',
-    '/data/esxsnmp/esxsnmp/eggs/fpconst-0.7.2-py2.5.egg'
-])
-
 import web
 from web.webapi import HTTPError
 import simplejson
@@ -29,9 +18,15 @@ from tsdb.error import *
 import esxsnmp.sql
 from esxsnmp.sql import Device, OID, OIDSet, IfRef
 from esxsnmp.util import get_logger, remove_metachars
+from esxsnmp.error import *
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
+#
+# XXX this whole thing should be refactored to break each individual part of
+# the request tree into it's own self contained class and called directly from
+# the url pattern matching below.
+#
 urls = (
         '/snmp/.*', 'SNMPHandler',
         '/bulk/?', 'BulkHandler',
@@ -84,10 +79,14 @@ def get_traffic_oidset(device_name):
     global DB
 
     try:
-        DB.get_set('/%s/FastPollHC' % (device_name))
-        r = ('FastPollHC', 'HC')
+        DB.get_set('/%s/SuperFastPollHC' % (device_name))
+        r = ('SuperFastPollHC', 'HC')
     except:
-        r = ('FastPoll', '')
+        try:
+            DB.get_set('/%s/FastPollHC' % (device_name))
+            r = ('FastPollHC', 'HC')
+        except:
+            r = ('FastPoll', '')
 
     return r
 
@@ -160,6 +159,7 @@ class BulkHandler:
 
         web.ctx.status = "200 OK"
         print "grabbed %d vars in %f sec" % (len(r), time.time()-t0)
+
         return simplejson.dumps(r)
 
     def uri_from_json(self, q):
@@ -206,10 +206,10 @@ class BulkHandler:
         
 class SNMPHandler:
     def __init__(self):
-        self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
+        self.db = tsdb.TSDB("/scratch/esxsnmp/data", mode="r")
         self.session = esxsnmp.sql.Session()
 
-        self.log = get_logger("newdb", "local7", level=logging.DEBUG)
+        self.log = get_logger("newdb")
 
     def __del__(self):
         self.session.close()
@@ -232,7 +232,7 @@ class SNMPHandler:
         if args:
             web.ctx.query = "?" + args
 
-        #print ">>> ", uri, web.ctx.query
+        print ">>> ", uri, web.ctx.query
 
         parts = uri.split('/')
         device_name = parts[2]
@@ -243,8 +243,9 @@ class SNMPHandler:
 
         if not device_name:
             r =  self.list_devices()
-        elif parts[3] == 'interface' and len(parts) > 5 and parts[-1]:
-            r = self.get_interface_data(device_name, parts[4], parts[5], '')
+        elif parts[3] == 'interface' and len(parts) > 5 and parts[5]:
+            r = self.get_interface_data(device_name, parts[4], parts[5],
+                    '/'.join(parts[6:]))
         else:
             try:
                 device = self.session.query(Device).filter_by(name=device_name)
@@ -351,12 +352,20 @@ class SNMPHandler:
         ifset = map(lambda x: x.ifdescr, ifaces)
 
         if not rest:
-            l = map(lambda iface: 
-                dict(name=iface.ifdescr,
+            speed = None
+            def build_iface(iface):
+
+                if iface.ifhighspeed == 0:
+                    speed = iface.ifspeed
+                else:
+                    speed = iface.ifhighspeed * int(1e6)
+                return dict(name=iface.ifdescr,
                     uri="%s/%s/interface/%s/" % (SNMP_URI, device.name,
                         remove_metachars(iface.ifdescr)),
-                    descr=iface.ifalias),
-                ifaces.all())
+                    descr=iface.ifalias,
+                    speed=speed)
+
+            l = map(build_iface, ifaces.all())
             return dict(children=l)
         else:
             next, rest = split_url(rest)
@@ -401,7 +410,7 @@ class SNMPHandler:
         """
 
         # XXX fill in ifref info
-        children = ['in', 'out']
+        children = ['in', 'out', 'error', 'discard']
 
         iface = iface.replace('_', '/')
         if not rest:
@@ -448,11 +457,13 @@ class SNMPHandler:
              "begin_time": 1254350000}
         """
 
+        next = None
         if rest:
-            if rest == 'aggs' or rest == 'aggs/':
+            next, rest = split_url(rest)
+            if next == 'aggs':
                 # XXX list actual aggs
                 return dict(aggregates=[30], cf=['average'])
-            else:
+            elif dataset not in ['errors', 'discards'] and next not in ['in', 'out']:
                 return web.notfound("nope")
 
         args = parse_query_string()
@@ -472,6 +483,8 @@ class SNMPHandler:
         else:
             cf = 'average'
 
+        traffic_oidset, traffic_mod = get_traffic_oidset(devicename)
+
         if args.has_key('agg'):
             agg = args['agg']
             suffix = 'TSDBAggregates/%s/' % (args['agg'], )
@@ -480,15 +493,25 @@ class SNMPHandler:
                 suffix = ''
                 agg = ''
             else:
-                suffix = 'TSDBAggregates/30/'
-                agg = '30'
+                if traffic_oidset != 'SuperFastPollHC':
+                    suffix = 'TSDBAggregates/30/'
+                    agg = '30'
+                else:
+                    suffix = 'TSDBAggregates/10/'
+                    agg = '10'
 
-        traffic_oidset, traffic_mod = get_traffic_oidset(devicename)
-        begin, end = int(begin), int(end)
+        if dataset in ['in', 'out']: # traffic
+            begin, end = int(begin), int(end)
 
-        path = '%s/%s/if%s%sOctets/%s/%s' % (devicename, traffic_oidset,
+            path = '%s/%s/if%s%sOctets/%s/%s' % (devicename, traffic_oidset,
                 traffic_mod, dataset.capitalize(),
                 remove_metachars(iface), suffix)
+        elif dataset in ['errors', 'discards']:
+            path = '%s/Errors/if%s%s/%s' % (devicename, next.capitalize(),
+                    dataset.capitalize(), remove_metachars(iface))
+            path += '/TSDBAggregates/60/'
+        else:
+            pass
 
         try:
             v = self.db.get_var(path)
@@ -593,6 +616,16 @@ class LoggingMiddleware:
 
         return self.__application(environ, _start_response)
 
+def esdb_wsgi():
+    esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
+    global DB 
+    DB = tsdb.TSDB("/scratch/esxsnmp/data", mode="r")
+    application = web.application(urls, globals()).wsgifunc()
+    sys.stdout = sys.stderr
+    #application = LoggingMiddleware(application)
+    #application = web.profiler(application)
+    return application
+
 if __name__ == '__main__':
     from esxsnmp.config import get_opt_parser, get_config, get_config_path
     from esxsnmp.error import ConfigError
@@ -611,10 +644,4 @@ if __name__ == '__main__':
     esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
     application = web.application(urls, globals())
     application.run()
-else:
-    esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
-    DB = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
-    application = web.application(urls, globals()).wsgifunc()
-    sys.stdout = sys.stderr
-    #application = LoggingMiddleware(application)
-    #application = web.profiler(application)
+
