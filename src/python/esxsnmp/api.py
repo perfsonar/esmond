@@ -1,3 +1,4 @@
+import sys
 import time
 import httplib2
 import urllib
@@ -58,18 +59,21 @@ class ESxSNMPAPI(object):
         response, content = self.http.request(uri, 'GET')
         return self._deserialize(content)
 
-    def get_bulk(self, uri_list):
+    def get_bulk(self, uri_list, raw=False):
         response, content = self.http.request(self.url + "/bulk/", 'POST',
                 urllib.urlencode(dict(q=simplejson.dumps(uri_list))))
 
-        return self._deserialize(content)
+        if not raw:
+            return self._deserialize(content)
+        else:
+            return content
 
     def _deserialize(self, data):
         try:
             return simplejson.loads(data)
         except ValueError:
-            print "BOGUS DATA"
-            print data
+            print >>sys.stderr, "BOGUS DATA"
+            print >>sys.stderr, data
             raise
 
 if __name__ == '__main__':
