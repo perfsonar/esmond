@@ -68,7 +68,8 @@ def setup_db(db_uri):
             'tags': relation(DeviceTag, secondary=tables['devicetagmap'], lazy=False), 
         }, extension=DateConvMapper())
 
-    mapper(IfRef, tables['ifref'], properties={'device': relation(Device, lazy=False)})
+    mapper(IfRef, tables['ifref'], properties={'device': relation(Device, lazy=False)},
+            extension=DateConvMapper())
 
 
 def get_devices(active=True, polling_tag=None):
