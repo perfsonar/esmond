@@ -22,6 +22,8 @@ from esxsnmp.error import *
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
+import pprint
+
 #
 # XXX this whole thing should be refactored to break each individual part of
 # the request tree into it's own self contained class and called directly from
@@ -129,6 +131,9 @@ class BulkHandler:
         if data.has_key('uris'):
             return self.OLDPOST()
 
+        if data.has_key('calcq'):
+            return self.calcq(data['calcq'])
+
         if not data.has_key('q'):
             print "ERR> No q argument:", ",".join(data.keys())
             return web.webapi.BadRequest()
@@ -179,6 +184,70 @@ class BulkHandler:
         args = ["%s=%s" % (k, v) for k,v in q.iteritems()]
 
         return id, uri + '?' + '&'.join(args)
+
+    def calcq(self, q):
+        try:
+            queries = simplejson.loads(q)
+        except ValueError, e:
+            print "ERR> BAD JSON:", q, str(e)
+            return web.webapi.BadRequest()
+
+        i = 0
+        results = {}
+        for query in queries:
+            r = dict(error=None, result=None)
+
+            if not query.has_key('id'):
+                query['id'] = 'anon%d' % i
+                i += 1
+
+            if not query.has_key('func'):
+                r.error = "func not defined"
+                results[query['id']] = r
+                continue
+
+            if query['func'] not in ['sum']:
+                r.error = "unknown function: %s" % query['func']
+                results[query['id']] = r
+                continue
+
+            calcf = getattr(self, 'calcf_' + query['func'])
+    
+            if not query.has_key('uris'):
+                r.error = "uris not defined"
+                results[query['id']] = r
+                continue
+
+            if not query.has_key('args'):
+                r.error = "args not defined"
+                results[query['id']] = r
+                continue
+
+            args = [ "%s=%s" % (k,v) for k,v in query['args'].iteritems() ]
+            args = "&".join(args)
+
+            data = []
+            for uri in query['uris']:
+                uri += '?' + args
+                d = self.snmp_handler.GET(uri=uri, raw=True)
+                print ">>> d = ", str(d)
+                if d:
+                    data.append(d['data'])
+
+            r['result'] = calcf(data)
+            results[query['id']] = r
+
+        return simplejson.dumps(results)
+
+    def calcf_sum(self, data):
+        r = []
+        for i in range(len(data[0])):
+            x = 0
+            for j in range(len(data)):
+                x += data[j][i][1]
+            r.append([data[0][i][0], x])
+
+        return r
 
     def OLDPOST(self):
         data = web.input()
@@ -355,7 +424,7 @@ class SNMPHandler:
             speed = None
             def build_iface(iface):
 
-                if iface.ifhighspeed == 0:
+                if not iface.ifhighspeed or iface.ifhighspeed == 0:
                     speed = iface.ifspeed
                 else:
                     speed = iface.ifhighspeed * int(1e6)
@@ -414,14 +483,21 @@ class SNMPHandler:
 
         iface = iface.replace('_', '/')
         if not rest:
+            t0 = time.time()
             ifrefs = ifaces.filter_by(ifdescr=iface)
 #            print ifrefs.all()
             l = []
+            t1 = time.time()
+            print "t>> iface select %f" % (t1 - t0)
+            t0 = t1
             for ifref in ifrefs:
                 uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
                         iface.replace('/','_'))
                 kids = make_children(uri, children)
                 l.append(encode_ifref(ifref, uri, device, children=kids))
+
+            t1 = time.time()
+            print "t>> iface process %f" % (t1 - t0)
 
             if l:
                 return l
@@ -483,7 +559,14 @@ class SNMPHandler:
         else:
             cf = 'average'
 
-        traffic_oidset, traffic_mod = get_traffic_oidset(devicename)
+        if args.has_key('oidset'):
+            traffic_oidset = args['oidset']
+            if traffic_oidset == 'FastPoll':
+                traffic_mod = ''
+            else:
+                traffic_mod = 'HC'
+        else:
+            traffic_oidset, traffic_mod = get_traffic_oidset(devicename)
 
         if args.has_key('agg'):
             agg = args['agg']
@@ -518,6 +601,9 @@ class SNMPHandler:
         except TSDBVarDoesNotExistError:
             print "ERR> var doesn't exist: %s" % path
             return web.notfound()  # Requested variable does not exist
+        except InvalidMetaData:
+            print "ERR> invalid metadata: %s" % path
+            return web.notfound()
 
         data = v.select(begin=begin, end=end)
         data = [d for d in data]
@@ -598,8 +684,6 @@ class SNMPHandler:
 
     def get_system(self, device, rest):
         pass
-
-import pprint
 
 class LoggingMiddleware:
 
