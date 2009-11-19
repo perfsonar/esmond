@@ -723,7 +723,7 @@ class Poller(object):
 
     def run_once(self):
         if self.time_to_poll():
-            #self.log.debug("grabbing data")
+            self.log.debug("grabbing data")
             begin = time.time()
             self.next_poll = begin + self.oidset.frequency
 
@@ -735,7 +735,7 @@ class Poller(object):
 
                 self.finish()
 
-                self.log.debug("grabbed %d vars in %f seconds" %
+                self.log.debug("grabbed %d vars in %f seconds yay" %
                         (self.count, time.time() - begin))
                 self.errors = 0
             except yapsnmp.GetError, e:
@@ -811,6 +811,28 @@ class TSDBPoller(Poller):
             self.tsdb_set = self.tsdb.get_set(set_name)
         except tsdb.TSDBSetDoesNotExistError:
             self.tsdb_set = self.tsdb.add_set(set_name)
+
+    def begin(self):
+        pass
+
+    def collect(self, oid, data):
+        ts = time.time()
+        metadata = dict(tsdb_flags=tsdb.ROW_VALID)
+        outdata = []
+
+        if oid.name == '.1.3.6.1.4.1.21013.1.2.12.1.2.22':
+            print "booyah"
+            for x in data:
+                outdata.append((x[0].replace('.1.3.6.1.4.1.21013.1.2.12.1.2.22',
+                    'globalNumStations'), x[1]))
+                
+        pr = PollResult(self.oidset.name, self.device.name, oid.name,
+                    ts, outdata, metadata)
+
+        self.persistq.put(pr)
+
+    def finish(self):
+        pass
 
 class SQLPoller(Poller):
     def __init__(self, config, device, oidset, persistq):
@@ -909,17 +931,37 @@ def espoll():
 
     devices = session.query(esxsnmp.sql.Device)
     if opts.device:
-        devices = devices.filter(esxsnmp.sql.Device.name == opts.device)
+        device = devices.filter(esxsnmp.sql.Device.name == opts.device).one()
 
-    for device in devices:
-        oidsets = device.oidsets
-        if opts.oidset:
-            if opts.oidset in [o.name for o in oidsets]:
-                print device.name
-        elif opts.device:
-            print "\n".join([o.name for o in device.oidsets])
-        else:
-            print device.name, ", ".join([o.name for o in device.oidsets])
+    if not device:
+        print "no devices selected"
+        sys.exit(1)
+
+    print device.name
+
+    oidset = session.query(esxsnmp.sql.OIDSet)
+    oidset = oidset.filter(esxsnmp.sql.OIDSet.name == opts.oidset).one()
+
+    if not oidset:
+        print "no oidset selected"
+        sys.exit(1)
+
+    print "%s %s" % (device.name, oidset.name)
+
+    persistq = Queue.Queue()
+    poller_class = eval(oidset.poller.name)
+    try:
+        poller = poller_class(config, device, oidset, persistq)
+    except PollerError, e:
+        print str(e)
+
+    poller.run_once()
+
+    while True:
+        try:
+            print persistq.get_nowait().data
+        except Queue.Empty:
+            break
 
 def espolld():
     """Entry point for espolld."""
