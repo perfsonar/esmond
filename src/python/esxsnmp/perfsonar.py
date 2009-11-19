@@ -269,6 +269,9 @@ Notes:
     devices = [ x['name'] for x in rtrs['children']]
 
     for device in devices:
+        if device.startswith('wifi'):
+            continue
+
         try:
             device_fqdn = socket.gethostbyaddr(device)[0]
         except socket.herror:
@@ -288,6 +291,8 @@ Notes:
 
         for k, iface in ifaces.iteritems():
             iface = iface['result'][0]
+            if debug:
+                print >>sys.stderr, iface
 
             if iface['ipAddr']:
                 try:
@@ -311,6 +316,7 @@ Notes:
             iface['authrealm'] = AUTHREALM
             iface['namein'] = iface['uri'] + '/in'
             iface['nameout'] = iface['uri'] + '/out'
+            iface['ifAlias'] = iface['ifAlias'].replace('&','')
 
             """
             d = dict(
