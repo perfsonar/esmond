@@ -66,6 +66,10 @@ class PollResult(object):
         self.data = data
         self.metadata = metadata
 
+    def __str__(self):
+        return '%s.%s %d' % (self.device_name, self.oidset_name,
+                self.timestamp)
+
     def __iter__(self):
         return self.results.__iter__()
 
@@ -214,8 +218,8 @@ class TSDBPollPersister(PollPersister):
                 uptime_name = os.path.join(basename, 'sysUpTime')
                 self._aggregate(tsdb_var, var_name, result.timestamp, uptime_name, oidset)
 
-        self.log.debug("stored %d vars in %f seconds" % (nvar,
-            time.time() - t0))
+        self.log.debug("stored %d vars in %f seconds: %s" % (nvar, time.time() - t0,
+            result))
 
 
     def _create_var(self, var_type, var, oidset, oid):
@@ -315,7 +319,8 @@ class IfRefPollPersister(PollPersister):
             self.db_session.add(new_row)
 
         self.db_session.commit()
-        self.log.debug("stored %d vars in %f seconds" % (nvar, time.time()-t0))
+        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
+            time.time()-t0, result))
 
     def _new_row_from_obj(self, obj):
         i = IfRef()
@@ -330,7 +335,9 @@ class IfRefPollPersister(PollPersister):
         ifref_objs = {}
         ifIndex_map = {}
 
+
         for name, val in self.ifref_data['ifDescr']:
+            self.log.debug(">>> %s %s" % (name, val))
             foo, ifIndex = name.split('.')
             ifIndex_map[ifIndex] = val
             ifref_objs[val] = dict(ifdescr=val, ifindex=int(ifIndex))
@@ -591,7 +598,7 @@ def stats(name, config, opts):
             stats[k].update_stats()
             print "%-10s % 6d % 6d % 6d % 8d" % stats[k].get_stats()
         print ""
-        time.sleep(1)
+        time.sleep(15)
 
 
 def worker(name, config, opts):
