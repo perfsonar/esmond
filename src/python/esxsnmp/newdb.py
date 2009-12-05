@@ -275,7 +275,7 @@ class BulkHandler:
         
 class SNMPHandler:
     def __init__(self):
-        self.db = tsdb.TSDB("/scratch/esxsnmp/data", mode="r")
+        self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
         self.session = esxsnmp.sql.Session()
 
         self.log = get_logger("newdb")
@@ -324,7 +324,7 @@ class SNMPHandler:
                 return web.notfound()
 
             if not rest:
-                return self.get_device(device)
+                r = self.get_device(device)
             else:
                 next, rest = split_url(rest)
                 if next == 'interface':
@@ -703,7 +703,7 @@ class LoggingMiddleware:
 def esdb_wsgi():
     esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
     global DB 
-    DB = tsdb.TSDB("/scratch/esxsnmp/data", mode="r")
+    DB = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
     application = web.application(urls, globals()).wsgifunc()
     sys.stdout = sys.stderr
     #application = LoggingMiddleware(application)
