@@ -123,7 +123,7 @@ def init_logging(facility, level=logging.INFO,
 
     log = logging.getLogger()
     log.setLevel(level)
-    syslog = logging.handlers.SysLogHandler(('localhost', 514), facility)
+    syslog = logging.handlers.SysLogHandler("/dev/log", facility)
     syslog.setFormatter(logging.Formatter(format))
     log.addHandler(syslog)
 
@@ -187,63 +187,71 @@ class ExceptionHandler(object):
         sys.excepthook = self
 
     def handle(self, *args):
-        if len(args) == 3:
-            e_info = args
-        else:
-            e_info = sys.exc_info()
-
-        if e_info[0] in self.ignore:
-            return
-
-        body = ''
-
-        if len(e_info) > 1:
-            e_val = repr(e_info[1])
-
-            if isinstance(e_info[1], str):
-                e_name = e_info[1]
-            elif hasattr(e_info[1], '__class__'):
-                e_name = e_info[1].__class__.__name__
+        try:
+            if len(args) == 3:
+                e_info = args
             else:
+                e_info = sys.exc_info()
+
+            if e_info[0] in self.ignore:
+                return
+
+            body = ''
+
+            if len(e_info) > 1:
+                e_val = repr(e_info[1])
+
+                if isinstance(e_info[1], str):
+                    e_name = e_info[1]
+                elif hasattr(e_info[1], '__class__'):
+                    e_name = e_info[1].__class__.__name__
+                else:
+                    e_name = e_val
+            else:
+                e_val = "<undefined>"
                 e_name = e_val
-        else:
-            e_val = "<undefined>"
-            e_name = e_val
 
-        log_msg = "exception=%s" % e_name
+            log_msg = "exception=%s" % e_name
 
-        pid = os.getpid()
+            pid = os.getpid()
 
-        global proctitle
+            global proctitle
 
-        body += "Process %d (%s): %s\n\n" % (pid, proctitle, e_val)
-        log_msg += " pid=%d process_name=%s" % (pid,proctitle)
+            body += "Process %d (%s): %s\n\n" % (pid, proctitle, e_val)
+            body += "XX: %s" % (str(e_info[1]))
+            log_msg += " pid=%d process_name=%s" % (pid,proctitle)
 
-        body += self.format(*e_info)
+            body += self.format(*e_info)
 
-        if self.email is not None:
-            subj = "%s: %s" % (self.email['subject'], log_msg)
-            if self.email.has_key('relay'):
-                relay = self.email['relay']
-            else:
-                relay = 'localhost'
+            if self.email is not None:
+                subj = "%s: %s" % (self.email['subject'], log_msg)
+                if self.email.has_key('relay'):
+                    relay = self.email['relay']
+                else:
+                    relay = 'localhost'
 
-            try:
-                send_mail(self.email['from'], self.email['to'], subj, body,
-                        relay=relay)
-            except Exception, e:
-                msg = "unable to send email: %s" % (repr(e))
-                body += msg + "\n"
+                try:
+                    send_mail(self.email['from'], self.email['to'], subj, body,
+                            relay=relay)
+                except Exception, e:
+                    msg = "unable to send email: %s" % (repr(e))
+                    body += msg + "\n"
 
-                if self.log:
-                    self.log.error(msg)
+                    if self.log:
+                        self.log.error(msg)
 
-        if self.output_dir is not None:
-            log_id = self.log_to_dir(log_msg, body)
-            log_msg += " log_id=%s" % (log_id)
+            if self.output_dir is not None:
+                log_id = self.log_to_dir(log_msg, body)
+                log_msg += " log_id=%s" % (log_id)
 
-        if self.log is not None:
-            self.log.error(log_msg)
+            if self.log is not None:
+                self.log.error(log_msg)
+        except Exception, e:
+            f = open("/tmp/exclog", "a")
+            f.write(time.ctime())
+            f.write("\n")
+            f.write(str(e))
+            f.close()
 
     def format(self, e_type, e_val, tb, context_lines=5):
         s = ''
