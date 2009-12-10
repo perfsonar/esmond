@@ -11,53 +11,84 @@ def remove_metachars(name):
         name = name.replace(char, repl)
     return name
 
+class ClientError(Exception):
+    pass
+
 class ESxSNMPAPI(object):
-    def __init__(self, url):
+    def __init__(self, url, debug=False):
         if url[-1] == '/':
             url = url[:-1]
         self.url = url
         self.http = httplib2.Http()
+        self.debug = debug
+
+    def _deserialize(self, data):
+        try:
+            return simplejson.loads(data)
+        except ValueError, e:
+            if self.debug:
+                print >>sys.stderr, "BOGUS DATA"
+                print >>sys.stderr, data
+            raise ClientError("unable to decodeJ JSON: %s" % str(e))
+
+    def get(self, path):
+        if self.debug:
+            print >>sys.stderr, ">>> PATH ", path
+
+        response, content = self.http.request(self.url + "/snmp/" + path, 'GET')
+
+        if response['status'] != '200':
+            raise ClientError('request failed: %s %s'  % (response['status'],
+                content))
+
+        if self.debug:
+            print >>sys.stderr, ">>> RESPONSE ", response
+            print >>sys.stderr, ">>> CONTENT ", content
+       
+        return self._deserialize(content)
 
     def get_routers(self):
-        response, content = self.http.request(self.url + "/snmp/", 'GET')
-        return self._deserialize(content)
+        return self.get('')
 
     def get_interfaces(self, router):
-        url = self.url + "/snmp/%s/interface/" % router
-        response, content = self.http.request(url, 'GET')
-        return self._deserialize(content)
+        return self.get("%s/interface/" % router)
 
     def get_interface(self, router, iface):
         iface = remove_metachars(iface)
-        url = self.url + "/snmp/%s/interface/%s/" % (router, iface)
-        response, content = self.http.request(url, 'GET')
-        return self._deserialize(content)
+        return self.get("%s/interface/%s/" % (router, iface))
 
     @classmethod
-    def build_interface_data_uri(self, url, router, interface, begin, end,
-            direction, agg=None, dataset="traffic"):
-        if dataset == "traffic":
-            uri = "%s/snmp/%s/interface/%s/%s/?begin=%s&end=%s" % (url, router,
-                remove_metachars(interface),
-                direction, int(begin), int(end))
-        else:
-            uri = "%s/snmp/%s/interface/%s/%s/%s/?begin=%s&end=%s" % (url, router,
-                remove_metachars(interface),
-                dataset, direction, int(begin), int(end))
+    def build_query(self, begin, end, agg=None):
+        q = 'begin=%d&end=%d' % (int(begin), int(end))
 
         if agg:
-            uri += "&agg=%d" % agg
+            q += "&agg=%d" % agg
 
-        return uri
+        return q
+    
+    @classmethod
+    def build_interface_data_path(self, router, interface, begin, end,
+            direction, agg=None, dataset="traffic"):
+
+        q = self.build_query(begin, end, agg)
+
+        if dataset == "traffic":
+            path = "%s/interface/%s/%s/?%s" % (router,
+                remove_metachars(interface), direction, q)
+        else:
+            path = "%s/interface/%s/%s/%s/?%s" % (router,
+                remove_metachars(interface),
+                dataset, direction, q)
+
+        return path
 
     def get_interface_data(self, router, interface, begin, end, direction,
             agg=None, dataset='traffic'):
 
-        uri = self.build_interface_data_uri(self.url, router, interface,
+        path = self.build_interface_data_path(router, interface,
                 begin, end, direction, agg=agg, dataset=dataset)
 
-        response, content = self.http.request(uri, 'GET')
-        return self._deserialize(content)
+        return self.get(path)
 
     def get_bulk(self, uri_list, raw=False):
         response, content = self.http.request(self.url + "/bulk/", 'POST',
@@ -68,16 +99,9 @@ class ESxSNMPAPI(object):
         else:
             return content
 
-    def _deserialize(self, data):
-        try:
-            return simplejson.loads(data)
-        except ValueError:
-            print >>sys.stderr, "BOGUS DATA"
-            print >>sys.stderr, data
-            raise
 
 if __name__ == '__main__':
-    api = ESxSNMPAPI('http://snmp-west.es.net:8001/')
+    api = ESxSNMPAPI('http://snmp-west.es.net:8001/', debug=True)
     print "==== ROUTERS " + "=" * 40
     r = api.get_routers()
     print r
@@ -95,8 +119,18 @@ if __name__ == '__main__':
     print api.url
     print api.get_interface_data('ameslab-rt1', 'fe-0_3_0', t0, t1, 'in')
 
+    print "==== BULK"
+
     d = api.get_bulk([
-        '/snmp/ameslab-rt1/interface/fe-0_3_0/in/?begin=1256076131&end=1256076731&agg=30',
-        '/snmp/ameslab-rt1/interface/fe-0_3_0/in/?begin=1256076131&end=1256076731&agg=30'])
+        {     'uri': '/snmp/ameslab-rt1/interface/fe-0_3_0/in/',
+            'begin': '1256076131',
+              'end': '1256076731',
+              'agg': '30',
+               'id': 1},
+        {     'uri': '/snmp/ameslab-rt1/interface/fe-0_3_0/in/',
+            'begin': '1256076131',
+              'end': '1256076731',
+              'agg': '30',
+               'id': 2}])
     for k,v in d.iteritems():
         print k, v['result']['data'][0]
