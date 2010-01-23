@@ -13,9 +13,10 @@ import threading
 import Queue
 
 import sqlalchemy
-import yapsnmp
+from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid
 import rrdtool
-#from guppy import hpy
+from pympler.muppy import summary, tracker
+from pympler.heapmonitor import _memory_ps, _memory_generic
 
 import tsdb
 import tsdb.row
@@ -50,8 +51,8 @@ class PollCorrelator(object):
     """polling correlators correlate an oid to some other field.  this is
     typically used to generate the key needed to store the variable."""
 
-    def __init__(self, session=None):
-        self.session = session
+    def __init__(self):
+        pass
 
     def setup(self):
         raise NotImplementedError
@@ -59,26 +60,27 @@ class PollCorrelator(object):
     def lookup(self, oid, var):
         raise NotImplementedError
 
-    def _table_parse(self, table):
+    def _table_parse(self, data):
         d = {}
-        for (var, val) in self.session.walk(table):
+        for (var, val) in data:
             d[var.split('.')[-1]] = remove_metachars(val)
         return d
+
+def filter_data(name, data):
+    return filter(lambda x: x[0].startswith(name), data)
 
 class IfDescrCorrelator(PollCorrelator):
     """correlates and ifIndex to an it's ifDescr"""
 
-    def setup(self):
-        self.xlate = self._table_parse('ifDescr')
-        for (var,val) in self.session.walk("ifDescr"):
-            ifIndex = var.split(".")[-1]
-            self.xlate[ifIndex] = remove_metachars(val)
+    oids = ['ifDescr', 'ifAlias']
 
-        for (var,val) in self.session.walk("ifAlias"):
+    def setup(self, data):
+        self.xlate = self._table_parse(filter_data('ifDescr', data))
+
+        for (var,val) in filter_data('ifAlias', data):
             ifIndex = var.split(".")[-1]
             if not val:
                 self.xlate[ifIndex] = None
-
 
     def lookup(self, oid, var):
         # XXX this sucks
@@ -298,6 +300,7 @@ class PersistThread(threading.Thread):
                 pass
             else:
                 self.persister.put(task)
+                self.persistq.task_done()
 
     def stop(self):
         self.state = self.REMOVE
@@ -334,9 +337,6 @@ class ThreadedPollManager(object):
             tsdb.TSDB.create(self.config.tsdb_root,
                 chunk_prefixes=self.config.tsdb_chunk_prefixes)
 
-        #self.heapy = hpy()
-        #self.heapy.setrelheap()
-
     def start_polling(self):
         self.log.debug("starting, %d devices configured" % len(self.devices))
 
@@ -355,7 +355,9 @@ class ThreadedPollManager(object):
 
         self.running = True
 
-        #self.last_heap = time.time()
+        self.tracker = tracker.SummaryTracker()
+        self.summary0 = self.tracker.s0
+        self.last_tracker = time.time()
 
         while self.running:
             time.sleep(5)
@@ -370,19 +372,13 @@ class ThreadedPollManager(object):
                     else:
                         self._restart_thread(n, t)
 
-            """
-            now = time.time()
-            if now > self.last_heap + 60:
-                fname = "/tmp/heapy-%f" % now
-                f = open(fname, "w")
-                h = self.heapy.heap()
-                f.write(str(h))
-                f.close()
-                self.log.debug(
-                    "heap_info: %d objs, %d bytes, file %s" % (len(h.nodes),
-                        h.size, fname))
-                self.last_heap = now
-            """
+            if time.time() - self.last_tracker > 90:
+                diff = self.tracker.diff(self.summary0)
+                self.log.debug("mem: %d items %d %d" % (len(diff),
+                    _memory_ps(), _memory_generic()))
+                for i in diff:
+                    self.log.debug("mem: %s %d %d" % tuple(i))
+                self.last_tracker = time.time()
 
         self.shutdown()
 
@@ -684,31 +680,30 @@ class Poller(object):
     It provides a simple interface for subclasses:
 
       begin()            -- called immediately before polling
-      collect(oid, data) -- called immediately before polling
+      collect(oid, data) -- called to perform poll
       finish()           -- called immediately after polling
 
     All three methods MUST be defined by the subclass.
 
     """
-    def __init__(self, config, device, oidset, persistq):
+    def __init__(self, config, device, oidset, poller, persistq):
         self.config = config
         self.device = device
         self.oidset = oidset
+        self.poller = poller
         self.persistq = persistq
 
         self.name = "espolld." + self.device.name + "." + self.oidset.name
 
         self.next_poll = int(time.time() - 1)
         self.oids = self.oidset.oids
+        # in some pollers we poll oids beyond the ones which are used
+        # for that poller, so we make a copy in poll_oids
+        self.poll_oids = [o.name for o in self.oids]
         self.running = True
         self.log = get_logger(self.name)
 
-        try:
-            self.snmp_session = yapsnmp.Session(self.device.name, version=2,
-                community=self.device.community)
-        except socket.gaierror, e:
-            raise PollerError("host %s unknown: %s" % (self.device.name,
-                str(e)))
+        self.poller.add_session(self.device.name, self.device.community)
 
         self.count = 0
         self.errors = 0
@@ -727,56 +722,51 @@ class Poller(object):
             begin = time.time()
             self.next_poll = begin + self.oidset.frequency
 
-            try:
-                self.begin()
+            self.begin()
+            self.collect()
 
-                for oid in self.oids:
-                    self.collect(oid,self.snmp_session.walk(oid.name))
-
-                self.finish()
-
-                self.log.debug("grabbed %d vars in %f seconds yay" %
+            self.log.debug("grabbed %d vars in %f seconds yay" %
                         (self.count, time.time() - begin))
-                self.errors = 0
-            except yapsnmp.GetError, e:
-                self.errors += 1
-                if self.errors < 10  or self.errors % 10 == 0:
-                    self.log.error("unable to get snmp response after %d tries: %s" % (self.errors, e))
 
             self.polling_round += 1
 
-    def run(self):
-        while self.running:
-            self.run_once()
-
-            # XXX kludge hack ick!  exit after 480 cycles as
-            # a workaround for a memeory leak
-            if self.polling_round >= 480:
-                self.shutdown()
-                sys.exit()
-
-            self.sleep()
-
-        self.shutdown()
-
     def begin(self):
-        """begin is called immeditately before polling is started.  this is
-        where you should set up things and collect information needed during
-        the run."""
+        """begin is called immeditately before polling is started. 
+        
+        Sets up things and gets ready for the polling to begin.  In
+        particular self.poll_oids should have all the oids that you need for
+        the whole run."""
 
         raise NotImplementedError("must implement begin method")
 
-    def collect(self, oid, data):
-        """collect is called for each oid in the oidset with the oid and data
-        collected for the oid from the device"""
+    def collect(self):
+        """collect called once to collect all the OIDs.
+        
+        Once it all the OIDs have been collected, the finish() method is
+        called with the data.  If collect encounters erros the error() method
+        is called."""
+       
+        self.poller.bulkwalk(self.device.name, self.poll_oids, self.finish,
+                self.error)
 
-        raise NotImplementedError("must implement collect method")
+    def finish(self, data):
+        """finish is called once all the data has been retrieved.
 
-    def finish(self):
-        """finish is called immediately after polling is done.  any
-        finalization code should go here."""
+        finish() procesess the data and calls save() with the PollResult(s) for
+        this polling round it off to be saved."""
 
         raise NotImplementedError("must implement finish method")
+
+    def error(self, error):
+        """error is called if there is an error or a timeout while polling.
+
+        No data will be saved if an error is encountered.  Errors are hard
+        failures; every effort is made to recover rather than call error()."""
+        self.log.error(error)
+
+    def save(self, pr):
+        """Save PollResults."""
+        self.persistq.put(pr)
 
     def shudown(self):
         """shutdown is called as the poller is shutting down
@@ -798,8 +788,8 @@ class Poller(object):
             self.log.warning("poll %d seconds late" % abs(delay)) 
 
 class TSDBPoller(Poller):
-    def __init__(self, config, device, oidset, persistq):
-        Poller.__init__(self, config, device, oidset, persistq)
+    def __init__(self, config, device, oidset, poller, persistq):
+        Poller.__init__(self, config, device, oidset, poller, persistq)
 
         if self.config.tsdb_chunk_prefixes:
             self.tsdb = tsdb.TSDB(self.config.tsdb_root)
@@ -815,41 +805,27 @@ class TSDBPoller(Poller):
     def begin(self):
         pass
 
-    def collect(self, oid, data):
+    def finish(self, data):
         ts = time.time()
         metadata = dict(tsdb_flags=tsdb.ROW_VALID)
-        outdata = []
 
-        if oid.name == '.1.3.6.1.4.1.21013.1.2.12.1.2.22':
-            print "booyah"
-            for x in data:
-                outdata.append((x[0].replace('.1.3.6.1.4.1.21013.1.2.12.1.2.22',
-                    'globalNumStations'), x[1]))
-                
-        pr = PollResult(self.oidset.name, self.device.name, oid.name,
+        for oid in self.oidset:
+            outdata = filter_data(oid.name, data)
+
+            pr = PollResult(self.oidset.name, self.device.name, oid.name,
                     ts, outdata, metadata)
 
-        self.persistq.put(pr)
+            self.save(pr)
 
-    def finish(self):
-        pass
-
-class SQLPoller(Poller):
-    def __init__(self, config, device, oidset, persistq):
-        Poller.__init__(self, config, device, oidset, persistq)
-
-#
-# XXX are the oidset, etc vars burdened with sqlalchemy goo? if so, does it
-# matter?
-#
 class CorrelatedTSDBPoller(TSDBPoller):
     """Handles polling of an OIDSet for a device and uses a correlator to
     determine the name of the variable to use to store values."""
-    def __init__(self, config, device, oidset, persistq):
-        TSDBPoller.__init__(self, config, device, oidset, persistq)
+    def __init__(self, config, device, oidset, poller, persistq):
+        TSDBPoller.__init__(self, config, device, oidset, poller, persistq)
 
-        self.correlator = eval(self.poller_args['correlator'])(self.snmp_session)
+        self.correlator = eval(self.poller_args['correlator'])()
 
+        # XXX can this go away? probably, should be in espersistd
         if self.poller_args.has_key('aggregates'):
             self.aggregates = self.poller_args['aggregates'].split(',')
         else:
@@ -859,66 +835,205 @@ class CorrelatedTSDBPoller(TSDBPoller):
 
     def begin(self):
         self.count = 0
-        self.correlator.setup()  # might raise a yapsnmp.GetError
+        self.poll_oids.extend(self.correlator.oids)
 
-    def collect(self, oid, data):
+    def finish(self, data):
         self.count += len(data)
+
+        self.correlator.setup(data)
+
         ts = time.time()
-        dataout = []
         metadata = dict(tsdb_flags=tsdb.ROW_VALID)
 
-        for (var,val) in data:
-            try:
-                varname = self.correlator.lookup(oid,var)
-            except PollUnknownIfIndex:
-                self.log.error("unknown ifIndex: %s %s" % (var, str(val)))
-                continue
 
-            if varname:
-                dataout.append((varname, val))
-            else:
-                if val != "0":
-                    self.log.error("ignore: %s %s" % (var, str(val)))
+        for oid in self.oidset.oids:
+            dataout = []
+            for var, val in filter_data(oid.name, data):
+                try:
+                    varname = self.correlator.lookup(oid, var)
+                except PollUnknownIfIndex:
+                    self.log.error("unknown ifIndex: %s %s" % (var, str(val)))
+                    continue
 
-        pr = PollResult(self.oidset.name, self.device.name, oid.name,
+                if varname:
+                    dataout.append((varname, val))
+                else:
+                    if val != "0":
+                        self.log.warning("ignoring: %s %s" % (var, str(val)))
+
+            pr = PollResult(self.oidset.name, self.device.name, oid.name,
                     ts, dataout, metadata)
 
-        self.persistq.put(pr)
+            self.save(pr)
 
-    def finish(self):
-        pass
+class SQLPoller(Poller):
+    def __init__(self, config, device, oidset, poller, persistq):
+        Poller.__init__(self, config, device, oidset, poller, persistq)
 
 class IfRefSQLPoller(SQLPoller):
     """Polls all OIDS and creates a IfRef entry then sees if the IfRef entry
     differs from the lastest in the database."""
 
-    def __init__(self, config, device, oidset, persistq):
-        SQLPoller.__init__(self, config, device, oidset, persistq)
-        self.ifref_data = {}
+    def __init__(self, config, device, oidset, poller, persistq):
+        SQLPoller.__init__(self, config, device, oidset, poller, persistq)
 
     def begin(self):
         self.count = 0
 
-    def collect(self, oid, data):
-        self.ifref_data[oid.name] = data
-        self.count += len(self.ifref_data[oid.name])
+    def finish(self, data):
+        self.count = len(data)
 
-    def finish(self):
-        self.store()
+        ifref_data = {}
+        for oid in self.oidset.oids:
+            ifref_data[oid.name] = filter_data(oid.name, data)
 
-    def store(self):
-        ts = time.time()
         pr = PollResult(self.oidset.name, self.device.name, "",
-                ts, self.ifref_data, {})
+                time.time(), ifref_data, {})
 
-        self.persistq.put(pr)
+        self.save(pr)
+
+class PollRequest(object):
+    def __init__(self, type, callback, errback, walk_oid=None,
+            additional_oids=[]):
+        self.type = type
+        self.callback = callback
+        self.errback = errback
+        self.walk_oid = walk_oid
+        self.additional_oids = additional_oids
+
+        self.results = []
+
+    def append(self, oid, value):
+        self.results.append((oid, value))
+
+class AsyncSNMPPoller(object):
+    """Manage all polling requests and responses.
+
+    AsyncPoller manages all the polling using DLNetSNMP."""
+
+    def __init__(self, maxrepetitions=100):
+        self.maxrepetitions = maxrepetitions
+
+        self.reqmap = {}
+
+        self.sessions = SNMPManager(local_dir="/usr/local/share/snmp")
+        self.sessions.bind('response', '1', None, self._callback)
+        self.sessions.bind('timeout', '1', None, self._errback)
+
+    def add_session(self, host, community, version='2', timeout=10,
+            retries=1):
+        self.sessions.add_session(host, peername=host, community=community,
+                version=version, timeout=timeout, retries=retries)
+
+    def shutdown(self):
+        self.sessions.destroy() # BWAHAHAHAH
+
+    def bulkwalk(self, host, oids, callback, errback):
+        """Gathers all rows for the given objects in a table.
+
+        A single SNMP GETBULK is not guaranteed to get all the objects
+        referred to by the OID in a table.  `bulkwalk` implements a simple
+        mechanism for gathering all rows for the given OIDs using GETBULK
+        messages multiple times if necessary."""
+
+        try:
+            session = self.sessions[host]
+        except KeyError:
+            # XXX tell someone: raise exception?
+            return
+
+        oid = oids.pop(0)
+        noid = tuple(str_to_oid(oid)) # avoid the noid!
+        if noid is None:
+            # XXX tell someone: raise exception?
+            return
+
+        pollreq = PollRequest('bulkwalk', callback, errback,
+                walk_oid=noid, additional_oids=oids)
+        reqid = self.sessions[host].async_getbulk(0, self.maxrepetitions, [oid])
+        self.reqmap[reqid] = pollreq
+
+    def bulkget(self, host, nonrepeaters, maxrepetitions, oids, callback,
+            errback):
+        pollreq = PollRequest('bulkget', callback, errback)
+        reqid = sessions[host].async_getbulk(nonrepeaters, maxrepetitions, oids)
+        self.reqmap[reqid] = pollreq
+
+    def get(self, host, oids, callback, errback):
+        pollreq = PollRequest('get', callback, errback)
+        reqid = sessions[host].async_get(oids)
+        self.reqmap[reqid] = pollreq
+
+    # ***
+    # *** these methods execute inside the DLNetSNMP session processing thread
+    # ***
+
+    def _callback(self, manager, slot, session, reqid, r):
+        """_callback manages reponses, performing coalescing for bulkwalks."""
+
+        pollreq = self.reqmap[reqid]
+
+        #print "_callback yo!", pollreq.type, len(r)
+
+        if len(r) == 0:
+            #print "_callback NO DATA!!!?!?!?! WTF?!?!?!?!"
+            return
+
+        if pollreq.type != 'bulkwalk':
+            pollreq.callback(r)
+            #print "_callback wtf!"
+        else:
+            last = ''
+            done = False
+            for last, v in r:
+                if last[:len(pollreq.walk_oid)] != pollreq.walk_oid:
+                    done = True
+                    break
+
+                soid = oid_to_str(last).split('::')[-1]
+                pollreq.results.append((soid, v))
+
+            if done:
+                #print '_callback bulkwalk done', last
+                if pollreq.additional_oids:
+                    #print "MORE", pollreq.additional_oids
+                    oid = pollreq.additional_oids.pop(0)
+                    pollreq.walk_oid = tuple(str_to_oid(oid))
+                    new_reqid = self.sessions[session].async_getbulk(0,
+                        self.maxrepetitions, [oid])
+                    self.reqmap[new_reqid] = pollreq
+                else:
+                    pollreq.callback(pollreq.results)
+            else:
+                #print '_callback bulkwalk not done', last, oid_to_str(last)
+                # get more data
+                new_reqid = self.sessions[session].async_getbulk(0,
+                    self.maxrepetitions, [last])
+                self.reqmap[new_reqid] = pollreq
+
+        del self.reqmap[reqid]
+
+    def _errback(self, manager, slot, session, reqid):
+        pollreq = self.reqmap[reqid]
+
+        del self.reqmap[reqid]
+
+        # XXX look into getting actual error messages
+        pollreq.errback("timeout")
 
 def espoll():
     argv = sys.argv
     oparse = get_opt_parser(default_config_file=get_config_path())
-    oparse.add_option("-D", "--device", dest="device", default=None)
-    oparse.add_option("-o", "--oid-set", dest="oidset", default=None)
+    oparse.usage = "%prog [options] router oidset"
     (opts, args) = oparse.parse_args(args=argv)
+
+    print opts
+    print args
+
+    if len(args[1:]) != 2:
+        oparse.error("requires router and oidset arguments")
+
+    device_name, oidset_name = args[1:]
 
     try:
         config = get_config(opts.config_file, opts)
@@ -930,38 +1045,54 @@ def espoll():
     session = esxsnmp.sql.Session()
 
     devices = session.query(esxsnmp.sql.Device)
-    if opts.device:
-        device = devices.filter(esxsnmp.sql.Device.name == opts.device).one()
-
+    device = devices.filter(esxsnmp.sql.Device.name == device_name).one()
     if not device:
-        print "no devices selected"
+        print >>sys.stderr, "unknown device: %s" % device_name
         sys.exit(1)
-
-    print device.name
 
     oidset = session.query(esxsnmp.sql.OIDSet)
-    oidset = oidset.filter(esxsnmp.sql.OIDSet.name == opts.oidset).one()
+    oidset = oidset.filter(esxsnmp.sql.OIDSet.name == oidset_name).one()
 
     if not oidset:
-        print "no oidset selected"
+        print >>sys.stderr, "unknown OIDSet: %s %s" % (device.name,
+                oidset_name) 
         sys.exit(1)
+
+    snmp_poller = AsyncSNMPPoller()
+
+    """
+    def get_results(r):
+        for x in r:
+            print x
+    poller.add_session(device.name, device.community)
+    x = str_to_oid('ifHCInOctets')
+    print 'x=',x
+    if not x:
+        1/0
+    poller.bulkwalk(device.name, ['ifHCInOctets','ifHCOutOctets', 'ifInErrors', 'ifInDiscards'], "foo", get_results, None)
+    """
 
     print "%s %s" % (device.name, oidset.name)
 
     persistq = Queue.Queue()
     poller_class = eval(oidset.poller.name)
     try:
-        poller = poller_class(config, device, oidset, persistq)
+        poller = poller_class(config, device, oidset, snmp_poller, persistq)
     except PollerError, e:
         print str(e)
 
     poller.run_once()
+
+
+    time.sleep(15)
 
     while True:
         try:
             print persistq.get_nowait().data
         except Queue.Empty:
             break
+
+    snmp_poller.shutdown()
 
 def espolld():
     """Entry point for espolld."""
