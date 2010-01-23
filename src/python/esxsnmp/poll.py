@@ -32,20 +32,11 @@ from esxsnmp.error import ConfigError, PollerError
 from esxsnmp.rpc.ttypes import IfRef
 from esxsnmp.persist import PollResult, PersistClient
 
-class ThriftClient(object):
-    def __init__(self):
-        self.transport = TSocket.TSocket('localhost', 9090)
-        self.transport = TTransport.TBufferedTransport(self.transport)
-        self.protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
-        self.client = ESDB.Client(self.protocol)
-        self.transport.open()
-
 class PollError(Exception):
     pass
 
 class PollUnknownIfIndex(PollError):
     pass
-
 
 class PollCorrelator(object):
     """polling correlators correlate an oid to some other field.  this is
