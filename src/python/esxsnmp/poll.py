@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os
 import signal
 import errno
@@ -94,8 +92,10 @@ class JnxFirewallCorrelator(PollCorrelator):
     """correlates entries in the jnxFWCounterByteCount tables to a variable
     name"""
 
-    def __init__(self, session=None):
-        PollCorrelator.__init__(self,session)
+    oids = []
+
+    def __init__(self):
+        PollCorrelator.__init__(self)
         self.oidex = re.compile('([^"]+)\."([^"]+)"\."([^"]+)"\.(.+)')
 
     def setup(self):
@@ -115,8 +115,8 @@ class JnxCOSCorrelator(IfDescrCorrelator):
         jnxCosIfqTailDropPkts
         jnxCosIfqTotalRedDropPkts
     """
-    def __init__(self, session=None):
-        PollCorrelator.__init__(self,session)
+    def __init__(self):
+        PollCorrelator.__init__(self)
         self.oidex = re.compile('([^.]+)\.(\d+)\."([^"]+)"')
 
     def lookup(self, oid, var):
@@ -143,9 +143,13 @@ class CiscoCPUCorrelator(PollCorrelator):
 
     See http://www.cisco.com/warp/public/477/SNMP/collect_cpu_util_snmp.html"""
 
+    oids = ['cpmCPUTotalPhysicalIndex', 'entPhysicalName']
+
     def setup(self):
-        self.phys_xlate = self._table_parse('cpmCPUTotalPhysicalIndex')
-        self.name_xlate = self._table_parse('entPhysicalName')
+        self.phys_xlate = self._table_parse(
+                filter_data('cpmCPUTotalPhysicalIndex', data))
+        self.name_xlate = self._table_parse(
+                filter_data('entPhysicalName', data))
 
     def lookup(self, oid, var):
         #
@@ -910,6 +914,11 @@ class AsyncSNMPPoller(object):
         self.sessions = SNMPManager(local_dir="/usr/local/share/snmp")
         self.sessions.bind('response', '1', None, self._callback)
         self.sessions.bind('timeout', '1', None, self._errback)
+        # XXX move paths into config file 
+        self.sessions.add_mib_dir("/home/jdugan/.snmp/mibs")
+        self.sessions.read_mib("/home/jdugan/.snmp/mibs/mib-jnx-smi.txt")
+        self.sessions.read_mib("/home/jdugan/.snmp/mibs/mib-jnx-firewall.txt")
+        self.sessions.refresh_mibs()
 
     def add_session(self, host, community, version='2', timeout=10,
             retries=1):
