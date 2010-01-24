@@ -923,7 +923,8 @@ class AsyncSNMPPoller(object):
     def add_session(self, host, community, version='2', timeout=10,
             retries=1):
         self.sessions.add_session(host, peername=host, community=community,
-                version=version, timeout=timeout, retries=retries)
+                version=version, timeout=timeout, retries=retries,
+                results_as_list=True)
 
     def shutdown(self):
         self.sessions.destroy() # BWAHAHAHAH
