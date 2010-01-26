@@ -61,6 +61,8 @@ class ESxSNMPConfig(object):
         self.espersistd_uri = None
         self.espoll_persist_uri = None
         self.send_error_email = False
+        self.mib_dirs = []
+        self.mibs = []
 
         self.read_config()
         self.validate_config()
@@ -74,7 +76,7 @@ class ESxSNMPConfig(object):
                 'error_email_subject', 'error_email_from', 'traceback_dir',
                 'syslog_facility', 'syslog_level', 'pid_dir',
                 'rrd_path', 'polling_tag', 'rpc_user', 'rpc_password',
-                'espersistd_uri', 'espoll_persist_uri'):
+                'espersistd_uri', 'espoll_persist_uri', 'mib_dirs', 'mibs'):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
 
@@ -111,6 +113,11 @@ class ESxSNMPConfig(object):
                 if not os.access(cdir, os.W_OK):
                     raise ConfigError("invalid config: tsdb_chunk_prefixes %s not writable" % cdir)
 
+        if self.mib_dirs:
+            self.mib_dirs = map(str.strip, self.mib_dirs.split(','))
+
+        if self.mibs:
+            self.mibs = map(str.strip, self.mibs.split(','))
 
         if self.error_email_to is not None \
                 and self.error_email_subject is not None \

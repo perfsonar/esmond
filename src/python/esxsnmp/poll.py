@@ -216,7 +216,8 @@ class PollManager(object):
 
         self.persistq = Queue.Queue()
         self.last_mem = _memory_ps()
-        self.snmp_poller = AsyncSNMPPoller()
+        self.snmp_poller = AsyncSNMPPoller(config=self.config,
+                name="espolld.snmp_poller")
         self.pollers = {}
 
     def start_polling(self):
@@ -256,8 +257,6 @@ class PollManager(object):
         while self.running:
             for poller in self.pollers.itervalues():
                 poller.run_once()
-
-            self.log.info("%d items in persistq" % self.persistq.qsize())
 
             # XXX memory debugging
             if time.time() - self.last_tracker > 90:
@@ -525,19 +524,27 @@ class AsyncSNMPPoller(object):
 
     AsyncPoller manages all the polling using DLNetSNMP."""
 
-    def __init__(self, maxrepetitions=100):
+    def __init__(self, config=None, name="AsyncSNMPPoller", maxrepetitions=100):
         self.maxrepetitions = maxrepetitions
+        self.name = name
+        self.config = config
 
         self.reqmap = {}
 
         self.sessions = SNMPManager(local_dir="/usr/local/share/snmp",
                 threaded_processor=True)
 
-        self.sessions.add_mib_dir("/data/esxsnmp/etc/mibs")
-        self.sessions.refresh_mibs()
-        # XXX move paths into config file 
-        self.sessions.read_module('JUNIPER-COS-MIB')
-        self.sessions.read_module("JUNIPER-FIREWALL-MIB")
+        self.log = get_logger(self.name)
+
+        if self.config:
+            for mib_dir in self.config.mib_dirs:
+                self.log.debug("add mib dir %s" % mib_dir)
+                self.sessions.add_mib_dir(mib_dir)
+            self.sessions.refresh_mibs()
+
+            for mib in self.config.mibs:
+                self.log.debug("add mib %s" % mib)
+                self.sessions.read_module(mib)
 
         self.sessions.bind('response', '1', None, self._callback)
         self.sessions.bind('timeout', '1', None, self._errback)
@@ -562,12 +569,10 @@ class AsyncSNMPPoller(object):
         mechanism for gathering all rows for the given OIDs using GETBULK
         messages multiple times if necessary."""
 
-
         try:
             session = self.sessions[host]
         except KeyError:
-            # XXX tell someone: raise exception?
-            return
+            raise PollerError("no session defined for %s" % host)
 
         oids = [ o for o in oids ]  # make a copy of the oids list
 
@@ -576,7 +581,7 @@ class AsyncSNMPPoller(object):
         noid = str_to_oid(oid) # avoid the noid!
         if noid is None:
             # XXX tell someone: raise exception?
-            print "UHOH, can't resolve:", oid
+            self.log.error("unable to resolve OID: %s" % oid)
             return
         noid = tuple(noid)
 
@@ -671,6 +676,9 @@ def espoll():
         print e
         sys.exit(1)
 
+    init_logging(config.syslog_facility, level=config.syslog_level,
+            debug=opts.debug)
+
     esxsnmp.sql.setup_db(config.db_uri)
     session = esxsnmp.sql.Session()
 
@@ -688,19 +696,8 @@ def espoll():
                 oidset_name) 
         sys.exit(1)
 
-    snmp_poller = AsyncSNMPPoller()
-
-    """
-    def get_results(r):
-        for x in r:
-            print x
-    poller.add_session(device.name, device.community)
-    x = str_to_oid('ifHCInOctets')
-    print 'x=',x
-    if not x:
-        1/0
-    poller.bulkwalk(device.name, ['ifHCInOctets','ifHCOutOctets', 'ifInErrors', 'ifInDiscards'], "foo", get_results, None)
-    """
+    snmp_poller = AsyncSNMPPoller(config=config)
+    snmp_poller.add_session(device.name, device.community)
 
     print "%s %s" % (device.name, oidset.name)
 
@@ -713,8 +710,9 @@ def espoll():
 
     poller.run_once()
 
-    time.sleep(60)
+    time.sleep(12)
 
+    print "and the queue has:"
     while True:
         try:
             print persistq.get_nowait().data
