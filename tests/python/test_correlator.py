@@ -4,10 +4,16 @@ class MockSession(object):
     def walk(self, oid):
         if oid == 'ifDescr':
             return (('ifDescr.115', 'ae0'),
-                    ('ifDescr.116', 'ge-1/0/0'))
+                    ('ifDescr.116', 'ge-1/0/0'),
+                    ('ifDescr.117', ''))
+        if oid == 'ifAlias':
+            return (('ifAlias.115', 'ae0'),
+                    ('ifAlias.116', 'ge-1/0/0'),
+                    ('ifAlias.117', ''))
         elif oid == 'ifHCInOctets':
             return (('ifHCInOctets.115', '0', 'ifHCInOctets/ae0'),
-                    ('ifHCInOctets.116', '732401229666', 'ifHCInOctets/ge-1_0_0'))
+                    ('ifHCInOctets.116', '732401229666','ifHCInOctets/ge-1_0_0'),
+                    ('ifHCInOctets.117', '732401229666', None))
         elif oid == 'jnxCosIfqQedBytes':
             return (('jnxCosIfqQedBytes.116."best-effort"', '2091263919975',
                         "ge-1_0_0/jnxCosIfqQedBytes/best-effort"),
@@ -16,7 +22,15 @@ class MockSession(object):
                     ('jnxCosIfqQedBytes.116."scavenger-service"', '17688108277',
                         "ge-1_0_0/jnxCosIfqQedBytes/scavenger-service"),
                     ('jnxCosIfqQedBytes.116."expedited-forwarding"', '1026807',
-                        "ge-1_0_0/jnxCosIfqQedBytes/expedited-forwarding"))
+                        "ge-1_0_0/jnxCosIfqQedBytes/expedited-forwarding"),
+                    ('jnxCosIfqQedBytes.117."best-effort"', '2091263919975',
+                        None),
+                    ('jnxCosIfqQedBytes.117."network-control"', '325426106',
+                        None),
+                    ('jnxCosIfqQedBytes.117."scavenger-service"', '17688108277',
+                        None),
+                    ('jnxCosIfqQedBytes.117."expedited-forwarding"', '1026807',
+                        None))
         elif oid == 'jnxFWCounterByteCount':
             return (('jnxFWCounterByteCount."fnal-test"."fnal".counter',
                      '0', 'counter/fnal-test/fnal'),
