@@ -16,7 +16,8 @@ import sqlalchemy
 
 import tsdb
 import tsdb.row
-from tsdb.error import TSDBAggregateDoesNotExistError, TSDBVarDoesNotExistError, InvalidMetaData
+from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
+        TSDBVarDoesNotExistError, InvalidMetaData
 
 import esxsnmp.sql
 
@@ -216,7 +217,12 @@ class TSDBPollPersister(PollPersister):
             if oid.aggregate:
                 # XXX:refactor uptime should be handled better
                 uptime_name = os.path.join(basename, 'sysUpTime')
-                self._aggregate(tsdb_var, var_name, result.timestamp, uptime_name, oidset)
+                try:
+                    self._aggregate(tsdb_var, var_name, result.timestamp,
+                            uptime_name, oidset)
+                except TSDBError, e:
+                    self.log.error("Error aggregating: %s %s: %s" %
+                            (result.device_name, result.oidset_name, str(e)))
 
         self.log.debug("stored %d vars in %f seconds: %s" % (nvar, time.time() - t0,
             result))
@@ -250,7 +256,8 @@ class TSDBPollPersister(PollPersister):
         try:
             uptime = self.tsdb.get_var(uptime_name)
         except TSDBVarDoesNotExistError:
-            self.log.warning("unable to get uptime for %s" % var_name)
+            # XXX this is killing the logger in testing revisit
+            #self.log.warning("unable to get uptime for %s" % var_name)
             uptime = None
 
         min_last_update = timestamp - oidset.frequency * 40 
@@ -624,7 +631,7 @@ def worker(name, config, opts):
     worker.run()
     # do_profile("worker.run()", globals(), locals())
 
-class PersistSupervisor(object):
+class PersistManager(object):
     def __init__(self, name, config, opts):
         self.name = name
         self.config = config
@@ -707,7 +714,7 @@ def espersistd():
     """
     argv = sys.argv
     oparse = get_opt_parser(default_config_file=get_config_path())
-    oparse.add_option("-r", "--role", dest="role", default="supervisor")
+    oparse.add_option("-r", "--role", dest="role", default="manager")
     oparse.add_option("-q", "--queue", dest="qname", default="")
     oparse.add_option("-n", "--number", dest="number", default="")
     (opts, args) = oparse.parse_args(args=argv)
@@ -723,8 +730,8 @@ def espersistd():
     if opts.qname:
         name = ".".join((name, opts.role, opts.qname))
 
-    if opts.role == 'supervisor':
-        PersistSupervisor(name, config, opts).run()
+    if opts.role == 'manager':
+        PersistManager(name, config, opts).run()
     elif opts.role == 'worker':
         worker(name, config, opts)
     elif opts.role == 'stats':
