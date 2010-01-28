@@ -44,6 +44,10 @@ class Store:
 
                 label = None
                 if child.has_key('name'):
+                    if path.endswith('interface') and \
+                            (not child.has_key('descr')
+                                    or child['descr'] == ''):
+                        continue
                     name = child['name']
                     if child.has_key('descr'):
                         if ':hide:' in child['descr'] and  \
