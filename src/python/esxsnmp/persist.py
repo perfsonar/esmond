@@ -236,10 +236,10 @@ class TSDBPollPersister(PollPersister):
                 oidset.frequency, chunk_mapper)
 
         if oid.aggregate:
+            tsdb_var.add_aggregate(str(oidset.frequency),
+                chunk_mapper, ['average', 'delta'])
             if self.poller_args[oidset.name].has_key('aggregates'):
                 aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
-                tsdb_var.add_aggregate(str(oidset.frequency),
-                    chunk_mapper, ['average', 'delta'])
                 for agg in aggregates:
                     tsdb_var.add_aggregate(agg, chunk_mapper,
                         ['average', 'delta', 'min', 'max'])
@@ -344,10 +344,10 @@ class IfRefPollPersister(PollPersister):
 
 
         for name, val in self.ifref_data['ifDescr']:
-            self.log.debug(">>> %s %s" % (name, val))
             foo, ifIndex = name.split('.')
+            ifIndex = int(ifIndex)
             ifIndex_map[ifIndex] = val
-            ifref_objs[val] = dict(ifdescr=val, ifindex=int(ifIndex))
+            ifref_objs[val] = dict(ifdescr=val, ifindex=ifIndex)
 
         for name, val in self.ifref_data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
@@ -362,6 +362,7 @@ class IfRefPollPersister(PollPersister):
                 if oid in ('ifSpeed', 'ifHighSpeed'):
                     val = int(val)
                 foo, ifIndex = name.split('.')
+                ifIndex = int(ifIndex)
                 ifref_objs[ifIndex_map[ifIndex]][oid.lower()] = val
 
         return ifref_objs
@@ -601,9 +602,10 @@ def stats(name, config, opts):
     keys = stats.keys()
     keys.sort()
     while True:
+        print "%10s %8s %8s %8s %8s" % ("queue", "pending", "new", "done", "max")
         for k in keys:
             stats[k].update_stats()
-            print "%-10s % 6d % 6d % 6d % 8d" % stats[k].get_stats()
+            print "%10s % 8d % 8d % 8d % 8d" % stats[k].get_stats()
         print ""
         time.sleep(15)
 
