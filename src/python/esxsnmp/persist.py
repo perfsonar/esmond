@@ -4,8 +4,8 @@ import os
 import sys
 import time
 import signal
+import errno
 
-#from Queue import Queue
 from subprocess import Popen
 
 import cPickle as pickle
@@ -86,7 +86,7 @@ class PollPersister(object):
     STATS_INTERVAL = 60
 
     def __init__(self, config, qname):
-        self.log = get_logger("espersistd.%s" % self.__class__.__name__)
+        self.log = get_logger("espersistd.%s" % qname)
         self.config = config
         self.qname = qname
         self.running = False
@@ -618,6 +618,7 @@ def worker(name, config, opts):
     os.umask(0022)
     esxsnmp.sql.setup_db(config.db_uri)
 
+
     init_logging(config.syslog_facility, level=config.syslog_level,
             debug=opts.debug)
 
@@ -687,7 +688,14 @@ class PersistManager(object):
         self.start_all_children()
 
         while self.running:
-            pid, status = os.wait()
+            try:
+                pid, status = os.wait()
+            except OSError, e:
+                if e.errno == errno.EINTR:
+                    continue
+                else:
+                    raise
+
             p, qname, qclass, index = self.processes[pid]
             del self.processes[pid]
             self.log.error("child died: pid %d, %s_%d" % (pid, qname, index))
@@ -696,9 +704,9 @@ class PersistManager(object):
 
         for pid, pinfo in self.processes.iteritems():
             p, qname, qclass, index = pinfo
-            self.log.info("killing pid %d: %s:%d" % (pid, qname, index))
+            self.log.info("killing pid %d: %s_%d" % (pid, qname, index))
 
-            os.kill(pid, signal.SIGINT)
+            os.kill(pid, signal.SIGTERM)
             os.waitpid(pid, 0)
 
         self.log.info("exiting")
@@ -727,10 +735,10 @@ def espersistd():
         print >>sys.stderr, e
         sys.exit(1)
 
-    name = "espersistd"
+    name = "espersistd.%s" % opts.role
 
     if opts.qname:
-        name = ".".join((name, opts.role, opts.qname))
+        name += ".%s" % opts.qname
 
     if opts.role == 'manager':
         PersistManager(name, config, opts).run()
