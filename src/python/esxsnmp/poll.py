@@ -191,7 +191,12 @@ class PersistThread(threading.Thread):
         self.state = self.REMOVE
 
 class PollManager(object):
-    """Starts a polling thread for each device."""
+    """Manage polling and sending data to be persisted.
+
+    The main polling is done asynchronously in the main thread.  There is a
+    second thread which handles the interactions with the persistence
+    system."""
+
     def __init__(self, name, opts, args, config):
         self.name = name
         self.opts = opts
@@ -215,7 +220,7 @@ class PollManager(object):
                 polling_tag=self.config.polling_tag)
 
         self.persistq = Queue.Queue()
-        self.last_mem = _memory_ps()
+        self.orig_mem = _memory_ps()
         self.snmp_poller = AsyncSNMPPoller(config=self.config,
                 name="espolld.snmp_poller")
         self.pollers = {}
@@ -229,6 +234,7 @@ class PollManager(object):
 
         self.threads = {}
         t = PersistThread(self.config, self.persistq)
+        
         self._start_thread('persist_thread', t)
 
         for device in self.devices.itervalues():
@@ -262,8 +268,7 @@ class PollManager(object):
             if time.time() - self.last_tracker > 90:
                 #diff = self.tracker.diff(self.summary0)
                 mem = _memory_ps()
-                self.log.debug("mem: %d delta %d" % (mem, mem-self.last_mem))
-                self.last_mem = mem
+                self.log.info("mem: %d delta %d" % (mem, mem-self.orig_mem))
                 #for i in diff:
                 #    self.log.debug("mem: %s %d %d" % tuple(i))
                 self.last_tracker = time.time()
@@ -538,12 +543,12 @@ class AsyncSNMPPoller(object):
 
         if self.config:
             for mib_dir in self.config.mib_dirs:
-                self.log.debug("add mib dir %s" % mib_dir)
+                self.log.info("add mib dir %s" % mib_dir)
                 self.sessions.add_mib_dir(mib_dir)
             self.sessions.refresh_mibs()
 
             for mib in self.config.mibs:
-                self.log.debug("add mib %s" % mib)
+                self.log.info("add mib %s" % mib)
                 self.sessions.read_module(mib)
 
         self.sessions.bind('response', '1', None, self._callback)
