@@ -96,7 +96,8 @@ def get_traffic_oidset(device_name):
 def encode_device(dev, uri, children=[]):
 #    print dev.end_time
     return dict(begin_time=dev.begin_time, end_time=dev.end_time,
-            name=dev.name, active=dev.active, children=children, uri=uri)
+            name=dev.name, active=dev.active, children=children, uri=uri,
+            leaf=False)
 
 def encode_ifref(ifref, uri, device, children=[]):
 #    print ifref
@@ -110,10 +111,12 @@ def encode_ifref(ifref, uri, device, children=[]):
             ifHighSpeed=ifref.ifhighspeed,
             ipAddr=ifref.ipaddr,
             uri=uri,
-            device_uri='%s/%s' % (SNMP_URI, device.name))
+            device_uri='%s/%s' % (SNMP_URI, device.name),
+            children=children,
+            leaf=False)
 
-def make_children(uri_prefix, children):
-    return [ dict(name=child, uri="%s/%s" % (uri_prefix, child)) for child in
+def make_children(uri_prefix, children, leaf=False):
+    return [ dict(name=child, uri="%s/%s" % (uri_prefix, child), leaf=leaf) for child in
             children ]
 
 class BulkHandler:
@@ -152,7 +155,7 @@ class BulkHandler:
             try:
                 id, uri = self.uri_from_json(q)
             except BadQuery, e:
-                r[id] = dict(result=None, error=str(e))
+                r[q['id']] = dict(result=None, error=str(e))
                 continue
 
             out = self.snmp_handler.GET(uri=uri, raw=True)
@@ -317,7 +320,7 @@ class SNMPHandler:
                 r = self.get_interfaces_by_descr(descr_pattern)
             else:
                 r =  self.list_devices()
-        elif parts[3] == 'interface' and len(parts) > 5 and parts[5]:
+        elif len(parts) > 5 and parts[3] == 'interface' and parts[5]:
             r = self.get_interface_data(device_name, parts[4], parts[5],
                     '/'.join(parts[6:]))
         else:
@@ -370,7 +373,7 @@ class SNMPHandler:
 
 #        print ">>>",limit
         devices = self.session.query(esxsnmp.sql.Device).filter(limit)
-        r = [dict(name=d.name, uri="%s/%s" % (SNMP_URI, d.name))
+        r = [dict(name=d.name, uri="%s/%s" % (SNMP_URI, d.name), leaf=False)
                 for d in devices]
         return dict(children=r)
 
@@ -437,10 +440,11 @@ class SNMPHandler:
                     uri="%s/%s/interface/%s/" % (SNMP_URI, device.name,
                         remove_metachars(iface.ifdescr)),
                     descr=iface.ifalias,
-                    speed=speed)
+                    speed=speed, 
+                    leaf=False)
 
             l = map(build_iface, ifaces.all())
-            return dict(children=l)
+            return dict(children=l, leaf=False)
         else:
             next, rest = split_url(rest)
             next = urllib.unquote(next)
@@ -457,15 +461,15 @@ class SNMPHandler:
             ifref.end_time > %(begin)s
             AND ifref.begin_time < %(end)s""" % locals()
 
-        ifaces = self.session.query(IfRef).filter(limit)
-        ifaces = ifaces.filter(IfRef.ifalias.like(descr_pattern))
+        ifrefs = self.session.query(IfRef).filter(limit)
+        ifrefs = ifrefs.filter(IfRef.ifalias.like(descr_pattern))
         children = ['in', 'out', 'error', 'discard']
         l = []
         for ifref in ifrefs:
-            uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
-                    iface.replace('/','_'))
+            uri = '%s/%s/interface/%s' % (SNMP_URI, ifref.device.name,
+                    ifref.ifdescr.replace('/','_'))
             kids = make_children(uri, children)
-            l.append(encode_ifref(ifref, uri, device, children=kids))
+            l.append(encode_ifref(ifref, uri, ifref.device, children=kids))
 
         return l
 
@@ -511,7 +515,7 @@ class SNMPHandler:
         iface = iface.replace('_', '/')
         if not rest:
             t0 = time.time()
-            ifrefs = ifaces.filter_by(ifdescr=iface)
+            ifrefs = ifaces.filter_by(ifdescr=iface).order_by(esxsnmp.sql.IfRef.end_time)
 #            print ifrefs.all()
             l = []
             t1 = time.time()
@@ -520,7 +524,7 @@ class SNMPHandler:
             for ifref in ifrefs:
                 uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
                         iface.replace('/','_'))
-                kids = make_children(uri, children)
+                kids = make_children(uri, children, leaf=True)
                 l.append(encode_ifref(ifref, uri, device, children=kids))
 
             t1 = time.time()
