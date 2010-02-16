@@ -123,7 +123,16 @@ class ESxSNMPLeaf(Leaf):
             r = self.client.get("%s?%s" % (path, q))
         except ClientError:
             return []
-        data = [x[1] for x in r['data']]
-        return (r['begin_time'], r['end_time'], r['agg']), data
+
+        def transform_data(data):
+            d = []
+            for x in data:
+                if x[1]:
+                    d.append(x[1] * 8)
+                else:
+                    d.append(x[1])
+            return d
+        data = transform_data(r['data'])
+        return (int(r['begin_time']), int(r['end_time']), int(r['agg'])), data
 
 
