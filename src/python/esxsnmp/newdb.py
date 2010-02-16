@@ -311,7 +311,12 @@ class SNMPHandler:
             str(web.ctx.query))))
 
         if not device_name:
-            r =  self.list_devices()
+            args = parse_query_string()
+            if args.has_key('interface_descr'):
+                descr_pattern = "%%%s%%" % args['interface_descr']
+                r = self.get_interfaces_by_descr(descr_pattern)
+            else:
+                r =  self.list_devices()
         elif parts[3] == 'interface' and len(parts) > 5 and parts[5]:
             r = self.get_interface_data(device_name, parts[4], parts[5],
                     '/'.join(parts[6:]))
@@ -441,6 +446,28 @@ class SNMPHandler:
             next = urllib.unquote(next)
 #            print ">>>>", next, rest
             return self.get_interface(device, ifaces, next, rest)
+
+    def get_interfaces_by_descr(self, descr_pattern):
+        # XXX quick hack to test search idea, totally needs to be written like
+        # this whole module.... *sigh*
+        args = parse_query_string()
+        begin, end = get_time_range(args)
+
+        limit = """
+            ifref.end_time > %(begin)s
+            AND ifref.begin_time < %(end)s""" % locals()
+
+        ifaces = self.session.query(IfRef).filter(limit)
+        ifaces = ifaces.filter(IfRef.ifalias.like(descr_pattern))
+        children = ['in', 'out', 'error', 'discard']
+        l = []
+        for ifref in ifrefs:
+            uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
+                    iface.replace('/','_'))
+            kids = make_children(uri, children)
+            l.append(encode_ifref(ifref, uri, device, children=kids))
+
+        return l
 
     def get_interface(self, device, ifaces, iface, rest):
         """Returns a JSON object representing an interface.
