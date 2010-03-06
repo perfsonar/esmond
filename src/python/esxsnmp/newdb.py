@@ -421,7 +421,8 @@ class SNMPHandler:
         limit = """
             ifref.end_time > %(begin)s
             AND ifref.begin_time < %(end)s
-            AND ifref.deviceid = %(deviceid)s""" % locals()
+            AND ifref.deviceid = %(deviceid)s
+            AND ifref.ifalias !~* ':hide:'""" % locals()
 
 #        print ">>>",limit
 
@@ -459,7 +460,8 @@ class SNMPHandler:
 
         limit = """
             ifref.end_time > %(begin)s
-            AND ifref.begin_time < %(end)s""" % locals()
+            AND ifref.begin_time < %(end)s
+            AND ifref.ifalias !~* ':hide:'""" % locals()
 
         ifrefs = self.session.query(IfRef).filter(limit)
         ifrefs = ifrefs.filter(IfRef.ifalias.like(descr_pattern))
@@ -522,6 +524,8 @@ class SNMPHandler:
             print "t>> iface select %f" % (t1 - t0)
             t0 = t1
             for ifref in ifrefs:
+                if ':hide:' in ifref.ifalias:
+                    continue
                 uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
                         iface.replace('/','_'))
                 kids = make_children(uri, children, leaf=True)
