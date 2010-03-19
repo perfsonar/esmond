@@ -88,6 +88,34 @@ class IfDescrCorrelator(PollCorrelator):
         except KeyError:
             raise PollUnknownIfIndex(ifIndex)
 
+class InfIfDescrCorrelator(PollCorrelator):
+    """correlates an IfIndex to it's IfDescr with Infinera tweaks.
+    
+    On the Infinera the tables only contain entries if an interface is
+    configured so we want to collect them all, but ifAlias is not set."""
+
+    oids = ['ifDescr']
+
+    def setup(self, data):
+        self.xlate = self._table_parse(filter_data('ifDescr', data))
+
+    def lookup(self, oid, var):
+        # XXX this sucks
+        if oid.name == 'sysUpTime':
+            return 'sysUpTime'
+
+        ifIndex = var.split('.')[-1]
+
+        try:
+            r = self.xlate[ifIndex]
+        except KeyError:
+            raise PollUnknownIfIndex(ifIndex)
+
+        if '=' in r:
+            r = r.split('=')[1]
+
+        return "/".join((oid.name, r))
+
 class JnxFirewallCorrelator(PollCorrelator):
     """correlates entries in the jnxFWCounterByteCount tables to a variable
     name"""
@@ -412,17 +440,6 @@ class Poller(object):
 class TSDBPoller(Poller):
     def __init__(self, config, device, oidset, poller, persistq):
         Poller.__init__(self, config, device, oidset, poller, persistq)
-
-        if self.config.tsdb_chunk_prefixes:
-            self.tsdb = tsdb.TSDB(self.config.tsdb_root)
-        else:
-            self.tsdb = tsdb.TSDB(self.config.tsdb_root)
-
-        set_name = "/".join((self.device.name, self.oidset.name))
-        try:
-            self.tsdb_set = self.tsdb.get_set(set_name)
-        except tsdb.TSDBSetDoesNotExistError:
-            self.tsdb_set = self.tsdb.add_set(set_name)
 
     def begin(self):
         pass
