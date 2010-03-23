@@ -88,7 +88,10 @@ def get_traffic_oidset(device_name):
             DB.get_set('/%s/FastPollHC' % (device_name))
             r = ('FastPollHC', 'HC')
         except:
-            r = ('FastPoll', '')
+            try:
+                DB.get_set('/%s/InfFastPollHC' % (device_name))
+            except:
+                r = ('FastPoll', '')
 
     return r
 
