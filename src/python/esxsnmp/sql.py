@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import sessionmaker, mapper, relation, MapperExtension, EXT_CONTINUE, scoped_session
 from calendar import timegm
 
-from esxsnmp.rpc.ttypes import *
+#from esxsnmp.rpc.ttypes import *
 
 vars = {}
 tables = {}
@@ -10,6 +10,33 @@ Session = None
 engine = None
 conn = None
 metadata = None
+
+class OIDType(object):
+    pass
+
+class OID(object):
+    pass
+
+class Poller(object):
+    pass
+
+class OIDSet(object):
+    pass
+
+class Device(object):
+    def __init__(self, name, begin_time='NOW', end_time='Infinity',
+            community='', active=True):
+        self.name = name
+        self.begin_time = begin_time
+        self.end_time = end_time
+        self.community = community
+        self.active = active
+
+class DeviceTag(object):
+    pass
+
+class IfRef(object):
+    pass
 
 def setup_db(db_uri):
     global engine, conn, metadata, Session
