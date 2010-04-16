@@ -18,7 +18,7 @@ setup(name='ESxSNMP',
                 'espersistd = esxsnmp.persist:espersistd',
                 'esfetch = esxsnmp.fetch:esfetch',
                 'esnewdb = esxsnmp.newdb:esdb_standalone',
-                'gen_ma_storefile = esxsnmp.perfsonar:gen_ma_storefile',
+                'gen_ma_storefile = esxsnmp.perfsonar:gen_ma_storefile_http',
             ]
         }
     )
