@@ -36,6 +36,7 @@ CREATE TABLE OIDCorrelator (
 CREATE TABLE OID (
     id       SERIAL PRIMARY KEY,
     name     varchar(1024),
+    aggregate boolean default false,
     OIDtypeId int REFERENCES OIDType,
     OIDCorrelatorId int REFERENCES OIDCorrelator
 );
