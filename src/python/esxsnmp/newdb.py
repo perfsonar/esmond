@@ -36,6 +36,7 @@ urls = (
 
 
 SNMP_URI = '/snmp'
+DATASET_INFINERA_MAP = {'in': 'Rx', 'out': 'Tx'}
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
@@ -90,6 +91,7 @@ def get_traffic_oidset(device_name):
         except:
             try:
                 DB.get_set('/%s/InfFastPollHC' % (device_name))
+                r = ('InfFastPollHC', 'HC')
             except:
                 r = ('FastPoll', '')
 
@@ -624,9 +626,14 @@ class SNMPHandler:
         if dataset in ['in', 'out']: # traffic
             begin, end = int(begin), int(end)
 
-            path = '%s/%s/if%s%sOctets/%s/%s' % (devicename, traffic_oidset,
-                traffic_mod, dataset.capitalize(),
-                remove_metachars(iface), suffix)
+            if traffic_oidset == 'InfFastPollHC':
+                path = '%s/%s/gigeClientCtpPmReal%sOctets/%s/%s' % (devicename,
+                        traffic_oidset, DATASET_INFINERA_MAP[dataset],
+                        remove_metachars(iface), suffix)
+            else:
+                path = '%s/%s/if%s%sOctets/%s/%s' % (devicename, traffic_oidset,
+                    traffic_mod, dataset.capitalize(),
+                    remove_metachars(iface), suffix)
         elif dataset in ['errors', 'discards']:
             path = '%s/Errors/if%s%s/%s' % (devicename, next.capitalize(),
                     dataset.capitalize(), remove_metachars(iface))
@@ -748,7 +755,8 @@ def esdb_wsgi():
     #application = web.profiler(application)
     return application
 
-if __name__ == '__main__':
+
+def esdb_standalone():
     from esxsnmp.config import get_opt_parser, get_config, get_config_path
     from esxsnmp.error import ConfigError
     """
@@ -767,3 +775,5 @@ if __name__ == '__main__':
     application = web.application(urls, globals())
     application.run()
 
+if __name__ == '__main__':
+    esdb_standalone()
