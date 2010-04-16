@@ -25,7 +25,7 @@ from esxsnmp.util import setproctitle, init_logging, get_logger, remove_metachar
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
-from esxsnmp.rpc.ttypes import IfRef
+from esxsnmp.sql import IfRef
 
 try:
     import cmemcache as memcache
@@ -366,6 +366,43 @@ class IfRefPollPersister(PollPersister):
                 ifref_objs[ifIndex_map[ifIndex]][oid.lower()] = val
 
         return ifref_objs
+
+class InfIfRefPollPersister(IfRefPollPersister):
+    """Emulate a IfRef for an Infinera.
+
+    This is a kludge, but it keeps other things relatively simple.
+    
+    ifAlias is called gigeClientCtpPmRealCktId
+    ifSpeed and ifHighSpeed are apparently not available
+    ipAdEntIfIndex doesn't make sense because this is not a layer3 device."""
+
+    def store(self, result):
+        keep = []
+        result.data['ifAlias'] = []
+        result.data['ifSpeed'] = []
+        result.data['ifHighSpeed'] = []
+        result.data['ipAdEntIfIndex'] = []
+    
+        ifalias = {}
+        for k,v in result.data['gigeClientCtpPmRealCktId']:
+            _, ifidx = k.split('.', 1)
+            ifalias[ifidx] = v 
+    
+        for k,v in result.data['ifDescr']:
+            if v.startswith('GIGECLIENTCTP'):
+                _, ifdescr = v.split('=', 1)
+                keep.append((k, ifdescr)) 
+                _, ifidx = k.split('.', 1)
+                result.data['ifAlias'].append(
+                            ('ifAlias.'+ifidx, ifalias.get(ifidx, '')))
+                for x in ('ifSpeed', 'ifHighSpeed'):
+                    result.data[x].append(
+                            ('%s.%s' % (x, ifidx), 0)) 
+    
+        result.data['ifDescr'] = keep
+        del result.data['gigeClientCtpPmRealCktId']
+
+        IfRefPollPersister.store(self, result)
 
 class PersistQueue(object):
     """Abstract base class for a persistence service."""
