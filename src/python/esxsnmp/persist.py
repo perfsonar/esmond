@@ -236,17 +236,28 @@ class TSDBPollPersister(PollPersister):
                 oidset.frequency, chunk_mapper)
 
         if oid.aggregate:
-            tsdb_var.add_aggregate(str(oidset.frequency),
-                chunk_mapper, ['average', 'delta'])
-            if self.poller_args[oidset.name].has_key('aggregates'):
-                aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
-                for agg in aggregates:
-                    tsdb_var.add_aggregate(agg, chunk_mapper,
-                        ['average', 'delta', 'min', 'max'])
+            self._create_aggs(tsdb_var, chunk_mapper, oidset)
 
         tsdb_var.flush()
 
         return tsdb_var
+
+    def _create_agg(self, tsdb_var, oidset, period):
+        chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
+        if period == oidset.frequency:
+            aggs = ['average', 'delta']
+        else:
+            aggs = ['average', 'delta', 'min', 'max']
+
+        tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
+
+    def _create_aggs(self, tsdb_var, oidset):
+        self._create_agg(tsdb_var, oidset, oidset.frequency)
+
+        if self.poller_args[oidset.name].has_key('aggregates'):
+            aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
+            for agg in aggregates:
+                self._create_agg(tsdb_var, chunk_mapper, int(agg))
 
     def _repair_var_metadata(self, var_type, var, oidset, oid):
         self.log.error("var needs repair, skipping: %s" % var)
@@ -266,15 +277,21 @@ class TSDBPollPersister(PollPersister):
             self.log.debug("bad data for %s at %d: %f" % (ancestor.path,
                 curr.timestamp, rate))
 
-        try:
-            #self.log.debug("updating agg %s" % var_name)
+        def update_agg():
             tsdb_var.update_aggregate(str(oidset.frequency),
                 uptime_var=uptime,
                 min_last_update=min_last_update,
                 max_rate=int(11e9),
                 max_rate_callback=log_bad)
+
+        try:
+            update_agg()
         except TSDBAggregateDoesNotExistError:
-            self.log.error("bad aggregate for %s" % var_name)
+            # XXX(jdugan): this needs to be reworked when we update all aggs
+            self.log.error("creating missing aggregate for %s" % var_name)
+            self._create_agg(tsdb_var, oidset, oidset.frequency)
+            tsdb_var.flush()
+            update_agg()
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
 
