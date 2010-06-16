@@ -19,6 +19,7 @@ import esxsnmp.sql
 from esxsnmp.sql import Device, OID, OIDSet, IfRef
 from esxsnmp.util import get_logger, remove_metachars
 from esxsnmp.error import *
+from esxsnmp.config import get_opt_parser, get_config, get_config_path
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
@@ -470,7 +471,8 @@ class SNMPHandler:
 
         ifrefs = self.session.query(IfRef).filter(limit)
         ifrefs = ifrefs.filter(IfRef.ifalias.like(descr_pattern))
-        children = ['in', 'out', 'error', 'discard']
+        children = ['in', 'out', 'error/in', 'error/out', 'discard/in',
+                'discard/out']
         l = []
         for ifref in ifrefs:
             uri = '%s/%s/interface/%s' % (SNMP_URI, ifref.device.name,
@@ -517,9 +519,12 @@ class SNMPHandler:
         """
 
         # XXX fill in ifref info
-        children = ['in', 'out', 'error', 'discard']
+        children = ['in', 'out', 'error/in', 'error/out', 'discard/in',
+                'discard/out']
 
         iface = iface.replace('_', '/')
+        # XXX hack workaround for ALU
+        iface = iface.replace(',/', ', ').replace('Gig/', 'Gig ')
         if not rest:
             t0 = time.time()
             ifrefs = ifaces.filter_by(ifdescr=iface).order_by(esxsnmp.sql.IfRef.end_time)
@@ -579,7 +584,7 @@ class SNMPHandler:
             if next == 'aggs':
                 # XXX list actual aggs
                 return dict(aggregates=[30], cf=['average'])
-            elif dataset not in ['errors', 'discards'] and next not in ['in', 'out']:
+            elif dataset not in ['error', 'discard'] and next not in ['in', 'out']:
                 return web.notfound("nope")
 
         args = parse_query_string()
@@ -634,13 +639,15 @@ class SNMPHandler:
                 path = '%s/%s/if%s%sOctets/%s/%s' % (devicename, traffic_oidset,
                     traffic_mod, dataset.capitalize(),
                     remove_metachars(iface), suffix)
-        elif dataset in ['errors', 'discards']:
+        elif dataset in ['error', 'discard']:
+            # XXX set agg to delta rather than average
             path = '%s/Errors/if%s%s/%s' % (devicename, next.capitalize(),
                     dataset.capitalize(), remove_metachars(iface))
             path += '/TSDBAggregates/60/'
         else:
-            pass
-
+            print "ERR> can't resolve path"
+            return web.notfound()  # Requested variable does not exist
+            
         try:
             v = self.db.get_var(path)
         except TSDBVarDoesNotExistError:
@@ -745,10 +752,19 @@ class LoggingMiddleware:
 
         return self.__application(environ, _start_response)
 
-def esdb_wsgi():
-    esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
+def esdb_wsgi(config_file):
+    oparse = get_opt_parser(default_config_file=get_config_path())
+    (opts, args) = oparse.parse_args(args=[])
+
+    try:
+        config = get_config(config_file, opts)
+    except ConfigError, e:
+        print >>sys.stderr, e
+        sys.exit(1)
+
+    esxsnmp.sql.setup_db(config.db_uri)
     global DB 
-    DB = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
+    DB = tsdb.TSDB(config.tsdb_root, mode="r")
     application = web.application(urls, globals()).wsgifunc()
     sys.stdout = sys.stderr
     #application = LoggingMiddleware(application)
@@ -757,21 +773,16 @@ def esdb_wsgi():
 
 
 def esdb_standalone():
-    from esxsnmp.config import get_opt_parser, get_config, get_config_path
-    from esxsnmp.error import ConfigError
-    """
-    argv = sys.argv
     oparse = get_opt_parser(default_config_file=get_config_path())
-    (opts, args) = oparse.parse_args(args=argv)
+    (opts, args) = oparse.parse_args(args=sys.argv)
 
     try:
         config = get_config(opts.config_file, opts)
     except ConfigError, e:
         print e
         sys.exit(1)
-    """
 
-    esxsnmp.sql.setup_db('postgres://snmp:ed1nCit0@localhost/esxsnmp')
+    esxsnmp.sql.setup_db(config.db_uri)
     application = web.application(urls, globals())
     application.run()
 
