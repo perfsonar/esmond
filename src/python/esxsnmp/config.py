@@ -63,6 +63,7 @@ class ESxSNMPConfig(object):
         self.send_error_email = False
         self.mib_dirs = []
         self.mibs = []
+        self.htpasswd_file = None
 
         self.read_config()
         # XXX(jdugan): validate_config is too restrictive needs to be fixed
@@ -77,7 +78,8 @@ class ESxSNMPConfig(object):
                 'error_email_subject', 'error_email_from', 'traceback_dir',
                 'syslog_facility', 'syslog_level', 'pid_dir',
                 'rrd_path', 'polling_tag', 'rpc_user', 'rpc_password',
-                'espersistd_uri', 'espoll_persist_uri', 'mib_dirs', 'mibs'):
+                'espersistd_uri', 'espoll_persist_uri', 'mib_dirs', 'mibs',
+                'htpasswd_file'):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
 

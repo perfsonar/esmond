@@ -6,6 +6,9 @@
 import sys
 import time
 import os
+import crypt
+import base64
+
 import web
 from web.webapi import HTTPError
 import simplejson
@@ -38,6 +41,52 @@ urls = (
 
 SNMP_URI = '/snmp'
 DATASET_INFINERA_MAP = {'in': 'Rx', 'out': 'Tx'}
+
+class UserDB(object):
+    def __init__(self):
+        self.userpasswdmap = {}
+
+    def read_htpassd(self, htpasswd_file):
+        try:
+            f = open(htpasswd_file, "r")
+            for line in f:
+                line = line.strip()
+                user, pwhash = line.split(':')
+                self.userpasswdmap[user] = pwhash
+        except Exception, e:
+            print >>sys.stderr, e
+
+    def check_password(self, user, passwd):
+        pwhash = self.userpasswdmap.get(user)
+        if pwhash:
+            salt = pwhash[:2]
+            return crypt.crypt(passwd, salt) == pwhash
+
+        return False
+
+    def get_groups(self, user):
+        return []
+
+
+def check_basic_auth():
+    """Check HTTP BASIC Authentication.
+
+    userdb is an object with the same interface as UserDB.
+
+    """
+    if not web.ctx.environ.has_key('HTTP_AUTHORIZATION') or \
+            not web.ctx.environ['HTTP_AUTHORIZATION'].startswith('Basic '):
+        return False
+
+    print >>sys.stderr, ">>AUTH", web.ctx.environ['HTTP_AUTHORIZATION']
+    
+    hash = web.ctx.environ['HTTP_AUTHORIZATION'][6:]
+    remote_user, remote_passwd = base64.b64decode(hash).split(':')
+
+    if USER_DB.check_password(remote_user, remote_passwd):
+        return True
+
+    return False
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
@@ -427,8 +476,11 @@ class SNMPHandler:
         limit = """
             ifref.end_time > %(begin)s
             AND ifref.begin_time < %(end)s
-            AND ifref.deviceid = %(deviceid)s
-            AND ifref.ifalias !~* ':hide:'""" % locals()
+            AND ifref.deviceid = %(deviceid)s""" % locals()
+
+        if not check_basic_auth():
+            limit += """
+            AND ifref.ifalias !~* ':hide:'"""
 
 #        print ">>>",limit
 
@@ -466,8 +518,11 @@ class SNMPHandler:
 
         limit = """
             ifref.end_time > %(begin)s
-            AND ifref.begin_time < %(end)s
-            AND ifref.ifalias !~* ':hide:'""" % locals()
+            AND ifref.begin_time < %(end)s""" % locals()
+
+        if not check_basic_auth():
+            limit += """
+            AND ifref.ifalias !~* ':hide:'"""
 
         ifrefs = self.session.query(IfRef).filter(limit)
         ifrefs = ifrefs.filter(IfRef.ifalias.like(descr_pattern))
@@ -534,7 +589,7 @@ class SNMPHandler:
             print "t>> iface select %f" % (t1 - t0)
             t0 = t1
             for ifref in ifrefs:
-                if ':hide:' in ifref.ifalias:
+                if not check_basic_auth() and ':hide:' in ifref.ifalias:
                     continue
                 uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
                         iface.replace('/','_'))
@@ -752,6 +807,8 @@ class LoggingMiddleware:
 
         return self.__application(environ, _start_response)
 
+USER_DB = UserDB()
+
 def esdb_wsgi(config_file):
     oparse = get_opt_parser(default_config_file=get_config_path())
     (opts, args) = oparse.parse_args(args=[])
@@ -767,6 +824,7 @@ def esdb_wsgi(config_file):
     DB = tsdb.TSDB(config.tsdb_root, mode="r")
     application = web.application(urls, globals()).wsgifunc()
     sys.stdout = sys.stderr
+    USER_DB.read_htpassd(config.htpasswd_file)
     #application = LoggingMiddleware(application)
     #application = web.profiler(application)
     return application
@@ -783,6 +841,7 @@ def esdb_standalone():
         sys.exit(1)
 
     esxsnmp.sql.setup_db(config.db_uri)
+    USER_DB.read_htpassd(config.htpasswd_file)
     application = web.application(urls, globals())
     application.run()
 
