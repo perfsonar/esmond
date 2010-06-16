@@ -65,7 +65,8 @@ class ESxSNMPConfig(object):
         self.mibs = []
 
         self.read_config()
-        self.validate_config()
+        # XXX(jdugan): validate_config is too restrictive needs to be fixed
+        # self.validate_config()
 
     def read_config(self):
         """ read in config from INI-style file, requiring section header 'main'"""
