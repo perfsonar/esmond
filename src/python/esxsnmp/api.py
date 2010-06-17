@@ -1,5 +1,6 @@
 import sys
 import time
+import base64
 import httplib2
 import urllib
 import simplejson
@@ -15,12 +16,20 @@ class ClientError(Exception):
     pass
 
 class ESxSNMPAPI(object):
-    def __init__(self, url, debug=False):
+    def __init__(self, url, debug=False, username=None, password=None):
         if url[-1] == '/':
             url = url[:-1]
         self.url = url
-        self.http = httplib2.Http()
         self.debug = debug
+        self.headers = {}
+
+        self.http = httplib2.Http()
+
+        if username and password:
+            # httplib only sends the authorization header on demand
+            # esdb doesn't ask for authorization but will use it if it is provided
+            self.headers['authorization'] = "Basic " + \
+                    base64.b64encode("%s:%s" % (username, password)).strip()
 
     def _deserialize(self, data):
         try:
@@ -29,13 +38,14 @@ class ESxSNMPAPI(object):
             if self.debug:
                 print >>sys.stderr, "BOGUS DATA"
                 print >>sys.stderr, data
-            raise ClientError("unable to decodeJ JSON: %s" % str(e))
+            raise ClientError("unable to decode JSON: %s" % str(e))
 
     def get(self, path):
         if self.debug:
-            print >>sys.stderr, ">>> PATH ", path
+            print >>sys.stderr, ">>> PATH ", self.url, path
 
-        response, content = self.http.request(self.url + "/snmp/" + path, 'GET')
+        response, content = self.http.request(self.url + "/snmp/" + path, 'GET',
+                headers=self.headers)
 
         if response['status'] != '200':
             raise ClientError('request failed: %s %s'  % (response['status'],
@@ -92,7 +102,8 @@ class ESxSNMPAPI(object):
 
     def get_bulk(self, uri_list, raw=False):
         response, content = self.http.request(self.url + "/bulk/", 'POST',
-                urllib.urlencode(dict(q=simplejson.dumps(uri_list))))
+                urllib.urlencode(dict(q=simplejson.dumps(uri_list))),
+                headers=self.headers)
 
         if not raw:
             return self._deserialize(content)

@@ -1,14 +1,20 @@
 import sys
+import time
 
 from graphite.storage import Branch, Leaf, is_pattern
 from esxsnmp.api import ESxSNMPAPI, ClientError
 from esxsnmp.util import remove_metachars
 
 class Store:
-    def __init__(self, uri):
+    def __init__(self, uri, username=None, password=None, debug=False):
         self.uri = uri
 
-        self.client = ESxSNMPAPI(uri, debug=True)
+        self.client = ESxSNMPAPI(uri, debug=debug)
+        if username and password:
+            self.auth_client = ESxSNMPAPI(uri, debug=debug,
+                    username=username, password=password)
+        else:
+            self.auth_client = self.client
 
     def get(self, metric_path):
         pass
@@ -26,10 +32,13 @@ class Store:
             metric_path = '.'.join(parts)
             pattern = None
 
-        print >>sys.stderr, "path: " + path
-        print >>sys.stderr, "patt: " + str(pattern)
 
-        r = self.client.get(path)
+        if request and request.user and request.user.is_authenticated():
+            client = self.auth_client
+        else:
+            client = self.client
+
+        r = client.get(path)
 
         if type(r) == list:
             # XXX hack -- if we get multiple results use the most recent
@@ -47,29 +56,42 @@ class Store:
                     if path.endswith('interface') and \
                             (not child.has_key('descr')
                                     or child['descr'] == ''):
-                        continue
+                        if not 'dev-alu' in path:
+                            continue
                     name = child['name']
                     if child.has_key('descr'):
-                        if ':hide:' in child['descr'] and  \
-                                not request.user.is_authenticated():
-                            continue
                         label = "%s %s" % (name, child['descr'])
+                        label = label.replace('"','')
                 else:
                     name = parts[-1]
 
                 cpath += name.replace('.','@')
 
-                print >>sys.stderr, "foo ", cpath, label
-
                 if child['leaf']:
-                    yield ESxSNMPLeaf(cpath, cpath, client=self.client,
+                    yield ESxSNMPLeaf(cpath, cpath, client=client,
                             name=name, label=label)
                 else:
                     yield ESxSNMPBranch(cpath, cpath, name=name, label=label)
         else:
-            print >>sys.stderr, "leaf2: " + path
-            yield ESxSNMPLeaf(path, path, client=self.client)
+            yield ESxSNMPLeaf(path, path, client=client)
 
+    def searchable(self):
+        return 1
+
+    def search(self, patterns):
+        data = []
+        for pattern in patterns:
+            data.extend(self.client.get("?interface_descr=%s" % pattern))
+
+        r = []
+        for d in data:
+            for child in d["children"]:
+                r.append( dict(
+                    label="%s %s %s" % (child["uri"].split("/")[-1], d["ifDescr"], d["ifAlias"]),
+                    metric_path=child["uri"].replace("/snmp/", "").replace(".", "@").replace("/", ".") 
+                    ))
+
+        return r
 
 class ESxSNMPBranch(Branch):
     def __init__(self, *args, **kwargs):
@@ -117,12 +139,20 @@ class ESxSNMPLeaf(Leaf):
     def fetch(self, start_time, end_time):
         #path = self.metric_path.replace('.', '/')
         path = self.metric_path.replace('@', '.')
-        print >>sys.stderr, "fpath: %s" % path
         q = self.client.build_query(start_time, end_time)
+        if end_time - start_time > 6*30*24*3600:
+            q += '&calc=86400'
+        elif end_time - start_time > 30*24*3600:
+            q += '&calc=3600'
+        elif end_time - start_time > 24*3600:
+            q += '&calc=300'
+        
+        t0 = time.time()
         try:
             r = self.client.get("%s?%s" % (path, q))
         except ClientError:
             return []
+        print >>sys.stderr, "timing %f %s?%s" % (time.time() - t0, path, q)
 
         def transform_data(data):
             d = []
@@ -133,6 +163,10 @@ class ESxSNMPLeaf(Leaf):
                     d.append(x[1])
             return d
         data = transform_data(r['data'])
-        return (int(r['begin_time']), int(r['end_time']), int(r['agg'])), data
+        try:
+            agg = int(r['agg'])
+        except KeyError:
+            agg = int(r['calc'])
+        return (int(r['begin_time']), int(r['end_time']), agg), data
 
 
