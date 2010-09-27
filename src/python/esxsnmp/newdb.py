@@ -339,7 +339,8 @@ class SNMPHandler:
         self.log = get_logger("newdb")
 
     def __del__(self):
-        self.session.close()
+        if self.session:
+            self.session.close()
 
     def GET(self, uri=None, raw=False, args=None):
         # XXX hack because Apache performs a URL decode on PATH_INFO
