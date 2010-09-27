@@ -236,7 +236,7 @@ class TSDBPollPersister(PollPersister):
                 oidset.frequency, chunk_mapper)
 
         if oid.aggregate:
-            self._create_aggs(tsdb_var, chunk_mapper, oidset)
+            self._create_aggs(tsdb_var, oidset)
 
         tsdb_var.flush()
 
@@ -251,13 +251,13 @@ class TSDBPollPersister(PollPersister):
 
         tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
 
-    def _create_aggs(self, tsdb_var, chunk_mapper, oidset):
+    def _create_aggs(self, tsdb_var, oidset):
         self._create_agg(tsdb_var, oidset, oidset.frequency)
 
         if self.poller_args[oidset.name].has_key('aggregates'):
             aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
             for agg in aggregates:
-                self._create_agg(tsdb_var, chunk_mapper, int(agg))
+                self._create_agg(tsdb_var, oidset, int(agg))
 
     def _repair_var_metadata(self, var_type, var, oidset, oid):
         self.log.error("var needs repair, skipping: %s" % var)
@@ -305,7 +305,8 @@ class IfRefPollPersister(PollPersister):
         self.ifref_data = result.data
 
         self.device = self.db_session.query(esxsnmp.sql.Device).filter(
-                esxsnmp.sql.Device.name == result.device_name).one()
+                esxsnmp.sql.Device.name == result.device_name).filter(
+                        esxsnmp.sql.Device.end_time > 'NOW').one()
 
         new_ifrefs = self._build_objs()
         nvar = len(new_ifrefs)
