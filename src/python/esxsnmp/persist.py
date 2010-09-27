@@ -251,7 +251,7 @@ class TSDBPollPersister(PollPersister):
 
         tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
 
-    def _create_aggs(self, tsdb_var, oidset):
+    def _create_aggs(self, tsdb_var, chunk_mapper, oidset):
         self._create_agg(tsdb_var, oidset, oidset.frequency)
 
         if self.poller_args[oidset.name].has_key('aggregates'):
