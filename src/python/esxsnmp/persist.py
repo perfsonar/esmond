@@ -685,7 +685,6 @@ def worker(name, config, opts):
     os.umask(0022)
     esxsnmp.sql.setup_db(config.db_uri)
 
-
     init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
@@ -798,6 +797,8 @@ def espersistd():
     oparse.add_option("-q", "--queue", dest="qname", default="")
     oparse.add_option("-n", "--number", dest="number", default="")
     (opts, args) = oparse.parse_args(args=argv)
+
+    opts.config_file = os.path.abspath(opts.config_file)
 
     try:
         config = get_config(opts.config_file, opts)
