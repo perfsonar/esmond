@@ -697,9 +697,10 @@ class SNMPHandler:
                     remove_metachars(iface), suffix)
         elif dataset in ['error', 'discard']:
             # XXX set agg to delta rather than average
-            path = '%s/Errors/if%s%s/%s' % (devicename, next.capitalize(),
+            path = '%s/Errors/if%s%ss/%s' % (devicename, next.capitalize(),
                     dataset.capitalize(), remove_metachars(iface))
-            path += '/TSDBAggregates/60/'
+            path += '/TSDBAggregates/300/'
+            agg = '300'
         else:
             print "ERR> can't resolve path"
             return web.notfound()  # Requested variable does not exist

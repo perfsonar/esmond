@@ -59,17 +59,18 @@ class PollCorrelator(object):
         return d
 
 class IfDescrCorrelator(PollCorrelator):
-    """correlates and ifIndex to an it's ifDescr"""
+    """correlates an IfIndex to an it's IfDescr"""
 
     oids = ['ifDescr', 'ifAlias']
 
-    def setup(self, data):
+    def setup(self, data, ignore_no_ifalias=True):
         self.xlate = self._table_parse(filter_data('ifDescr', data))
 
-        for (var,val) in filter_data('ifAlias', data):
-            ifIndex = var.split(".")[-1]
-            if not val:
-                self.xlate[ifIndex] = None
+        if ignore_no_ifalias:
+            for (var,val) in filter_data('ifAlias', data):
+                ifIndex = var.split(".")[-1]
+                if not val:
+                    self.xlate[ifIndex] = None
 
     def lookup(self, oid, var):
         # XXX this sucks
@@ -115,6 +116,15 @@ class InfIfDescrCorrelator(PollCorrelator):
             r = r.split('=')[1]
 
         return "/".join((oid.name, r))
+
+class ALUIfDescrCorrelator(IfDescrCorrelator):
+    """correlates an IfIndec to it's IfDescr with ALU tweaks.
+    
+    The ALU doesn't store the interface description in ifAlias like a normal
+    box."""
+
+    def setup(self, data, ignore_no_ifalias=False):
+        IfDescrCorrelator.setup(self, data, ignore_no_ifalias)
 
 class JnxFirewallCorrelator(PollCorrelator):
     """correlates entries in the jnxFWCounterByteCount tables to a variable
@@ -546,7 +556,7 @@ class AsyncSNMPPoller(object):
 
     AsyncPoller manages all the polling using DLNetSNMP."""
 
-    def __init__(self, config=None, name="AsyncSNMPPoller", maxrepetitions=100):
+    def __init__(self, config=None, name="AsyncSNMPPoller", maxrepetitions=25):
         self.maxrepetitions = maxrepetitions
         self.name = name
         self.config = config
@@ -698,7 +708,7 @@ def espoll():
         print e
         sys.exit(1)
 
-    init_logging(config.syslog_facility, level=config.syslog_level,
+    init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     esxsnmp.sql.setup_db(config.db_uri)
@@ -755,7 +765,7 @@ def espolld():
         print e
         sys.exit(1)
 
-    init_logging(config.syslog_facility, level=config.syslog_level,
+    init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     name = "espolld.manager"
@@ -766,7 +776,8 @@ def espolld():
         exc_handler = setup_exc_handler(name, config)
         exc_handler.install()
 
-        daemonize(name, config.pid_dir, log_stdout_stderr=exc_handler.log)
+        daemonize(name, config.pid_dir,
+                log_stdout_stderr=config.syslog_facility)
 
     os.umask(0022)
 

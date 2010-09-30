@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import os
+import os.path
 import sys
 import time
 import signal
 import errno
+import __main__
 
 from subprocess import Popen
 
@@ -185,8 +187,9 @@ class TSDBPollPersister(PollPersister):
                 try:
                     self.oid_type_map[oid.name] = eval("tsdb.row.%s" % oid.type.name)
                 except AttributeError:
-                    self.log.warning("warning don't have a TSDBRow for %s" % oid.type.name)
-
+                    self.log.warning(
+                            "warning don't have a TSDBRow for %s in %s" %
+                            (oid.type.name, oidset.name))
         session.close()
 
     def store(self, result):
@@ -622,14 +625,20 @@ class QueueStats:
         self.qname = qname
         self.last_read = [0, 0]
         self.last_added = [0, 0]
+        self.warn = False
 
     def update_stats(self):
         for k in ('last_read', 'last_added'):
             kk = '%s_%s_%s' % (self.prefix, self.qname, k)
             v = self.mc.get(kk)
             l = getattr(self, k)
-            l.pop()
-            l.insert(0, int(v))
+            if v:
+                l.pop()
+                l.insert(0, int(v))
+            elif not self.warn:
+                print >>sys.stderr, "warning: stats unavailable, no work queue %s in memcache" % (self.qname, )
+                self.warn = True
+                break
 
     def get_stats(self):
         return (self.qname,
@@ -674,7 +683,7 @@ def worker(name, config, opts):
     esxsnmp.sql.setup_db(config.db_uri)
 
 
-    init_logging(config.syslog_facility, level=config.syslog_level,
+    init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     (qclass, nworkers) = config.persist_queues[opts.qname]
@@ -698,19 +707,23 @@ class PersistManager(object):
 
         self.processes = {}
 
+        init_logging(config.syslog_facility, level=config.syslog_priority,
+            debug=opts.debug)
+
+        self.log = get_logger(name)
+        # save the location of the calling script for later use
+        # (os.path.abspath uses current directory and daemonize does a cd /)
+        self.caller_path = os.path.abspath(__main__.__file__)
+
         if not self.opts.debug:
             exc_handler = setup_exc_handler(name, config)
             exc_handler.install()
 
-            daemonize(name, config.pid_dir, log_stdout_stderr=exc_handler.log)
+            daemonize(name, config.pid_dir,
+                    log_stdout_stderr=config.syslog_facility)
 
         os.umask(0022)
         esxsnmp.sql.setup_db(config.db_uri)
-
-        init_logging(config.syslog_facility, level=config.syslog_level,
-            debug=opts.debug)
-
-        self.log = get_logger(name)
 
         setproctitle(name)
         signal.signal(signal.SIGINT, self.stop)
@@ -723,7 +736,7 @@ class PersistManager(object):
                 self.start_child(qname, qclass, i)
 
     def start_child(self, qname, qclass, index):
-        args = [sys.executable, sys.argv[0],
+        args = [sys.executable, self.caller_path,
                 '-r', 'worker',
                 '-q', qname,
                 '-f', self.opts.config_file]
@@ -731,7 +744,6 @@ class PersistManager(object):
         if self.config.persist_queues[qname][1] > 1:
             args.extend(['-n', str(index)])
 
-        self.log.debug(" ".join(args))
         p = Popen(args)
     
         self.processes[p.pid] = (p, qname, qclass, index)
@@ -773,8 +785,8 @@ class PersistManager(object):
 def espersistd():
     """Entry point for espersistd.
 
-    espersistd consists of one PersistenceManager thread and multiple RPyC
-    service processes.
+    espersistd consists of one PersistenceManager thread and multiple 
+    worker sub-processes.
 
     """
     argv = sys.argv

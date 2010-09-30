@@ -6,6 +6,7 @@ import socket
 import time
 
 from esxsnmp.util import get_ESDB_client
+from esxsnmp.config get_opt_parser, get_config
 from esxsnmp.api import ESxSNMPAPI
 
 def gen_ma_storefile():
@@ -206,6 +207,21 @@ Notes:
            
 def gen_ma_storefile_http():
     """Translated from the original Perl by jdugan"""
+
+    argv = sys.argv
+    oparse = get_opt_parser(default_config_file=get_config_path())
+    (opts, args) = oparse.parse_args(args=argv)
+
+    try:
+        config = get_config(opts.config_file, opts)
+    except ConfigError, e:
+        print >>sys.stderr, e
+        sys.exit(1)
+
+    if not config.db_uri:
+        print >>sys.stderr, "error: db_uri not specified in config"
+        sys.exit(1)
+
     params = {}
     params['hostname'] = socket.gethostname()
     params['date'] = time.asctime()
@@ -259,7 +275,7 @@ Notes:
 
     print HEADER
 
-    client = ESxSNMPAPI('http://monitor.sc09.org:8001')
+    client = ESxSNMPAPI(config.db_uri)
 
     oidset_rtr_map = {}
     interfaces = []

@@ -5,6 +5,7 @@ import time
 import logging
 import logging.handlers
 import smtplib
+import syslog
 from email.MIMEText import MIMEText
 from StringIO import StringIO
 import traceback
@@ -22,12 +23,17 @@ from esxsnmp.rpc import ESDB
 proctitle = None
 
 class LoggerIO(object):
-    """file like class which logs writes to the logging module"""
-    def __init__(self, log):
-        self.log = log
+    """file like class which logs writes to syslog module
+    
+    This is intended to catch errant output to stdout or stderr inside daemon
+    processes and log it to syslog rather than crashing the program."""
+
+    def __init__(self, name, facility):
+        self.name = name
+        syslog.openlog(name, syslog.LOG_PID, facility)
 
     def write(self, buf):
-        self.log.debug(buf)
+        syslog.syslog(syslog.LOG_ERR, "captured: " + buf)
 
 def daemonize(name, piddir=None, logfile=None, log_stdout_stderr=None):
     '''Forks the current process into a daemon.
@@ -98,7 +104,7 @@ def daemonize(name, piddir=None, logfile=None, log_stdout_stderr=None):
         os.dup2(0, sys.stderr.fileno())
 
     if log_stdout_stderr:
-        sys.stdout = sys.stderr = LoggerIO(log_stdout_stderr)
+        sys.stdout = sys.stderr = LoggerIO(name, log_stdout_stderr)
 
 
 def setproctitle(name):
@@ -123,7 +129,9 @@ def init_logging(facility, level=logging.INFO,
 
     log = logging.getLogger()
     log.setLevel(level)
-    syslog = logging.handlers.SysLogHandler("/dev/log", facility)
+    # XXX(jdugan): /dev/log appears to be more costly at least on FreeBSD
+    #syslog = logging.handlers.SysLogHandler("/dev/log", facility)
+    syslog = logging.handlers.SysLogHandler(('localhost', 514), facility=facility)
     syslog.setFormatter(logging.Formatter(format))
     log.addHandler(syslog)
 
