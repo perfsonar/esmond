@@ -12,7 +12,10 @@ from subprocess import Popen
 
 import cPickle as pickle
 
-import cjson
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 import sqlalchemy
 
@@ -81,7 +84,7 @@ class PollResult(object):
         return pickle.dumps(self)
 
     def json(self):
-        print 
+        return json.dumps(self)
 
 class PollPersister(object):
     """A PollPersister implements a storage method for PollResults."""
@@ -437,10 +440,10 @@ class PersistQueue(object):
         pass
 
     def serialize(self, val):
-        return pickle.dumps(val) #cjson.encode(val)
+        return pickle.dumps(val) #json.encode(val)
 
     def deserialize(self, val):
-        return pickle.loads(val) #cjson.decode(val)
+        return pickle.loads(val) #json.decode(val)
 
 class MemcachedPersistQueue(PersistQueue):
     """A simple queue based on memcached.

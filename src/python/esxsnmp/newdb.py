@@ -11,7 +11,10 @@ import base64
 
 import web
 from web.webapi import HTTPError
-import simplejson
+try:
+    import json
+except ImportError:
+    import simplejson as json
 import urllib
 from fpconst import isNaN
 import logging
@@ -199,7 +202,7 @@ class BulkHandler:
         #print ">>> Q ", data['q']
 
         try:
-            self.queries = simplejson.loads(data['q'])
+            self.queries = json.loads(data['q'])
         except ValueError, e:
             print "ERR> BAD JSON:", data['q'], str(e)
             return web.webapi.BadRequest()
@@ -223,7 +226,7 @@ class BulkHandler:
         web.ctx.status = "200 OK"
         print "grabbed %d vars in %f sec" % (len(r), time.time()-t0)
 
-        return simplejson.dumps(r)
+        return json.dumps(r)
 
     def uri_from_json(self, q):
         try:
@@ -245,7 +248,7 @@ class BulkHandler:
 
     def calcq(self, q):
         try:
-            queries = simplejson.loads(q)
+            queries = json.loads(q)
         except ValueError, e:
             print "ERR> BAD JSON:", q, str(e)
             return web.webapi.BadRequest()
@@ -295,7 +298,7 @@ class BulkHandler:
             r['result'] = calcf(data)
             results[query['id']] = r
 
-        return simplejson.dumps(results)
+        return json.dumps(results)
 
     def calcf_sum(self, data):
         r = []
@@ -314,7 +317,7 @@ class BulkHandler:
             return web.webapi.BadRequest()
 
         try:
-            self.uris = simplejson.loads(data['uris'])
+            self.uris = json.loads(data['uris'])
         except ValueError, e:
             print ">>> BAD JSON:", data['uris'], str(e)
             return web.webapi.BadRequest()
@@ -329,7 +332,7 @@ class BulkHandler:
             else:
                 r[uri] = dict(result=out, error=None)
 
-        return simplejson.dumps(r)
+        return json.dumps(r)
         
 class SNMPHandler:
     def __init__(self):
@@ -401,7 +404,7 @@ class SNMPHandler:
         if raw or isinstance(r, HTTPError):
             return r
         else:
-            return simplejson.dumps(r)
+            return json.dumps(r)
 
 
     def list_devices(self, active=True):

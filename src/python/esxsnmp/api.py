@@ -3,7 +3,11 @@ import time
 import base64
 import httplib2
 import urllib
-import simplejson
+try:
+    import json
+except ImportError
+    import simplejson as json
+
 #from esxsnmp.util import remove_metachars
 
 def remove_metachars(name):
@@ -33,7 +37,7 @@ class ESxSNMPAPI(object):
 
     def _deserialize(self, data):
         try:
-            return simplejson.loads(data)
+            return json.loads(data)
         except ValueError, e:
             if self.debug:
                 print >>sys.stderr, "BOGUS DATA"
@@ -102,7 +106,7 @@ class ESxSNMPAPI(object):
 
     def get_bulk(self, uri_list, raw=False):
         response, content = self.http.request(self.url + "/bulk/", 'POST',
-                urllib.urlencode(dict(q=simplejson.dumps(uri_list))),
+                urllib.urlencode(dict(q=json.dumps(uri_list))),
                 headers=self.headers)
 
         if not raw:
