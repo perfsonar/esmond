@@ -260,5 +260,4 @@ def esdbd():
 
     server = HandlerPerThreadThreadedServer(ESDBProcessorFactory(config),
             transport, tfactory, pfactory, config)
-    #try_harder(server.serve, exc_handler)
     server.serve()

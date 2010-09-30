@@ -336,43 +336,6 @@ def setup_exc_handler(name, config, ignore=[SystemExit]):
 
     return ExceptionHandler(ignore=ignore, email=email, log=log, output_dir=output_dir)
 
-def try_harder(callable_, exc_handler, restart_delay=10, restart_attempts=5,
-        restart_timer=30):
-    """Try to keep callable_ running.
-
-    `callable_` is a callable for which we are trying harder. if `callable_`
-    returns nothing is done we just exit.  if `callable_` raises and exception
-    the exception is logged using `exc_handler` (also a callable) and
-    `callable_` is restarted after `restart_delay` seconds.  if `callable_`
-    rasises an exception in less than `restart_timer` seconds the attempts
-    counter is incremented.  if the attempts counter is greater than
-    `restart_attempts` try_harder logs an exception saying that it is exiting
-    and then exits.  The code is shorter than the docstring.
-
-    If you need to call `callable_` with arguments a closure is a handy way to
-    accomplish that.
-    """
-
-    attempts = 0
-    while True:
-        start = time.time()
-        try:
-            callable_()
-            break
-        except Exception, e:
-            exc_handler()
-            if time.time() - start < restart_timer:
-                attempts += 1
-            else:
-                attempts = 0
-
-            if attempts >= restart_attempts:
-                # XXX for some reason this exception is munged when it gets to
-                # the exception handler.  why?!?!
-                raise Exception("too many restart attempts, exiting")
-
-            time.sleep(restart_delay)
-
 def run_server(callable_, name, config):
     exc_hook = setup_exc_handler(name, config)
     exc_hook.install()
