@@ -13,13 +13,6 @@ import inspect
 import tempfile
 from optparse import OptionParser
 
-from thrift.transport import TTransport
-from thrift.transport import TSocket
-from thrift.transport import THttpClient
-from thrift.protocol import TBinaryProtocol
-
-from esxsnmp.rpc import ESDB
-
 proctitle = None
 
 class LoggerIO(object):
@@ -156,11 +149,6 @@ def send_mail(sender, to, subject, body, relay='localhost'):
     srv.connect(host=relay)
     srv.sendmail(sender, to, msg.as_string())
     srv.close()
-
-def get_ESDB_client(server='localhost', port=9090):
-    transport = TTransport.TBufferedTransport(TSocket.TSocket(server, port))
-    client = ESDB.Client(TBinaryProtocol.TBinaryProtocolAccelerated(transport))
-    return (transport, client)
 
 class ExceptionHandler(object):
     """Flexible exception hook with detailed messages.
