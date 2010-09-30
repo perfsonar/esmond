@@ -56,8 +56,6 @@ class ESxSNMPConfig(object):
         self.pid_dir = None
         self.rrd_path = None
         self.polling_tag = None
-        self.rpc_user = None
-        self.rpc_password = None
         self.espersistd_uri = None
         self.espoll_persist_uri = None
         self.send_error_email = False
@@ -79,9 +77,8 @@ class ESxSNMPConfig(object):
         for opt in ('db_uri', 'tsdb_root', 'tsdb_chunk_prefixes', 'error_email_to',
                 'error_email_subject', 'error_email_from', 'traceback_dir',
                 'syslog_facility', 'syslog_priority', 'pid_dir',
-                'rrd_path', 'polling_tag', 'rpc_user', 'rpc_password',
-                'espersistd_uri', 'espoll_persist_uri', 'mib_dirs', 'mibs',
-                'htpasswd_file'):
+                'rrd_path', 'polling_tag', 'espersistd_uri',
+                'espoll_persist_uri', 'mib_dirs', 'mibs', 'htpasswd_file'):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
 
