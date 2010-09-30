@@ -2,8 +2,6 @@ from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import sessionmaker, mapper, relation, MapperExtension, EXT_CONTINUE, scoped_session
 from calendar import timegm
 
-#from esxsnmp.rpc.ttypes import *
-
 vars = {}
 tables = {}
 Session = None

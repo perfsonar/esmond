@@ -25,7 +25,7 @@ from esxsnmp.util import setproctitle, init_logging, get_logger, remove_metachar
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError, PollerError
-from esxsnmp.rpc.ttypes import IfRef
+from esxsnmp.sql import IfRef
 from esxsnmp.persist import PollResult, PersistClient
 
 class PollError(Exception):
