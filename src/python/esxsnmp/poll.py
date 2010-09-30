@@ -13,8 +13,6 @@ import Queue
 import sqlalchemy
 from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
 import rrdtool
-from pympler.muppy import summary, tracker
-from pympler.heapmonitor import _memory_ps, _memory_generic
 
 import tsdb
 import tsdb.row
@@ -258,7 +256,6 @@ class PollManager(object):
                 polling_tag=self.config.polling_tag)
 
         self.persistq = Queue.Queue()
-        self.orig_mem = _memory_ps()
         self.snmp_poller = AsyncSNMPPoller(config=self.config,
                 name="espolld.snmp_poller")
         self.pollers = {}
@@ -293,23 +290,9 @@ class PollManager(object):
                 self.pollers["%s_%s" % (device.name, oidset.name)] = poller
                 self.log.debug("added %s %s" % (device.name, oidset.name))
 
-        # XXX memory debugging
-        #self.tracker = tracker.SummaryTracker()
-        #self.summary0 = self.tracker.s0
-        self.last_tracker = time.time()
-
         while self.running:
             for poller in self.pollers.itervalues():
                 poller.run_once()
-
-            # XXX memory debugging
-            if time.time() - self.last_tracker > 90:
-                #diff = self.tracker.diff(self.summary0)
-                mem = _memory_ps()
-                self.log.info("mem: %d delta %d" % (mem, mem-self.orig_mem))
-                #for i in diff:
-                #    self.log.debug("mem: %s %d %d" % tuple(i))
-                self.last_tracker = time.time()
 
             time.sleep(5)
 
