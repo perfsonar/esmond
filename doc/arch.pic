@@ -1,0 +1,109 @@
+.PS
+define rtr {box rad 0.0625}
+define proc {box ht 0.25 rad 0.125}
+define bigproc {box ht 0.25 wid 1.0 rad 0.125}
+define disk {box ht 0.5 rad 0.25}
+define client {box wid 1.0 ht 0.5}
+
+define snmpline {line dashed 0.05}
+define intline {line dashed 0.02}
+define sqlline {line dashed 0.1}
+define restline {line}
+
+lineht = 0.25;
+
+down;
+R1: rtr "router";
+move to R1 .w then left;
+R2: rtr "router";
+move to R1 .e then right;
+R3: rtr "router";
+
+move to R1 .s then down;
+
+down;
+Espolld: proc "espolld";
+
+move to R1 .s;
+snmpline to Espolld .n <->;
+
+move to R2 .s;
+snmpline down then to Espolld .w <->;
+
+move to R3 .s;
+snmpline down then to Espolld .e <->;
+
+move to Espolld .s then down;
+Memcached: proc "memcached";
+
+move to Memcached .sw;
+intline down left then down <->;
+P1: proc "espersistd";
+
+move to Memcached .s;
+intline down then down <->
+P2: proc "espersistd";
+
+move to Memcached .se;
+intline down right then down <->;
+P3: proc "espersistd";
+
+move to Memcached .w;
+intline left then left <->;
+P4: proc "espersistd";
+
+intline down from Espolld .s lineht <->;
+
+move to P2 .s;
+intline down ->;
+D: disk "disk" "(TSDB)";
+
+move to D .w;
+move left then left;
+SQL: disk "SQL DB";
+
+move to P1 .s;
+intline down to D .nw ->;
+
+move to P3 .s;
+intline down to D .ne ->;
+
+move to D .s;
+intline down then down <->;
+DB: bigproc "esdbd (newdb)";
+
+move to SQL.e;
+sqlline right then to DB.nw <->;
+
+move to P4.s;
+sqlline down to SQL.n <->;
+
+move to DB .s;
+restline down then down <->;
+Client: client "client" "(REST/JSON)";
+
+move to Client .e then right;
+Graphite: client "Graphite";
+
+move to Graphite .n;
+restline up then to DB .e <->;
+
+move to Client .w then left;
+PS: client "perfSONAR";
+
+move to PS .n;
+restline up then to DB .w <->;
+
+move to PS.s then down;
+
+right;
+restline;
+move to last line .center then up .1 "REST";
+move to last line .e;
+move right;
+intline above "internal";
+move right;
+sqlline above "SQL";
+move right;
+snmpline above "SNMP";
+.PE
