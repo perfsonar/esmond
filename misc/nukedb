@@ -1,6 +1,0 @@
-#!/bin/sh -x
-
-DB=essnmp
-
-dropdb $DB && createdb $DB && psql $DB < ../src/sql/essnmp.sql && \
-psql $DB < ../src/sql/testdata.sql
