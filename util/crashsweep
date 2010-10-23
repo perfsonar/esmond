@@ -1,0 +1,28 @@
+#!/bin/sh
+
+MAILTO=me@example.com
+CRASHDIR=/data/esxsnmp/crashlog
+TMPFILE=/tmp/crashsweep.$$
+
+cd ${CRASHDIR}
+
+find ${CRASHDIR} -newer ${CRASHDIR}/.lastsweep -type f > ${TMPFILE}
+
+for f in `cat ${TMPFILE}`; do
+    head -1 ${f} | grep 'KeyError.*TYPE_ID' > /dev/null
+    if [ $? -eq 0 ]; then
+         sed -n -e '/^ *path=/p' ${f} \
+         | sed -e 's/^ *path=//' -e s/\'//g -e 's/^/missing metadata: /' \
+             >> ${TMPFILE}-mail
+    fi 
+done
+
+cat ${TMPFILE} | xargs head -1 >> ${TMPFILE}-mail
+
+if [ -s ${TMPFILE}-mail ]; then
+    mail -s "ESxSNMP Crash Report" ${MAILTO} < ${TMPFILE}-mail
+fi
+
+rm -f ${TMPFILE}*
+
+touch ${CRASHDIR}/.lastsweep

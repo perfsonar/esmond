@@ -1,0 +1,59 @@
+#!/bin/sh
+
+export PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin
+
+FASTROOT=/ssd/esxsnmp/data/
+SLOWROOT=/data/esxsnmp/data/
+SYSLOG_FACILITY=local7
+PROG=`basename $0`
+PURGE_DAYS=10
+
+syslog ()
+{
+    logger -p ${SYSLOG_FACILITY}.$1 -t ${PROG} $2
+}
+
+timeit ()
+{
+    begin=`date '+%s'`
+    $*
+    _status=$?
+    now=`date '+%s'`
+    delta_t=$((now-begin))
+    return ${_status}
+}
+
+do_rsync ()
+{
+    rsync -a ${FASTROOT} ${SLOWROOT}
+}
+
+do_purge ()
+{
+    purgelist=/tmp/${PROG}.$$
+    find ${FASTROOT} -mtime +${PURGE_DAYS} \! -name 'TSDB*' -type f > ${purgelist}
+    cat ${purgelist} | xargs rm
+    npurge=`wc -l ${purgelist}`
+    rm -f ${purgelist}
+}
+
+cd ${FASTROOT}
+
+syslog info "starting rsync"
+timeit do_rsync
+rsync_status=$?
+syslog info "rsync took ${delta_t} seconds, returned ${rsync_status}"
+
+if [ ${rsync_status} -ne 0 ]; then
+    msg="rsync exited with ${rsync_status} not purging data"
+    logger -p ${SYSLOG_FACILITY}.error -t ${PROG} ${msg}
+    syslog error "${msg}"
+    echo ${msg}
+    exit 1
+fi
+
+syslog info "starting purge"
+timeit do_purge
+syslog info "purged ${npurge} chunks in ${delta_t} seconds"
+
+touch ${FASTROOT}/.${PROG}
