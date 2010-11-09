@@ -66,6 +66,11 @@ class Store:
                     name = parts[-1]
 
                 cpath += name.replace('.','@')
+                # XXX KLUDGE! need to revist various path translation crap
+                if 'error/' in cpath:
+                    cpath = cpath.replace('error/', 'error.')
+                if 'discard/' in cpath:
+                    cpath = cpath.replace('discard/', 'discard.')
 
                 if child['leaf']:
                     yield ESxSNMPLeaf(cpath, cpath, client=client,
