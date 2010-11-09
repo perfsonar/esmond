@@ -45,6 +45,7 @@ class ESxSNMPConfig(object):
         self.file = file
 
         self.db_uri = None
+        self.esdb_uri = None
         self.tsdb_root = None
         self.tsdb_chunk_prefixes = None
         self.error_email_to = None
@@ -78,7 +79,8 @@ class ESxSNMPConfig(object):
                 'error_email_subject', 'error_email_from', 'traceback_dir',
                 'syslog_facility', 'syslog_priority', 'pid_dir',
                 'rrd_path', 'polling_tag', 'espersistd_uri',
-                'espoll_persist_uri', 'mib_dirs', 'mibs', 'htpasswd_file'):
+                'espoll_persist_uri', 'mib_dirs', 'mibs', 'htpasswd_file',
+                'esdb_uri'):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
 
