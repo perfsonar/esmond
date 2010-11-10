@@ -57,6 +57,7 @@ class ESxSNMPConfig(object):
         self.pid_dir = None
         self.rrd_path = None
         self.polling_tag = None
+        self.poll_timeout = 1
         self.espersistd_uri = None
         self.espoll_persist_uri = None
         self.send_error_email = False
