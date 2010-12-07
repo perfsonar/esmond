@@ -8,7 +8,7 @@ from esxsnmp.error import ConfigError
 
 def get_config_path():
     if os.environ.has_key('ESXSNMP_CONF'):
-        conf = sys.environ('ESXSNMP_CONF')
+        conf = os.environ['ESXSNMP_CONF']
     else:
         conf = './esxsnmp.conf'
 
