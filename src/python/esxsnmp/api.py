@@ -5,7 +5,7 @@ import httplib2
 import urllib
 try:
     import json
-except ImportError
+except ImportError:
     import simplejson as json
 
 #from esxsnmp.util import remove_metachars
