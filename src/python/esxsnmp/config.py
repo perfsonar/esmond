@@ -57,7 +57,8 @@ class ESxSNMPConfig(object):
         self.pid_dir = None
         self.rrd_path = None
         self.polling_tag = None
-        self.poll_timeout = 1
+        self.poll_retries = 5
+        self.poll_timeout = 2
         self.espersistd_uri = None
         self.espoll_persist_uri = None
         self.send_error_email = False
@@ -79,7 +80,8 @@ class ESxSNMPConfig(object):
         for opt in ('db_uri', 'tsdb_root', 'tsdb_chunk_prefixes', 'error_email_to',
                 'error_email_subject', 'error_email_from', 'traceback_dir',
                 'syslog_facility', 'syslog_priority', 'pid_dir',
-                'rrd_path', 'polling_tag', 'espersistd_uri',
+                'rrd_path', 'polling_tag', 'poll_retries', 'poll_timeout',
+                'espersistd_uri',
                 'espoll_persist_uri', 'mib_dirs', 'mibs', 'htpasswd_file',
                 'esdb_uri'):
             if opt in config_items:
@@ -106,6 +108,10 @@ class ESxSNMPConfig(object):
 
         if self.mibs:
             self.mibs = map(str.strip, self.mibs.split(','))
+        if self.poll_timeout:
+            self.poll_timeout = int(self.poll_timeout)
+        if self.poll_retries:
+            self.poll_retries = int(self.poll_retries)
 
         if self.error_email_to is not None \
                 and self.error_email_subject is not None \

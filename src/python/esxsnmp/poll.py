@@ -274,7 +274,9 @@ class PollManager(object):
 
         for device in self.devices.itervalues():
             try:
-                self.snmp_poller.add_session(device.name, device.community)
+                self.snmp_poller.add_session(device.name, device.community,
+                    timeout=self.config.poll_timeout, 
+                    retries=self.config.poll_retries)
             except PollerError, e:
                 self.log.error(str(e))
                 continue
@@ -564,8 +566,8 @@ class AsyncSNMPPoller(object):
         self.sessions.bind('response', '1', None, self._callback)
         self.sessions.bind('timeout', '1', None, self._errback)
 
-    def add_session(self, host, community, version='2', timeout=10,
-            retries=1):
+    def add_session(self, host, community, version='2', timeout=2,
+            retries=10):
         try:
             self.sessions.add_session(host, peername=host, community=community,
                 version=version, timeout=timeout, retries=retries,
@@ -712,7 +714,8 @@ def espoll():
         sys.exit(1)
 
     snmp_poller = AsyncSNMPPoller(config=config)
-    snmp_poller.add_session(device.name, device.community)
+    snmp_poller.add_session(device.name, device.community, 
+        timeout=config.poll_timeout, retries=config.poll_retries)
 
     print "%s %s" % (device.name, oidset.name)
 
