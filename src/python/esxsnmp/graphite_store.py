@@ -172,6 +172,13 @@ class ESxSNMPLeaf(Leaf):
             agg = int(r['agg'])
         except KeyError:
             agg = int(r['calc'])
+       
+        # if we don't have enough data pad with Nones
+        expected_len = int(((end_time - start_time) / agg)-1)
+        if expected_len > len(data):
+            nones = [None,] * (expected_len - len(data))
+            data = nones + list(data)
+
         return (int(r['begin_time']), int(r['end_time']), agg), data
 
 
