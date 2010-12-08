@@ -21,8 +21,8 @@ def gen_ma_storefile():
         print >>sys.stderr, e
         sys.exit(1)
 
-    if not config.db_uri:
-        print >>sys.stderr, "error: db_uri not specified in config"
+    if not config.esdb_uri:
+        print >>sys.stderr, "error: esdb_uri not specified in config"
         sys.exit(1)
 
     params = {}
