@@ -217,6 +217,7 @@ class TSDBPollPersister(PollPersister):
                 tsdb_var = self._create_var(var_type, var_name, oidset, oid)
             except tsdb.InvalidMetaData:
                 tsdb_var = self._repair_var_metadata(var_type, var_name, oidset, oid)
+                continue # XXX(jdugan): remove this once repair actually works
 
             tsdb_var.insert(var_type(result.timestamp, flags, val))
 
@@ -287,6 +288,7 @@ class TSDBPollPersister(PollPersister):
             tsdb_var.update_aggregate(str(oidset.frequency),
                 uptime_var=uptime,
                 min_last_update=min_last_update,
+                # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
                 max_rate=int(11e9),
                 max_rate_callback=log_bad)
 
