@@ -213,7 +213,7 @@ Notes:
 \t\t<nmwg:key id="keyid%(i)d">
 \t\t\t<nmwg:parameters id="dataparam%(i)d">
 \t\t\t\t<nmwg:parameter name="type">esxsnmp</nmwg:parameter>
-\t\t\t\t<nmwg:parameter name="valueUnits">Bps</nmwg:parameter>
+\t\t\t\t<nmwg:parameter name="valueUnits">bps</nmwg:parameter>
 \t\t\t\t<nmwg:parameter name="name">%(name)s</nmwg:parameter>
 \t\t\t\t<nmwg:parameter name="eventType">http://ggf.org/ns/nmwg/characteristic/utilization/2.0</nmwg:parameter>
 \t\t\t</nmwg:parameters>
