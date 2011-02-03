@@ -61,6 +61,7 @@ In addition, it uses the following Python libraries:
   * SQLAlchemy_
   * web.py_ 
   * TSDB_
+  * memcached_
 
 .. _Python: http://www.python.org/
 .. _Net-SNMP: http://www.net-snmp.org/
@@ -71,6 +72,7 @@ In addition, it uses the following Python libraries:
 .. _SQLAlchemy: http://www.sqlalchemy.org/
 .. _web.py: http://webpy.org/
 .. _TSDB: http://code.google.com/p/tsdb/
+.. _memcached: http://www.memcached.org/
 
 Installation
 ::::::::::::
