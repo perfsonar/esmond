@@ -754,7 +754,7 @@ def espolld():
     init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
-    name = "espolld.manager"
+    name = "espolld"
 
     setproctitle(name)
 

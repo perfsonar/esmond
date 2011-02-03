@@ -21,6 +21,5 @@ load_rc_config $name
 
 command=%%PREFIX%%/bin/${name}
 command_interpreter=%%PYTHON_CMD%%
-procname="espolld.manager"
 
 run_rc_command "$1"
