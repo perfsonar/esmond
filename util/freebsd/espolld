@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# PROVIDE: espolld
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# Add the following lines to /etc/rc.conf to enable espolld-server:
+# espolld_enable (bool):  Set it to "YES" to enable espolld.
+#                       Default is "NO".
+# espolld_flags (str):    Flags passed to espolld on startup.
+#                       Default is "".
+
+. /etc/rc.subr
+
+name="espolld"
+rcvar=${name}_enable
+
+load_rc_config $name
+
+: ${espolld_enable="NO"}
+
+command=%%PREFIX%%/bin/${name}
+command_interpreter=%%PYTHON_CMD%%
+procname="espolld.manager"
+
+run_rc_command "$1"

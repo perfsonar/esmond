@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# PROVIDE: espersistd
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# Add the following lines to /etc/rc.conf to enable espersistd:
+# espersistd_enable (bool):  Set it to "YES" to enable espersistd.
+#                       Default is "NO".
+# espersistd_flags (str):    Flags passed to espersistd on startup.
+#                       Default is "".
+
+. /etc/rc.subr
+
+name="espersistd"
+rcvar=${name}_enable
+
+load_rc_config $name
+
+: ${espersistd_enable="NO"}
+
+command=%%PREFIX%%/bin/${name}
+command_interpreter=%%PYTHON_CMD%%
+procname="espersistd.manager"
+
+run_rc_command "$1"
