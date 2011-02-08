@@ -5,7 +5,7 @@ import sys
 import socket
 import time
 
-from esxsnmp.config get_opt_parser, get_config
+from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.api import ESxSNMPAPI
 
 def gen_ma_storefile():
@@ -78,7 +78,7 @@ Notes:
 
     print HEADER
 
-    client = ESxSNMPAPI(config.db_uri)
+    client = ESxSNMPAPI(config.esdb_uri)
 
     oidset_rtr_map = {}
     interfaces = []
