@@ -153,7 +153,6 @@ Notes:
     # Now need to generate XML name spaces/rnc info
     #
 
-    META = [] # Contains the Meta Data
     DATA = [] # Contains the data
 
     i = 0
@@ -177,7 +176,7 @@ Notes:
             else:
                 iface['name'] = iface['nameout']
 
-            m = """
+            d = """
 \t<nmwg:metadata  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="meta%(i)d">
 \t\t<netutil:subject  xmlns:netutil="http://ggf.org/ns/nmwg/characteristic/utilization/2.0/" id="subj%(i)d">
 \t\t\t<nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">
@@ -195,11 +194,7 @@ Notes:
 \t\t\t<nmwg:parameter name="supportedEventType">http://ggf.org/ns/nmwg/characteristic/utilization/2.0</nmwg:parameter>
 \t\t\t<nmwg:parameter name="supportedEventType">http://ggf.org/ns/nmwg/tools/snmp/2.0</nmwg:parameter>
 \t\t</nmwg:parameters>
-\t</nmwg:metadata>""" % iface
-
-            META.append(m)
-
-            d = """
+\t</nmwg:metadata>
 \t<nmwg:data  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="data%(i)d" metadataIdRef="meta%(i)d">
 \t\t<nmwg:key id="keyid%(i)d">
 \t\t\t<nmwg:parameters id="dataparam%(i)d">
@@ -214,8 +209,6 @@ Notes:
             DATA.append(d)
 
 
-
-    print ''.join(META)
     print ''.join(DATA)
     print '</nmwg:store>'
            
