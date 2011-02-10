@@ -158,7 +158,6 @@ def encode_device(dev, uri, children=[]):
             leaf=False)
 
 def encode_ifref(ifref, uri, device, children=[]):
-#    print ifref
     return dict(
             begin_time=ifref.begin_time,
             end_time=ifref.end_time,
@@ -352,7 +351,8 @@ class SNMPHandler:
         # see http://wsgi.org/wsgi/WSGI_2.0
 
         if not uri:
-            uri = web.ctx.environ['REQUEST_URI']
+            uri = web.ctx.environ.get('REQUEST_URI', 
+                    web.ctx.environ.get('PATH_INFO', None))
 
         try:
             uri, args = uri.split('?')
@@ -504,6 +504,15 @@ class SNMPHandler:
                         remove_metachars(iface.ifdescr)),
                     descr=iface.ifalias,
                     speed=speed, 
+                    begin_time=iface.begin_time,
+                    end_time=iface.end_time,
+                    ifIndex=iface.ifindex,
+                    ifDescr=iface.ifdescr,
+                    ifAlias=iface.ifalias,
+                    ifSpeed=iface.ifspeed,
+                    ifHighSpeed=iface.ifhighspeed,
+                    ipAddr=iface.ipaddr,
+                    device_uri='%s/%s' % (SNMP_URI, device.name),
                     leaf=False)
 
             l = map(build_iface, ifaces.all())
