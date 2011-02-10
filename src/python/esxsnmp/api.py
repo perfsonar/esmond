@@ -27,7 +27,6 @@ class ESxSNMPAPI(object):
         self.debug = debug
         self.headers = {}
 
-        self.http = httplib2.Http()
 
         if username and password:
             # httplib only sends the authorization header on demand
@@ -48,7 +47,8 @@ class ESxSNMPAPI(object):
         if self.debug:
             print >>sys.stderr, ">>> PATH ", self.url, path
 
-        response, content = self.http.request(self.url + "/snmp/" + path, 'GET',
+        http = httplib2.Http()
+        response, content = http.request(self.url + "/snmp/" + path, 'GET',
                 headers=self.headers)
 
         if response['status'] != '200':
@@ -105,6 +105,7 @@ class ESxSNMPAPI(object):
         return self.get(path)
 
     def get_bulk(self, uri_list, raw=False):
+        http = httplib2.Http()
         response, content = self.http.request(self.url + "/bulk/", 'POST',
                 urllib.urlencode(dict(q=json.dumps(uri_list))),
                 headers=self.headers)
