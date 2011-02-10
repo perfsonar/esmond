@@ -25,13 +25,13 @@ def gen_ma_storefile():
         print >>sys.stderr, "error: esdb_uri not specified in config"
         sys.exit(1)
 
+    debug = opts.debug
+
     params = {}
     params['hostname'] = socket.gethostname()
     params['date'] = time.asctime()
     params['user'] = os.getlogin()
     params['args'] = " ".join(sys.argv)
-
-    debug = False
 
     AUTHREALM = "ESnet-Public"
     DOMAIN = "es.net"
@@ -83,7 +83,6 @@ Notes:
     oidset_rtr_map = {}
     interfaces = []
 
-    debug = True
     rtrs = client.get_routers()
     devices = [ x['name'] for x in rtrs['children']]
 
@@ -99,19 +98,11 @@ Notes:
         if debug:
             print >>sys.stderr, "starting %s" % device
 
-        ifaces = filter(lambda x: x['descr'] != '',
-                client.get_interfaces(device)['children'])
+        ifaces = client.get_interfaces(device)['children']
 
-        l = []
         for iface in ifaces:
-            l.append(dict(id=iface['uri'], uri=iface['uri']))
-
-        ifaces = client.get_bulk(l)
-
-        for k, iface in ifaces.iteritems():
-            iface = iface['result'][0]
             if debug:
-                print >>sys.stderr, iface
+                print >>sys.stderr, iface['name']
 
             if iface['ipAddr']:
                 try:
