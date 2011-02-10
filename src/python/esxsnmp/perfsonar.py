@@ -61,7 +61,10 @@ Notes:
 <nmwg:store
          xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/"
          xmlns:netutil="http://ggf.org/ns/nmwg/characteristic/utilization/2.0/"
+         xmlns:neterr="http://ggf.org/ns/nmwg/characteristic/errors/2.0/"
+         xmlns:netdisc="http://ggf.org/ns/nmwg/characteristic/discards/2.0/"
          xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/" 
+         xmlns:snmp="http://ggf.org/ns/nmwg/tools/snmp/2.0/"         
          xmlns:nmwgt3="http://ggf.org/ns/nmwg/topology/3.0/" >
 
      <!-- Note: The URNs and the nmwgt3 namespace are possible implementations, and not standard.
@@ -124,25 +127,7 @@ Notes:
 
             iface['domain'] = DOMAIN
             iface['authrealm'] = AUTHREALM
-            iface['namein'] = iface['uri'] + '/in'
-            iface['nameout'] = iface['uri'] + '/out'
             iface['ifAlias'] = iface['ifAlias'].replace('&','')
-
-            """
-            d = dict(
-                    intname=iface.ifdescr,
-                    namein='%s/%s/%sInOctets/%s' % (rtr, oidset.name, prefix,
-                        iface.intpath),
-                    nameout='%s/%s/%sOutOctets/%s' % (rtr, oidset.name, prefix,
-                        iface.intpath),
-                    intdesc=iface.ifalias,
-                    device=rtr,
-                    dns=iface.dns,
-                    speed=speed,
-                    ipaddr=iface.ipaddr,
-                    domain=DOMAIN,
-                    authrealm=AUTHREALM)
-            """
 
             interfaces.append(iface)
 
@@ -167,18 +152,23 @@ Notes:
         else:
             iface['ipaddr_line'] = ''
 
-        for dir in ('in', 'out'):
-            i += 1
-            iface['i'] = i
-            iface['dir'] = dir
-            if dir == 'in':
-                iface['name'] = iface['namein']
-            else:
-                iface['name'] = iface['nameout']
+        for subj, event_type, suffix, units in (
+                ('netutil', 'utilization', '',         'bps'),
+                ('neterr',  'errors',      '/error',   'Eps'),
+                ('netdisc', 'discards',    '/discard', 'Dps'),
+                ):
+            iface['subj'] = subj
+            iface['event_type'] = event_type
+            iface['units'] = units
+            for dir in ('in', 'out'):
+                i += 1
+                iface['i'] = i
+                iface['dir'] = dir
+                iface['name'] = iface['uri'] + suffix + '/' + dir
 
-            d = """
-\t<nmwg:metadata  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="meta%(i)d">
-\t\t<netutil:subject  xmlns:netutil="http://ggf.org/ns/nmwg/characteristic/utilization/2.0/" id="subj%(i)d">
+                d = """
+\t<nmwg:metadata xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="meta%(i)d">
+\t\t<%(subj)s:subject xmlns:%(subj)s="http://ggf.org/ns/nmwg/characteristic/%(event_type)s/2.0/" id="subj%(i)d">
 \t\t\t<nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">
 \t\t\t\t<nmwgt3:urn xmlns:nmwgt3="http://ggf.org/ns/nmwg/topology/base/3.0/">urn:ogf:network:domain=%(domain)s:node=%(device)s:port=%(ifDescr)s</nmwgt3:urn>%(ipaddr_line)s
 \t\t\t\t<nmwgt:hostName>%(device_fqdn)s</nmwgt:hostName>
@@ -188,20 +178,21 @@ Notes:
 \t\t\t\t<nmwgt:direction>%(dir)s</nmwgt:direction>
 \t\t\t\t<nmwgt:authRealm>%(authrealm)s</nmwgt:authRealm>
 \t\t\t</nmwgt:interface>
-\t\t</netutil:subject>
-\t\t<nmwg:eventType>http://ggf.org/ns/nmwg/characteristic/utilization/2.0</nmwg:eventType>
+\t\t</%(subj)s:subject>
+\t\t<nmwg:eventType>http://ggf.org/ns/nmwg/characteristic/%(event_type)s/2.0</nmwg:eventType>
 \t\t<nmwg:parameters id="metaparam%(i)d">
-\t\t\t<nmwg:parameter name="supportedEventType">http://ggf.org/ns/nmwg/characteristic/utilization/2.0</nmwg:parameter>
+\t\t\t<nmwg:parameter
+name="supportedEventType">http://ggf.org/ns/nmwg/characteristic/%(event_type)s/2.0</nmwg:parameter>
 \t\t\t<nmwg:parameter name="supportedEventType">http://ggf.org/ns/nmwg/tools/snmp/2.0</nmwg:parameter>
 \t\t</nmwg:parameters>
 \t</nmwg:metadata>
-\t<nmwg:data  xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="data%(i)d" metadataIdRef="meta%(i)d">
+\t<nmwg:data xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="data%(i)d" metadataIdRef="meta%(i)d">
 \t\t<nmwg:key id="keyid%(i)d">
 \t\t\t<nmwg:parameters id="dataparam%(i)d">
 \t\t\t\t<nmwg:parameter name="type">esxsnmp</nmwg:parameter>
-\t\t\t\t<nmwg:parameter name="valueUnits">bps</nmwg:parameter>
+\t\t\t\t<nmwg:parameter name="valueUnits">%(units)s</nmwg:parameter>
 \t\t\t\t<nmwg:parameter name="name">%(name)s</nmwg:parameter>
-\t\t\t\t<nmwg:parameter name="eventType">http://ggf.org/ns/nmwg/characteristic/utilization/2.0</nmwg:parameter>
+\t\t\t\t<nmwg:parameter name="eventType">http://ggf.org/ns/nmwg/characteristic/%(event_type)s/2.0</nmwg:parameter>
 \t\t\t</nmwg:parameters>
 \t\t</nmwg:key>
 \t</nmwg:data>""" % iface
