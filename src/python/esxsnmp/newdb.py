@@ -500,7 +500,7 @@ class SNMPHandler:
                 else:
                     speed = iface.ifhighspeed * int(1e6)
                 return dict(name=iface.ifdescr,
-                    uri="%s/%s/interface/%s/" % (SNMP_URI, device.name,
+                    uri="%s/%s/interface/%s" % (SNMP_URI, device.name,
                         remove_metachars(iface.ifdescr)),
                     descr=iface.ifalias,
                     speed=speed, 
