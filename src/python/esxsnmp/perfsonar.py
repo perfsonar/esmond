@@ -6,6 +6,7 @@ import socket
 import time
 
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
+from esxsnmp.error import ConfigError
 from esxsnmp.api import ESxSNMPAPI
 
 def gen_ma_storefile():
