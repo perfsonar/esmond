@@ -2,6 +2,7 @@
 #
 # PROVIDE: espolld
 # REQUIRE: LOGIN
+# REQUIRE: espersistd
 # KEYWORD: shutdown
 #
 # Add the following lines to /etc/rc.conf to enable espolld-server:
