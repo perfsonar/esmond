@@ -24,6 +24,6 @@ command=%%PREFIX%%/bin/${name}
 command_interpreter=%%PYTHON_CMD%%
 procname="espersistd.manager"
 
-export PTYHON_EGG_CACHE=%%PREFIX%%/egg-cache
+export PYTHON_EGG_CACHE=%%PREFIX%%/egg-cache
 
 run_rc_command "$1"
