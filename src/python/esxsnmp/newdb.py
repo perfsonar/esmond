@@ -15,6 +15,11 @@ try:
     import json
 except ImportError:
     import simplejson as json
+try: 
+    import cmemcache as memcache
+except ImportError:
+    import memcache
+
 import urllib
 from fpconst import isNaN
 import logging
@@ -39,6 +44,7 @@ import pprint
 urls = (
         '/snmp/.*', 'SNMPHandler',
         '/bulk/?', 'BulkHandler',
+        '/topN/?', 'TopNHandler',
         )
 
 
@@ -336,6 +342,7 @@ class BulkHandler:
 class SNMPHandler:
     def __init__(self):
         self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
+        self.agg_db = tsdb.TSDB("/data/esxsnmp/summarize_data", mode="r")
         self.session = esxsnmp.sql.Session()
 
         self.log = get_logger("newdb")
@@ -378,7 +385,14 @@ class SNMPHandler:
                 descr_pattern = "%%%s%%" % args['interface_descr']
                 r = self.get_interfaces_by_descr(descr_pattern)
             else:
-                r =  self.list_devices()
+                r = self.list_devices()
+                # XXX hack to support aggs.  ugh!
+                r['children'].append(dict(
+                    name='Aggregates',
+                    uri="%s/Aggregates" % (SNMP_URI, ),
+                    leaf=False))
+        elif device_name == 'Aggregates':
+            r = self.handle_aggregates(parts[3:])
         elif len(parts) > 5 and parts[3] == 'interface' and parts[5]:
             r = self.get_interface_data(device_name, parts[4], parts[5],
                     '/'.join(parts[6:]))
@@ -398,6 +412,8 @@ class SNMPHandler:
                     r = self.get_interface_set(device, rest)
                 elif next == 'system':
                     r = self.get_system(device, rest)
+                elif next == 'firewall':
+                    r = self.get_firewall(device, rest)
                 else:
                     r = web.notfound()
 
@@ -406,6 +422,60 @@ class SNMPHandler:
         else:
             return json.dumps(r)
 
+    def handle_aggregates(self, parts):
+        if len(parts) > 0 and parts[-1] == '':
+            parts = parts[:-1]
+        if len(parts) == 0:
+            r = [dict(name=s, uri="%s/%s" % (SNMP_URI, s), leaf=False)
+                    for s in self.agg_db.list_sets()]
+        elif len(parts) == 1:
+            r = [dict(name=v, uri="%s/%s/%s" % (SNMP_URI, parts[0], v), leaf=True)
+                    for v in self.agg_db.get_set(parts[0]).list_vars()]
+        elif len(parts) == 2:
+            args = parse_query_string()
+
+            if args.has_key('begin'):
+                begin = args['begin']
+            else:
+                begin = int(time.time() - 3600)
+
+            if args.has_key('end'):
+                end = args['end']
+            else:
+                end = int(time.time())
+
+            path = "/".join(parts)
+
+            try:
+                v = self.agg_db.get_var(path)
+            except TSDBVarDoesNotExistError:
+                print "ERR> var doesn't exist: %s" % path
+                return web.notfound()  # Requested variable does not exist
+            except InvalidMetaData:
+                print "ERR> invalid metadata: %s" % path
+                return web.notfound()
+
+            print v
+
+            data = v.select(begin=begin, end=end)
+            data = [d for d in data]
+            r = []
+
+            for datum in data:
+                d = [datum.timestamp, datum.value]
+
+                if isNaN(d[1]):
+                    d[1] = None
+
+                r.append(d)
+
+            result = dict(data=r, begin_time=begin, end_time=end, agg="30")
+            return result
+        else:
+            print "ERR> too many parts in handle_aggregates"
+            return web.notfound()
+
+        return dict(children=r)
 
     def list_devices(self, active=True):
         """Returns a JSON array of objests representing device names and URIs.
@@ -806,6 +876,91 @@ class SNMPHandler:
     def get_system(self, device, rest):
         pass
 
+    def get_firewall(self, device, rest):
+        path = "/%s/JnxFirewall/counter/%s" % (device.name, rest)
+        print ">>", path
+        try:
+            v = self.db.get_var(path)
+        except TSDBVarDoesNotExistError:
+            self.log.error("not found: %s" % path)
+            return web.notfound()
+
+        args = parse_query_string()
+
+        if args.has_key('begin'):
+            begin = args['begin']
+        else:
+            begin = int(time.time() - 3600)
+
+        if args.has_key('end'):
+            end = args['end']
+        else:
+            end = int(time.time())
+
+        data = v.select(begin=begin, end=end)
+        data = [d for d in data]
+        r = []
+
+        for datum in data:
+            d = [datum.timestamp, datum.value]
+
+            if isNaN(d[1]):
+                d[1] = None
+
+            r.append(d)
+
+        result = dict(data=r, begin_time=begin, end_time=end)
+
+        return result
+
+
+class TopNHandler:
+    def GET(self, uri=None, raw=False, rawargs=None):
+        t0 = time.time()
+        if not uri:
+            uri = web.ctx.environ.get('REQUEST_URI', 
+                    web.ctx.environ.get('PATH_INFO', None))
+        try:
+            uri, rawargs = uri.split('?')
+        except ValueError:
+            pass
+
+        if rawargs:
+            web.ctx.query = "?" + rawargs
+
+        args = parse_query_string()
+        data = MEMCACHE.get("summary")
+
+        aggfunc = args.get('aggfunc', 'max')
+        agg = int(args.get("agg", 30))
+        if agg > 30 and agg % 30 == 0:
+            f = getattr(self, aggfunc)
+            d = json.loads(data)
+            tin = d['traffic']
+            tout = []
+            span = agg/30
+            for i in range(len(tin) / span):
+                tout.append(tin[i*span])
+                for j in range(1,4):
+                    tout[i][j] = f(tin[i*span:(i+1)*span][j])
+            d['traffic'] = tout
+            d['agg'] = agg
+            d['aggfunc'] = aggfunc
+            data = json.dumps(d)
+
+        if args.has_key("callback"):
+            data = "%s(%s)" % (args['callback'], data)
+
+        print >>sys.stderr, ">> topn took %f seconds" % (time.time() - t0,) 
+
+        return data
+
+    def max(self, data):
+        return max(data)
+
+    def avg(self, data):
+        return sum(data) / len(data)
+
 class LoggingMiddleware:
 
     def __init__(self, application):
@@ -821,32 +976,11 @@ class LoggingMiddleware:
 
         return self.__application(environ, _start_response)
 
-USER_DB = UserDB()
-
-def esdb_wsgi(config_file):
+def setup(inargs, config_file=None):
     oparse = get_opt_parser(default_config_file=get_config_path())
-    (opts, args) = oparse.parse_args(args=[])
-
-    try:
-        config = get_config(config_file, opts)
-    except ConfigError, e:
-        print >>sys.stderr, e
-        sys.exit(1)
-
-    esxsnmp.sql.setup_db(config.db_uri)
-    global DB 
-    DB = tsdb.TSDB(config.tsdb_root, mode="r")
-    application = web.application(urls, globals()).wsgifunc()
-    sys.stdout = sys.stderr
-    USER_DB.read_htpassd(config.htpasswd_file)
-    #application = LoggingMiddleware(application)
-    #application = web.profiler(application)
-    return application
-
-
-def esdb_standalone():
-    oparse = get_opt_parser(default_config_file=get_config_path())
-    (opts, args) = oparse.parse_args(args=sys.argv)
+    (opts, args) = oparse.parse_args(args=inargs)
+    if config_file:
+        opts.config_file = config_file
 
     try:
         config = get_config(opts.config_file, opts)
@@ -855,7 +989,25 @@ def esdb_standalone():
         sys.exit(1)
 
     esxsnmp.sql.setup_db(config.db_uri)
+    global DB 
+    DB = tsdb.TSDB(config.tsdb_root, mode="r")
+    global MEMCACHE
+    MEMCACHE = memcache.Client([config.espersistd_uri])
+    global USER_DB
+    USER_DB = UserDB()
     USER_DB.read_htpassd(config.htpasswd_file)
+
+def esdb_wsgi(config_file):
+    sys.stdout = sys.stderr
+    setup([], config_file=config_file)
+
+    application = web.application(urls, globals()).wsgifunc()
+    #application = LoggingMiddleware(application)
+    #application = web.profiler(application)
+    return application
+
+def esdb_standalone():
+    setup(sys.argv)
     application = web.application(urls, globals())
     application.run()
 
