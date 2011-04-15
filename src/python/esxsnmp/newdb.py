@@ -942,7 +942,7 @@ class TopNHandler:
             for i in range(len(tin) / span):
                 tout.append(tin[i*span])
                 for j in range(1,4):
-                    tout[i][j] = f(tin[i*span:(i+1)*span][j])
+                    tout[i][j] = f(map(lambda x: x[j], tin[i*span:(i+1)*span]))
             d['traffic'] = tout
             d['agg'] = agg
             d['aggfunc'] = aggfunc
