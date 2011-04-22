@@ -349,9 +349,6 @@ class Poller(object):
         self.running = True
         self.log = get_logger(self.name)
 
-        self.count = 0
-        self.errors = 0
-
         self.poller_args = {}
         if self.oidset.poller_args is not None:
             for arg in self.oidset.poller_args.split():
@@ -432,30 +429,11 @@ class Poller(object):
         else:
             self.log.warning("poll %d seconds late" % abs(delay)) 
 
-class TSDBPoller(Poller):
-    def __init__(self, config, device, oidset, poller, persistq):
-        Poller.__init__(self, config, device, oidset, poller, persistq)
-
-    def begin(self):
-        pass
-
-    def finish(self, data):
-        ts = time.time()
-        metadata = dict(tsdb_flags=tsdb.ROW_VALID)
-
-        for oid in self.oidset:
-            outdata = filter_data(oid.name, data)
-
-            pr = PollResult(self.oidset.name, self.device.name, oid.name,
-                    ts, outdata, metadata)
-
-            self.save(pr)
-
-class CorrelatedTSDBPoller(TSDBPoller):
+class CorrelatedPoller(Poller):
     """Handles polling of an OIDSet for a device and uses a correlator to
     determine the name of the variable to use to store values."""
     def __init__(self, config, device, oidset, poller, persistq):
-        TSDBPoller.__init__(self, config, device, oidset, poller, persistq)
+        Poller.__init__(self, config, device, oidset, poller, persistq)
 
         self.correlator = eval(self.poller_args['correlator'])()
         self.poll_oids.extend(self.correlator.oids)
@@ -495,32 +473,27 @@ class CorrelatedTSDBPoller(TSDBPoller):
         self.log.debug("grabbed %d vars in %f seconds" %
                         (len(data), time.time() - self.begin_time))
 
+class UncorrelatedPoller(Poller):
+    """Polls all OIDS and creates an PollResult to be passed to the persistence
+    infrastructure"""
 
-class SQLPoller(Poller):
     def __init__(self, config, device, oidset, poller, persistq):
         Poller.__init__(self, config, device, oidset, poller, persistq)
 
-class IfRefSQLPoller(SQLPoller):
-    """Polls all OIDS and creates a IfRef entry then sees if the IfRef entry
-    differs from the lastest in the database."""
-
-    def __init__(self, config, device, oidset, poller, persistq):
-        SQLPoller.__init__(self, config, device, oidset, poller, persistq)
-
     def begin(self):
-        self.count = 0
+        pass
 
     def finish(self, data):
-        self.count = len(data)
-
-        ifref_data = {}
+        dataout = {}
         for oid in self.oidset.oids:
-            ifref_data[oid.name] = filter_data(oid.name, data)
+            dataout[oid.name] = filter_data(oid.name, data)
 
         pr = PollResult(self.oidset.name, self.device.name, "",
-                time.time(), ifref_data, {})
+                time.time(), dataout, {})
 
         self.save(pr)
+        self.log.debug("grabbed %d vars in %f seconds" %
+                        (len(data), time.time() - self.begin_time))
 
 class PollRequest(object):
     def __init__(self, type, callback, errback, walk_oid=None,
