@@ -8,7 +8,7 @@ import signal
 import errno
 import __main__
 
-from subprocess import Popen
+from subprocess import Popen, PIPE, STDOUT
 
 import cPickle as pickle
 
@@ -30,7 +30,7 @@ from esxsnmp.util import setproctitle, init_logging, get_logger, remove_metachar
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
-from esxsnmp.sql import IfRef
+from esxsnmp.sql import IfRef, LSPOpStatus
 
 try:
     import cmemcache as memcache
@@ -303,6 +303,7 @@ class TSDBPollPersister(PollPersister):
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
 
+
 class IfRefPollPersister(PollPersister):
     def __init__(self, config, qname):
         PollPersister.__init__(self, config, qname)
@@ -392,6 +393,100 @@ class IfRefPollPersister(PollPersister):
                 ifref_objs[ifIndex_map[ifIndex]][oid.lower()] = val
 
         return ifref_objs
+
+class LSPOpStatusPersister(PollPersister):
+    def __init__(self, config, qname):
+        PollPersister.__init__(self, config, qname)
+        self.db_session = esxsnmp.sql.Session()
+
+    def store(self, result):
+        self.lsp_data = result.data
+        t0 = time.time()
+
+        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
+                esxsnmp.sql.Device.name == result.device_name).filter(
+                        esxsnmp.sql.Device.end_time > 'NOW').one()
+                
+        new_opstats = self._build_objs()
+        nvar = len(new_opstats)
+        old_opstats = self.db_session.query(LSPOpStatus).filter(
+            sqlalchemy.and_(LSPOpStatus.deviceid == self.device.id, LSPOpStatus.end_time > 'NOW')
+        )
+
+        # iterate through what is currently in the database
+        for old_opstat in old_opstats:
+            # there is an entry in new_opstats: has anything changed?
+            if new_opstats.has_key(old_opstat.name):
+                new_opstat = new_opstats[old_opstat.name]
+                attrs = new_opstat.keys()
+                attrs.remove('name')
+                changed = False
+                # iterate through all attributes
+                for attr in attrs:
+                    # if the old and new differ update the old
+                    if getattr(old_opstat, attr) != new_opstat[attr]:
+                        changed = True
+
+                if changed:
+                    old_opstat.end_time = 'NOW'
+                    new_row = self._new_row_from_obj(new_opstat)
+                    self.db_session.add(new_row)
+                
+                del new_opstats[old_opstat.name]
+            # no entry in new_opstats: interface is gone, update db
+            else:
+                old_opstat.end_time = 'NOW'
+
+        # anything left in new_opstats is a new entry
+        for new_opstat in new_opstats:
+            new_row = self._new_row_from_obj(new_opstats[new_opstat])
+            self.db_session.add(new_row)
+
+        self.db_session.commit()
+        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
+            time.time()-t0, result))
+
+    def _new_row_from_obj(self, obj):
+        i = LSPOpStatus()
+        i.deviceid = self.device.id
+        i.begin_time = 'NOW'
+        i.end_time = 'Infinity'
+        for attr in obj.keys():
+            setattr(i, attr, obj[attr])
+
+        return i
+
+    oid_name_map = {
+            'mplsLspInfoState': 'state',
+            'mplsLspInfoFrom': 'srcaddr',
+            'mplsLspInfoTo': 'dstaddr',
+    }
+
+    statemap = {
+            1: '?',
+            2: 'u',
+            3: 'd',
+    }
+
+    def _build_objs(self):
+        lsp_objs = {}
+
+        for oid, entries in self.lsp_data.iteritems():
+            k = self.oid_name_map[oid]
+            for name, val in entries:
+                name = name.split('.')[-1].replace("'","")
+
+                if not lsp_objs.has_key(name):
+                    lsp_objs[name] = dict(name=name)
+
+                o = lsp_objs[name]
+                if oid == 'mplsLspInfoState':
+                    o[k] = self.statemap[val]
+                else:
+                    o[k] = val
+
+        return lsp_objs
+
 
 class InfIfRefPollPersister(IfRefPollPersister):
     """Emulate a IfRef for an Infinera.
@@ -748,7 +843,7 @@ class PersistManager(object):
         if self.config.persist_queues[qname][1] > 1:
             args.extend(['-n', str(index)])
 
-        p = Popen(args)
+        p = Popen(args, stdout=PIPE, stderr=STDOUT)
     
         self.processes[p.pid] = (p, qname, qclass, index)
 
@@ -770,6 +865,8 @@ class PersistManager(object):
             p, qname, qclass, index = self.processes[pid]
             del self.processes[pid]
             self.log.error("child died: pid %d, %s_%d" % (pid, qname, index))
+            for line in p.stdout.readlines():
+                self.log.error("pid %d: %s" % (pid, line))
 
             self.start_child(qname, qclass, index)
 

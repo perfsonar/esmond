@@ -36,6 +36,9 @@ class DeviceTag(object):
 class IfRef(object):
     pass
 
+class LSPOpStatus(object):
+    pass
+
 def setup_db(db_uri):
     global engine, conn, metadata, Session
 
@@ -48,7 +51,8 @@ def setup_db(db_uri):
     Session = scoped_session(sessionmaker(autoflush=True, autocommit=False))
 
     for table in ( 'oidtype', 'oid', 'poller', 'oidsetmember', 'oidset',
-            'device', 'devicetag', 'deviceoidsetmap', 'devicetagmap', 'ifref'):
+            'device', 'devicetag', 'deviceoidsetmap', 'devicetagmap', 'ifref',
+            'lspopstatus'):
 
         tables[table] = Table(table, metadata, autoload=True)
 
@@ -93,9 +97,11 @@ def setup_db(db_uri):
             'tags': relation(DeviceTag, secondary=tables['devicetagmap'], lazy=False), 
         }, extension=DateConvMapper())
 
-    mapper(IfRef, tables['ifref'], properties={'device': relation(Device, lazy=False)},
+    mapper(LSPOpStatus, tables['lspopstatus'], properties={'device': relation(Device, lazy=False)},
             extension=DateConvMapper())
 
+    mapper(IfRef, tables['ifref'], properties={'device': relation(Device, lazy=False)},
+            extension=DateConvMapper())
 
 def get_devices(active=True, polling_tag=None):
     d = {}
