@@ -89,6 +89,21 @@ CREATE TABLE IfRef (
     FOREIGN KEY (deviceid) references device(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE LSPOpStatus (
+    id          SERIAL PRIMARY KEY,
+
+    deviceid    int,
+    name        varchar(128),
+    srcAddr     inet,
+    dstAddr     inet,
+    state       char(1),
+
+    begin_time  timestamp,
+    end_time    timestamp,
+
+    FOREIGN KEY (deviceid) references device(id) ON DELETE RESTRICT
+);
+
 --- Model of MOCs topology database:
 
 -- CREATE TABLE TopologySnapshot (
