@@ -67,21 +67,20 @@ CREATE TABLE DeviceOIDSetMap (
 );
 
 CREATE TABLE IfRef (
-    id          SERIAL PRIMARY KEY,
-    deviceid    int,
+    id            SERIAL PRIMARY KEY,
+    deviceid      int,
 
-    ifIndex     int,
-    ifDescr     varchar(512),
-    ifAlias     varchar(512),
-    ipAddr      inet,
-    ifSpeed     int8,  -- pg doesn't have unsigned ints
-    ifHighSpeed int8,  -- pg doesn't have unsigned ints
-
-    connection  varchar(128),
-    conntype    varchar(128),
-    usage       varchar(128),
-    visibility  char(1), -- S: show, H: hide
-    grouping    char(1), -- C: commercial, I: internal, R: R&E, E: edu, S: site
+    ifIndex       int,
+    ifDescr       varchar(512),
+    ifAlias       varchar(512),
+    ipAddr        inet,
+    ifSpeed       int8,  -- pg doesn't have unsigned ints
+    ifHighSpeed   int8,  -- pg doesn't have unsigned ints
+    ifMtu         int,
+    ifType        int,
+    ifPhysAddress macaddr,
+    ifOperStatus  char(1),
+    ifAdminStatus char(1),
 
     begin_time  timestamp,
     end_time    timestamp,
@@ -96,7 +95,7 @@ CREATE TABLE LSPOpStatus (
     name        varchar(128),
     srcAddr     inet,
     dstAddr     inet,
-    state       char(1),
+    state       int,
 
     begin_time  timestamp,
     end_time    timestamp,

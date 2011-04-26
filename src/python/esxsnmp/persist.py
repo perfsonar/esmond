@@ -303,58 +303,87 @@ class TSDBPollPersister(PollPersister):
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
 
+class HistoryTablePersister(PollPersister):
+    """Provides common methods for table histories."""
 
-class IfRefPollPersister(PollPersister):
+    def update_db(self):
+        """Compare the database to the poll results and update.
+
+        This assumes that the database object has a begin_time and end_time and
+        that self.new_data has the dictionary representing the new data and that
+        self.old_data contains the database objects representing the old data.
+        It uses _new_row_from_dict() to create a new object when needed."""
+
+        adds = 0
+        changes = 0
+        deletes = 0
+
+        # iterate through what is currently in the database
+        for old in self.old_data:
+            # there is an entry in the new data: has anything changed?
+            key = getattr(old, self.key)
+            if self.new_data.has_key(key):
+                new = self.new_data[key]
+                attrs = new.keys()
+                attrs.remove(self.key)
+                changed = False
+
+                for attr in attrs:
+                    if getattr(old, attr) != new[attr]:
+                        changed = True
+                        break
+
+                if changed:
+                    old.end_time = 'NOW'
+                    new_row = self._new_row_from_obj(new)
+                    self.db_session.add(new_row)
+                    changes += 1
+                
+                del self.new_data[key]
+            # no entry in self.new_data: interface is gone, update db
+            else:
+                old.end_time = 'NOW'
+                deletes += 1
+
+        # anything left in self.new_data is something new
+        for new in self.new_data:
+            new_row = self._new_row_from_obj(self.new_data[new])
+            self.db_session.add(new_row)
+            adds += 1
+
+        self.db_session.commit()
+
+        return (adds, changes, deletes)
+
+class IfRefPollPersister(HistoryTablePersister):
+    int_oids = ('ifSpeed', 'ifHighSpeed', 'ifMtu', 'ifType',
+            'ifOperStatus', 'ifAdminStatus')
     def __init__(self, config, qname):
-        PollPersister.__init__(self, config, qname)
+        HistoryTablePersister.__init__(self, config, qname)
         self.db_session = esxsnmp.sql.Session()
+
 
     def store(self, result):
         t0 = time.time()
-        self.ifref_data = result.data
+        self.data = result.data
 
         self.device = self.db_session.query(esxsnmp.sql.Device).filter(
                 esxsnmp.sql.Device.name == result.device_name).filter(
                         esxsnmp.sql.Device.end_time > 'NOW').one()
 
-        new_ifrefs = self._build_objs()
-        nvar = len(new_ifrefs)
-        old_ifrefs = self.db_session.query(IfRef).filter(
+        self.old_data = self.db_session.query(IfRef).filter(
             sqlalchemy.and_(IfRef.deviceid == self.device.id, IfRef.end_time > 'NOW')
         )
 
-        # iterate through what is currently in the database
-        for old_ifref in old_ifrefs:
-            # there is an entry in new_ifrefs: has anything changed?
-            if new_ifrefs.has_key(old_ifref.ifdescr):
-                new_ifref = new_ifrefs[old_ifref.ifdescr]
-                attrs = new_ifref.keys()
-                attrs.remove('ifdescr')
-                changed = False
-                # iterate through all attributes
-                for attr in attrs:
-                    # if the old and new differ update the old
-                    if getattr(old_ifref, attr) != new_ifref[attr]:
-                        changed = True
+        self.new_data = self._build_objs()
+        nvar = len(self.new_data)
+        self.key = 'ifdescr'
 
-                if changed:
-                    old_ifref.end_time = 'NOW'
-                    new_row = self._new_row_from_obj(new_ifref)
-                    self.db_session.add(new_row)
-                
-                del new_ifrefs[old_ifref.ifdescr]
-            # no entry in new_ifrefs: interface is gone, update db
-            else:
-                old_ifref.end_time = 'NOW'
-
-        # anything left in new_ifrefs is a new interface
-        for new_ifref in new_ifrefs:
-            new_row = self._new_row_from_obj(new_ifrefs[new_ifref])
-            self.db_session.add(new_row)
+        adds, changes, deletes = self.update_db()
 
         self.db_session.commit()
-        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
-            time.time()-t0, result))
+        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (nvar,
+            adds, changes, deletes, time.time()-t0, result))
 
     def _new_row_from_obj(self, obj):
         i = IfRef()
@@ -370,33 +399,38 @@ class IfRefPollPersister(PollPersister):
         ifIndex_map = {}
 
 
-        for name, val in self.ifref_data['ifDescr']:
+        for name, val in self.data['ifDescr']:
             foo, ifIndex = name.split('.')
             ifIndex = int(ifIndex)
             ifIndex_map[ifIndex] = val
             ifref_objs[val] = dict(ifdescr=val, ifindex=ifIndex)
 
-        for name, val in self.ifref_data['ipAdEntIfIndex']:
+        for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
             ifref_objs[ifIndex_map[val]]['ipaddr'] = ipAddr
 
-        remaining_oids = self.ifref_data.keys()
+        remaining_oids = self.data.keys()
         remaining_oids.remove('ifDescr')
         remaining_oids.remove('ipAdEntIfIndex')
 
         for oid in remaining_oids:
-            for name, val in self.ifref_data[oid]:
-                if oid in ('ifSpeed', 'ifHighSpeed'):
+            for name, val in self.data[oid]:
+                if oid in self.int_oids:
                     val = int(val)
+                if oid == 'ifPhysAddress':
+                    if val != '':
+                        val = ":".join(["%02x" % ord(i) for i in val])
+                    else:
+                        val = None
                 foo, ifIndex = name.split('.')
                 ifIndex = int(ifIndex)
                 ifref_objs[ifIndex_map[ifIndex]][oid.lower()] = val
 
         return ifref_objs
 
-class LSPOpStatusPersister(PollPersister):
+class LSPOpStatusPersister(HistoryTablePersister):
     def __init__(self, config, qname):
-        PollPersister.__init__(self, config, qname)
+        HistoryTablePersister.__init__(self, config, qname)
         self.db_session = esxsnmp.sql.Session()
 
     def store(self, result):
@@ -406,66 +440,34 @@ class LSPOpStatusPersister(PollPersister):
         self.device = self.db_session.query(esxsnmp.sql.Device).filter(
                 esxsnmp.sql.Device.name == result.device_name).filter(
                         esxsnmp.sql.Device.end_time > 'NOW').one()
-                
-        new_opstats = self._build_objs()
-        nvar = len(new_opstats)
-        old_opstats = self.db_session.query(LSPOpStatus).filter(
+
+        self.old_data = self.db_session.query(LSPOpStatus).filter(
             sqlalchemy.and_(LSPOpStatus.deviceid == self.device.id, LSPOpStatus.end_time > 'NOW')
         )
 
-        # iterate through what is currently in the database
-        for old_opstat in old_opstats:
-            # there is an entry in new_opstats: has anything changed?
-            if new_opstats.has_key(old_opstat.name):
-                new_opstat = new_opstats[old_opstat.name]
-                attrs = new_opstat.keys()
-                attrs.remove('name')
-                changed = False
-                # iterate through all attributes
-                for attr in attrs:
-                    # if the old and new differ update the old
-                    if getattr(old_opstat, attr) != new_opstat[attr]:
-                        changed = True
+        self.new_data = self._build_objs()
+        nvar = len(self.new_data)
+        self.key = 'name'
 
-                if changed:
-                    old_opstat.end_time = 'NOW'
-                    new_row = self._new_row_from_obj(new_opstat)
-                    self.db_session.add(new_row)
-                
-                del new_opstats[old_opstat.name]
-            # no entry in new_opstats: interface is gone, update db
-            else:
-                old_opstat.end_time = 'NOW'
+        adds, changes, deletes = self.update_db()
 
-        # anything left in new_opstats is a new entry
-        for new_opstat in new_opstats:
-            new_row = self._new_row_from_obj(new_opstats[new_opstat])
-            self.db_session.add(new_row)
-
-        self.db_session.commit()
-        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
-            time.time()-t0, result))
+        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (nvar,
+            adds, changes, deletes, time.time()-t0, result))
 
     def _new_row_from_obj(self, obj):
-        i = LSPOpStatus()
-        i.deviceid = self.device.id
-        i.begin_time = 'NOW'
-        i.end_time = 'Infinity'
+        r = LSPOpStatus()
+        r.deviceid = self.device.id
+        r.begin_time = 'NOW'
+        r.end_time = 'Infinity'
         for attr in obj.keys():
-            setattr(i, attr, obj[attr])
+            setattr(r, attr, obj[attr])
 
-        return i
+        return r
 
     oid_name_map = {
             'mplsLspInfoState': 'state',
             'mplsLspInfoFrom': 'srcaddr',
             'mplsLspInfoTo': 'dstaddr',
-    }
-
-    statemap = {
-            1: '?',
-            2: 'u',
-            3: 'd',
     }
 
     def _build_objs(self):
@@ -481,7 +483,7 @@ class LSPOpStatusPersister(PollPersister):
 
                 o = lsp_objs[name]
                 if oid == 'mplsLspInfoState':
-                    o[k] = self.statemap[val]
+                    o[k] = int(val)
                 else:
                     o[k] = val
 
