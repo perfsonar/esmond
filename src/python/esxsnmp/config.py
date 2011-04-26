@@ -45,26 +45,27 @@ class ESxSNMPConfig(object):
         self.file = file
 
         self.db_uri = None
-        self.esdb_uri = None
-        self.tsdb_root = None
-        self.tsdb_chunk_prefixes = None
-        self.error_email_to = None
-        self.error_email_subject = None
         self.error_email_from = None
-        self.traceback_dir = None
-        self.syslog_facility = None
-        self.syslog_priority = None
-        self.pid_dir = None
-        self.rrd_path = None
-        self.polling_tag = None
-        self.poll_retries = 5
-        self.poll_timeout = 2
+        self.error_email_subject = None
+        self.error_email_to = None
+        self.esdb_uri = None
         self.espersistd_uri = None
         self.espoll_persist_uri = None
-        self.send_error_email = False
+        self.htpasswd_file = None
         self.mib_dirs = []
         self.mibs = []
-        self.htpasswd_file = None
+        self.pid_dir = None
+        self.poll_retries = 5
+        self.poll_timeout = 2
+        self.polling_tag = None
+        self.reload_interval = 1*10
+        self.rrd_path = None
+        self.send_error_email = False
+        self.syslog_facility = None
+        self.syslog_priority = None
+        self.traceback_dir = None
+        self.tsdb_chunk_prefixes = None
+        self.tsdb_root = None
 
         self.read_config()
         self.convert_types()
@@ -77,13 +78,29 @@ class ESxSNMPConfig(object):
         cfg = ConfigParser.ConfigParser()
         cfg.read(self.file)
         config_items = map(lambda x: x[0], cfg.items("main"))
-        for opt in ('db_uri', 'tsdb_root', 'tsdb_chunk_prefixes', 'error_email_to',
-                'error_email_subject', 'error_email_from', 'traceback_dir',
-                'syslog_facility', 'syslog_priority', 'pid_dir',
-                'rrd_path', 'polling_tag', 'poll_retries', 'poll_timeout',
+        for opt in (
+                'db_uri',
+                'error_email_from',
+                'error_email_subject',
+                'error_email_to',
+                'esdb_uri'
                 'espersistd_uri',
-                'espoll_persist_uri', 'mib_dirs', 'mibs', 'htpasswd_file',
-                'esdb_uri'):
+                'espoll_persist_uri',
+                'htpasswd_file',
+                'mib_dirs',
+                'mibs',
+                'pid_dir',
+                'poll_retries',
+                'poll_timeout',
+                'polling_tag',
+                'reload_interval',
+                'rrd_path',
+                'syslog_facility',
+                'syslog_priority',
+                'traceback_dir',
+                'tsdb_chunk_prefixes',
+                'tsdb_root',
+                ):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
 
@@ -112,6 +129,8 @@ class ESxSNMPConfig(object):
             self.poll_timeout = int(self.poll_timeout)
         if self.poll_retries:
             self.poll_retries = int(self.poll_retries)
+        if self.reload_interval:
+            self.reload_interval = int(self.reload_interval)
 
         if self.error_email_to is not None \
                 and self.error_email_subject is not None \

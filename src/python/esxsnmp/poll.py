@@ -273,30 +273,18 @@ class PollManager(object):
         self._start_thread('persist_thread', t)
 
         for device in self.devices.itervalues():
-            try:
-                self.snmp_poller.add_session(device.name, device.community,
-                    timeout=self.config.poll_timeout, 
-                    retries=self.config.poll_retries)
-            except PollerError, e:
-                self.log.error(str(e))
-                continue
-            for oidset in device.oidsets:
-                poller_class = eval(oidset.poller.name)
-                try:
-                    poller = poller_class(self.config, device, oidset,
-                            self.snmp_poller, self.persistq)
-                except PollerError, e: # XXX double check error handing
-                    self.log.error(str(e))
-                    continue
+            self._start_device(device)
 
-                self.pollers["%s_%s" % (device.name, oidset.name)] = poller
-                self.log.debug("added %s %s" % (device.name, oidset.name))
+        self.last_reload = time.time()
 
         while self.running:
             for poller in self.pollers.itervalues():
                 poller.run_once()
 
-            time.sleep(5)
+            if self.last_reload + self.config.reload_interval <= time.time():
+                self.reload()
+
+            time.sleep(1)
 
         self.shutdown()
 
@@ -306,6 +294,58 @@ class PollManager(object):
         self.threads[name] = t
         self.log.debug("started thread %s" % name)
         t.start()
+
+    def _pollers_for_device(self, device):
+        return filter(lambda x: x.startswith("%s_" % device.name), self.pollers)
+
+    def _start_device(self, device):
+        try:
+            self.snmp_poller.add_session(device.name, device.community,
+                timeout=self.config.poll_timeout, 
+                retries=self.config.poll_retries)
+        except PollerError, e:
+            self.log.error(str(e))
+            return
+
+        self.log.info("starting all pollers for %s" % device.name)
+
+        for oidset in device.oidsets:
+            self._start_poller(device, oidset)
+
+
+    def _stop_device(self, device):
+        self.log.info("stopping all pollers for %s" % device.name)
+        for poller_name in self._pollers_for_device(device):
+            self._stop_poller(poller_name)
+        self.snmp_poller.remove_session(device.name)
+
+    def _start_poller(self, device, oidset):
+        key = "%s_%s" % (device.name, oidset.name)
+        self.log.info("starting poller %s" % key)
+
+        try:
+            poller_class = eval(oidset.poller.name)
+        except NameError:
+            self.log.error("Unknown poller class: %s (%s:%s)" %
+                    (oidset.poller.name, device.name, oidset.name))
+            return
+
+        try:
+            poller = poller_class(self.config, device, oidset,
+                    self.snmp_poller, self.persistq)
+        except PollerError, e: # XXX double check error handing
+            self.log.error(str(e))
+            return
+
+        self.pollers[key]  = poller
+
+    def _stop_poller(self, poller_name):
+        self.log.info("stopping poller %s" % poller_name)
+        self.pollers.pop(poller_name, None)
+
+    def _restart_device(self, device):
+        self._stop_device(device)
+        self._start_device(device)
 
     def stop_polling(self, signum, frame):
         self.log.info("stopping (signal: %d)" % (signum, ))
@@ -318,6 +358,51 @@ class PollManager(object):
             self.persistq.qsize(), ))
         self.persistq.join()
         self.log.info("sucessful shutdown: exiting")
+
+    def reload(self):
+        """Reload the configuration data and stop, start or restart pollers
+        as necessary."""
+
+        self.log.debug("reloading devices and oidsets")
+
+        new_devices = esxsnmp.sql.get_devices(
+                polling_tag=self.config.polling_tag)
+        new_device_set = sets.Set(new_devices.iterkeys())
+        old_device_set = sets.Set(self.devices.iterkeys())
+
+        for name in new_device_set.difference(old_device_set):
+            self._start_device(new_devices[name])
+
+        for name in old_device_set.difference(new_device_set):
+            self._stop_device(self.devices[name])
+
+        for name in new_device_set.intersection(old_device_set):
+            old_device = self.devices[name]
+            new_device = new_devices[name]
+
+            if new_device.community != old_device.community:
+                self._restart_device(new_device)
+                break
+
+            old_oidset = {}
+            for oidset in old_device.oidsets:
+                old_oidset[oidset.name] = oidset
+
+            new_oidset = {}
+            for oidset in new_device.oidsets:
+                new_oidset[oidset.name] = oidset
+
+            old_oidset_names = sets.Set(old_oidset.iterkeys())
+            new_oidset_names = sets.Set(new_oidset.iterkeys())
+
+            for oidset_name in new_oidset_names.difference(old_oidset_names):
+                self._start_poller(new_device, new_oidset[oidset_name])
+
+            for oidset_name in old_oidset_names.difference(new_oidset_names):
+                self._stop_poller("%s_%s" % (old_device.name, oidset_name))
+
+        self.devices = new_devices
+        self.last_reload = time.time()
 
 
 class Poller(object):
@@ -547,6 +632,9 @@ class AsyncSNMPPoller(object):
                 results_as_list=True)
         except SnmpError, e:
             raise PollerError(str(e))
+
+    def remove_session(self, host):
+        self.sessions.remove_session(host)
 
     def shutdown(self):
         self.sessions.destroy() # BWAHAHAHAH
