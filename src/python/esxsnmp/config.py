@@ -83,7 +83,7 @@ class ESxSNMPConfig(object):
                 'error_email_from',
                 'error_email_subject',
                 'error_email_to',
-                'esdb_uri'
+                'esdb_uri',
                 'espersistd_uri',
                 'espoll_persist_uri',
                 'htpasswd_file',
