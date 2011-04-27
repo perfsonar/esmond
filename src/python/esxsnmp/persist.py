@@ -26,7 +26,8 @@ from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
 
 import esxsnmp.sql
 
-from esxsnmp.util import setproctitle, init_logging, get_logger, remove_metachars
+from esxsnmp.util import setproctitle, init_logging, get_logger, \
+        remove_metachars
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
@@ -41,6 +42,7 @@ except ImportError:
         raise Exception('no memcache library found')
 
 PERSIST_SLEEP_TIME = 1
+
 
 class PollResult(object):
     """PollResult contains the results of a polling run.
@@ -64,7 +66,8 @@ class PollResult(object):
         a dict of additional data about this data.  some PollPersisters require
         specific keys to exist in the ``metadata`` dict.
     """
-    def __init__(self, oidset_name, device_name, oid_name, timestamp, data, metadata, **kwargs):
+    def __init__(self, oidset_name, device_name, oid_name, timestamp, data,
+            metadata, **kwargs):
         self.oidset_name = oidset_name
         self.device_name = device_name
         self.oid_name = oid_name
@@ -85,6 +88,7 @@ class PollResult(object):
 
     def json(self):
         return json.dumps(self)
+
 
 class PollPersister(object):
     """A PollPersister implements a storage method for PollResults."""
@@ -123,12 +127,13 @@ class PollPersister(object):
                 if now > self.last_stats + self.STATS_INTERVAL:
                     self.log.info("%d records written, %f records/sec" % \
                             (self.data_count,
-                                float(self.data_count)/self.STATS_INTERVAL))
+                                float(self.data_count) / self.STATS_INTERVAL))
                     self.data_count = 0
                     self.last_stats = now
                 del task
             else:
                 time.sleep(PERSIST_SLEEP_TIME)
+
 
 class StreamingPollPersister(PollPersister):
     """A StreamingPollPersister stores PollResults to a log file.
@@ -146,6 +151,7 @@ class StreamingPollPersister(PollPersister):
     """
     def __init__(self, config, q):
         PollPersister.__init__(self, config, q)
+
 
 class TSDBPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a TSDB.
@@ -181,14 +187,15 @@ class TSDBPollPersister(PollPersister):
             d = {}
             if oidset.poller_args:
                 for arg in oidset.poller_args.split():
-                    (k,v) = arg.split('=')
+                    (k, v) = arg.split('=')
                     d[k] = v
                 self.poller_args[oidset.name] = d
 
             for oid in oidset.oids:
                 self.oids[oid.name] = oid
                 try:
-                    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % oid.type.name)
+                    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
+                            oid.type.name)
                 except AttributeError:
                     self.log.warning(
                             "warning don't have a TSDBRow for %s in %s" %
@@ -204,9 +211,9 @@ class TSDBPollPersister(PollPersister):
         var_type = self.oid_type_map[oid.name]
 
         t0 = time.time()
-        nvar = 0 
+        nvar = 0
 
-        for var,val in result.data:
+        for var, val in result.data:
             nvar += 1
 
             var_name = os.path.join(basename, var)
@@ -216,8 +223,9 @@ class TSDBPollPersister(PollPersister):
             except tsdb.TSDBVarDoesNotExistError:
                 tsdb_var = self._create_var(var_type, var_name, oidset, oid)
             except tsdb.InvalidMetaData:
-                tsdb_var = self._repair_var_metadata(var_type, var_name, oidset, oid)
-                continue # XXX(jdugan): remove this once repair actually works
+                tsdb_var = self._repair_var_metadata(var_type, var_name,
+                        oidset, oid)
+                continue  # XXX(jdugan): remove this once repair actually works
 
             tsdb_var.insert(var_type(result.timestamp, flags, val))
 
@@ -231,9 +239,8 @@ class TSDBPollPersister(PollPersister):
                     self.log.error("Error aggregating: %s %s: %s" %
                             (result.device_name, result.oidset_name, str(e)))
 
-        self.log.debug("stored %d vars in %f seconds: %s" % (nvar, time.time() - t0,
-            result))
-
+        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
+            time.time() - t0, result))
 
     def _create_var(self, var_type, var, oidset, oid):
         self.log.debug("creating TSDBVar: %s" % str(var))
@@ -261,7 +268,7 @@ class TSDBPollPersister(PollPersister):
     def _create_aggs(self, tsdb_var, oidset):
         self._create_agg(tsdb_var, oidset, oidset.frequency)
 
-        if self.poller_args[oidset.name].has_key('aggregates'):
+        if 'aggregates' in self.poller_args[oidset.name]:
             aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
             for agg in aggregates:
                 self._create_agg(tsdb_var, oidset, int(agg))
@@ -278,7 +285,7 @@ class TSDBPollPersister(PollPersister):
             #self.log.warning("unable to get uptime for %s" % var_name)
             uptime = None
 
-        min_last_update = timestamp - oidset.frequency * 40 
+        min_last_update = timestamp - oidset.frequency * 40
 
         def log_bad(ancestor, agg, rate, prev, curr):
             self.log.debug("bad data for %s at %d: %f" % (ancestor.path,
@@ -303,16 +310,18 @@ class TSDBPollPersister(PollPersister):
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
 
+
 class HistoryTablePersister(PollPersister):
     """Provides common methods for table histories."""
 
     def update_db(self):
         """Compare the database to the poll results and update.
 
-        This assumes that the database object has a begin_time and end_time and
-        that self.new_data has the dictionary representing the new data and that
-        self.old_data contains the database objects representing the old data.
-        It uses _new_row_from_dict() to create a new object when needed."""
+        This assumes that the database object has a begin_time and end_time
+        and that self.new_data has the dictionary representing the new data
+        and that self.old_data contains the database objects representing the
+        old data.  It uses _new_row_from_dict() to create a new object when
+        needed."""
 
         adds = 0
         changes = 0
@@ -322,7 +331,7 @@ class HistoryTablePersister(PollPersister):
         for old in self.old_data:
             # there is an entry in the new data: has anything changed?
             key = getattr(old, self.key)
-            if self.new_data.has_key(key):
+            if key in self.new_data:
                 new = self.new_data[key]
                 attrs = new.keys()
                 attrs.remove(self.key)
@@ -338,7 +347,7 @@ class HistoryTablePersister(PollPersister):
                     new_row = self._new_row_from_obj(new)
                     self.db_session.add(new_row)
                     changes += 1
-                
+
                 del self.new_data[key]
             # no entry in self.new_data: interface is gone, update db
             else:
@@ -355,13 +364,14 @@ class HistoryTablePersister(PollPersister):
 
         return (adds, changes, deletes)
 
+
 class IfRefPollPersister(HistoryTablePersister):
     int_oids = ('ifSpeed', 'ifHighSpeed', 'ifMtu', 'ifType',
             'ifOperStatus', 'ifAdminStatus')
+
     def __init__(self, config, qname):
         HistoryTablePersister.__init__(self, config, qname)
         self.db_session = esxsnmp.sql.Session()
-
 
     def store(self, result):
         t0 = time.time()
@@ -372,7 +382,8 @@ class IfRefPollPersister(HistoryTablePersister):
                         esxsnmp.sql.Device.end_time > 'NOW').one()
 
         self.old_data = self.db_session.query(IfRef).filter(
-            sqlalchemy.and_(IfRef.deviceid == self.device.id, IfRef.end_time > 'NOW')
+            sqlalchemy.and_(
+                IfRef.deviceid == self.device.id, IfRef.end_time > 'NOW')
         )
 
         self.new_data = self._build_objs()
@@ -382,8 +393,8 @@ class IfRefPollPersister(HistoryTablePersister):
         adds, changes, deletes = self.update_db()
 
         self.db_session.commit()
-        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (nvar,
-            adds, changes, deletes, time.time()-t0, result))
+        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (
+            nvar, adds, changes, deletes, time.time() - t0, result))
 
     def _new_row_from_obj(self, obj):
         i = IfRef()
@@ -397,7 +408,6 @@ class IfRefPollPersister(HistoryTablePersister):
     def _build_objs(self):
         ifref_objs = {}
         ifIndex_map = {}
-
 
         for name, val in self.data['ifDescr']:
             foo, ifIndex = name.split('.')
@@ -428,6 +438,7 @@ class IfRefPollPersister(HistoryTablePersister):
 
         return ifref_objs
 
+
 class LSPOpStatusPersister(HistoryTablePersister):
     def __init__(self, config, qname):
         HistoryTablePersister.__init__(self, config, qname)
@@ -442,7 +453,8 @@ class LSPOpStatusPersister(HistoryTablePersister):
                         esxsnmp.sql.Device.end_time > 'NOW').one()
 
         self.old_data = self.db_session.query(LSPOpStatus).filter(
-            sqlalchemy.and_(LSPOpStatus.deviceid == self.device.id, LSPOpStatus.end_time > 'NOW')
+            sqlalchemy.and_(LSPOpStatus.deviceid
+                == self.device.id, LSPOpStatus.end_time > 'NOW')
         )
 
         self.new_data = self._build_objs()
@@ -451,8 +463,8 @@ class LSPOpStatusPersister(HistoryTablePersister):
 
         adds, changes, deletes = self.update_db()
 
-        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (nvar,
-            adds, changes, deletes, time.time()-t0, result))
+        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (
+            nvar, adds, changes, deletes, time.time() - t0, result))
 
     def _new_row_from_obj(self, obj):
         r = LSPOpStatus()
@@ -476,9 +488,9 @@ class LSPOpStatusPersister(HistoryTablePersister):
         for oid, entries in self.lsp_data.iteritems():
             k = self.oid_name_map[oid]
             for name, val in entries:
-                name = name.split('.')[-1].replace("'","")
+                name = name.split('.')[-1].replace("'", "")
 
-                if not lsp_objs.has_key(name):
+                if not name in lsp_objs:
                     lsp_objs[name] = dict(name=name)
 
                 o = lsp_objs[name]
@@ -494,7 +506,7 @@ class InfIfRefPollPersister(IfRefPollPersister):
     """Emulate a IfRef for an Infinera.
 
     This is a kludge, but it keeps other things relatively simple.
-    
+
     ifAlias is called gigeClientCtpPmRealCktId
     ifSpeed and ifHighSpeed are apparently not available
     ipAdEntIfIndex doesn't make sense because this is not a layer3 device."""
@@ -505,27 +517,28 @@ class InfIfRefPollPersister(IfRefPollPersister):
         result.data['ifSpeed'] = []
         result.data['ifHighSpeed'] = []
         result.data['ipAdEntIfIndex'] = []
-    
+
         ifalias = {}
-        for k,v in result.data['gigeClientCtpPmRealCktId']:
+        for k, v in result.data['gigeClientCtpPmRealCktId']:
             _, ifidx = k.split('.', 1)
-            ifalias[ifidx] = v 
-    
-        for k,v in result.data['ifDescr']:
+            ifalias[ifidx] = v
+
+        for k, v in result.data['ifDescr']:
             if v.startswith('GIGECLIENTCTP'):
                 _, ifdescr = v.split('=', 1)
-                keep.append((k, ifdescr)) 
+                keep.append((k, ifdescr))
                 _, ifidx = k.split('.', 1)
                 result.data['ifAlias'].append(
-                            ('ifAlias.'+ifidx, ifalias.get(ifidx, '')))
+                            ('ifAlias.' + ifidx, ifalias.get(ifidx, '')))
                 for x in ('ifSpeed', 'ifHighSpeed'):
                     result.data[x].append(
-                            ('%s.%s' % (x, ifidx), 0)) 
-    
+                            ('%s.%s' % (x, ifidx), 0))
+
         result.data['ifDescr'] = keep
         del result.data['gigeClientCtpPmRealCktId']
 
         IfRefPollPersister.store(self, result)
+
 
 class PersistQueue(object):
     """Abstract base class for a persistence service."""
@@ -539,10 +552,11 @@ class PersistQueue(object):
         pass
 
     def serialize(self, val):
-        return pickle.dumps(val) #json.encode(val)
+        return pickle.dumps(val)  # json.encode(val)
 
     def deserialize(self, val):
-        return pickle.loads(val) #json.decode(val)
+        return pickle.loads(val)  # json.decode(val)
+
 
 class MemcachedPersistQueue(PersistQueue):
     """A simple queue based on memcached.
@@ -579,7 +593,7 @@ class MemcachedPersistQueue(PersistQueue):
         la = self.mc.get(self.last_added)
         lr = self.mc.get(self.last_read)
         return '<MemcachedPersistQueue: %s last_added: %d, last_read: %d>' \
-                % (self.qname, la,lr)
+                % (self.qname, la, lr)
 
     def put(self, val):
         ser = self.serialize(val)
@@ -614,6 +628,7 @@ class MemcachedPersistQueue(PersistQueue):
         self.mc.set(self.last_added, 0)
         self.mc.set(self.last_read, 0)
 
+
 class PersistClient(object):
     def __init__(self, config):
         self.config = config
@@ -624,7 +639,7 @@ class PersistClient(object):
             self.log.warning(
                 "espoll_persist_uri not defined: all data will be discarded")
             return
-        
+
         for uri in config.espoll_persist_uri:
             (kind, kind_uri) = uri.split(':', 1)
             sink = eval('%s(config, "%s")' % (kind, kind_uri))
@@ -633,6 +648,7 @@ class PersistClient(object):
     def put(self, result):
         for sink in self.sinks:
             sink.put(result)
+
 
 class MultiWorkerQueue(object):
     def __init__(self, qprefix, qtype, uri, num_workers):
@@ -644,7 +660,7 @@ class MultiWorkerQueue(object):
         self.worker_map = {}
         self.log = get_logger('MultiWorkerQueue')
 
-        for i in range(1, num_workers+1):
+        for i in range(1, num_workers + 1):
             name = "%s_%d" % (qprefix, i)
             self.queues[name] = qtype(name, uri)
 
@@ -658,7 +674,6 @@ class MultiWorkerQueue(object):
             self.cur_worker += 1
             self.log.debug("worker assigned: %s %d" % (k, w))
 
-
             if self.cur_worker > self.num_workers:
                 self.cur_worker = 1
 
@@ -668,6 +683,7 @@ class MultiWorkerQueue(object):
         workerqname = self.get_worker(result)
         workerq = self.queues[workerqname]
         workerq.put(result)
+
 
 class MemcachedPersistHandler(object):
     def __init__(self, config, uri):
@@ -679,7 +695,7 @@ class MemcachedPersistHandler(object):
         for qname in config.persist_queues:
             num_workers = self.config.persist_queues[qname][1]
             if num_workers > 1:
-                self.queues[qname] = MultiWorkerQueue(qname, 
+                self.queues[qname] = MultiWorkerQueue(qname,
                         MemcachedPersistQueue, uri, num_workers)
             else:
                 self.queues[qname] = MemcachedPersistQueue(qname, uri)
@@ -699,9 +715,10 @@ class MemcachedPersistHandler(object):
 
             q.put(result)
 
-    
+
 def do_profile(func_name, myglobals, mylocals):
-    import cProfile, pstats
+    import cProfile
+    import pstats
     prof = cProfile.Profile()
 
     def print_stats(prof):
@@ -718,6 +735,7 @@ def do_profile(func_name, myglobals, mylocals):
         print_stats(prof)
         raise e
     print_stats(prof)
+
 
 class QueueStats:
     prefix = '_mcpq_'
@@ -738,13 +756,15 @@ class QueueStats:
                 l.pop()
                 l.insert(0, int(v))
             elif not self.warn:
-                print >>sys.stderr, "warning: stats unavailable, no work queue %s in memcache" % (self.qname, )
+                print >>sys.stderr, \
+                        "warning: no stats, no work queue %s in memcache" \
+                                % (self.qname, )
                 self.warn = True
                 break
 
     def get_stats(self):
         return (self.qname,
-                self.last_added[0] - self.last_read[0], 
+                self.last_added[0] - self.last_read[0],
                 self.last_added[0] - self.last_added[1],
                 self.last_read[0] - self.last_read[1],
                 self.last_added[0])
@@ -760,7 +780,7 @@ def stats(name, config, opts):
                 stats[qname] = QueueStats(mc, qname)
                 stats[qname].update_stats()
         else:
-            for i in range(1, nworkers+1):
+            for i in range(1, nworkers + 1):
                 k = "%s_%d" % (qname, i)
                 stats[k] = QueueStats(mc, k)
                 stats[k].update_stats()
@@ -768,7 +788,8 @@ def stats(name, config, opts):
     keys = stats.keys()
     keys.sort()
     while True:
-        print "%10s %8s %8s %8s %8s" % ("queue", "pending", "new", "done", "max")
+        print "%10s %8s %8s %8s %8s" % (
+                "queue", "pending", "new", "done", "max")
         for k in keys:
             stats[k].update_stats()
             print "%10s % 8d % 8d % 8d % 8d" % stats[k].get_stats()
@@ -798,6 +819,7 @@ def worker(name, config, opts):
 
     worker.run()
     # do_profile("worker.run()", globals(), locals())
+
 
 class PersistManager(object):
     def __init__(self, name, config, opts):
@@ -833,7 +855,7 @@ class PersistManager(object):
     def start_all_children(self):
         for qname, qinfo in self.config.persist_queues.iteritems():
             (qclass, nworkers) = qinfo
-            for i in range(1, nworkers+1):
+            for i in range(1, nworkers + 1):
                 self.start_child(qname, qclass, i)
 
     def start_child(self, qname, qclass, index):
@@ -846,7 +868,7 @@ class PersistManager(object):
             args.extend(['-n', str(index)])
 
         p = Popen(args, stdout=PIPE, stderr=STDOUT)
-    
+
         self.processes[p.pid] = (p, qname, qclass, index)
 
     def run(self):
@@ -885,10 +907,11 @@ class PersistManager(object):
         self.log.info("stopping")
         self.running = False
 
+
 def espersistd():
     """Entry point for espersistd.
 
-    espersistd consists of one PersistenceManager thread and multiple 
+    espersistd consists of one PersistenceManager thread and multiple
     worker sub-processes.
 
     """
@@ -920,4 +943,3 @@ def espersistd():
         stats(name, config, opts)
     else:
         print >>sys.stderr, "unknown role: %s" % opts.role
-

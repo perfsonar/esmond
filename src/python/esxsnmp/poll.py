@@ -21,21 +21,26 @@ from tsdb.error import TSDBAggregateDoesNotExistError, TSDBVarDoesNotExistError
 
 import esxsnmp.sql
 
-from esxsnmp.util import setproctitle, init_logging, get_logger, remove_metachars
+from esxsnmp.util import setproctitle, init_logging, get_logger, \
+        remove_metachars
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError, PollerError
 from esxsnmp.sql import IfRef
 from esxsnmp.persist import PollResult, PersistClient
 
+
 class PollError(Exception):
     pass
+
 
 class PollUnknownIfIndex(PollError):
     pass
 
+
 def filter_data(name, data):
     return filter(lambda x: x[0].startswith(name), data)
+
 
 class PollCorrelator(object):
     """polling correlators correlate an oid to some other field.  this is
@@ -56,6 +61,7 @@ class PollCorrelator(object):
             d[var.split('.')[-1]] = remove_metachars(val)
         return d
 
+
 class IfDescrCorrelator(PollCorrelator):
     """correlates an IfIndex to an it's IfDescr"""
 
@@ -65,7 +71,7 @@ class IfDescrCorrelator(PollCorrelator):
         self.xlate = self._table_parse(filter_data('ifDescr', data))
 
         if ignore_no_ifalias:
-            for (var,val) in filter_data('ifAlias', data):
+            for (var, val) in filter_data('ifAlias', data):
                 ifIndex = var.split(".")[-1]
                 if not val:
                     self.xlate[ifIndex] = None
@@ -87,9 +93,10 @@ class IfDescrCorrelator(PollCorrelator):
         except KeyError:
             raise PollUnknownIfIndex(ifIndex)
 
+
 class InfIfDescrCorrelator(PollCorrelator):
     """correlates an IfIndex to it's IfDescr with Infinera tweaks.
-    
+
     On the Infinera the tables only contain entries if an interface is
     configured so we want to collect them all, but ifAlias is not set."""
 
@@ -115,14 +122,16 @@ class InfIfDescrCorrelator(PollCorrelator):
 
         return "/".join((oid.name, r))
 
+
 class ALUIfDescrCorrelator(IfDescrCorrelator):
     """correlates an IfIndec to it's IfDescr with ALU tweaks.
-    
+
     The ALU doesn't store the interface description in ifAlias like a normal
     box."""
 
     def setup(self, data, ignore_no_ifalias=False):
         IfDescrCorrelator.setup(self, data, ignore_no_ifalias)
+
 
 class JnxFirewallCorrelator(PollCorrelator):
     """correlates entries in the jnxFWCounterByteCount tables to a variable
@@ -138,8 +147,11 @@ class JnxFirewallCorrelator(PollCorrelator):
         pass
 
     def lookup(self, oid, var):
-        (column, filter_name, counter, filter_type) = self.oidex.search(var).groups()
+        (column, filter_name, counter,
+                filter_type) = self.oidex.search(var).groups()
+
         return "/".join((filter_type, filter_name, counter))
+
 
 class JnxCOSCorrelator(IfDescrCorrelator):
     """Correlates entries from the COS MIB.
@@ -173,9 +185,10 @@ class JnxCOSCorrelator(IfDescrCorrelator):
         else:
             return None
 
+
 class CiscoCPUCorrelator(PollCorrelator):
     """Correlates entries in cpmCPUTotal5min to an entry in entPhysicalName
-    via cpmCPUTotalPhysicalIndex.  
+    via cpmCPUTotalPhysicalIndex.
 
     See http://www.cisco.com/warp/public/477/SNMP/collect_cpu_util_snmp.html"""
 
@@ -192,10 +205,12 @@ class CiscoCPUCorrelator(PollCorrelator):
         # this should only raise an exception of there aren't entries in the
         # tables, meaning that this box has only one CPU
         #
-        n = self.name_xlate[self.phys_xlate[var.split('.')[-1]]].replace('CPU_of_','')
+        n = self.name_xlate[
+                self.phys_xlate[var.split('.')[-1]]].replace('CPU_of_', '')
         if n == '':
             n = 'CPU'
-        return "/".join((oid.name,n))
+        return "/".join((oid.name, n))
+
 
 class PersistThread(threading.Thread):
     INIT = 0
@@ -226,6 +241,7 @@ class PersistThread(threading.Thread):
     def stop(self):
         self.state = self.REMOVE
 
+
 class PollManager(object):
     """Manage polling and sending data to be persisted.
 
@@ -238,7 +254,7 @@ class PollManager(object):
         self.opts = opts
         self.args = args
         self.config = config
-        
+
         self.hostname = socket.gethostname()
 
         self.log = get_logger(self.name)
@@ -269,7 +285,7 @@ class PollManager(object):
 
         self.threads = {}
         t = PersistThread(self.config, self.persistq)
-        
+
         self._start_thread('persist_thread', t)
 
         for device in self.devices.itervalues():
@@ -296,12 +312,13 @@ class PollManager(object):
         t.start()
 
     def _pollers_for_device(self, device):
-        return filter(lambda x: x.startswith("%s_" % device.name), self.pollers)
+        return filter(
+                lambda x: x.startswith("%s_" % device.name), self.pollers)
 
     def _start_device(self, device):
         try:
             self.snmp_poller.add_session(device.name, device.community,
-                timeout=self.config.poll_timeout, 
+                timeout=self.config.poll_timeout,
                 retries=self.config.poll_retries)
         except PollerError, e:
             self.log.error(str(e))
@@ -311,7 +328,6 @@ class PollManager(object):
 
         for oidset in device.oidsets:
             self._start_poller(device, oidset)
-
 
     def _stop_device(self, device):
         self.log.info("stopping all pollers for %s" % device.name)
@@ -333,11 +349,11 @@ class PollManager(object):
         try:
             poller = poller_class(self.config, device, oidset,
                     self.snmp_poller, self.persistq)
-        except PollerError, e: # XXX double check error handing
+        except PollerError, e:  # XXX double check error handing
             self.log.error(str(e))
             return
 
-        self.pollers[key]  = poller
+        self.pollers[key] = poller
 
     def _stop_poller(self, poller_name):
         self.log.info("stopping poller %s" % poller_name)
@@ -437,7 +453,7 @@ class Poller(object):
         self.poller_args = {}
         if self.oidset.poller_args is not None:
             for arg in self.oidset.poller_args.split():
-                (var,val) = arg.split('=')
+                (var, val) = arg.split('=')
                 self.poller_args[var] = val
 
         self.polling_round = 0
@@ -458,8 +474,8 @@ class Poller(object):
             self.polling_round += 1
 
     def begin(self):
-        """begin is called immeditately before polling is started. 
-        
+        """begin is called immeditately before polling is started.
+
         Sets up things and gets ready for the polling to begin.  In
         particular self.poll_oids should have all the oids that you need for
         the whole run."""
@@ -468,7 +484,7 @@ class Poller(object):
 
     def collect(self):
         """collect called once to collect all the OIDs.
-        
+
         Once it all the OIDs have been collected, the finish() method is
         called with the data.  If collect encounters erros the error() method
         is called."""
@@ -512,7 +528,8 @@ class Poller(object):
         if delay >= 0:
             time.sleep(delay)
         else:
-            self.log.warning("poll %d seconds late" % abs(delay)) 
+            self.log.warning("poll %d seconds late" % abs(delay))
+
 
 class CorrelatedPoller(Poller):
     """Handles polling of an OIDSet for a device and uses a correlator to
@@ -558,6 +575,7 @@ class CorrelatedPoller(Poller):
         self.log.debug("grabbed %d vars in %f seconds" %
                         (len(data), time.time() - self.begin_time))
 
+
 class UncorrelatedPoller(Poller):
     """Polls all OIDS and creates an PollResult to be passed to the persistence
     infrastructure"""
@@ -580,6 +598,7 @@ class UncorrelatedPoller(Poller):
         self.log.debug("grabbed %d vars in %f seconds" %
                         (len(data), time.time() - self.begin_time))
 
+
 class PollRequest(object):
     def __init__(self, type, callback, errback, walk_oid=None,
             additional_oids=[]):
@@ -593,6 +612,7 @@ class PollRequest(object):
 
     def append(self, oid, value):
         self.results.append((oid, value))
+
 
 class AsyncSNMPPoller(object):
     """Manage all polling requests and responses.
@@ -637,7 +657,7 @@ class AsyncSNMPPoller(object):
         self.sessions.remove_session(host)
 
     def shutdown(self):
-        self.sessions.destroy() # BWAHAHAHAH
+        self.sessions.destroy()  # BWAHAHAHAH
 
     def bulkwalk(self, host, oids, callback, errback):
         """Gathers all rows for the given objects in a table.
@@ -652,11 +672,11 @@ class AsyncSNMPPoller(object):
         except KeyError:
             raise PollerError("no session defined for %s" % host)
 
-        oids = [ o for o in oids ]  # make a copy of the oids list
+        oids = [o for o in oids]  # make a copy of the oids list
 
         oid = oids.pop(0)
         #print "oid >%s<" % (oid)
-        noid = str_to_oid(oid) # avoid the noid!
+        noid = str_to_oid(oid)  # avoid the noid!
         if noid is None:
             # XXX tell someone: raise exception?
             self.log.error("unable to resolve OID: %s" % oid)
@@ -665,13 +685,15 @@ class AsyncSNMPPoller(object):
 
         pollreq = PollRequest('bulkwalk', callback, errback,
                 walk_oid=noid, additional_oids=oids)
-        reqid = self.sessions[host].async_getbulk(0, self.maxrepetitions, [oid])
+        reqid = self.sessions[host].async_getbulk(
+                0, self.maxrepetitions, [oid])
         self.reqmap[reqid] = pollreq
 
     def bulkget(self, host, nonrepeaters, maxrepetitions, oids, callback,
             errback):
         pollreq = PollRequest('bulkget', callback, errback)
-        reqid = sessions[host].async_getbulk(nonrepeaters, maxrepetitions, oids)
+        reqid = sessions[host].async_getbulk(
+                nonrepeaters, maxrepetitions, oids)
         self.reqmap[reqid] = pollreq
 
     def get(self, host, oids, callback, errback):
@@ -737,6 +759,7 @@ class AsyncSNMPPoller(object):
         # XXX look into getting actual error messages
         pollreq.errback("timeout")
 
+
 def espoll():
     argv = sys.argv
     oparse = get_opt_parser(default_config_file=get_config_path())
@@ -771,11 +794,11 @@ def espoll():
 
     if not oidset:
         print >>sys.stderr, "unknown OIDSet: %s %s" % (device.name,
-                oidset_name) 
+                oidset_name)
         sys.exit(1)
 
     snmp_poller = AsyncSNMPPoller(config=config)
-    snmp_poller.add_session(device.name, device.community, 
+    snmp_poller.add_session(device.name, device.community,
         timeout=config.poll_timeout, retries=config.poll_retries)
 
     print "%s %s" % (device.name, oidset.name)
@@ -799,6 +822,7 @@ def espoll():
             break
 
     snmp_poller.shutdown()
+
 
 def espolld():
     """Entry point for espolld."""
@@ -830,4 +854,3 @@ def espolld():
 
     poller = PollManager(name, opts, args, config)
     poller.start_polling()
-
