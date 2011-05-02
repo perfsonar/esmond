@@ -66,6 +66,7 @@ class ESxSNMPConfig(object):
         self.traceback_dir = None
         self.tsdb_chunk_prefixes = None
         self.tsdb_root = None
+        self.agg_tsdb_root = None
 
         self.read_config()
         self.convert_types()
@@ -79,6 +80,7 @@ class ESxSNMPConfig(object):
         cfg.read(self.file)
         config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in (
+                'agg_tsdb_root',
                 'db_uri',
                 'error_email_from',
                 'error_email_subject',

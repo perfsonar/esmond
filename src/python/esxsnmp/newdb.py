@@ -341,8 +341,8 @@ class BulkHandler:
         
 class SNMPHandler:
     def __init__(self):
-        self.db = tsdb.TSDB("/ssd/esxsnmp/data", mode="r")
-        self.agg_db = tsdb.TSDB("/data/esxsnmp/summarize_data", mode="r")
+        self.db = DB
+        self.agg_db = AGG_DB
         self.session = esxsnmp.sql.Session()
 
         self.log = get_logger("newdb")
@@ -392,7 +392,11 @@ class SNMPHandler:
                     uri="%s/Aggregates" % (SNMP_URI, ),
                     leaf=False))
         elif device_name == 'Aggregates':
-            r = self.handle_aggregates(parts[3:])
+            if self.agg_db:
+                r = self.handle_aggregates(parts[3:])
+            else:
+                print "ERR> agg_db not defined"
+                return web.notfound()
         elif len(parts) > 5 and parts[3] == 'interface' and parts[5]:
             r = self.get_interface_data(device_name, parts[4], parts[5],
                     '/'.join(parts[6:]))
@@ -400,7 +404,7 @@ class SNMPHandler:
             try:
                 device = self.session.query(Device).filter_by(name=device_name)
                 device = device.order_by('end_time').all()[-1]
-            except NoResultFound:
+            except (NoResultFound, IndexError):
                 print "ERR> NoResultFound"
                 return web.notfound()
 
@@ -991,6 +995,10 @@ def setup(inargs, config_file=None):
     esxsnmp.sql.setup_db(config.db_uri)
     global DB 
     DB = tsdb.TSDB(config.tsdb_root, mode="r")
+    if config.agg_tsdb_root:
+        AGG_DB = tsdb.TSDB(config.agg_tsdb_root, mode="r")
+    else:
+        AGG_DB = None
     global MEMCACHE
     MEMCACHE = memcache.Client([config.espersistd_uri])
     global USER_DB
