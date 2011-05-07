@@ -995,6 +995,7 @@ def setup(inargs, config_file=None):
     esxsnmp.sql.setup_db(config.db_uri)
     global DB 
     DB = tsdb.TSDB(config.tsdb_root, mode="r")
+    global AGG_DB
     if config.agg_tsdb_root:
         AGG_DB = tsdb.TSDB(config.agg_tsdb_root, mode="r")
     else:
