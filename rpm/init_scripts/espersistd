@@ -1,0 +1,90 @@
+#!/bin/sh 
+#
+# $Id: ndt 206 2008-09-09 13:05:01Z throck $
+#
+# chkconfig: 2345 55 25
+# description: Starts the ESxSNMP Collector
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+# get local NDT configuration
+if [ -f /etc/sysconfig/esxsnmp ];then
+        . /etc/sysconfig/esxsnmp
+fi
+
+PROGRAM=espersistd
+
+# defaults, if not specified in local config
+[ "$PID_DIR" = "" ] && PID_DIR="/var/run/esxsnmp"
+[ "$ESXSNMP_USER" = "" ] && ESXSNMP_USER="esxsnmp"
+[ "$ESXSNMP_PATH" = "" ] && ESXSNMP_PATH="/opt/esxsnmp"
+[ "$CONFIG_FILE" = "" ] && CONFIG_FILE="${ESXSNMP_PATH}/esxsnmp.conf"
+
+[ -f $ESXSNMP_PATH/bin/$PROGRAM ] || exit -1
+[ -d "$PID_DIR" ] || exit -1
+
+# Verify that memcached is running
+`/etc/init.d/memcached status 2>&1 > /dev/null`
+[ $? == 0 ] || exit -1
+
+RETVAL=0
+
+start ()
+{
+   cnt=`ps auxw | grep $PROGRAM | grep -v grep | grep -v sh | wc -l`
+   if [ $cnt = 0 ]
+   then
+      echo -n "Starting $PROGRAM:"
+      su -c "$ESXSNMP_PATH/bin/$PROGRAM -f $CONFIG_FILE -p $PID_DIR" $ESXSNMP_USER
+      RETVAL=$?
+      if [ $RETVAL = 0 ]
+      then 
+	success
+        touch /var/lock/subsys/$PROGRAM
+      else
+	failure
+      fi
+      echo
+   else
+       echo "$PROGRAM is already running"
+   fi
+}
+
+stop ()
+{
+   echo -n "Stopping $PROGRAM:"
+   killproc $PROGRAM -KILL
+   RETVAL=$?
+   echo
+   [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/$PROGRAM
+}
+
+rhstatus() {
+	status $PROGRAM
+}
+
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+start)
+   start
+   ;;
+stop)
+   stop
+   ;;
+status)
+   rhstatus
+   ;;
+restart|reload)
+   restart
+   ;;
+*)
+   echo $"Usage: $0 {start|stop|status|restart}"
+   exit 1
+esac
+
+exit $?
