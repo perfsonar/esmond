@@ -266,7 +266,11 @@ class PollManager(object):
         self.reload_interval = 30
         self.penalty_interval = 300
 
-        esxsnmp.sql.setup_db(self.config.db_uri)
+        try:
+            esxsnmp.sql.setup_db(self.config.db_uri)
+        except Exception, e:
+            self.log.error("Problem setting up database: %s" % e)
+            raise
 
         self.devices = esxsnmp.sql.get_devices(
                 polling_tag=self.config.polling_tag)
@@ -780,7 +784,12 @@ def espoll():
     init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
-    esxsnmp.sql.setup_db(config.db_uri)
+    try:
+        esxsnmp.sql.setup_db(config.db_uri)
+    except Exception, e:
+        print >>sys.stderr, "Problem setting up database: " % e
+        raise
+
     session = esxsnmp.sql.Session()
 
     devices = session.query(esxsnmp.sql.Device)
@@ -852,5 +861,12 @@ def espolld():
 
     os.umask(0022)
 
-    poller = PollManager(name, opts, args, config)
-    poller.start_polling()
+    log = get_logger(name)
+
+    try:
+        poller = PollManager(name, opts, args, config)
+
+        poller.start_polling()
+    except Exception, e:
+        log.error("Problem with poller: %s" % e)
+        sys.exit(1)

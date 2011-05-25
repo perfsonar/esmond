@@ -263,7 +263,10 @@ class TSDBPollPersister(PollPersister):
         else:
             aggs = ['average', 'delta', 'min', 'max']
 
-        tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
+        try:
+            tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
+        except Exception, e:
+            self.log.error("Couldn't create aggregate %s" % (e))
 
     def _create_aggs(self, tsdb_var, oidset):
         self._create_agg(tsdb_var, oidset, oidset.frequency)
@@ -338,6 +341,10 @@ class HistoryTablePersister(PollPersister):
                 changed = False
 
                 for attr in attrs:
+                    if not hasattr(old, attr):
+                        self.log.error("Field " + attr + " is not contained in the object")
+                        continue
+
                     if getattr(old, attr) != new[attr]:
                         changed = True
                         break
@@ -803,7 +810,12 @@ def worker(name, config, opts):
         exc_handler.install()
 
     os.umask(0022)
-    esxsnmp.sql.setup_db(config.db_uri)
+
+    try:
+        esxsnmp.sql.setup_db(config.db_uri)
+    except Exception, e:
+        self.log.error("Problem setting up database: %s" % e)
+        raise
 
     init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
@@ -846,7 +858,12 @@ class PersistManager(object):
                     log_stdout_stderr=config.syslog_facility)
 
         os.umask(0022)
-        esxsnmp.sql.setup_db(config.db_uri)
+
+        try:
+            esxsnmp.sql.setup_db(config.db_uri)
+        except Exception, e:
+            self.log.error("Problem setting up database: %s" % e)
+            raise
 
         setproctitle(name)
         signal.signal(signal.SIGINT, self.stop)
@@ -935,10 +952,20 @@ def espersistd():
     if opts.qname:
         name += ".%s" % opts.qname
 
+    log = get_logger(name)
+
     if opts.role == 'manager':
-        PersistManager(name, config, opts).run()
+        try:
+            PersistManager(name, config, opts).run()
+        except Exception, e:
+            log.error("Problem with manager module: %s" % e)
+            sys.exit(1)
     elif opts.role == 'worker':
-        worker(name, config, opts)
+        try:
+            worker(name, config, opts)
+        except Exception, e:
+            log.error("Problem with worker module: %s" % e)
+            sys.exit(1)
     elif opts.role == 'stats':
         stats(name, config, opts)
     else:
