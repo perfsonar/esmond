@@ -10,7 +10,7 @@
 %define init_script_2 espersistd
  
 Name:           esxsnmp
-Version:        1.0        
+Version:        0.99       
 Release:        1%{?dist}
 Summary:        REPLACE
 Group:          Development/Libraries
@@ -38,7 +38,10 @@ Requires:       python26-mod_wsgi
 Requires:       httpd
  
 %description
-REPLACE
+ESxSNMP is a system for collecting and storing large sets of SNMP data. ESxSNMP
+uses a hybrid model for storing data using TSDB for time series data and an SQL
+database for everything else. All data is available via a REST style interface
+(as JSON) allowing for easy integration with other tools.
  
 %prep
 %setup -q -n %{name}-%{version}
@@ -69,6 +72,10 @@ mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_2} %{buildroot}/e
 # Move the apache configuration into place
 mkdir -p %{buildroot}/etc/httpd/conf.d/
 mv %{buildroot}/%{install_base}/rpm/config_files/apache-esdb.conf %{buildroot}/etc/httpd/conf.d/apache-esdb.conf
+
+# Move the cron configuration into place
+mkdir -p %{buildroot}/etc/cron.d/
+mv %{buildroot}/%{install_base}/rpm/config_files/cron-generate_perfsonar_store_file %{buildroot}/etc/cron.d/cron-generate_perfsonar_store_file
 
 # Move the apache mod_wsgi esdb CGI into place
 mv %{buildroot}/%{install_base}/rpm/bin/esdb_wsgi %{buildroot}/%{install_base}/bin/

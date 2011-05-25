@@ -50,7 +50,7 @@ start ()
 stop ()
 {
    echo -n "Stopping $PROGRAM:"
-   killproc $PROGRAM -KILL
+   killproc $PROGRAM -TERM
    RETVAL=$?
    echo
    [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/$PROGRAM

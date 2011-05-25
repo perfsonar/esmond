@@ -1,0 +1,25 @@
+#!/bin/sh
+
+export PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin
+
+OUTPUT_FILE=/var/lib/esxsnmp/store.xml
+GENERATE_SCRIPT=/opt/esxsnmp/bin/gen_ma_storefile
+CONFIG_FILE=/opt/esxsnmp/esxsnmp.conf
+HEADER_BYTES=607
+
+TEMP_FILE=${OUTPUT_FILE}.tmp
+
+${GENERATE_SCRIPT} -f ${CONFIG_FILE} > ${TEMP_FILE}
+if [ $? != 0 ]; then
+    echo "Problem running store file generator"
+    exit -1;
+fi
+
+cmp -i ${HEADER_BYTES} ${TEMP_FILE} ${OUTPUT_FILE} 2>&1 > /dev/null
+if [ $? != 0 ]; then
+    mv ${TEMP_FILE} ${OUTPUT_FILE}
+else
+    rm ${TEMP_FILE}
+fi
+
+exit 0;
