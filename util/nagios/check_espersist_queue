@@ -3,6 +3,10 @@
 import os
 import sys
 import optparse
+
+sys.path.append('/data/esxsnmp/esxsnmp/src/python')
+os.environ['ESXSNMP_CONFIG'] = '/data/esxsnmp/etc/esxsnmp.conf'
+
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
 try:
@@ -51,14 +55,6 @@ NAGIOS_CODES = {'OK': 0,
                 'UNKNOWN': 3,
                 'DEPENDENT': 4}
 
-def usage():
-    """ returns nagios status UNKNOWN with 
-        a one line usage description
-        usage() calls nagios_exit()
-    """
-    nagios_exit('UNKNOWN', 
-            "usage: {0} -h host".format(sys.argv[0]))
-
 def nagios_exit(code, response):
     """ prints the response message
         and exits the script with one
@@ -72,6 +68,7 @@ def check_queues(config, opts):
     stats = {}
     crit = []
     warn = []
+
     mc = memcache.Client(['127.0.0.1:11211'])
 
     for qname, qinfo in config.persist_queues.iteritems():
@@ -79,38 +76,39 @@ def check_queues(config, opts):
         if nworkers == 1:
                 stats[qname] = QueueStats(mc, qname)
                 r = stats[qname].update_stats()
-                if r:
+                if r and qname not in opts.ignore_queues:
                     warn.append(r)
         else:
             for i in range(1, nworkers + 1):
                 k = "%s_%d" % (qname, i)
                 stats[k] = QueueStats(mc, k)
                 r = stats[k].update_stats()
-                if r:
+                if r and qname not in opts.ignore_queues:
                     warn.append(r)
 
     for k in stats.keys():
         (name, pending, _, _, _) = stats[k].get_stats()
-        print name, pending
         if pending > opts.critical_threshold:
             crit.append("%s: %d" % (name, pending))
         elif pending > opts.warn_threshold:
             warn.append("%s: %d" % (name, pending))
 
     if crit:
-        return 'CRITICAL', ', '.join(crit)
+        return 'CRITICAL', ', '.join(crit) + '; warn: ' + ', '.join(warn)
     elif warn:
         return 'WARNING', ', '.join(warn)
 
-    return 'OK', 'All queues are ok'
+    return 'OK', 'All queues are OK'
 
 def main():
     argv = sys.argv
     oparse = get_opt_parser(default_config_file=get_config_path())
     oparse.add_option("-c", "--critical", dest="critical_threshold",
-            default=2000)
+            type='int', default=2000)
     oparse.add_option("-w", "--warn", dest="warn_threshold",
-            default=1000)
+            type='int', default=1000)
+    oparse.add_option("-i", "--ignore_queue", dest="ignore_queues",
+            default=[], action="append")
     (opts, args) = oparse.parse_args(args=argv)
 
     opts.config_file = os.path.abspath(opts.config_file)
