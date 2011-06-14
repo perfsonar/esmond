@@ -1,0 +1,123 @@
+#!/bin/sh
+
+#
+# utility to count certain kinds of error conditions and report log messages
+# which aren't filtered below.  this could probably be a bit more
+# comprehensive, but it provides an idea about the overall health of the
+# system
+#
+# in our deployment it gets run shortly after midnight on yesterdays logs and
+# the output is emailed via cron.  here's an example crontab entry:
+#
+# MAILTO=me@my.net
+# 15 0 * * * /path/to/script/esxsnmp_logwatch
+#
+
+bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
+/logfile turned over/ { next }
+/have a TSDBRow for DisplayString|IpAddress/ { next }
+/shutting down|exiting|starting|run|stop$/ { next }
+/started thread persist_thread/ { next }
+/add mib/ { next }
+/draining/ { next }
+/worker assigned/ { next }
+/espolld.*added/ { next }
+/stopping/ { next }
+/espolld.manager.*killing/ { next }
+/espersistd.manager.*killing/ { next }
+/last message repeated/ { next }
+/grabbing data/ { next }
+/stored [0-9]+ vars/ { next }
+/grabbed [0-9]+ vars/ { next }
+/records written/ { next }
+/creating TSDBVar/ { next }
+# Jun 13 09:57:45 localhost espersistd.manager [1032] child died: pid 48131, tsdb_6
+/espersistd.manager.*child died/ {
+    child = $NF;
+    deaths[child]++;
+    next;
+}
+# Jun 13 20:20:41 localhost espersistd.tsdb_4 [75229] Error aggregating: forr-rt1 FastPollHC: 1308016537 is greater than the maximum slot 1307889029
+/Error aggregating.*greater than/ {
+    k = $9 " " $10;
+    agg_greater[k]++;
+    next;
+}
+/exception/ {
+    proc = $5;
+    split($7, parts, /=/);
+    e = parts[2];
+    k = proc " " e;
+    exceptions[k]++;
+    next;
+}
+/timeout/ { 
+    split($5, parts, /\./);
+    #print "TIME", parts[2];
+    timeouts[parts[2]]++;
+    next;
+}
+/bad data for/ { 
+    #print "BAD", $10;
+    bad_data[$10]++;
+    next;
+}
+/failed to deserialize/ {
+    queue = $5;
+    deserialize[queue]++;
+    next;
+}
+/unable to resolve OID/ {
+    oid = $NF;
+    unresolveable[oid]++;
+    next;
+}
+/migrate-tsdb-chunks: rsync took/ {
+    if($8 > 15000) { print };
+    next
+}
+/migrate-tsdb-chunks/ { next }
+/unknown ifIndex/ {
+    split($5, parts, /\./);
+    #print "TIME", parts[2];
+    host = parts[2];
+    oid = $(NF-1);
+    unknowns[host,oid]++;
+    next;
+}
+
+{ print }
+END {
+    print "TIMEOUTS"
+    for (host in timeouts) {
+        print timeouts[host], host
+    }
+    print "\nEXCEPTIONS"
+    for (e in exceptions) {
+        print exceptions[e], e
+    }
+    print "\nDESERIALIZE"
+    for (queue in deserialize) {
+        print deserialize[queue], queue
+    }
+    print "\nUNRESOLVABLE"
+    for (u in unresolveable) {
+        print unresolveable[u], u
+    }
+    print "\nUNKNOWNS"
+    for (u in unknowns) {
+        print unknowns[u], u
+    }
+    for (d in deaths) {
+        print deaths[d], d
+    }
+    print "\nAGGREGATION ERRORS"
+    for (var in agg_greater) {
+        print agg_greater[var], var
+    }
+    print "\nBAD DATA"
+    for (var in bad_data) {
+        if (bad_data[var] > 2) { print bad_data[var], var }
+    }
+}
+'
