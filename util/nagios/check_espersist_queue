@@ -5,7 +5,7 @@ import sys
 import optparse
 
 sys.path.append('/data/esxsnmp/esxsnmp/src/python')
-os.environ['ESXSNMP_CONFIG'] = '/data/esxsnmp/etc/esxsnmp.conf'
+os.environ['ESXSNMP_CONF'] = '/data/esxsnmp/etc/esxsnmp.conf'
 
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
