@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import optparse
+from esxsnmp.config import get_opt_parser, get_config, get_config_path
+from esxsnmp.error import ConfigError
+try:
+    import cmemcache as memcache
+except ImportError:
+    try:
+        import memcache
+    except:
+        raise Exception('no memcache library found')
+
+class QueueStats:
+    prefix = '_mcpq_'
+
+    def __init__(self, mc, qname):
+        self.mc = mc
+        self.qname = qname
+        self.last_read = [0, 0]
+        self.last_added = [0, 0]
+        self.warn = False
+
+    def update_stats(self):
+        for k in ('last_read', 'last_added'):
+            kk = '%s_%s_%s' % (self.prefix, self.qname, k)
+            v = self.mc.get(kk)
+            l = getattr(self, k)
+            if v:
+                l.pop()
+                l.insert(0, int(v))
+            else:
+                return 'queue missing: %s (%s)' % (self.qname, kk)
+
+        return None
+
+    def get_stats(self):
+        return (self.qname,
+                self.last_added[0] - self.last_read[0],
+                self.last_added[0] - self.last_added[1],
+                self.last_read[0] - self.last_read[1],
+                self.last_added[0])
+
+
+
+NAGIOS_CODES = {'OK': 0, 
+                'WARNING': 1, 
+                'CRITICAL': 2,
+                'UNKNOWN': 3,
+                'DEPENDENT': 4}
+
+def usage():
+    """ returns nagios status UNKNOWN with 
+        a one line usage description
+        usage() calls nagios_exit()
+    """
+    nagios_exit('UNKNOWN', 
+            "usage: {0} -h host".format(sys.argv[0]))
+
+def nagios_exit(code, response):
+    """ prints the response message
+        and exits the script with one
+        of the defined exit codes
+        DOES NOT RETURN 
+    """
+    print code + ": " + response
+    sys.exit(NAGIOS_CODES[code])
+
+def check_queues(config, opts):
+    stats = {}
+    crit = []
+    warn = []
+    mc = memcache.Client(['127.0.0.1:11211'])
+
+    for qname, qinfo in config.persist_queues.iteritems():
+        (qclass, nworkers) = qinfo
+        if nworkers == 1:
+                stats[qname] = QueueStats(mc, qname)
+                r = stats[qname].update_stats()
+                if r:
+                    warn.append(r)
+        else:
+            for i in range(1, nworkers + 1):
+                k = "%s_%d" % (qname, i)
+                stats[k] = QueueStats(mc, k)
+                r = stats[k].update_stats()
+                if r:
+                    warn.append(r)
+
+    for k in stats.keys():
+        (name, pending, _, _, _) = stats[k].get_stats()
+        print name, pending
+        if pending > opts.critical_threshold:
+            crit.append("%s: %d" % (name, pending))
+        elif pending > opts.warn_threshold:
+            warn.append("%s: %d" % (name, pending))
+
+    if crit:
+        return 'CRITICAL', ', '.join(crit)
+    elif warn:
+        return 'WARNING', ', '.join(warn)
+
+    return 'OK', 'All queues are ok'
+
+def main():
+    argv = sys.argv
+    oparse = get_opt_parser(default_config_file=get_config_path())
+    oparse.add_option("-c", "--critical", dest="critical_threshold",
+            default=2000)
+    oparse.add_option("-w", "--warn", dest="warn_threshold",
+            default=1000)
+    (opts, args) = oparse.parse_args(args=argv)
+
+    opts.config_file = os.path.abspath(opts.config_file)
+
+    try:
+        config = get_config(opts.config_file, opts)
+    except ConfigError, e:
+        nagios_exit('CRITICAL', str(e))
+
+    code, msg = check_queues(config, opts)
+    nagios_exit(code, msg)
+
+if __name__ == "__main__":
+    main()
