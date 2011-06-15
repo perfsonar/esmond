@@ -68,6 +68,7 @@ def check_queues(config, opts):
     stats = {}
     crit = []
     warn = []
+    ok = []
 
     mc = memcache.Client(['127.0.0.1:11211'])
 
@@ -92,13 +93,15 @@ def check_queues(config, opts):
             crit.append("%s: %d" % (name, pending))
         elif pending > opts.warn_threshold:
             warn.append("%s: %d" % (name, pending))
+        else:
+            ok.append("%s: %d" % (name, pending))
 
     if crit:
         return 'CRITICAL', ', '.join(crit) + '; warn: ' + ', '.join(warn)
     elif warn:
         return 'WARNING', ', '.join(warn)
 
-    return 'OK', 'All queues are OK'
+    return 'OK', 'All queues are OK: %s' % ', '.join(ok)
 
 def main():
     argv = sys.argv

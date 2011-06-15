@@ -96,7 +96,8 @@ bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
     #print "TIME", parts[2];
     host = parts[2];
     oid = $(NF-1);
-    unknowns[host,oid]++;
+    k = host " " oid;
+    unknowns[k]++;
     next;
 }
 
