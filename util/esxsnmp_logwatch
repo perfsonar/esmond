@@ -12,7 +12,23 @@
 # MAILTO=me@my.net
 # 15 0 * * * /path/to/script/esxsnmp_logwatch
 #
+
 bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
+
+function update_count(dict, key)
+{
+    dict[key]++;
+}
+
+function report_count(title, dict)
+{
+    print "\n" title
+    for (k in dict) {
+        print dict[k], k
+    }
+}
+
+# these lines are basically noise, ignore them
 /logfile turned over/ { next }
 /have a TSDBRow for DisplayString|IpAddress|INTEGER|PhysAddress|IANAifType|Integer32/ { next }
 /shutting down|exiting|starting|run|stop$/ { next }
@@ -32,27 +48,26 @@ bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
 /grabbed [0-9]+ vars/ { next }
 /records written/ { next }
 /creating TSDBVar/ { next }
+
 # Jun 13 00:05:39 localhost espersistd.tsdb_5 [91882] bad metadata for kans-asw1/FastPollHC/ifHCOutOctets/ge-0_0_2
 /bad metadata for/ {
-    var = $NF;
-    bad_metadata[var]++;
+    update_count(bad_metadata, $NF);
     next;
 }
 # Jun 13 09:57:45 localhost espersistd.manager [1032] child died: pid 48131, tsdb_6
 /espersistd.manager.*child died/ {
-    child = $NF;
-    deaths[child]++;
+    update_count(deaths, $NF);
     next;
 }
 # Jun 13 00:37:06 localhost espersistd.tsdb_5 [97930] var needs repair, skipping: ameslab-rt2/JnxFirewall/counter/ge-1/0/0.0-i/bogons-source-ge-1/0/0.0-i
 /var needs repair/ {
-    needs_repair[$NF]++;
+    update_count(needs_repair, $NF);
     next;
 }
 # Jun 13 20:20:41 localhost espersistd.tsdb_4 [75229] Error aggregating: forr-rt1 FastPollHC: 1308016537 is greater than the maximum slot 1307889029
 /Error aggregating.*greater than/ {
     k = $9 " " $10;
-    agg_greater[k]++;
+    update_count(agg_greater, k);
     next;
 }
 # Jun 13 00:15:35 localhost espersistd.manager [5363] pid 93875: Exception TypeError: "'NoneType' object is not callable" in <function <lambda> at 0x803f95488> ignored 
@@ -62,28 +77,24 @@ bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
     split($7, parts, /=/);
     e = parts[2];
     k = proc " " e;
-    exceptions[k]++;
+    update_count(exceptions, k);
     next;
 }
 /timeout/ { 
     split($5, parts, /\./);
-    #print "TIME", parts[2];
-    timeouts[parts[2]]++;
+    update_count(timeouts, parts[2]);
     next;
 }
 /bad data for/ { 
-    #print "BAD", $10;
-    bad_data[$10]++;
+    update_count(bad_data, $10);
     next;
 }
 /failed to deserialize/ {
-    queue = $5;
-    deserialize[queue]++;
+    update_count(deserialize, $5);
     next;
 }
 /unable to resolve OID/ {
-    oid = $NF;
-    unresolveable[oid]++;
+    update_count(unresolveable, $NF);
     next;
 }
 /migrate-tsdb-chunks: rsync took/ {
@@ -93,54 +104,45 @@ bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
 /migrate-tsdb-chunks/ { next }
 /unknown ifIndex/ {
     split($5, parts, /\./);
-    #print "TIME", parts[2];
     host = parts[2];
     oid = $(NF-1);
     k = host " " oid;
-    unknowns[k]++;
+    update_count(unknowns, k);
+    next;
+}
+/summarize.*no var/ {
+    update_count(summarize_no_var, $NF);
+    next;
+}
+/summarize.*var has invalid metadata/ {
+    update_count(summarize_invalid, $NF);
+    next;
+}
+/summarize.*range error/ {
+    update_count(summarize_range_error, $NF);
+    next;
+}
+/summarize.*not valid/ {
+    update_count(summarize_not_valid, $NF);
     next;
 }
 
+
 { print }
 END {
-    print "TIMEOUTS"
-    for (host in timeouts) {
-        print timeouts[host], host
-    }
-    print "\nEXCEPTIONS"
-    for (e in exceptions) {
-        print exceptions[e], e
-    }
-    print "\nDESERIALIZE"
-    for (queue in deserialize) {
-        print deserialize[queue], queue
-    }
-    print "\nUNRESOLVABLE"
-    for (u in unresolveable) {
-        print unresolveable[u], u
-    }
-    print "\nUNKNOWNS"
-    for (u in unknowns) {
-        print unknowns[u], u
-    }
-    for (d in deaths) {
-        print deaths[d], d
-    }
-    print "\nAGGREGATION ERRORS"
-    for (var in agg_greater) {
-        print agg_greater[var], var
-    }
-    print "\nNEEDS REPAIR"
-    for (var in needs_repair) {
-        print needs_repair[var], var
-    }
-    print "\nBAD METADATA"
-    for (var in bad_metadata) {
-        print bad_metadata[var], var
-    }
-    print "\nBAD DATA"
-    for (var in bad_data) {
-        if (bad_data[var] > 2) { print bad_data[var], var }
-    }
+    report_count("TIMEOUTS", timeouts);
+    report_count("EXCEPTIONS", exceptions);
+    report_count("DESERIALIZE", deserialize);
+    report_count("UNRESOLVABLE" ,unresolveable);
+    report_count("UNKNOWNS" ,unknowns);
+    report_count("DEATHS",deaths);
+    report_count("AGGREGATION ERRORS" ,agg_greater);
+    report_count("NEEDS REPAIR" ,needs_repair);
+    report_count("SUMMARIZE NO VAR", summarize_no_var);
+    report_count("SUMMARIZE INVAILD METDATA", summarize_invalid_metadata);
+    report_count("SUMMARIZE RANGE ERROR", summarize_range_error);
+    report_count("SUMMARIZE NOT VALID", summarize_not_valid);
+    report_count("BAD METADATA" ,bad_metadata);
+    report_count("BAD DATA" ,bad_data);
 }
 '
