@@ -12,11 +12,12 @@
 # MAILTO=me@my.net
 # 15 0 * * * /path/to/script/esxsnmp_logwatch
 #
-
 bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
 /logfile turned over/ { next }
-/have a TSDBRow for DisplayString|IpAddress/ { next }
+/have a TSDBRow for DisplayString|IpAddress|INTEGER|PhysAddress|IANAifType|Integer32/ { next }
 /shutting down|exiting|starting|run|stop$/ { next }
+/espersistd.ifref|espersistd.lspopstatus.*processed [0-9]+ vars/ { next }
+/reloading devices and oidsets/ { next }
 /started thread persist_thread/ { next }
 /add mib/ { next }
 /draining/ { next }
@@ -31,10 +32,21 @@ bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
 /grabbed [0-9]+ vars/ { next }
 /records written/ { next }
 /creating TSDBVar/ { next }
+# Jun 13 00:05:39 localhost espersistd.tsdb_5 [91882] bad metadata for kans-asw1/FastPollHC/ifHCOutOctets/ge-0_0_2
+/bad metadata for/ {
+    var = $NF;
+    bad_metadata[var]++;
+    next;
+}
 # Jun 13 09:57:45 localhost espersistd.manager [1032] child died: pid 48131, tsdb_6
 /espersistd.manager.*child died/ {
     child = $NF;
     deaths[child]++;
+    next;
+}
+# Jun 13 00:37:06 localhost espersistd.tsdb_5 [97930] var needs repair, skipping: ameslab-rt2/JnxFirewall/counter/ge-1/0/0.0-i/bogons-source-ge-1/0/0.0-i
+/var needs repair/ {
+    needs_repair[$NF]++;
     next;
 }
 # Jun 13 20:20:41 localhost espersistd.tsdb_4 [75229] Error aggregating: forr-rt1 FastPollHC: 1308016537 is greater than the maximum slot 1307889029
@@ -43,6 +55,8 @@ bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
     agg_greater[k]++;
     next;
 }
+# Jun 13 00:15:35 localhost espersistd.manager [5363] pid 93875: Exception TypeError: "'NoneType' object is not callable" in <function <lambda> at 0x803f95488> ignored 
+/Exception.*NoneType.*lambda/ { next };
 /exception/ {
     proc = $5;
     split($7, parts, /=/);
@@ -114,6 +128,14 @@ END {
     print "\nAGGREGATION ERRORS"
     for (var in agg_greater) {
         print agg_greater[var], var
+    }
+    print "\nNEEDS REPAIR"
+    for (var in needs_repair) {
+        print needs_repair[var], var
+    }
+    print "\nBAD METADATA"
+    for (var in bad_metadata) {
+        print bad_metadata[var], var
     }
     print "\nBAD DATA"
     for (var in bad_data) {
