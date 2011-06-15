@@ -13,7 +13,21 @@
 # 15 0 * * * /path/to/script/esxsnmp_logwatch
 #
 
-bzcat -cd /var/log/esxsnmp.log.0.bz2 | awk '
+
+analyze() {
+    case "$1" in
+        *bz2)
+            cmd="bzcat -cd $1"
+            ;;
+        *gz)
+            cmd="gzcat -cd $1"
+            ;;
+        *)
+            cmd="cat $1"
+            ;;
+    esac
+
+$cmd | awk '
 
 function update_count(dict, key)
 {
@@ -22,9 +36,11 @@ function update_count(dict, key)
 
 function report_count(title, dict)
 {
-    print "\n" title
-    for (k in dict) {
-        print dict[k], k
+    if(length(dict) > 0) {
+        print "\n" title
+        for (k in dict) {
+            print dict[k], k
+        }
     }
 }
 
@@ -48,6 +64,7 @@ function report_count(title, dict)
 /grabbed [0-9]+ vars/ { next }
 /records written/ { next }
 /creating TSDBVar/ { next }
+/summarize.*loop/ { next }
 
 # Jun 13 00:05:39 localhost espersistd.tsdb_5 [91882] bad metadata for kans-asw1/FastPollHC/ifHCOutOctets/ge-0_0_2
 /bad metadata for/ {
@@ -146,3 +163,12 @@ END {
     report_count("BAD DATA" ,bad_data);
 }
 '
+}
+
+if [ $# -eq 0 ]; then
+    $* = /var/log/esxsnmp.log.0.bz2 
+fi
+
+for f in $*; do 
+    analyze $f
+done
