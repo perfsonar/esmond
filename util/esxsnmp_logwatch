@@ -36,11 +36,15 @@ function update_count(dict, key)
 
 function report_count(title, dict)
 {
+    total = 0;
+
     if(length(dict) > 0) {
         print "\n" title
         for (k in dict) {
-            print dict[k], k
+            print dict[k], k;
+            total += dict[k];
         }
+        print total, "TOTAL"
     }
 }
 
@@ -166,9 +170,9 @@ END {
 }
 
 if [ $# -eq 0 ]; then
-    $* = /var/log/esxsnmp.log.0.bz2 
+    analyze /var/log/esxsnmp.log.0.bz2 
+else
+    for f in $*; do 
+        analyze $f
+    done
 fi
-
-for f in $*; do 
-    analyze $f
-done
