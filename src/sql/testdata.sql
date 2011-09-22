@@ -19,8 +19,8 @@ INSERT INTO OID (id,name,oidtypeid) VALUES (9, 'ifHighSpeed', 4);
 INSERT INTO OID (id,name,oidtypeid) VALUES (10, 'ipAdEntIfIndex', 6);
 SELECT pg_catalog.setval('oid_id_seq', 11, true);
 
-INSERT INTO Poller (id,name) VALUES (1, 'CorrelatedTSDBPoller');
-INSERT INTO Poller (id,name) VALUES (2, 'IfRefSQLPoller');
+INSERT INTO Poller (id,name) VALUES (1, 'CorrelatedPoller');
+INSERT INTO Poller (id,name) VALUES (2, 'UncorrelatedPoller');
 SELECT pg_catalog.setval('poller_id_seq', 2, true);
 
 INSERT INTO OIDSet (id,name,frequency, pollerid, poller_args)
@@ -49,6 +49,11 @@ INSERT INTO OIDSetMember (OIDId, OIDSetID) VALUES (10, 3);
 
 -- add your devices using inserts like below,
 --   be sure to set your community and device name
-
+--
 -- INSERT INTO device (name, begin_time, end_time, community, active)
 --     VALUES ('test-router', 'NOW', 'infinity', 'public', true);
+--
+-- then add OIDsets to be polled for each device:
+-- 
+-- INSERT INTO deviceoidsetmap (deviceid, oidsetid) VALUES (X, Y);
+-- where X is the id for the device and Y is the id for the OIDSet
