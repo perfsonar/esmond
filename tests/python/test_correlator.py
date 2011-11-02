@@ -1,4 +1,5 @@
-from esxsnmp.poll import IfDescrCorrelator, JnxFirewallCorrelator, JnxCOSCorrelator
+from esxsnmp.poll import IfDescrCorrelator, JnxFirewallCorrelator, \
+                            JnxCOSCorrelator, SentryCorrelator
 
 class MockSession(object):
     def walk(self, oid):
@@ -38,6 +39,38 @@ class MockSession(object):
                      '0', 'counter/fnal-test/discard'),
                     ('jnxFWCounterByteCount."test-from-eqx"."from-eqx".counter',
                      '0', 'counter/test-from-eqx/from-eqx'))
+        elif oid == 'Sentry3-MIB::outletID':
+            return (
+                    ('Sentry3-MIB::outletID.1.1.1','AA1'),
+                    ('Sentry3-MIB::outletID.1.1.2','AA2'),
+                    )
+        elif oid == 'Sentry3-MIB::outletLoadValue':
+            return (
+                    ('Sentry3-MIB::outletLoadValue.1.1.1','0',
+                        'Sentry3-MIB::outletLoadValue/AA1'),
+                    ('Sentry3-MIB::outletLoadValue.1.1.2','0',
+                        'Sentry3-MIB::outletLoadValue/AA2'),
+                    )
+        elif oid == 'Sentry3-MIB::tempHumidSensorID':
+            return (
+                    ('Sentry3-MIB::tempHumidSensorID.1.1','A1'),
+                    ('Sentry3-MIB::tempHumidSensorID.1.2','A2'),
+                    )
+        elif oid == 'Sentry3-MIB::tempHumidSensorTempValue':
+            return (
+                    ('Sentry3-MIB::tempHumidSensorTempValue.1.1','780',
+                        'Sentry3-MIB::tempHumidSensorTempValue/A1'),
+                    ('Sentry3-MIB::tempHumidSensorTempValue.1.2','735',
+                        'Sentry3-MIB::tempHumidSensorTempValue/A2'),
+                    )
+        elif oid == 'Sentry3-MIB::tempHumidSensorHumidValue':
+            return (
+                    ('Sentry3-MIB::tempHumidSensorHumidValue.1.1','38',
+                        'Sentry3-MIB::tempHumidSensorHumidValue/A1'),
+                    ('Sentry3-MIB::tempHumidSensorHumidValue.1.2','47',
+                        'Sentry3-MIB::tempHumidSensorHumidValue/A2'),
+                    )
+
 
 class MockOID(object):
     def __repr__(self):
@@ -48,15 +81,20 @@ class MockOID(object):
 
 def check_correlator(correlator, oid):
     s = MockSession()
-    c = correlator(s)
+    c = correlator()
     c.setup()
     for (var,val,check) in s.walk(oid.name):
         assert check == c.lookup(oid, var)
 
 def test_correlators():
-    for (correlator, oid) in ((IfDescrCorrelator, MockOID('ifHCInOctets')),
+    for (correlator, oid) in (
+            (IfDescrCorrelator, MockOID('ifHCInOctets')),
             (JnxFirewallCorrelator, MockOID('jnxFWCounterByteCount')),
-            (JnxCOSCorrelator, MockOID('jnxCosIfqQedBytes'))):
+            (JnxCOSCorrelator, MockOID('jnxCosIfqQedBytes')),
+            (SentryCorrelator, MockOID('Sentry3-MIB::outletLoadValue')),
+            (SentryCorrelator, MockOID('Sentry3-MIB::tempHumidSensorTempValue')),
+            (SentryCorrelator, MockOID('Sentry3-MIB::tempHumidSensorHumidValue')),
+            ):
         yield check_correlator, correlator, oid
 
 #def test_jnx_cos_correlator():

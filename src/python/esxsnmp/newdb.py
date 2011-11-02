@@ -45,8 +45,101 @@ urls = (
         '/snmp/.*', 'SNMPHandler',
         '/bulk/?', 'BulkHandler',
         '/topN/?', 'TopNHandler',
+        '/power/.*', 'PowerHandler',
         )
 
+POWER_DEVICES = ['student10']
+POWER_DATA_SET_TO_OID = {
+        'load': 'outletLoadValue',
+        'temp': 'tempHumidSensorTempValue',
+        'humidity': 'tempHumidSensorHumidValue',
+        }
+class PowerHandler(object):
+    """A quick hack to support power monitoring demo."""
+    def __init__(self):
+        self.db = tsdb.TSDB(CONFIG.tsdb_root, mode="r")
+        self.session = esxsnmp.sql.Session()
+
+        self.log = get_logger("newdb.power")
+
+        self.begin = None
+        self.end = None
+
+    def GET(self):
+        print "power"
+        uri = web.ctx.environ.get('REQUEST_URI', 
+                    web.ctx.environ.get('PATH_INFO', None))
+
+        try:
+            uri, args = uri.split('?')
+        except ValueError:
+            pass
+
+        args = parse_query_string()
+
+        if args.has_key('begin'):
+            self.begin = int(args['begin'])
+
+        if args.has_key('end'):
+            self.end = int(args['end'])
+
+        if not self.end:
+            self.end = int(time.time())
+
+        if not self.begin:
+            self.begin = self.end - 3600
+
+        if self.end < self.begin:
+            print "begin (%d) is greater than end (%d)" % (self.begin, self.end)
+            return web.notfound()
+
+        parts = uri.split('/')[2:]
+        if parts[-1] == '':
+            parts = parts[:-1]
+
+        if len(parts) == 0:
+            return json.dumps(dict(children=POWER_DEVICES))
+
+        device = parts[0]
+        if device not in POWER_DEVICES:
+            print "ERR> unknown device: %s" % device
+            return web.notfound() # unknown dataset
+
+        if len(parts) == 1:
+            r = {}
+            for dataset in POWER_DATA_SET_TO_OID.keys():
+                r.update(self.get_data(device, dataset))
+
+            return json.dumps(r)
+
+        dataset = parts[1]
+        if not POWER_DATA_SET_TO_OID.has_key(dataset):
+            print "ERR> unknown dataset: %s" % dataset
+            return web.notfound() # unknown dataset
+
+        if len(parts) == 2:
+            return json.dumps(self.get_data(device, dataset))
+
+        port = parts[2]
+
+        return json.dumps(self.get_data(device, dataset, port))
+
+    def get_data(self, device, dataset, port=None):
+        path = "/".join((device, 'SentryPoll', POWER_DATA_SET_TO_OID[dataset]))
+        ds = self.db.get_set(path)
+        r = {}
+        r[dataset] = {}
+        if port:
+            ports = [port]
+        else:
+            ports = ds.list_vars()
+
+        for port in ports:
+            v = ds.get_var(port)
+            r[dataset][port] = [(d.timestamp, d.value) for d in
+                    v.select(begin=self.begin, end=self.end)]
+
+        return r
 
 SNMP_URI = '/snmp'
 DATASET_INFINERA_MAP = {'in': 'Rx', 'out': 'Tx'}
@@ -138,21 +231,25 @@ def get_time_range(args):
 # once TSDB uses SQLite for metadata
 device_oidset = {}
 def get_traffic_oidset(device_name):
-    global DB
+    db = tsdb.TSDB(CONFIG.tsdb_root, mode="r")
 
     try:
-        DB.get_set('/%s/SuperFastPollHC' % (device_name))
+        db.get_set('/%s/SuperFastPollHC' % (device_name))
         r = ('SuperFastPollHC', 'HC')
     except:
         try:
-            DB.get_set('/%s/FastPollHC' % (device_name))
+            db.get_set('/%s/FastPollHC' % (device_name))
             r = ('FastPollHC', 'HC')
         except:
             try:
-                DB.get_set('/%s/InfFastPollHC' % (device_name))
+                db.get_set('/%s/InfFastPollHC' % (device_name))
                 r = ('InfFastPollHC', 'HC')
             except:
-                r = ('FastPoll', '')
+                try:
+                    db.get_set('/%s/ALUFastPollHC' % (device_name))
+                    r = ('ALUFastPollHC', 'HC')
+                except:
+                    r = ('FastPoll', '')
 
     return r
 
@@ -341,8 +438,12 @@ class BulkHandler:
         
 class SNMPHandler:
     def __init__(self):
-        self.db = DB
-        self.agg_db = AGG_DB
+        self.db = tsdb.TSDB(CONFIG.tsdb_root, mode="r")
+        if CONFIG.agg_tsdb_root:
+            self.agg_db = tsdb.TSDB(CONFIG.agg_tsdb_root, mode="r")
+        else:
+            self.agg_db = None
+
         self.session = esxsnmp.sql.Session()
 
         self.log = get_logger("newdb")
@@ -919,6 +1020,9 @@ class SNMPHandler:
 
 
 class TopNHandler:
+    def __init__(self):
+        self.memcache = memcache.Client([CONFIG.espersistd_uri])
+
     def GET(self, uri=None, raw=False, rawargs=None):
         t0 = time.time()
         if not uri:
@@ -933,7 +1037,7 @@ class TopNHandler:
             web.ctx.query = "?" + rawargs
 
         args = parse_query_string()
-        data = MEMCACHE.get("summary")
+        data = self.memcache.get("summary")
 
         aggfunc = args.get('aggfunc', 'max')
         agg = int(args.get("agg", 30))
@@ -993,15 +1097,13 @@ def setup(inargs, config_file=None):
         sys.exit(1)
 
     esxsnmp.sql.setup_db(config.db_uri)
-    global DB 
-    DB = tsdb.TSDB(config.tsdb_root, mode="r")
-    global AGG_DB
-    if config.agg_tsdb_root:
-        AGG_DB = tsdb.TSDB(config.agg_tsdb_root, mode="r")
-    else:
-        AGG_DB = None
-    global MEMCACHE
-    MEMCACHE = memcache.Client([config.espersistd_uri])
+
+    # XXX(jdugan): is there a way to pass this into the web.py code so that each
+    # handler has it?
+    global CONFIG
+    CONFIG = config
+
+    # XXX(jdugan): ditto on this one, globals are icky
     global USER_DB
     USER_DB = UserDB()
     USER_DB.read_htpassd(config.htpasswd_file)

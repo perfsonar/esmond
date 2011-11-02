@@ -412,6 +412,9 @@ class IfRefPollPersister(HistoryTablePersister):
             setattr(i, attr, obj[attr])
         return i
 
+    def _resolve_ifdescr(self, ifdescr, ifindex):
+        return ifdescr
+
     def _build_objs(self):
         ifref_objs = {}
         ifIndex_map = {}
@@ -419,8 +422,9 @@ class IfRefPollPersister(HistoryTablePersister):
         for name, val in self.data['ifDescr']:
             foo, ifIndex = name.split('.')
             ifIndex = int(ifIndex)
-            ifIndex_map[ifIndex] = val
-            ifref_objs[val] = dict(ifdescr=val, ifindex=ifIndex)
+            ifDescr = self._resolve_ifdescr(val, ifIndex)
+            ifIndex_map[ifIndex] = ifDescr
+            ifref_objs[ifDescr] = dict(ifdescr=ifDescr, ifindex=ifIndex)
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
@@ -445,6 +449,22 @@ class IfRefPollPersister(HistoryTablePersister):
 
         return ifref_objs
 
+class ALUIfRefPollPersister(IfRefPollPersister):
+    """ALU specific hacks for IfRef"""
+
+    def _resolve_ifdescr(self, ifdescr, ifindex):
+        """The interface description which is in ifAlias on most platforms is
+        the third comma separated field in ifDescr on the ALU.  We normalize
+        ifDescr just be the interface name and put a copy of the interface
+        description in ifAlias."""
+
+        parts = ifdescr.split(',')
+        if len(parts) > 2:
+            if not self.data.has_key('ifAlias'):
+                self.data['ifAlias'] = []
+            ifalias = parts[2].replace('"','')
+            self.data['ifAlias'].append(('ifAlias.%d' % ifindex, ifalias))
+        return parts[0]
 
 class LSPOpStatusPersister(HistoryTablePersister):
     def __init__(self, config, qname):

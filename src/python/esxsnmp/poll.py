@@ -93,6 +93,35 @@ class IfDescrCorrelator(PollCorrelator):
         except KeyError:
             raise PollUnknownIfIndex(ifIndex)
 
+class SentryCorrelator(object):
+    oids = ['Sentry3-MIB::outletID', 'Sentry3-MIB::tempHumidSensorID']
+
+    def setup(self, data):
+        self.outlet = self._parse_name(self._get_outlet_key,
+                filter_data('outletID', data))
+        self.sensor = self._parse_name(self._get_sensor_key,
+                filter_data('tempHumidSensorID', data))
+
+    def lookup(self, oid, var):
+        if oid.name == 'outletLoadValue':
+            k = self.outlet[self._get_outlet_key(var)]
+        else:
+            k = self.sensor[self._get_sensor_key(var)]
+
+        return '/'.join((oid.name, k))
+
+    def _get_outlet_key(self, var):
+        return '.'.join(var.split('.')[-3:])
+
+    def _get_sensor_key(self, var):
+        return '.'.join(var.split('.')[-2:])
+
+    def _parse_name(self, keyf, data):
+        d = {}
+        for (var, val) in data:
+            k = keyf(var)
+            d[k] = val
+        return d
 
 class InfIfDescrCorrelator(PollCorrelator):
     """correlates an IfIndex to it's IfDescr with Infinera tweaks.
@@ -127,10 +156,34 @@ class ALUIfDescrCorrelator(IfDescrCorrelator):
     """correlates an IfIndec to it's IfDescr with ALU tweaks.
 
     The ALU doesn't store the interface description in ifAlias like a normal
-    box."""
+    box, it's in the third comma separated field in ifDescr."""
 
     def setup(self, data, ignore_no_ifalias=False):
-        IfDescrCorrelator.setup(self, data, ignore_no_ifalias)
+        self.xlate = self._table_parse(filter_data('ifDescr', data))
+
+    def _table_parse(self, data):
+        d = {}
+        for (var, val) in data:
+            val = val.split(',')[0] # weird comma separated thing
+            d[var.split('.')[-1]] = remove_metachars(val)
+        return d
+
+    def lookup(self, oid, var):
+        # XXX this sucks
+        if oid.name == 'sysUpTime':
+            return 'sysUpTime'
+
+        ifIndex = var.split('.')[-1]
+
+        try:
+            r = self.xlate[ifIndex]
+            if r:
+                return "/".join((oid.name, r))
+            else:
+                return None
+
+        except KeyError:
+            raise PollUnknownIfIndex(ifIndex)
 
 
 class JnxFirewallCorrelator(PollCorrelator):
@@ -557,6 +610,9 @@ class CorrelatedPoller(Poller):
 
         for oid in self.oidset.oids:
             dataout = []
+            # qualified names are returned unqualified
+            if "::" in oid.name:
+                oid.name = oid.name.split("::")[-1]
             for var, val in filter_data(oid.name, data):
                 try:
                     varname = self.correlator.lookup(oid, var)
@@ -714,7 +770,9 @@ class AsyncSNMPPoller(object):
 
         pollreq = self.reqmap[reqid]
 
-        #print "_callback yo!", pollreq.type, len(r)
+        #print "_callback yo!", pollreq.type, len(r), type(r)
+        #for d in r:
+        #    print "  %s %s" % (oid_to_str(d[0]), str(d[1]))
 
         if len(r) == 0:
             #print "_callback NO DATA!!!?!?!?! WTF?!?!?!?!"
@@ -823,10 +881,11 @@ def espoll():
 
     time.sleep(12)
 
+    import pprint
     print "and the queue has:"
     while True:
         try:
-            print persistq.get_nowait().data
+            pprint.pprint(persistq.get_nowait().data)
         except Queue.Empty:
             break
 
