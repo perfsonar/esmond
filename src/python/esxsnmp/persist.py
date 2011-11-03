@@ -203,8 +203,9 @@ class TSDBPollPersister(PollPersister):
         session.close()
 
     def store(self, result):
-        basename = os.path.join(result.device_name, result.oidset_name)
         oidset = self.oidsets[result.oidset_name]
+        set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
+        basename = os.path.join(result.device_name, set_name)
         oid = self.oids[result.oid_name]
         flags = result.metadata['tsdb_flags']
 
