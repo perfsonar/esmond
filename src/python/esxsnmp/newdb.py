@@ -772,6 +772,10 @@ class SNMPHandler:
             t0 = time.time()
             ifrefs = ifaces.filter_by(ifdescr=iface).order_by(esxsnmp.sql.IfRef.end_time)
 #            print ifrefs.all()
+            if ifrefs.count() == 0:
+                iface = iface.replace('/', '_')
+                ifrefs = ifaces.filter_by(ifdescr=iface).order_by(esxsnmp.sql.IfRef.end_time)
+                print ">>hack>> trying %s, %s" % (iface, ifrefs)
             l = []
             t1 = time.time()
             print "t>> iface select %f" % (t1 - t0)
