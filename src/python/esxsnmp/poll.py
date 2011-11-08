@@ -904,10 +904,11 @@ def espolld():
         print e
         sys.exit(1)
 
+    name = "espolld"
+
     init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
-
-    name = "espolld"
+    log = get_logger(name)
 
     setproctitle(name)
 
@@ -919,8 +920,6 @@ def espolld():
                 log_stdout_stderr=config.syslog_facility)
 
     os.umask(0022)
-
-    log = get_logger(name)
 
     try:
         poller = PollManager(name, opts, args, config)
