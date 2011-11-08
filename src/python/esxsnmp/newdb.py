@@ -41,6 +41,32 @@ import pprint
 # the request tree into it's own self contained class and called directly from
 # the url pattern matching below.
 #
+
+"""
+The URL structure of the REST service is as follows:
+
+    /snmp/  
+        returns a list of available devices
+
+    /snmp/DEVICE_NAME/ 
+        returns the avaiable sets for devices
+
+    /snmp/DEVICE_NAME/interface/  
+        returns a list of interfaces and interface details for a specific device
+
+    /snmp/DEVICE_NAME/interface/INTERFACE_NAME/
+        returns details for a specific interface
+
+    /snmp/DEVICE_NAME/interface/INTERFACE_NAME/in
+    /snmp/DEVICE_NAME/interface/INTERFACE_NAME/out
+    /snmp/DEVICE_NAME/interface/INTERFACE_NAME/error/in
+    /snmp/DEVICE_NAME/interface/INTERFACE_NAME/error/out
+    /snmp/DEVICE_NAME/interface/INTERFACE_NAME/discard/in
+    /snmp/DEVICE_NAME/interface/INTERFACE_NAME/discard/out
+        returns counter data for a specific interface
+
+"""
+
 urls = (
         '/snmp/.*', 'SNMPHandler',
         '/bulk/?', 'BulkHandler',
@@ -585,6 +611,8 @@ class SNMPHandler:
     def list_devices(self, active=True):
         """Returns a JSON array of objests representing device names and URIs.
 
+        This is obtained by doing a GET on /snmp/.
+
         Example:
 
         [ {'name': 'router1', 'uri': 'http://example.com/snmp/router1/' },
@@ -613,6 +641,8 @@ class SNMPHandler:
 
     def get_device(self, device):
         """Returns a JSON object representing a device.
+
+        This is obtained by doing a GET of /DEVICE_NAME/.
 
         A device JSON object has the following fields:
 
@@ -645,6 +675,15 @@ class SNMPHandler:
             children=r)
 
     def get_interface_set(self, device, rest):
+        """Returns a list of JSON objects representing the interfaces for a device.
+
+        This is obtained by doing a GET of /DEVICE_NAME/interface.
+
+        The fields for each object are the same as the get_interface() method.
+
+        Example:
+
+        """
         active='t'
 
 #        print ">>> XXQ", web.ctx.query, rest
@@ -728,6 +767,8 @@ class SNMPHandler:
     def get_interface(self, device, ifaces, iface, rest):
         """Returns a JSON object representing an interface.
 
+        This obtained by doing a GET of /DEVICE_NAME/interface/INTERFACE_NAME/.
+
         An interface JSON object has the following fields:
 
             :param ifIndex: SNMP ifIndex
@@ -804,6 +845,53 @@ class SNMPHandler:
 
     def get_interface_data(self, devicename, iface, dataset, rest):
         """Returns a JSON object representing counter data for an interface.
+
+        This is obtained by doing a GET of one of the follwing URIs:
+
+            /snmp/DEVICE_NAME/interface/INTERFACE_NAME/in
+            /snmp/DEVICE_NAME/interface/INTERFACE_NAME/out
+            /snmp/DEVICE_NAME/interface/INTERFACE_NAME/error/in
+            /snmp/DEVICE_NAME/interface/INTERFACE_NAME/error/out
+            /snmp/DEVICE_NAME/interface/INTERFACE_NAME/discard/in
+            /snmp/DEVICE_NAME/interface/INTERFACE_NAME/discard/out
+
+        For in and out 
+
+        get_interface_data accepts several query parameters:
+
+            begin --  expressed a seconds since the epoch
+            end --  expressed a seconds since the epoch
+            agg -- use a precomputed aggregate for data, defaults to highest available resolution
+            cf -- consolidation function. defaults to average
+            calc -- calculate an aggregate, see below for more details
+            calc_func --
+            oidset -- specifically specify an oidset, see below
+
+        agg specifies which precomputed aggregate to use.  Aggregates are
+        represented as rates (eg. bytes/sec) and are calculated for the base
+        rate at the time the data is persisted to disk.   This is specified as
+        the number of seconds in the aggregation period or as 'raw'.  'raw'
+        returns the counter data as collected from the device without any
+        processing.  Currently there is only the aggreagate for the base polling
+        interval and as a result this is rarely used.  cf determines how
+        datapoints are agreggated into a single datapoint.  By default the
+        datapoints are averaged but the maximum and minimum can also be used.
+        valid options for this parameter are 'min', 'max' and 'average'.  This
+        applies to precomputed aggregates that are greater than the base polling
+        frequency.
+
+        calc requests that the database dynamically generate an aggregate from
+        the base aggregate for this counter.  The parameter is set to the
+        numberof seconds to be used in the aggregation period.  The function
+        used to consolidate each group of data points into a single data in the
+        aggregate is controlled by the calc_func parameter.
+
+        calc_func specifies the function to use when calculating an aggregate.
+        It may be one of 'average', 'min',  or 'max' and defaults to 'average'.
+
+        oidset allows the query to specify a specific oidset to get the data
+        from rather than using the usual method for locating the oidset.  This
+        is very rarely used.
 
         An interface data JSON object has the following fields:
 
