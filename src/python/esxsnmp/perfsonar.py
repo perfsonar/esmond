@@ -91,12 +91,14 @@ Notes:
     devices = [ x['name'] for x in rtrs['children']]
 
     for device in devices:
-        if device.startswith('wifi'):
+        if device.startswith('wifi') or device.startswith('apc') or device.startswith('of-dnoc') or device.startswith('l2-5507') or device.startswith('l2-4810') or device.startswith('l2-2637') or device.startswith('l2-227') or device.startswith('Aggregates'):
             continue
 
         try:
             device_fqdn = socket.gethostbyaddr(device)[0]
         except socket.herror:
+            device_fqdn = device
+        except socket.gaierror:
             device_fqdn = device
 
         if debug:
@@ -112,6 +114,8 @@ Notes:
                 try:
                     iface['dns'] = socket.gethostbyaddr(iface['ipAddr'])[0]
                 except socket.herror:
+                    iface['dns'] = ''
+        	except socket.gaierror:
                     iface['dns'] = ''
             else:
                 iface['dns'] = ''
@@ -155,8 +159,8 @@ Notes:
 
         for subj, event_type, suffix, units in (
                 ('netutil', 'utilization', '',         'bps'),
-                ('neterr',  'errors',      '/error',   'Eps'),
-                ('netdisc', 'discards',    '/discard', 'Dps'),
+#                ('neterr',  'errors',      '/error',   'Eps'),
+#                ('netdisc', 'discards',    '/discard', 'Dps'),
                 ):
             iface['subj'] = subj
             iface['event_type'] = event_type
@@ -198,8 +202,7 @@ name="supportedEventType">http://ggf.org/ns/nmwg/characteristic/%(event_type)s/2
 \t\t</nmwg:key>
 \t</nmwg:data>""" % iface
 
-            DATA.append(d)
-
+                DATA.append(d)
 
     print ''.join(DATA)
     print '</nmwg:store>'

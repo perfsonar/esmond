@@ -61,6 +61,30 @@ class PollCorrelator(object):
             d[var.split('.')[-1]] = remove_metachars(val)
         return d
 
+class OidCorrelator(PollCorrelator):
+    """
+    The simplest possible correlator. It simply maps to the name of the
+    OID. This is only useful when managing a single variable such
+    as sysUpTime and not a table. If this is used for a table, all of the
+    data will get stuffed into a single TSDB which is probably not what
+    is intended.
+    """
+    oids = []
+    def setup(self,data):
+        pass
+    def lookup(self, oid, var):
+        return oid.name
+
+class IndexCorrelator(PollCorrelator):
+    """
+    The second simplest possible correlator. It simply returns the OID name
+    and the index.
+    """
+    oids = []
+    def setup(self,data):
+        pass
+    def lookup(self, oid, var):
+        return "%s/%s"%(oid.name,var[len(oid.name)+1:])
 
 class IfDescrCorrelator(PollCorrelator):
     """correlates an IfIndex to an it's IfDescr"""

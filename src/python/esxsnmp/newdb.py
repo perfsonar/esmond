@@ -543,6 +543,8 @@ class SNMPHandler:
                     r = self.get_interface_set(device, rest)
                 elif next == 'system':
                     r = self.get_system(device, rest)
+                elif next == 'all':
+                    r = self.get_all(device, rest)
                 elif next == 'firewall':
                     r = self.get_firewall(device, rest)
                 else:
@@ -669,7 +671,7 @@ class SNMPHandler:
         """
 
         # XXX once database is rearranged this will be dynamic
-        subsets=['interface', 'system']
+        subsets=['interface', 'system','all']
         r = make_children('%s/%s' % (SNMP_URI, device.name), subsets)
         return encode_device(device, '%s/%s' % (SNMP_URI, device.name),
             children=r)
@@ -1072,6 +1074,75 @@ class SNMPHandler:
 
     def get_system(self, device, rest):
         pass
+    def get_all(self, device, rest):
+        """
+        This attempts to simply return the tree of sets and vars in
+        our TSDB with minimal interpretation.
+        """
+        print "Device: %s Rest: %s"%(device,rest)
+        path = os.path.join(device.name,rest)
+        if tsdb.TSDBSet.is_tsdb_set(self.db.fs,path):
+            result = dict(children=[],leaf=False)
+            sets = self.db.get_set(path).list_sets()
+            for s in sets:
+                result['children'].append(dict(
+                    leaf=False,
+                    speed=0,
+                    uri="%s/%s/all/%s" % (SNMP_URI, device.name,rest),
+                    name = s,
+                    descr = ''))
+            vars = self.db.get_set(path).list_vars()
+            for v in vars:
+                result['children'].append(dict(
+                    leaf=True,
+                    speed=0,
+                    uri="%s/%s/all/%s" % (SNMP_URI, device.name,rest),
+                    name = v,
+                    descr = ''))
+        elif tsdb.TSDBVar.is_tsdb_var(self.db.fs,path):
+            result = {}
+            args = parse_query_string()
+            result = self.get_all_data(path, args)
+        else:
+            return web.notfound()  # Requested variable does not exist
+        return result
+    def get_all_data(self, path, args):
+        if args.has_key('begin'):
+            begin = args['begin']
+        else:
+            begin = int(time.time() - 3600)
+        if args.has_key('end'):
+            end = args['end']
+        else:
+            end = int(time.time())
+        if args.has_key('cf'):
+            cf = args['cf']
+        else:
+            cf = 'raw'
+        print "DBG> path is %s" % path
+        try:
+            v = self.db.get_var(path)
+        except TSDBVarDoesNotExistError:
+            print "ERR> var doesn't exist: %s" % path
+            return web.notfound()  # Requested variable does not exist
+        except InvalidMetaData:
+            print "ERR> invalid metadata: %s" % path
+            return web.notfound()
+        print "MIN: %d MAX %d"%(v.min_timestamp(recalculate=True),v.max_timestamp(recalculate=True))
+        data = v.select(begin=begin, end=end)
+        data = [d for d in data]
+        r = []
+        for datum in data:
+            if cf != 'raw':
+                d = [datum.timestamp, getattr(datum, cf)]
+            else:
+                d = [datum.timestamp, datum.value]
+            if isNaN(d[1]):
+                d[1] = None
+            r.append(d)
+        agg = r[1][0]-r[0][0] # not really the best way to guess the agg.
+        result = dict(data=r[:-1], begin_time=begin, end_time=end,agg=agg,scale=0)
+        return result
 
     def get_firewall(self, device, rest):
         path = "/%s/JnxFirewall/counter/%s" % (device.name, rest)

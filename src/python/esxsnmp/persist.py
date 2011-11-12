@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import logging
 import os
 import os.path
 import sys
@@ -215,6 +216,8 @@ class TSDBPollPersister(PollPersister):
         nvar = 0
 
         for var, val in result.data:
+            if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
+                val = float(val) * 100
             nvar += 1
 
             var_name = os.path.join(basename, var)
