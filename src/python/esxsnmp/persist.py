@@ -303,7 +303,7 @@ class TSDBPollPersister(PollPersister):
                 uptime_var=uptime,
                 min_last_update=min_last_update,
                 # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
-                max_rate=int(11e9),
+                max_rate=int(110e9),
                 max_rate_callback=log_bad)
 
         try:
@@ -427,8 +427,9 @@ class IfRefPollPersister(HistoryTablePersister):
             foo, ifIndex = name.split('.')
             ifIndex = int(ifIndex)
             ifDescr = self._resolve_ifdescr(val, ifIndex)
+            ifpath = remove_metachars(ifDescr)
             ifIndex_map[ifIndex] = ifDescr
-            ifref_objs[ifDescr] = dict(ifdescr=ifDescr, ifindex=ifIndex)
+            ifref_objs[ifDescr] = dict(ifdescr=ifDescr, ifindex=ifIndex,ifpath=ifpath)
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)

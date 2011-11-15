@@ -338,7 +338,7 @@ def run_server(callable_, name, config):
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
-    for (char,repl) in (("/", "_"), (" ", "_")):
+    for (char,repl) in (("/", "_"), (" ", "__")):
         name = name.replace(char, repl)
     return name
 

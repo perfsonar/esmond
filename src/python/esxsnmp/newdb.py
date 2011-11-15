@@ -808,12 +808,13 @@ class SNMPHandler:
         children = ['in', 'out', 'error/in', 'error/out', 'discard/in',
                 'discard/out']
 
-        iface = iface.replace('_', '/')
+#        iface = iface.replace('__', ' ')
+#        iface = iface.replace('_', '/')
         # XXX hack workaround for ALU
-        iface = iface.replace(',/', ', ').replace('Gig/', 'Gig ')
+#        iface = iface.replace(',/', ', ').replace('Gig/', 'Gig ')
         if not rest:
             t0 = time.time()
-            ifrefs = ifaces.filter_by(ifdescr=iface).order_by(esxsnmp.sql.IfRef.end_time)
+            ifrefs = ifaces.filter_by(ifpath=iface).order_by(esxsnmp.sql.IfRef.end_time)
 #            print ifrefs.all()
             if ifrefs.count() == 0:
                 iface = iface.replace('/', '_')
@@ -827,7 +828,7 @@ class SNMPHandler:
                 if not check_basic_auth() and ':hide:' in ifref.ifalias:
                     continue
                 uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
-                        iface.replace('/','_'))
+                        ifref.ifpath)
                 kids = make_children(uri, children, leaf=True)
                 l.append(encode_ifref(ifref, uri, device, children=kids))
 
@@ -987,7 +988,7 @@ class SNMPHandler:
             return web.notfound()  # Requested variable does not exist
             
         try:
-            v = self.db.get_var(path)
+            v = self.db.get_var(path.replace('__','_'))
         except TSDBVarDoesNotExistError:
             print "ERR> var doesn't exist: %s" % path
             return web.notfound()  # Requested variable does not exist
@@ -1140,8 +1141,11 @@ class SNMPHandler:
             if isNaN(d[1]):
                 d[1] = None
             r.append(d)
-        agg = r[1][0]-r[0][0] # not really the best way to guess the agg.
-        result = dict(data=r[:-1], begin_time=begin, end_time=end,agg=agg,scale=0)
+        if len(r):
+            agg = r[1][0]-r[0][0] # not really the best way to guess the agg.
+            result = dict(data=r[:-1], begin_time=begin, end_time=end,agg=agg,scale=0)
+        else:
+            result=dict(data=[],begin_time=begin,end_time=end,agg=None,scale=0)
         return result
 
     def get_firewall(self, device, rest):

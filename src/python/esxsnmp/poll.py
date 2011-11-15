@@ -91,7 +91,7 @@ class IfDescrCorrelator(PollCorrelator):
 
     oids = ['ifDescr', 'ifAlias']
 
-    def setup(self, data, ignore_no_ifalias=True):
+    def setup(self, data, ignore_no_ifalias=False):
         self.xlate = self._table_parse(filter_data('ifDescr', data))
 
         if ignore_no_ifalias:
