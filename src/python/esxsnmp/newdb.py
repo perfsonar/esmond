@@ -1138,7 +1138,7 @@ class SNMPHandler:
                 d = [datum.timestamp, getattr(datum, cf)]
             else:
                 d = [datum.timestamp, datum.value]
-            if isNaN(d[1]):
+            if isNaN(d[1]) or datum.flags != tsdb.row.ROW_VALID:
                 d[1] = None
             r.append(d)
         if len(r):
