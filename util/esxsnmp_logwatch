@@ -52,7 +52,7 @@ function report_count(title, dict)
 /logfile turned over/ { next }
 /have a TSDBRow for DisplayString|IpAddress|INTEGER|PhysAddress|IANAifType|Integer32/ { next }
 /shutting down|exiting|starting|run|stop$/ { next }
-/espersistd.ifref|espersistd.lspopstatus.*processed [0-9]+ vars/ { next }
+/espersistd.ifref|aluifref|alusapref|infifref|lspopstatus.*processed [0-9]+ vars/ { next }
 /reloading devices and oidsets/ { next }
 /started thread persist_thread/ { next }
 /add mib/ { next }
