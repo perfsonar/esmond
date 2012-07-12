@@ -9,7 +9,7 @@ setup(name='ESxSNMP',
         author_email='jdugan@es.net',
         url='http://code.google.com/p/esxsnmp/',
         packages=['esxsnmp'],
-        package_dir=['esxsnmp': 'src/python/esxsnmp'],
+        package_dir={'esxsnmp': 'src/python/esxsnmp'},
         install_requires=['tsdb', 'SQLAlchemy==0.5.2', 'web.py', 'simplejson'],
         entry_points = {
             'console_scripts': [
