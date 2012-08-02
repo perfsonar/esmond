@@ -22,7 +22,7 @@ from tsdb.error import TSDBAggregateDoesNotExistError, TSDBVarDoesNotExistError
 import esxsnmp.sql
 
 from esxsnmp.util import setproctitle, init_logging, get_logger, \
-        remove_metachars
+        remove_metachars, decode_alu_port
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError, PollerError
@@ -72,6 +72,7 @@ class OidCorrelator(PollCorrelator):
     oids = []
     def setup(self,data):
         pass
+
     def lookup(self, oid, var):
         return oid.name
 
@@ -83,15 +84,16 @@ class IndexCorrelator(PollCorrelator):
     oids = []
     def setup(self,data):
         pass
+
     def lookup(self, oid, var):
-        return "%s/%s"%(oid.name,var[len(oid.name)+1:])
+        return "%s/%s"%(oid.name, var[len(oid.name)+1:])
 
 class IfDescrCorrelator(PollCorrelator):
     """correlates an IfIndex to an it's IfDescr"""
 
     oids = ['ifDescr', 'ifAlias']
 
-    def setup(self, data, ignore_no_ifalias=False):
+    def setup(self, data, ignore_no_ifalias=True):
         self.xlate = self._table_parse(filter_data('ifDescr', data))
 
         if ignore_no_ifalias:
@@ -177,7 +179,7 @@ class InfIfDescrCorrelator(PollCorrelator):
 
 
 class ALUIfDescrCorrelator(IfDescrCorrelator):
-    """correlates an IfIndec to it's IfDescr with ALU tweaks.
+    """correlates an IfIndex to its IfDescr with ALU tweaks.
 
     The ALU doesn't store the interface description in ifAlias like a normal
     box, it's in the third comma separated field in ifDescr."""
@@ -209,6 +211,19 @@ class ALUIfDescrCorrelator(IfDescrCorrelator):
         except KeyError:
             raise PollUnknownIfIndex(ifIndex)
 
+class ALUSAPCorrelator(PollCorrelator):
+    """correlates an ALU SAP
+    
+    This correlation uses the VLAN ID as well as the encoded port identifier.
+    """
+    oids = []
+    def setup(self,data):
+        pass
+
+    def lookup(self, oid, var):
+        _, vpls, port, vlan = var.split('.')
+        return "%s/%s"%(oid.name, "%s-%s-%s" % (vlan, decode_alu_port(port),
+            vlan))
 
 class JnxFirewallCorrelator(PollCorrelator):
     """correlates entries in the jnxFWCounterByteCount tables to a variable

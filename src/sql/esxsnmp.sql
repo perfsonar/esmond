@@ -73,7 +73,6 @@ CREATE TABLE IfRef (
     ifIndex       int,
     ifDescr       varchar(512),
     ifAlias       varchar(512),
-    ifpath        varchar(512),
     ipAddr        inet,
     ifSpeed       int8,  -- pg doesn't have unsigned ints
     ifHighSpeed   int8,  -- pg doesn't have unsigned ints
@@ -82,6 +81,21 @@ CREATE TABLE IfRef (
     ifPhysAddress macaddr,
     ifOperStatus  char(1),
     ifAdminStatus char(1),
+
+    begin_time  timestamp,
+    end_time    timestamp,
+
+    FOREIGN KEY (deviceid) references device(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE ALUSAPRef (
+    id            SERIAL PRIMARY KEY,
+    deviceid      int,
+
+    name           varchar(128),
+    sapDescription varchar(512),
+    sapIngressQosPolicyId int,
+    sapEgressQosPolicyId int,
 
     begin_time  timestamp,
     end_time    timestamp,

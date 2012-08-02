@@ -1,5 +1,6 @@
 from esxsnmp.poll import IfDescrCorrelator, JnxFirewallCorrelator, \
-                            JnxCOSCorrelator, SentryCorrelator
+                            JnxCOSCorrelator, SentryCorrelator, \
+                            ALUSAPCorrelator
 
 class MockSession(object):
     def walk(self, oid):
@@ -70,6 +71,12 @@ class MockSession(object):
                     ('Sentry3-MIB::tempHumidSensorHumidValue.1.2','47',
                         'Sentry3-MIB::tempHumidSensorHumidValue/A2'),
                     )
+        elif oid == 'sapBaseStatsEgressQchipForwardedOutProfOctets':
+            return (
+                     ('sapBaseStatsEgressQchipForwardedOutProfOctets.834.102793216.834',
+                         0L,
+                         'sapBaseStatsEgressQchipForwardedOutProfOctets/834-3_1_0-834'),
+                     )
 
 
 class MockOID(object):
@@ -82,7 +89,7 @@ class MockOID(object):
 def check_correlator(correlator, oid):
     s = MockSession()
     c = correlator()
-    c.setup()
+    c.setup([])
     for (var,val,check) in s.walk(oid.name):
         assert check == c.lookup(oid, var)
 
@@ -94,6 +101,7 @@ def test_correlators():
             (SentryCorrelator, MockOID('Sentry3-MIB::outletLoadValue')),
             (SentryCorrelator, MockOID('Sentry3-MIB::tempHumidSensorTempValue')),
             (SentryCorrelator, MockOID('Sentry3-MIB::tempHumidSensorHumidValue')),
+            (ALUSAPCorrelator, MockOID('sapBaseStatsEgressQchipForwardedOutProfOctets')),
             ):
         yield check_correlator, correlator, oid
 

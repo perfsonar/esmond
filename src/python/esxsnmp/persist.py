@@ -28,11 +28,11 @@ from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
 import esxsnmp.sql
 
 from esxsnmp.util import setproctitle, init_logging, get_logger, \
-        remove_metachars
+        remove_metachars, decode_alu_port
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
-from esxsnmp.sql import IfRef, LSPOpStatus
+from esxsnmp.sql import IfRef, LSPOpStatus, ALUSAPRef
 
 try:
     import cmemcache as memcache
@@ -346,7 +346,7 @@ class HistoryTablePersister(PollPersister):
 
                 for attr in attrs:
                     if not hasattr(old, attr):
-                        self.log.error("Field " + attr + " is not contained in the object")
+                        self.log.error("Field " + attr + " is not contained in the object: %s" % str(old))
                         continue
 
                     if getattr(old, attr) != new[attr]:
@@ -427,9 +427,8 @@ class IfRefPollPersister(HistoryTablePersister):
             foo, ifIndex = name.split('.')
             ifIndex = int(ifIndex)
             ifDescr = self._resolve_ifdescr(val, ifIndex)
-            ifpath = remove_metachars(ifDescr)
             ifIndex_map[ifIndex] = ifDescr
-            ifref_objs[ifDescr] = dict(ifdescr=ifDescr, ifindex=ifIndex,ifpath=ifpath)
+            ifref_objs[ifDescr] = dict(ifdescr=ifDescr, ifindex=ifIndex)
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
@@ -470,6 +469,65 @@ class ALUIfRefPollPersister(IfRefPollPersister):
             ifalias = parts[2].replace('"','')
             self.data['ifAlias'].append(('ifAlias.%d' % ifindex, ifalias))
         return parts[0]
+
+class ALUSAPRefPersister(HistoryTablePersister):
+    int_oids = ('sapIngressQosPolicyId', 'sapEgressQosPolicyId')
+
+    def __init__(self, config, qname):
+        HistoryTablePersister.__init__(self, config, qname)
+        self.db_session = esxsnmp.sql.Session()
+
+    def store(self, result):
+        self.data = result.data
+        t0 = time.time()
+
+        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
+                esxsnmp.sql.Device.name == result.device_name).filter(
+                        esxsnmp.sql.Device.end_time > 'NOW').one()
+
+        self.old_data = self.db_session.query(ALUSAPRef).filter(
+            sqlalchemy.and_(ALUSAPRef.deviceid
+                == self.device.id, ALUSAPRef.end_time > 'NOW')
+        )
+
+        self.new_data = self._build_objs()
+        nvar = len(self.new_data)
+        self.key = 'name'
+
+        adds, changes, deletes = self.update_db()
+
+        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (
+            nvar, adds, changes, deletes, time.time() - t0, result))
+
+    def _new_row_from_obj(self, obj):
+        r = ALUSAPRef()
+        r.deviceid = self.device.id
+        r.begin_time = 'NOW'
+        r.end_time = 'Infinity'
+        for attr in obj.keys():
+            setattr(r, attr, obj[attr])
+
+        return r
+
+    def _build_objs(self):
+        objs = {}
+
+        for oid, entries in self.data.iteritems():
+            for k, val in entries:
+                _, vpls, port, vlan  = k.split('.')
+                name = "%s-%s-%s" % (vlan, decode_alu_port(port), vlan)
+
+                if oid in self.int_oids:
+                    val = int(val)
+
+                if not name in objs:
+                    objs[name] = dict(name=name)
+                    objs[name]['name'] = name
+
+                o = objs[name]
+                o[oid.lower()] = val
+
+        return objs
 
 class LSPOpStatusPersister(HistoryTablePersister):
     def __init__(self, config, qname):
@@ -986,10 +1044,13 @@ def espersistd():
             log.error("Problem with manager module: %s" % e)
             sys.exit(1)
     elif opts.role == 'worker':
+        worker(name, config, opts)
+        sys.exit(0)
         try:
             worker(name, config, opts)
         except Exception, e:
-            log.error("Problem with worker module: %s" % e)
+            log.error("Problem with worker module: %s" % e, exc_info=True)
+            raise e
             sys.exit(1)
     elif opts.role == 'stats':
         stats(name, config, opts)

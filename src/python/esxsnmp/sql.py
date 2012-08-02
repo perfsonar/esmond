@@ -39,6 +39,9 @@ class IfRef(object):
 class LSPOpStatus(object):
     pass
 
+class ALUSAPRef(object):
+    pass
+
 def setup_db(db_uri):
     global engine, conn, metadata, Session
 
@@ -52,7 +55,7 @@ def setup_db(db_uri):
 
     for table in ( 'oidtype', 'oid', 'poller', 'oidsetmember', 'oidset',
             'device', 'devicetag', 'deviceoidsetmap', 'devicetagmap', 'ifref',
-            'lspopstatus'):
+            'lspopstatus', 'alusapref'):
 
         tables[table] = Table(table, metadata, autoload=True)
 
@@ -98,6 +101,9 @@ def setup_db(db_uri):
         }, extension=DateConvMapper())
 
     mapper(LSPOpStatus, tables['lspopstatus'], properties={'device': relation(Device, lazy=False)},
+            extension=DateConvMapper())
+
+    mapper(ALUSAPRef, tables['alusapref'], properties={'device': relation(Device, lazy=False)},
             extension=DateConvMapper())
 
     mapper(IfRef, tables['ifref'], properties={'device': relation(Device, lazy=False)},

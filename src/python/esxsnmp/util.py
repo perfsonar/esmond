@@ -338,7 +338,7 @@ def run_server(callable_, name, config):
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
-    for (char,repl) in (("/", "_"), (" ", "__")):
+    for (char,repl) in (("/", "_"), (" ", "_")):
         name = name.replace(char, repl)
     return name
 
@@ -370,3 +370,10 @@ class IfRefNagiosCheck(NagiosCheck):
 def check_ifref():
     check = IfRefNagiosCheck().setup().run()
 
+def decode_alu_port(x):
+    x = int(x)
+    a = (x & int('00011110000000000000000000000000', 2)) >> 25
+    b = (x & int('00000001111000000000000000000000', 2)) >> 21
+    c = (x & int('00000000000111111000000000000000', 2)) >> 16
+
+    return "%d_%d_%d" % (a,b,c)

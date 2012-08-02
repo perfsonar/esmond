@@ -27,7 +27,7 @@ import logging
 import tsdb
 from tsdb.error import *
 import esxsnmp.sql
-from esxsnmp.sql import Device, OID, OIDSet, IfRef
+from esxsnmp.sql import Device, OID, OIDSet, IfRef, ALUSAPRef
 from esxsnmp.util import get_logger, remove_metachars
 from esxsnmp.error import *
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
@@ -72,6 +72,7 @@ urls = (
         '/bulk/?', 'BulkHandler',
         '/topN/?', 'TopNHandler',
         '/power/.*', 'PowerHandler',
+        '/sap/', 'ALUSAPRefHandler',
         )
 
 POWER_DEVICES = ['student10']
@@ -419,8 +420,8 @@ class BulkHandler:
             for uri in query['uris']:
                 uri += '?' + args
                 d = self.snmp_handler.GET(uri=uri, raw=True)
-                print ">>> d = ", str(d)
-                if d:
+                print ">>> d = >", str(d), "<", type(d), d == "404 Not Found"
+                if type(d) == dict:
                     data.append(d['data'])
 
             r['result'] = calcf(data)
@@ -461,7 +462,29 @@ class BulkHandler:
                 r[uri] = dict(result=out, error=None)
 
         return json.dumps(r)
-        
+
+class ALUSAPRefHandler:
+    def __init__(self):
+        self.session = esxsnmp.sql.Session()
+
+        self.log = get_logger("newdb.alusapref")
+
+    def GET(self):
+        limit = """
+            alusapref.end_time > 'NOW'
+            AND alusapref.begin_time < 'NOW'"""
+
+        saps = []
+        saprefs = self.session.query(ALUSAPRef).filter(limit)
+        for sap in saprefs:
+            saps.append(dict(name=sap.name,
+                device=sap.device.name,
+                desc=sap.sapdescription,
+                outpolicy=sap.sapingressqospolicyid,
+                inpolicy=sap.sapegressqospolicyid))
+
+        return json.dumps(saps)
+
 class SNMPHandler:
     def __init__(self):
         self.db = tsdb.TSDB(CONFIG.tsdb_root, mode="r")
@@ -547,6 +570,8 @@ class SNMPHandler:
                     r = self.get_all(device, rest)
                 elif next == 'firewall':
                     r = self.get_firewall(device, rest)
+                elif next == 'sap':
+                    r = self.get_sap(device, rest)
                 else:
                     r = web.notfound()
 
@@ -808,13 +833,12 @@ class SNMPHandler:
         children = ['in', 'out', 'error/in', 'error/out', 'discard/in',
                 'discard/out']
 
-#        iface = iface.replace('__', ' ')
-#        iface = iface.replace('_', '/')
+        iface = iface.replace('_', '/')
         # XXX hack workaround for ALU
-#        iface = iface.replace(',/', ', ').replace('Gig/', 'Gig ')
+        iface = iface.replace(',/', ', ').replace('Gig/', 'Gig ')
         if not rest:
             t0 = time.time()
-            ifrefs = ifaces.filter_by(ifpath=iface).order_by(esxsnmp.sql.IfRef.end_time)
+            ifrefs = ifaces.filter_by(ifdescr=iface).order_by(esxsnmp.sql.IfRef.end_time)
 #            print ifrefs.all()
             if ifrefs.count() == 0:
                 iface = iface.replace('/', '_')
@@ -828,7 +852,7 @@ class SNMPHandler:
                 if not check_basic_auth() and ':hide:' in ifref.ifalias:
                     continue
                 uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
-                        ifref.ifpath)
+                        iface.replace('/','_'))
                 kids = make_children(uri, children, leaf=True)
                 l.append(encode_ifref(ifref, uri, device, children=kids))
 
@@ -988,7 +1012,7 @@ class SNMPHandler:
             return web.notfound()  # Requested variable does not exist
             
         try:
-            v = self.db.get_var(path.replace('__','_'))
+            v = self.db.get_var(path)
         except TSDBVarDoesNotExistError:
             print "ERR> var doesn't exist: %s" % path
             return web.notfound()  # Requested variable does not exist
@@ -996,7 +1020,12 @@ class SNMPHandler:
             print "ERR> invalid metadata: %s" % path
             return web.notfound()
 
-        data = v.select(begin=begin, end=end)
+        try:
+            data = v.select(begin=begin, end=end)
+        except TSDBVarEmpty:
+            print "ERR> var has no data: %s" % path
+            return web.notfound()
+
         data = [d for d in data]
         r = []
 
@@ -1121,6 +1150,13 @@ class SNMPHandler:
         else:
             cf = 'raw'
         print "DBG> path is %s" % path
+        if 'ALUSAPPoll' in path:
+            path += "/TSDBAggregates/11/"
+            if args.has_key('cf'):
+                cf = args['cf']
+            else:
+                cf = 'average'
+
         try:
             v = self.db.get_var(path)
         except TSDBVarDoesNotExistError:
@@ -1145,7 +1181,8 @@ class SNMPHandler:
             agg = r[1][0]-r[0][0] # not really the best way to guess the agg.
             result = dict(data=r[:-1], begin_time=begin, end_time=end,agg=agg,scale=0)
         else:
-            result=dict(data=[],begin_time=begin,end_time=end,agg=None,scale=0)
+            result = dict(data=[], begin_time=begin, end_time=end,agg=agg,scale=0)
+
         return result
 
     def get_firewall(self, device, rest):
@@ -1185,6 +1222,53 @@ class SNMPHandler:
 
         return result
 
+    def get_sap(self, device, rest):
+        if not rest:
+            result = dict(children=[],leaf=False)
+            path = '/%s/ALUSAPPoll' % device.name
+            for v in self.db.get_set(path).list_vars():
+                result['children'].append(dict(
+                    leaf=False,
+                    speed=0,
+                    uri="%s/%s/sap/" % (SNMP_URI, device.name, rest),
+                    name = s,
+                    descr = ''))
+            return result
+        path = "/%s/ALUSAPPoll/%s" % (device.name, rest)
+        print ">>", path
+        try:
+            v = self.db.get_var(path)
+        except TSDBVarDoesNotExistError:
+            self.log.error("not found: %s" % path)
+            return web.notfound()
+
+        args = parse_query_string()
+
+        if args.has_key('begin'):
+            begin = args['begin']
+        else:
+            begin = int(time.time() - 3600)
+
+        if args.has_key('end'):
+            end = args['end']
+        else:
+            end = int(time.time())
+
+        data = v.select(begin=begin, end=end)
+        data = [d for d in data]
+        r = []
+
+        for datum in data:
+            d = [datum.timestamp, datum.value]
+
+            if isNaN(d[1]):
+                d[1] = None
+
+            r.append(d)
+
+        result = dict(data=r, begin_time=begin, end_time=end)
+
+        return result
 
 class TopNHandler:
     def __init__(self):
