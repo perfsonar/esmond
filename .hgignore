@@ -1,0 +1,11 @@
+syntax: glob
+.svn
+tsdb-old
+tmp
+eggs
+*.pyc
+*.egg-info
+parts
+parts.old
+bin
+develop-eggs
