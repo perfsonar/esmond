@@ -61,6 +61,7 @@ class ESxSNMPConfig(object):
         self.reload_interval = 1*10
         self.rrd_path = None
         self.send_error_email = False
+        self.streaming_log_dir = None
         self.syslog_facility = None
         self.syslog_priority = None
         self.traceback_dir = None
@@ -97,6 +98,7 @@ class ESxSNMPConfig(object):
                 'polling_tag',
                 'reload_interval',
                 'rrd_path',
+                'streaming_log_dir',
                 'syslog_facility',
                 'syslog_priority',
                 'traceback_dir',

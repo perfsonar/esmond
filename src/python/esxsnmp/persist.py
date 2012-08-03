@@ -88,7 +88,13 @@ class PollResult(object):
         return pickle.dumps(self)
 
     def json(self):
-        return json.dumps(self)
+        return json.dumps(dict(
+            oidset_name=self.oidset_name,
+            device_name=self.device_name,
+            oid_name=self.oid_name,
+            timestamp=self.timestamp,
+            data=self.data,
+            metadata=self.metadata))
 
 
 class PollPersister(object):
@@ -139,26 +145,39 @@ class PollPersister(object):
 class StreamingPollPersister(PollPersister):
     """A StreamingPollPersister stores PollResults to a log file.
 
-    ``log_path``
+    ``conf.streaming_log_dir``
         Specifies the path name of the log file.
 
-    ``rotation_period``
-        Rotate the log file every ``rotation_period`` minutes.
-
-    ``timestamp_filename``
-        If not None this expression is passed to ``time.strftime`` at the time
-        the log file is created to create a timestamp to append to
-        ``log_path``.
     """
     def __init__(self, config, q):
         PollPersister.__init__(self, config, q)
 
+        self.filename = None
+        self.fd = None
+
+    def _rotate_file(self, dst):
+        if self.fd:
+            self.fd.close()
+
+        self.filename = dst
+        self.fd = open(os.path.join(self.config.streaming_log_dir,
+            self.filename), "a")
+
+    def store(self, result):
+        dst = time.strftime("%Y%m%d_%H", time.gmtime(result.timestamp))
+        if dst != self.filename:
+            self._rotate_file(dst)
+
+        self.fd.write(result.json())
+        self.fd.write("\n\n")
+        self.log.debug("stored %s %s %s to streaming log" % (result.oidset_name,
+            result.oid_name, result.device_name))
 
 class TSDBPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a TSDB.
 
-    The TSDBWriter takes    `tsdb``
-        TSDB instance to write to.
+    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
+    write to.
 
     The ``data`` member of the PollResult must be a list of (name,value)
     pairs.  The ``metadata`` member of PollResult must contain the following
@@ -631,7 +650,7 @@ class InfIfRefPollPersister(IfRefPollPersister):
 
 
 class PersistQueue(object):
-    """Abstract base class for a persistence service."""
+    """Abstract base class for a persistence queue."""
     def __init__(self, qname):
         self.qname = qname
 
