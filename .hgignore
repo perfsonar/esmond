@@ -9,3 +9,4 @@ parts
 parts.old
 bin
 develop-eggs
+venv
