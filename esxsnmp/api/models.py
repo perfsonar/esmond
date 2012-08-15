@@ -149,7 +149,7 @@ class IfRef(models.Model):
     ifAdminStatus = models.CharField(max_length=1, db_column="ifadminstatus")
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
-    ifPhysAddress = models.CharField()
+    ifPhysAddress = models.CharField(max_length=32)
 
     class Meta:
         db_table = "ifref"
