@@ -2,14 +2,13 @@
 
 from distutils.core import setup
 
-setup(name='ESxSNMP',
+setup(name='esxsnmp',
         version='0.9a1',
         description='ESnet eXtensible SNMP system.',
         author='Jon M. Dugan',
         author_email='jdugan@es.net',
         url='http://code.google.com/p/esxsnmp/',
-        packages=['esxsnmp'],
-        package_dir={'esxsnmp': 'src'},
+        packages=['esxsnmp', 'esxsnmp.api', 'esxsnmp.admin'],
         install_requires=['tsdb', 'SQLAlchemy==0.5.2', 'web.py', 'simplejson'],
         entry_points = {
             'console_scripts': [
