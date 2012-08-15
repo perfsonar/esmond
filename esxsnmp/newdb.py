@@ -27,10 +27,13 @@ import logging
 import tsdb
 from tsdb.error import *
 import esxsnmp.sql
-from esxsnmp.sql import Device, OID, OIDSet, IfRef, ALUSAPRef
+from esxsnmp.sql import OID, OIDSet, IfRef, ALUSAPRef
 from esxsnmp.util import get_logger, remove_metachars
 from esxsnmp.error import *
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
+
+from esxsnmp.api.models import Device
+import datetime
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
@@ -254,6 +257,22 @@ def get_time_range(args):
 
     return begin, end
 
+def get_time_range_django(args):
+    if args.has_key('begin'):
+        begin = datetime.datetime.fromtimestamp(int(args['begin']))
+    else:
+        begin = None
+
+    if args.has_key('end'):
+        end = datetime.datetime.fromtimestamp(int(args['end']))
+    else:
+        end = None
+
+    if not args.has_key('begin') and not args.has_key('end'):
+        begin = end = datetime.datetime.now()
+
+    return begin, end
+
 # XXX this should be reworked, can we do it with metadata alone?  probably
 # once TSDB uses SQLite for metadata
 device_oidset = {}
@@ -280,10 +299,13 @@ def get_traffic_oidset(device_name):
 
     return r
 
+def to_unixtime(dt):
+    return int(time.mktime(dt.timetuple()))
 
 def encode_device(dev, uri, children=[]):
 #    print dev.end_time
-    return dict(begin_time=dev.begin_time, end_time=dev.end_time,
+    return dict(begin_time=to_unixtime(dev.begin_time),
+            end_time=to_unixtime(dev.end_time),
             name=dev.name, active=dev.active, children=children, uri=uri,
             leaf=False)
 
@@ -552,10 +574,13 @@ class SNMPHandler:
                     '/'.join(parts[6:]))
         else:
             try:
-                device = self.session.query(Device).filter_by(name=device_name)
-                device = device.order_by('end_time').all()[-1]
-            except (NoResultFound, IndexError):
-                print "ERR> NoResultFound"
+                device = Device.objects.get(name=device_name,
+                        end_time__gt=datetime.datetime.now())
+            except Device.DoesNotExist:
+                print "ERR> device %s does not exist" % device_name
+                return web.notfound()
+            except Device.MultipleObjectsReturned:
+                print "ERR> got more than one device %s" % device_name
                 return web.notfound()
 
             if not rest:
@@ -647,23 +672,24 @@ class SNMPHandler:
         
         """
 
-        active='t'
+        active=True
 
         args = parse_query_string()
-        begin, end = get_time_range(args)
+        begin, end = get_time_range_django(args)
 
         if args.has_key('active'):
             active = bool(args['active'])
 
-        limit = """
-            device.end_time > %(begin)s
-            AND device.begin_time < %(end)s
-            AND active = '%(active)s'""" % locals()
+        devices = Device.objects.filter(active=True)
 
-#        print ">>>",limit
-        devices = self.session.query(esxsnmp.sql.Device).filter(limit)
+        if end:
+            devices = devices.filter(begin_time__lt=end)
+        if begin:
+            devices = devices.filter(end_time__gt=begin)
+
         r = [dict(name=d.name, uri="%s/%s" % (SNMP_URI, d.name), leaf=False)
-                for d in devices]
+                for d in devices.all()]
+
         return dict(children=r)
 
     def get_device(self, device):
