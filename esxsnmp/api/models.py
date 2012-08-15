@@ -94,14 +94,14 @@ class OID(models.Model):
 class OIDSet(models.Model):
     """A collection of :py:class:`.OID`s that are collected together."""
 
-    name = models.CharField(max_length=256, help="Name for OIDSet.")
-    frequency = models.IntegerField(help="Polling frequency in seconds.")
+    name = models.CharField(max_length=256, help_text="Name for OIDSet.")
+    frequency = models.IntegerField(help_text="Polling frequency in seconds.")
     pollerid = models.ForeignKey(Poller,db_column="pollerid", 
-        help="Which poller to use for this OIDSet")
+        help_text="Which poller to use for this OIDSet")
     poller_args = models.CharField(max_length=256, 
-        help="Arguments for the Poller"))
+        help_text="Arguments for the Poller")
     oid_set = models.ManyToManyField(OID, through = "OIDSetMember", 
-            help="List of OIDs in the OIDSet")
+            help_text="List of OIDs in the OIDSet")
 
     class Meta:
         db_table = "oidset"
