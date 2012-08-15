@@ -1,15 +1,23 @@
 from django.db import models
-from django.contrib import admin
 import datetime
 
 class DeviceTag(models.Model):
+    """A tag for a :py:class:`.Device.`"""
+
     name = models.CharField(max_length = 256, unique=True)
-    def __unicode__(self):
-        return self.name
+
     class Meta:
         db_table = "devicetag"
 
+    def __unicode__(self):
+        return self.name
+
 class Device(models.Model):
+    """A system which is pollable via SNMP.
+
+    Referred to as a Managed Device in SNMP terminology.
+
+    """
     name = models.CharField(max_length = 256)
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
@@ -17,124 +25,169 @@ class Device(models.Model):
     active = models.BooleanField(default = True)
     devicetag = models.ManyToManyField(DeviceTag, through = "DeviceTagMap")
     oidset = models.ManyToManyField("OIDSet", through = "DeviceOIDSetMap")
-    def __unicode__(self):
-        return self.name
+
     class Meta:
         db_table = "device"
 
+    def __unicode__(self):
+        return self.name
+
 class DeviceTagMap(models.Model):
+    """Associates a set of :py:class:`.DeviceTag`s with a :py:class:`.Device`"""
+
     deviceID = models.ForeignKey(Device, db_column="deviceid")
     deviceTagId = models.ForeignKey(DeviceTag, db_column="devicetagid")
+
     class Meta:
         db_table = "devicetagmap"
 
 class OIDType(models.Model):
+    """Defines the type for an :py:class:`.OID`"""
+
     name = models.CharField(max_length=256)
-    def __unicode__(self):
-        return self.name
     class Meta:
         db_table = "oidtype"
 
-class OIDCorrelator(models.Model):
-    name = models.CharField(max_length=256)
     def __unicode__(self):
         return self.name
+
+class OIDCorrelator(models.Model):
+    """Defines the name of a correlator for a given :py:class:`.OID`"""
+
+    name = models.CharField(max_length=256)
+
     class Meta:
         db_table = "oidcorrelator"
 
+    def __unicode__(self):
+        return self.name
+
+class Poller(models.Model):
+    """Defines a Poller that can be used to collect data."""
+
+    name = models.CharField(max_length=256)
+
+    class Meta:
+        db_table = "poller"
+
+    def __unicode__(self):
+        return self.name
+
 class OID(models.Model):
+    """An Object Identifier.  
+
+    This is a variable that can be measured via SNMP.
+
+    """
+
     name = models.CharField(max_length=256)
     aggregate = models.BooleanField(default = False)
     OIDtypeId = models.ForeignKey(OIDType,db_column = "oidtypeid")
     OIDCorrelatorId = models.ForeignKey(OIDCorrelator,blank=True,
                                         null=True,db_column="oidcorrelatorid")
-    def __unicode__(self):
-        return self.name
     class Meta:
         db_table = "oid"
 
-class Poller(models.Model):
-    name = models.CharField(max_length=256)
     def __unicode__(self):
         return self.name
-    class Meta:
-        db_table = "poller"
 
 class OIDSet(models.Model):
-    name = models.CharField(max_length=256)
-    frequency = models.IntegerField()
-    pollerid = models.ForeignKey(Poller,db_column="pollerid")
-    poller_args = models.CharField(max_length=256)
-    oid = models.ManyToManyField(OID, through = "OIDSetMember")
-    def __unicode__(self):
-        return self.name
+    """A collection of :py:class:`.OID`s that are collected together."""
+
+    name = models.CharField(max_length=256, help="Name for OIDSet.")
+    frequency = models.IntegerField(help="Polling frequency in seconds.")
+    pollerid = models.ForeignKey(Poller,db_column="pollerid", 
+        help="Which poller to use for this OIDSet")
+    poller_args = models.CharField(max_length=256, 
+        help="Arguments for the Poller"))
+    oid_set = models.ManyToManyField(OID, through = "OIDSetMember", 
+            help="List of OIDs in the OIDSet")
+
     class Meta:
         db_table = "oidset"
 
+    def __unicode__(self):
+        return self.name
+
 class OIDSetMember(models.Model):
+    """Associate :py:class:`.OID`s with :py:class:`.OIDSets`"""
+
     OIDId = models.ForeignKey(OID,db_column="oidid")
     OIDSetId = models.ForeignKey(OIDSet,db_column="oidsetid")
+
     class Meta:
         db_table = "oidsetmember"
 
 class DeviceOIDSetMap(models.Model):
+    """Associate :py:class:`.OIDSet`s with :py:class:`.Device`s"""
+
     deviceId = models.ForeignKey(Device,db_column="deviceid")
     OIDSetId = models.ForeignKey(OIDSet,db_column="oidsetid")
+
     class Meta:
         db_table = "deviceoidsetmap"
 
 class IfRef(models.Model):
+    """Interface metadata.
+
+    Data is stored with a begin_time and end_time.  A new row is only created
+    when one or more columns change.  This provides a historical view of the
+    interface metadata.
+    
+    """
+
     deviceid = models.ForeignKey(Device,db_column="deviceid")
     ifIndex = models.IntegerField(db_column="ifindex")
     ifDescr = models.CharField(max_length=512, db_column="ifdescr")
     ifAlias = models.CharField(max_length=512, db_column="ifalias")
-# The ifpath is just for us to keep something with problematic characters
-# removed
-    ifpath = models.CharField(max_length=512)
     ipAddr = models.IPAddressField(blank=True, db_column="ipaddr")
-# These should be BigIntegerField's, but that requries Django 1.2
     ifSpeed = models.IntegerField(db_column="ifspeed")
     ifHighSpeed = models.IntegerField(db_column="ifhighspeed")
     ifMtu = models.IntegerField(db_column="ifmtu")
     ifType = models.IntegerField(db_column="iftype")
-# Django doesn't have a char() based field, only varchar(). The difference
-# is only at DB creation time so this will work fine.
     ifOperStatus = models.CharField(max_length=1, db_column="ifoperstatus")
     ifAdminStatus = models.CharField(max_length=1, db_column="ifadminstatus")
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
-# There is no Django MAC address field. 
-#    ifPhysAddress = models.MacAddressField()
-#
-    def __unicode__(self):
-        return "%s (%s)"%(self.ifDescr,self.ifIndex)
+    ifPhysAddress = models.CharField()
+
     class Meta:
         db_table = "ifref"
-# Unique together is desirable, maybe even needed. But it will be tricky to
-# put in after the fact. Adding the ifpath column will have them all defaulting
-# to blank, making for lots of non-unique combinations.
-#        unique_together = ("deviceid","ifpath")
 
-admin.site.register(DeviceTag)
-admin.site.register(DeviceTagMap)
-admin.site.register(OIDCorrelator)
-admin.site.register(OIDType)
-admin.site.register(OID)
-admin.site.register(Poller)
-class IfRefAdmin(admin.ModelAdmin):
-    list_filter = ('deviceid',)
-admin.site.register(IfRef,IfRefAdmin)
-class OIDSetDeviceInline(admin.TabularInline):
-    model=DeviceOIDSetMap
-    extra = 3
-    max_num = 50
-class DeviceAdmin(admin.ModelAdmin):
-    inlines=(OIDSetDeviceInline,)
-admin.site.register(Device,DeviceAdmin)
-class OIDSetInline(admin.TabularInline):
-    model=OIDSetMember
-    extra=5
-    max_num = 50
-class OIDSetAdmin(admin.ModelAdmin):
-    inlines=(OIDSetInline,)
-admin.site.register(OIDSet,OIDSetAdmin)
+    def __unicode__(self):
+        return "%s (%s)"%(self.ifDescr,self.ifIndex)
+
+class ALUSAPRef(models.Model):
+    """Metadata about ALU SAPs."""
+
+    device = models.ForeignKey(Device, db_column="deviceid")
+    name = models.CharField(max_length=128)
+    sapDescription = models.CharField(max_length=512)
+    sapIngressQosPolicyId = models.IntegerField()
+    sapEgressQosPolicyId = models.IntegerField()
+
+    begin_time = models.DateTimeField(default=datetime.datetime.now)
+    end_time = models.DateTimeField(default=datetime.datetime.max)
+
+    class Meta:
+        db_table = "alusapref"
+
+    def __unicode__(self):
+        return "%s %s" % (self.device, self.name)
+
+class LSPOpStatus(models.Model):
+    """Metadata about MPLS LSPs."""
+    device = models.ForeignKey(Device, db_column="deviceid")
+    name = models.CharField(max_length=128)
+    srcAddr = models.IPAddressField()
+    dstAddr = models.IPAddressField()
+    state = models.IntegerField()
+
+    begin_time = models.DateTimeField(default=datetime.datetime.now)
+    end_time = models.DateTimeField(default=datetime.datetime.max)
+
+    class Meta:
+        db_table = "lspopstatus"
+
+    def __unicode__(self):
+        return "%s %s" % (self.device, self.name)
