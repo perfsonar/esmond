@@ -1,3 +1,4 @@
+django==1.4.1
 -e hg+https://bitbucket.org/jdugan/dlnetsnmp#egg=DLNetSNMP
 -e hg+https://code.google.com/p/tsdb/#egg=tsdb
-.
+-e .
