@@ -377,3 +377,7 @@ def decode_alu_port(x):
     c = (x & int('00000000000111111000000000000000', 2)) >> 16
 
     return "%d_%d_%d" % (a,b,c)
+
+def datetime_to_unixtime(dt):
+    return int(time.mktime(dt.timetuple()))
+

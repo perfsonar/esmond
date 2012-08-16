@@ -1,6 +1,8 @@
 from django.db import models
 import datetime
 
+from esxsnmp.util import datetime_to_unixtime
+
 class DeviceTag(models.Model):
     """A tag for a :py:class:`.Device.`"""
 
@@ -31,6 +33,14 @@ class Device(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def to_dict(self):
+        return dict(
+                begin_time=datetime_to_unixtime(self.begin_time),
+                end_time=datetime_to_unixtime(self.end_time),
+                name=self.name,
+                active=self.active)
+
 
 class DeviceTagMap(models.Model):
     """Associates a set of :py:class:`.DeviceTag`s with a :py:class:`.Device`"""
@@ -136,7 +146,7 @@ class IfRef(models.Model):
     
     """
 
-    deviceid = models.ForeignKey(Device,db_column="deviceid")
+    device = models.ForeignKey(Device, db_column="deviceid")
     ifIndex = models.IntegerField(db_column="ifindex")
     ifDescr = models.CharField(max_length=512, db_column="ifdescr")
     ifAlias = models.CharField(max_length=512, db_column="ifalias")
@@ -149,7 +159,7 @@ class IfRef(models.Model):
     ifAdminStatus = models.CharField(max_length=1, db_column="ifadminstatus")
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
-    ifPhysAddress = models.CharField(max_length=32)
+    ifPhysAddress = models.CharField(max_length=32, db_column="ifphysaddress")
 
     class Meta:
         db_table = "ifref"
@@ -157,14 +167,37 @@ class IfRef(models.Model):
     def __unicode__(self):
         return "%s (%s)"%(self.ifDescr,self.ifIndex)
 
+    def to_dict(self):
+
+        if not self.ifHighSpeed or self.ifHighSpeed == 0:
+            speed = self.ifSpeed
+        else:
+            speed = self.ifHighSpeed * int(1e6)
+
+        return dict(name=self.ifDescr,
+                    descr=self.ifAlias,
+                    speed=speed, 
+                    begin_time=datetime_to_unixtime(self.begin_time),
+                    end_time=datetime_to_unixtime(self.end_time),
+                    device=self.device.name,
+                    ifIndex=self.ifIndex,
+                    ifDescr=self.ifDescr,
+                    ifAlias=self.ifAlias,
+                    ifSpeed=self.ifSpeed,
+                    ifHighSpeed=self.ifHighSpeed,
+                    ipAddr=self.ipAddr)
+
 class ALUSAPRef(models.Model):
     """Metadata about ALU SAPs."""
 
     device = models.ForeignKey(Device, db_column="deviceid")
     name = models.CharField(max_length=128)
-    sapDescription = models.CharField(max_length=512)
-    sapIngressQosPolicyId = models.IntegerField()
-    sapEgressQosPolicyId = models.IntegerField()
+    sapDescription = models.CharField(max_length=512,
+            db_column="sapdescription")
+    sapIngressQosPolicyId = models.IntegerField(
+            db_column="sapingressqospolicyid")
+    sapEgressQosPolicyId = models.IntegerField(
+            db_column="sapegressqospolicyid")
 
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
@@ -174,6 +207,15 @@ class ALUSAPRef(models.Model):
 
     def __unicode__(self):
         return "%s %s" % (self.device, self.name)
+
+    def to_dict(self):
+        return dict(name=self.name,
+                device=self.device.name,
+                sapDescription=self.sapDescription,
+                sapEgressQosPolicyId=self.sapEgressQosPolicyId,
+                sapIngressQosPolicyId=self.sapIngressQosPolicyId,
+                end_time=datetime_to_unixtime(self.end_time),
+                begin_time=datetime_to_unixtime(self.begin_time))
 
 class LSPOpStatus(models.Model):
     """Metadata about MPLS LSPs."""
