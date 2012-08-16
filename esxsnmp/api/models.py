@@ -61,8 +61,8 @@ class Device(models.Model):
 class DeviceTagMap(models.Model):
     """Associates a set of :py:class:`.DeviceTag`s with a :py:class:`.Device`"""
 
-    deviceID = models.ForeignKey(Device, db_column="deviceid")
-    deviceTagId = models.ForeignKey(DeviceTag, db_column="devicetagid")
+    device = models.ForeignKey(Device, db_column="deviceid")
+    device_tag = models.ForeignKey(DeviceTag, db_column="devicetagid")
 
     class Meta:
         db_table = "devicetagmap"
@@ -73,17 +73,6 @@ class OIDType(models.Model):
     name = models.CharField(max_length=256)
     class Meta:
         db_table = "oidtype"
-
-    def __unicode__(self):
-        return self.name
-
-class OIDCorrelator(models.Model):
-    """Defines the name of a correlator for a given :py:class:`.OID`"""
-
-    name = models.CharField(max_length=256)
-
-    class Meta:
-        db_table = "oidcorrelator"
 
     def __unicode__(self):
         return self.name
@@ -108,9 +97,8 @@ class OID(models.Model):
 
     name = models.CharField(max_length=256)
     aggregate = models.BooleanField(default = False)
-    OIDtypeId = models.ForeignKey(OIDType,db_column = "oidtypeid")
-    OIDCorrelatorId = models.ForeignKey(OIDCorrelator,blank=True,
-                                        null=True,db_column="oidcorrelatorid")
+    oid_type = models.ForeignKey(OIDType,db_column = "oidtypeid")
+
     class Meta:
         db_table = "oid"
 
@@ -138,8 +126,8 @@ class OIDSet(models.Model):
 class OIDSetMember(models.Model):
     """Associate :py:class:`.OID`s with :py:class:`.OIDSets`"""
 
-    OIDId = models.ForeignKey(OID,db_column="oidid")
-    OIDSetId = models.ForeignKey(OIDSet,db_column="oidsetid")
+    oid = models.ForeignKey(OID,db_column="oidid")
+    oid_set = models.ForeignKey(OIDSet,db_column="oidsetid")
 
     class Meta:
         db_table = "oidsetmember"
@@ -147,8 +135,8 @@ class OIDSetMember(models.Model):
 class DeviceOIDSetMap(models.Model):
     """Associate :py:class:`.OIDSet`s with :py:class:`.Device`s"""
 
-    deviceId = models.ForeignKey(Device,db_column="deviceid")
-    OIDSetId = models.ForeignKey(OIDSet,db_column="oidsetid")
+    device = models.ForeignKey(Device,db_column="deviceid")
+    oid_set = models.ForeignKey(OIDSet,db_column="oidsetid")
 
     class Meta:
         db_table = "deviceoidsetmap"
