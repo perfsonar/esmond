@@ -57,7 +57,6 @@ class ESxSNMPConfig(object):
         self.pid_dir = None
         self.poll_retries = 5
         self.poll_timeout = 2
-        self.polling_tag = None
         self.reload_interval = 1*10
         self.rrd_path = None
         self.send_error_email = False
@@ -95,7 +94,6 @@ class ESxSNMPConfig(object):
                 'pid_dir',
                 'poll_retries',
                 'poll_timeout',
-                'polling_tag',
                 'reload_interval',
                 'rrd_path',
                 'streaming_log_dir',
