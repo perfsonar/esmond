@@ -1,0 +1,24 @@
+[
+    {
+        "pk": 1000,
+        "model": "api.device",
+        "fields": {
+            "active": true,
+            "end_time": "9999-12-31T23:59:59.999",
+            "name": "router_a",
+            "community": "community_string",
+            "begin_time": "2011-11-14T02:54:14.503"
+        }
+    },
+    {
+        "pk": 1001,
+        "model": "api.device",
+        "fields": {
+            "active": true,
+            "end_time": "9999-12-31T23:59:59.999",
+            "name": "router_b",
+            "community": "community_string",
+            "begin_time": "2011-11-14T02:54:30.631"
+        }
+    }
+]

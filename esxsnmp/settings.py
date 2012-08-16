@@ -1,7 +1,10 @@
+import os
+
 # Django settings for ed project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+TESTING = os.environ.get("ESXSNMP_TESTING", False)
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -9,10 +12,18 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASES = {
+if TESTING:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME':  'esxsnmp',
+        }
+    }
+else:
+    DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME':  'esxsnmp',
+            'NAME':  'esxsnmp.db',
         }
     }
 

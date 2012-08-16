@@ -349,7 +349,7 @@ class PollManager(object):
         self.reload_interval = 30
         self.penalty_interval = 300
 
-        self.devices = Device.active_devices.as_dict()
+        self.devices = Device.objects.active_as_dict()
 
         self.persistq = Queue.Queue()
         self.snmp_poller = AsyncSNMPPoller(config=self.config,
@@ -461,7 +461,7 @@ class PollManager(object):
 
         self.log.debug("reloading devices and oidsets")
 
-        new_devices = Device.active_devices.as_dict()
+        new_devices = Device.objects.active_as_dict()
 
         new_device_set = sets.Set(new_devices.iterkeys())
         old_device_set = sets.Set(self.devices.iterkeys())

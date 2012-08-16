@@ -7,6 +7,7 @@ import sys
 import time
 import signal
 import errno
+import datetime
 import __main__
 
 from subprocess import Popen, PIPE, STDOUT
@@ -18,21 +19,18 @@ try:
 except ImportError:
     import simplejson as json
 
-import sqlalchemy
-
 import tsdb
 import tsdb.row
 from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
         TSDBVarDoesNotExistError, InvalidMetaData
-
-import esxsnmp.sql
 
 from esxsnmp.util import setproctitle, init_logging, get_logger, \
         remove_metachars, decode_alu_port
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
-from esxsnmp.sql import IfRef, LSPOpStatus, ALUSAPRef
+
+from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
 
 try:
     import cmemcache as memcache
@@ -96,18 +94,23 @@ class PollResult(object):
             data=self.data,
             metadata=self.metadata))
 
+class PersistQueueEmpty:
+    pass
 
 class PollPersister(object):
     """A PollPersister implements a storage method for PollResults."""
     STATS_INTERVAL = 60
 
-    def __init__(self, config, qname):
+    def __init__(self, config, qname, persistq):
         self.log = get_logger("espersistd.%s" % qname)
         self.config = config
         self.qname = qname
         self.running = False
 
-        self.persistq = MemcachedPersistQueue(qname, config.espersistd_uri)
+        if persistq:
+            self.persistq = persistq
+        else:
+            self.persistq = MemcachedPersistQueue(qname, config.espersistd_uri)
 
         self.data_count = 0
         self.last_stats = time.time()
@@ -126,7 +129,11 @@ class PollPersister(object):
         signal.signal(signal.SIGTERM, self.stop)
 
         while self.running:
-            task = self.persistq.get()
+            try:
+                task = self.persistq.get()
+            except PersistQueueEmpty:
+                break
+
             if task:
                 self.store(task)
                 self.data_count += len(task.data)
@@ -193,14 +200,12 @@ class TSDBPollPersister(PollPersister):
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
-        session = esxsnmp.sql.Session()
-
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
         self.oid_type_map = {}
 
-        oidsets = session.query(esxsnmp.sql.OIDSet)
+        oidsets = OIDSet.objects.all()
 
         for oidset in oidsets:
             self.oidsets[oidset.name] = oidset
@@ -220,7 +225,6 @@ class TSDBPollPersister(PollPersister):
                     self.log.warning(
                             "warning don't have a TSDBRow for %s in %s" %
                             (oid.type.name, oidset.name))
-        session.close()
 
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
@@ -373,24 +377,24 @@ class HistoryTablePersister(PollPersister):
                         break
 
                 if changed:
-                    old.end_time = 'NOW'
+                    old.end_time = datetime.datetime.now()
+                    old.save()
                     new_row = self._new_row_from_obj(new)
-                    self.db_session.add(new_row)
+                    new_row.save()
                     changes += 1
 
                 del self.new_data[key]
             # no entry in self.new_data: interface is gone, update db
             else:
-                old.end_time = 'NOW'
+                old.end_time = datetime.datetime.now()
+                old.save()
                 deletes += 1
 
         # anything left in self.new_data is something new
         for new in self.new_data:
             new_row = self._new_row_from_obj(self.new_data[new])
-            self.db_session.add(new_row)
+            new_row.save()
             adds += 1
-
-        self.db_session.commit()
 
         return (adds, changes, deletes)
 
@@ -399,41 +403,27 @@ class IfRefPollPersister(HistoryTablePersister):
     int_oids = ('ifSpeed', 'ifHighSpeed', 'ifMtu', 'ifType',
             'ifOperStatus', 'ifAdminStatus')
 
-    def __init__(self, config, qname):
-        HistoryTablePersister.__init__(self, config, qname)
-        self.db_session = esxsnmp.sql.Session()
-
     def store(self, result):
         t0 = time.time()
         self.data = result.data
 
-        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
-                esxsnmp.sql.Device.name == result.device_name).filter(
-                        esxsnmp.sql.Device.end_time > 'NOW').one()
-
-        self.old_data = self.db_session.query(IfRef).filter(
-            sqlalchemy.and_(
-                IfRef.deviceid == self.device.id, IfRef.end_time > 'NOW')
-        )
+        self.device = Device.objects.active().get(name=result.device_name)
+        self.old_data = IfRef.objects.active().filter(device=self.device)
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
-        self.key = 'ifdescr'
+        self.key = 'ifDescr'
 
         adds, changes, deletes = self.update_db()
 
-        self.db_session.commit()
         self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (
             nvar, adds, changes, deletes, time.time() - t0, result))
 
     def _new_row_from_obj(self, obj):
-        i = IfRef()
-        i.deviceid = self.device.id
-        i.begin_time = 'NOW'
-        i.end_time = 'Infinity'
-        for attr in obj.keys():
-            setattr(i, attr, obj[attr])
-        return i
+        obj['device'] = self.device
+        obj['begin_time'] = datetime.datetime.now()
+        obj['end_time'] = datetime.datetime.max
+        return IfRef(**obj)
 
     def _resolve_ifdescr(self, ifdescr, ifindex):
         return ifdescr
@@ -447,11 +437,11 @@ class IfRefPollPersister(HistoryTablePersister):
             ifIndex = int(ifIndex)
             ifDescr = self._resolve_ifdescr(val, ifIndex)
             ifIndex_map[ifIndex] = ifDescr
-            ifref_objs[ifDescr] = dict(ifdescr=ifDescr, ifindex=ifIndex)
+            ifref_objs[ifDescr] = dict(ifDescr=ifDescr, ifIndex=ifIndex)
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
-            ifref_objs[ifIndex_map[val]]['ipaddr'] = ipAddr
+            ifref_objs[ifIndex_map[val]]['ipAddr'] = ipAddr
 
         remaining_oids = self.data.keys()
         remaining_oids.remove('ifDescr')
@@ -468,7 +458,7 @@ class IfRefPollPersister(HistoryTablePersister):
                         val = None
                 foo, ifIndex = name.split('.')
                 ifIndex = int(ifIndex)
-                ifref_objs[ifIndex_map[ifIndex]][oid.lower()] = val
+                ifref_objs[ifIndex_map[ifIndex]][oid] = val
 
         return ifref_objs
 
@@ -494,20 +484,13 @@ class ALUSAPRefPersister(HistoryTablePersister):
 
     def __init__(self, config, qname):
         HistoryTablePersister.__init__(self, config, qname)
-        self.db_session = esxsnmp.sql.Session()
 
     def store(self, result):
         self.data = result.data
         t0 = time.time()
 
-        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
-                esxsnmp.sql.Device.name == result.device_name).filter(
-                        esxsnmp.sql.Device.end_time > 'NOW').one()
-
-        self.old_data = self.db_session.query(ALUSAPRef).filter(
-            sqlalchemy.and_(ALUSAPRef.deviceid
-                == self.device.id, ALUSAPRef.end_time > 'NOW')
-        )
+        self.device = Device.objects.active().get(name=result.device_name)
+        self.old_data = ALUSAPRef.objects.active().get(device=self.device)
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
@@ -519,14 +502,11 @@ class ALUSAPRefPersister(HistoryTablePersister):
             nvar, adds, changes, deletes, time.time() - t0, result))
 
     def _new_row_from_obj(self, obj):
-        r = ALUSAPRef()
-        r.deviceid = self.device.id
-        r.begin_time = 'NOW'
-        r.end_time = 'Infinity'
-        for attr in obj.keys():
-            setattr(r, attr, obj[attr])
+        obj['device'] = self.device
+        obj['begin_time'] = datetime.datetime.now()
+        obj['end_time'] = datetime.datetime.max
 
-        return r
+        return ALUSAPRef(**obj)
 
     def _build_objs(self):
         objs = {}
@@ -544,27 +524,20 @@ class ALUSAPRefPersister(HistoryTablePersister):
                     objs[name]['name'] = name
 
                 o = objs[name]
-                o[oid.lower()] = val
+                o[oid] = val
 
         return objs
 
 class LSPOpStatusPersister(HistoryTablePersister):
     def __init__(self, config, qname):
         HistoryTablePersister.__init__(self, config, qname)
-        self.db_session = esxsnmp.sql.Session()
 
     def store(self, result):
         self.lsp_data = result.data
         t0 = time.time()
 
-        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
-                esxsnmp.sql.Device.name == result.device_name).filter(
-                        esxsnmp.sql.Device.end_time > 'NOW').one()
-
-        self.old_data = self.db_session.query(LSPOpStatus).filter(
-            sqlalchemy.and_(LSPOpStatus.deviceid
-                == self.device.id, LSPOpStatus.end_time > 'NOW')
-        )
+        self.device = Device.objects.active().get(name=result.device_name)
+        self.old_data = LSPOpStatus.objects.active().get(device=self.device)
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
@@ -576,26 +549,16 @@ class LSPOpStatusPersister(HistoryTablePersister):
             nvar, adds, changes, deletes, time.time() - t0, result))
 
     def _new_row_from_obj(self, obj):
-        r = LSPOpStatus()
-        r.deviceid = self.device.id
-        r.begin_time = 'NOW'
-        r.end_time = 'Infinity'
-        for attr in obj.keys():
-            setattr(r, attr, obj[attr])
+        obj['device'] = self.device
+        obj['begin_time'] = datetime.datetime.now()
+        obj['end_time'] = datetime.datetime.max
 
-        return r
-
-    oid_name_map = {
-            'mplsLspInfoState': 'state',
-            'mplsLspInfoFrom': 'srcaddr',
-            'mplsLspInfoTo': 'dstaddr',
-    }
+        return LSPOpStatus(**obj)
 
     def _build_objs(self):
         lsp_objs = {}
 
-        for oid, entries in self.lsp_data.iteritems():
-            k = self.oid_name_map[oid]
+        for k, entries in self.lsp_data.iteritems():
             for name, val in entries:
                 name = name.split('.')[-1].replace("'", "")
 
@@ -603,13 +566,12 @@ class LSPOpStatusPersister(HistoryTablePersister):
                     lsp_objs[name] = dict(name=name)
 
                 o = lsp_objs[name]
-                if oid == 'mplsLspInfoState':
+                if k == 'mplsLspInfoState':
                     o[k] = int(val)
                 else:
                     o[k] = val
 
         return lsp_objs
-
 
 class InfIfRefPollPersister(IfRefPollPersister):
     """Emulate a IfRef for an Infinera.
@@ -913,12 +875,6 @@ def worker(name, config, opts):
 
     os.umask(0022)
 
-    try:
-        esxsnmp.sql.setup_db(config.db_uri)
-    except Exception, e:
-        self.log.error("Problem setting up database: %s" % e)
-        raise
-
     init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
@@ -960,12 +916,6 @@ class PersistManager(object):
                     log_stdout_stderr=config.syslog_facility)
 
         os.umask(0022)
-
-        try:
-            esxsnmp.sql.setup_db(config.db_uri)
-        except Exception, e:
-            self.log.error("Problem setting up database: %s" % e)
-            raise
 
         setproctitle(name)
         signal.signal(signal.SIGINT, self.stop)

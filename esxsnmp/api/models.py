@@ -14,16 +14,16 @@ class DeviceTag(models.Model):
     def __unicode__(self):
         return self.name
 
-class ActiveDeviceManager(models.Manager):
-    def get_query_set(self):
-        qs = super(ActiveDeviceManager, self).get_query_set()
+class DeviceManager(models.Manager):
+    def active(self):
+        qs = super(DeviceManager, self).get_query_set()
         qs = qs.filter(active=True, end_time__gt=datetime.datetime.now())
         return qs
 
-    def as_dict(self):
+    def active_as_dict(self):
         d = {}
 
-        for dev in self.get_query_set():
+        for dev in self.active():
             d[dev.name] = dev
 
         return d
@@ -42,7 +42,7 @@ class Device(models.Model):
     devicetag = models.ManyToManyField(DeviceTag, through = "DeviceTagMap")
     oidset = models.ManyToManyField("OIDSet", through = "DeviceOIDSetMap")
 
-    active_devices = ActiveDeviceManager()
+    objects = DeviceManager()
 
     class Meta:
         db_table = "device"
@@ -153,6 +153,12 @@ class DeviceOIDSetMap(models.Model):
     class Meta:
         db_table = "deviceoidsetmap"
 
+class IfRefManager(models.Manager):
+    def active(self):
+        qs = super(IfRefManager, self).get_query_set()
+        qs = qs.filter(end_time__gt=datetime.datetime.now())
+        return qs
+
 class IfRef(models.Model):
     """Interface metadata.
 
@@ -177,11 +183,13 @@ class IfRef(models.Model):
     end_time = models.DateTimeField(default=datetime.datetime.max)
     ifPhysAddress = models.CharField(max_length=32, db_column="ifphysaddress")
 
+    objects = IfRefManager()
+
     class Meta:
         db_table = "ifref"
 
     def __unicode__(self):
-        return "%s (%s)"%(self.ifDescr,self.ifIndex)
+        return "%s (%s) %s"%(self.ifDescr, self.ifIndex, self.ifAlias)
 
     def to_dict(self):
 
@@ -203,6 +211,12 @@ class IfRef(models.Model):
                     ifHighSpeed=self.ifHighSpeed,
                     ipAddr=self.ipAddr)
 
+class ALUSAPRefManager(models.Manager):
+    def active(self):
+        qs = super(ALUSAPRefManager, self).get_query_set()
+        qs = qs.filter(end_time__gt=datetime.datetime.now())
+        return qs
+
 class ALUSAPRef(models.Model):
     """Metadata about ALU SAPs."""
 
@@ -217,6 +231,8 @@ class ALUSAPRef(models.Model):
 
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
+
+    objects = ALUSAPRefManager()
 
     class Meta:
         db_table = "alusapref"
