@@ -13,17 +13,18 @@ ADMINS = (
 MANAGERS = ADMINS
 
 if TESTING:
+    print "TESTING"
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME':  'esxsnmp',
+            'NAME':  'esxsnmp.db',
         }
     }
 else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME':  'esxsnmp.db',
+            'NAME':  'esxsnmp',
         }
     }
 
