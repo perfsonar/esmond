@@ -12,9 +12,9 @@ from collections import namedtuple
 
 from django.test import TestCase
 
-from esxsnmp.api.models import Device, IfRef
+from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 
-from esxsnmp.persist import IfRefPollPersister, PersistQueueEmpty
+from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, PersistQueueEmpty
 
 ifref_test_data = """
 [{
@@ -112,7 +112,7 @@ class TestIfRefPersister(TestCase):
         d = Device.objects.get(name="router_a")
         self.assertEqual(d.name, "router_a")
 
-    def test_correlator(self):
+    def test_persister(self):
         ifrefs = IfRef.objects.filter(device__name="router_a", ifDescr="Vlan1")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 0)
@@ -136,6 +136,92 @@ class TestIfRefPersister(TestCase):
         p.run()
 
         ifrefs = IfRef.objects.filter(device__name="router_a", ifDescr="Vlan1")
+        ifrefs = ifrefs.order_by("end_time").all()
+        self.assertTrue(len(ifrefs) == 2)
+       
+        self.assertTrue(ifrefs[1].end_time < datetime.datetime.max)
+
+alu_sap_test_data = """
+[
+    {
+        "oidset_name": "ALUSAPRefPoll", 
+        "device_name": "router_a", 
+        "timestamp": 1345125600, 
+        "oid_name": "", 
+        "data": {
+            "sapDescription": [
+                [ "sapDescription.1.1342177281.100", "one" ]
+            ], 
+            "sapIngressQosPolicyId": [
+                [ "sapIngressQosPolicyId.1.1342177281.100", 2 ]
+            ], 
+            "sapEgressQosPolicyId": [
+                [ "sapEgressQosPolicyId.1.1342177281.100", 2 ]
+            ]
+        }, 
+        "metadata": {}
+    },
+    {
+        "oidset_name": "ALUSAPRefPoll", 
+        "device_name": "router_a", 
+        "timestamp": 1345125660, 
+        "oid_name": "", 
+        "data": {
+            "sapDescription": [
+                [ "sapDescription.1.1342177281.100", "two" ]
+            ], 
+            "sapIngressQosPolicyId": [
+                [ "sapIngressQosPolicyId.1.1342177281.100", 2 ]
+            ], 
+            "sapEgressQosPolicyId": [
+                [ "sapEgressQosPolicyId.1.1342177281.100", 2 ]
+            ]
+        }, 
+        "metadata": {}
+    }
+]
+"""
+empty_alu_sap_test_data = """
+[
+    {
+        "oidset_name": "ALUSAPRefPoll", 
+        "device_name": "router_a", 
+        "timestamp": 1345125720, 
+        "oid_name": "", 
+        "data": {
+            "sapDescription": [], 
+            "sapIngressQosPolicyId": [], 
+            "sapEgressQosPolicyId": []
+        }, 
+        "metadata": {}
+    }
+]"""
+class TestALUSAPRefPersister(TestCase):
+    fixtures = ['test_routers.json']
+
+    def test_persister(self):
+        ifrefs = IfRef.objects.filter(device__name="router_a")
+        ifrefs = ifrefs.order_by("end_time").all()
+        self.assertTrue(len(ifrefs) == 0)
+
+        q = TestPersistQueue(json.loads(alu_sap_test_data))
+        p = ALUSAPRefPersister([], "test", persistq=q)
+        p.run()
+
+        ifrefs = ALUSAPRef.objects.filter(device__name="router_a", name="1-8_0_0-100")
+        ifrefs = ifrefs.order_by("end_time").all()
+        self.assertTrue(len(ifrefs) == 2)
+
+        self.assertTrue(ifrefs[0].end_time < datetime.datetime.max)
+        self.assertTrue(ifrefs[1].end_time == datetime.datetime.max)
+        self.assertTrue(ifrefs[0].sapDescription == "one")
+        self.assertTrue(ifrefs[1].sapDescription == "two")
+
+        q = TestPersistQueue(json.loads(empty_alu_sap_test_data))
+        p = ALUSAPRefPersister([], "test", persistq=q)
+        p.run()
+
+        ifrefs = ALUSAPRef.objects.filter(device__name="router_a", name="1-8_0_0-100")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
        
