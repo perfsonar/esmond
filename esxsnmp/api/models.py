@@ -14,6 +14,20 @@ class DeviceTag(models.Model):
     def __unicode__(self):
         return self.name
 
+class ActiveDeviceManager(models.Manager):
+    def get_query_set(self):
+        qs = super(ActiveDeviceManager, self).get_query_set()
+        qs = qs.filter(active=True, end_time__gt=datetime.datetime.now())
+        return qs
+
+    def as_dict(self):
+        d = {}
+
+        for dev in self.get_query_set():
+            d[dev.name] = dev
+
+        return d
+
 class Device(models.Model):
     """A system which is pollable via SNMP.
 
@@ -27,6 +41,8 @@ class Device(models.Model):
     active = models.BooleanField(default = True)
     devicetag = models.ManyToManyField(DeviceTag, through = "DeviceTagMap")
     oidset = models.ManyToManyField("OIDSet", through = "DeviceOIDSetMap")
+
+    active_devices = ActiveDeviceManager()
 
     class Meta:
         db_table = "device"

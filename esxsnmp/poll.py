@@ -10,24 +10,20 @@ import socket
 import threading
 import Queue
 
-import sqlalchemy
 from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
-import rrdtool
 
 import tsdb
 import tsdb.row
 from tsdb.util import rrd_from_tsdb_var
 from tsdb.error import TSDBAggregateDoesNotExistError, TSDBVarDoesNotExistError
 
-import esxsnmp.sql
-
 from esxsnmp.util import setproctitle, init_logging, get_logger, \
         remove_metachars, decode_alu_port
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError, PollerError
-from esxsnmp.sql import IfRef
 from esxsnmp.persist import PollResult, PersistClient
+from esxsnmp.api.models import Device, IfRef, OIDSet
 
 
 class PollError(Exception):
@@ -358,14 +354,7 @@ class PollManager(object):
         self.reload_interval = 30
         self.penalty_interval = 300
 
-        try:
-            esxsnmp.sql.setup_db(self.config.db_uri)
-        except Exception, e:
-            self.log.error("Problem setting up database: %s" % e)
-            raise
-
-        self.devices = esxsnmp.sql.get_devices(
-                polling_tag=self.config.polling_tag)
+        self.devices = Device.active_devices.as_dict()
 
         self.persistq = Queue.Queue()
         self.snmp_poller = AsyncSNMPPoller(config=self.config,
@@ -477,8 +466,8 @@ class PollManager(object):
 
         self.log.debug("reloading devices and oidsets")
 
-        new_devices = esxsnmp.sql.get_devices(
-                polling_tag=self.config.polling_tag)
+        new_devices = Device.active_devices.as_dict()
+
         new_device_set = sets.Set(new_devices.iterkeys())
         old_device_set = sets.Set(self.devices.iterkeys())
 
@@ -882,25 +871,22 @@ def espoll():
             debug=opts.debug)
 
     try:
-        esxsnmp.sql.setup_db(config.db_uri)
-    except Exception, e:
-        print >>sys.stderr, "Problem setting up database: " % e
-        raise
-
-    session = esxsnmp.sql.Session()
-
-    devices = session.query(esxsnmp.sql.Device)
-    device = devices.filter(esxsnmp.sql.Device.name == device_name).one()
-    if not device:
-        print >>sys.stderr, "unknown device: %s" % device_name
+        device = Device.objects.get(name=device_name)
+    except Device.DoesNotExist:
+        print >>sys.stderr, "error: unknown device: %s" % device_name
+        sys.exit(1)
+    except Device.MultipleObjectsReturned:
+        print >>sys.stderr, "error: multiple devices with that name: %s" % device_name
         sys.exit(1)
 
-    oidset = session.query(esxsnmp.sql.OIDSet)
-    oidset = oidset.filter(esxsnmp.sql.OIDSet.name == oidset_name).one()
-
-    if not oidset:
-        print >>sys.stderr, "unknown OIDSet: %s %s" % (device.name,
+    try:
+        oidset = OIDSet.objects.get(name=oidset_name)
+    except OIDSet.DoesNotExist:
+        print >>sys.stderr, "error: unknown OIDSet: %s %s" % (device.name,
                 oidset_name)
+        sys.exit(1)
+    except OIDSet.MultipleObjectsReturned:
+        print >>sys.stderr, "error: multiple OIDSets with that name: %s" % device_name
         sys.exit(1)
 
     snmp_poller = AsyncSNMPPoller(config=config)
