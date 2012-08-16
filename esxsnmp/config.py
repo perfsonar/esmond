@@ -14,7 +14,7 @@ def get_config_path():
 
     return conf
 
-def get_config(config_file, opts):
+def get_config(config_file, opts=None):
     if not os.path.exists(config_file):
         raise ConfigError("config file not found: %s" % config_file)
 
@@ -24,7 +24,7 @@ def get_config(config_file, opts):
         raise ConfigError("unable to parse config: %s" % e)
 
     # the command line overrides the config file
-    if opts.pid_dir:
+    if opts and opts.pid_dir:
         conf.pid_dir = opts.pid_dir
 
     return conf
@@ -44,7 +44,7 @@ class ESxSNMPConfig(object):
     def __init__(self, file):
         self.file = file
 
-        self.db_uri = None
+        self.agg_tsdb_root = None
         self.error_email_from = None
         self.error_email_subject = None
         self.error_email_to = None
@@ -60,13 +60,18 @@ class ESxSNMPConfig(object):
         self.reload_interval = 1*10
         self.rrd_path = None
         self.send_error_email = False
+        self.sql_db_engine = ''
+        self.sql_db_host = ''
+        self.sql_db_name = ''
+        self.sql_db_password = ''
+        self.sql_db_port = ''
+        self.sql_db_user = ''
         self.streaming_log_dir = None
         self.syslog_facility = None
         self.syslog_priority = None
         self.traceback_dir = None
         self.tsdb_chunk_prefixes = None
         self.tsdb_root = None
-        self.agg_tsdb_root = None
 
         self.read_config()
         self.convert_types()
@@ -76,7 +81,11 @@ class ESxSNMPConfig(object):
 
     def read_config(self):
         """ read in config from INI-style file, requiring section header 'main'"""
-        cfg = ConfigParser.ConfigParser()
+        defaults = {}
+        for v in ('ESXSNMP_ROOT', ):
+            defaults[v] = os.environ.get(v)
+
+        cfg = ConfigParser.ConfigParser(defaults)
         cfg.read(self.file)
         config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in (
@@ -96,6 +105,11 @@ class ESxSNMPConfig(object):
                 'poll_timeout',
                 'reload_interval',
                 'rrd_path',
+                'sql_db_host',
+                'sql_db_name',
+                'sql_db_password',
+                'sql_db_port',
+                'sql_db_user',
                 'streaming_log_dir',
                 'syslog_facility',
                 'syslog_priority',
@@ -108,10 +122,16 @@ class ESxSNMPConfig(object):
 
         self.persist_map = {}
         for key, val in cfg.items("persist_map"):
+            if key == 'esxsnmp_root':
+                continue
+
             self.persist_map[key] = val.replace(" ", "").split(",")
 
         self.persist_queues = {}
         for key, val in cfg.items("persist_queues"):
+            if key == 'esxsnmp_root':
+                continue
+
             self.persist_queues[key] = val.split(':', 1)
             self.persist_queues[key][1] = int(self.persist_queues[key][1])
 

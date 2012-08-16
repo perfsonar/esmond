@@ -11,7 +11,6 @@ import datetime
 from collections import namedtuple
 
 from django.test import TestCase
-
 from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 
 from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, PersistQueueEmpty

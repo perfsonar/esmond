@@ -1,10 +1,22 @@
 import os
+import os.path
+from esxsnmp.config import get_config
 
 # Django settings for ed project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 TESTING = os.environ.get("ESXSNMP_TESTING", False)
+ESXSNMP_CONF = os.environ.get("ESXSNMP_CONF")
+ESXSNMP_ROOT = os.environ.get("ESXSNMP_ROOT")
+
+if not ESXSNMP_ROOT:
+    raise Error("ESXSNMP_ROOT not definied in environemnt")
+
+if not ESXSNMP_CONF:
+    ESXSNMP_CONF = os.path.join(ESXSNMP_ROOT, "esxsnmp.conf")
+
+ESXSNMP_SETTINGS = get_config(ESXSNMP_CONF)
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -23,8 +35,11 @@ if TESTING:
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME':  'esxsnmp',
+            'ENGINE': ESXSNMP_SETTINGS.sql_db_engine,
+            'NAME': ESXSNMP_SETTINGS.sql_db_name,
+            'HOST': ESXSNMP_SETTINGS.sql_db_host,
+            'USER': ESXSNMP_SETTINGS.sql_db_user,
+            'PASSWORD': ESXSNMP_SETTINGS.sql_db_password,
         }
     }
 
@@ -78,7 +93,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
 
-ROOT_URLCONF = 'esxdjango.urls'
+ROOT_URLCONF = 'esxsnmp.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
