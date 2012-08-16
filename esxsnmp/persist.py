@@ -482,15 +482,12 @@ class ALUIfRefPollPersister(IfRefPollPersister):
 class ALUSAPRefPersister(HistoryTablePersister):
     int_oids = ('sapIngressQosPolicyId', 'sapEgressQosPolicyId')
 
-    def __init__(self, config, qname):
-        HistoryTablePersister.__init__(self, config, qname)
-
     def store(self, result):
         self.data = result.data
         t0 = time.time()
 
         self.device = Device.objects.active().get(name=result.device_name)
-        self.old_data = ALUSAPRef.objects.active().get(device=self.device)
+        self.old_data = ALUSAPRef.objects.active().filter(device=self.device)
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
@@ -514,7 +511,7 @@ class ALUSAPRefPersister(HistoryTablePersister):
         for oid, entries in self.data.iteritems():
             for k, val in entries:
                 _, vpls, port, vlan  = k.split('.')
-                name = "%s-%s-%s" % (vlan, decode_alu_port(port), vlan)
+                name = "%s-%s-%s" % (vpls, decode_alu_port(port), vlan)
 
                 if oid in self.int_oids:
                     val = int(val)
@@ -537,7 +534,7 @@ class LSPOpStatusPersister(HistoryTablePersister):
         t0 = time.time()
 
         self.device = Device.objects.active().get(name=result.device_name)
-        self.old_data = LSPOpStatus.objects.active().get(device=self.device)
+        self.old_data = LSPOpStatus.objects.active().filter(device=self.device)
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
