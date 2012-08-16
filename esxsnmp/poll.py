@@ -1,11 +1,9 @@
 import os
 import signal
-import errno
 import sys
 import time
 import re
 import sets
-import random
 import socket
 import threading
 import Queue
@@ -13,9 +11,6 @@ import Queue
 from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
 
 import tsdb
-import tsdb.row
-from tsdb.util import rrd_from_tsdb_var
-from tsdb.error import TSDBAggregateDoesNotExistError, TSDBVarDoesNotExistError
 
 from esxsnmp.util import setproctitle, init_logging, get_logger, \
         remove_metachars, decode_alu_port
