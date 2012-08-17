@@ -3,10 +3,11 @@ Hacking on ESxSNMP
 ==================
 
 
-Testing on a local machine
---------------------------
+Setting up a development environment
+------------------------------------
 
-Run the mkdevenv script::
+ESxSNMP comes with a script to set up a development environment.  Run the
+`mkdevenv` script::
 
     ./mkdevenv
 
@@ -17,6 +18,8 @@ variables it creates::
 
 To run tests do::
 
-    python esxsnmp/manage.py test
-    python esxsnmp/manage.py test api.TestIfRefPersister
+    # run all the tests in the api app
+    python esxsnmp/manage.py test api 
+    # run just a specific test
+    python esxsnmp/manage.py test api.TestIfRefPersister  
 
