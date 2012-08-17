@@ -6,8 +6,10 @@ export ESXSNMP_CONF=${ESXSNMP_ROOT}/esxsnmp-devel.conf
 export DJANGO_SETTINGS_MODULE=esxsnmp.settings
 
 # create a dummy TSDB
-mkdir ${ESXSNMP_ROOT}/tsdb-data
-touch ${ESXSNMP_ROOT}/tsdb-data/TSDB
+if [ ! -d ${ESXSNMP_ROOT}/tsdb-data ]; then
+    mkdir ${ESXSNMP_ROOT}/tsdb-data
+    touch ${ESXSNMP_ROOT}/tsdb-data/TSDB
+fi
 
 # create the virtualenv
 virtualenv --prompt="(esxsnmp)" .
@@ -17,6 +19,7 @@ pip install -r requirements.txt
 cat <<EOF > esxsnmp.env
 export ESXSNMP_ROOT=${ESXSNMP_ROOT}
 export ESXSNMP_CONF=${ESXSNMP_CONF}
+export ESXSNMP_TESTING=1
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
 export VENV_ROOT=${VENV_ROOT}
 . ${VENV_ROOT}/bin/activate
