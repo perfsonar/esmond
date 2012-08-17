@@ -8,5 +8,11 @@ eggs
 parts
 parts.old
 bin
+lib
+include
 develop-eggs
 venv
+esxsnmp.env
+.Python
+src
+devel/tsdb-data
