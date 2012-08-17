@@ -16,3 +16,4 @@ esxsnmp.env
 .Python
 src
 devel/tsdb-data
+docs/_build
