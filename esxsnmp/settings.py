@@ -25,7 +25,6 @@ ADMINS = (
 MANAGERS = ADMINS
 
 if TESTING:
-    print "TESTING"
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
