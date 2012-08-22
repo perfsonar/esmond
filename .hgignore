@@ -18,5 +18,7 @@ esxsnmp.db
 .Python
 src
 devel/tsdb-data
+devel/var
+devel/crashlog
 docs/_build
 .DS_Store
