@@ -125,6 +125,8 @@ def init_logging(facility, level=logging.INFO,
     # XXX(jdugan): /dev/log appears to be more costly at least on FreeBSD
     if os.uname()[0] == 'FreeBSD':
         syslog = logging.handlers.SysLogHandler(('localhost', 514), facility=facility)
+    elif os.uname()[0] == 'Darwin':
+        syslog = logging.handlers.SysLogHandler('/var/run/syslog', facility=facility)
     else:
         syslog = logging.handlers.SysLogHandler("/dev/log", facility)
     syslog.setFormatter(logging.Formatter(format))
