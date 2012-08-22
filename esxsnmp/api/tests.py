@@ -112,7 +112,7 @@ class SimpleTest(TestCase):
         self.assertEqual(1 + 1, 2)
 
 class TestIfRefPersister(TestCase):
-    fixtures = ['test_routers.json']
+    fixtures = ['test_devices.json']
 
     def test_test(self):
         d = Device.objects.get(name="router_a")
@@ -203,7 +203,7 @@ empty_alu_sap_test_data = """
     }
 ]"""
 class TestALUSAPRefPersister(TestCase):
-    fixtures = ['test_routers.json']
+    fixtures = ['test_devices.json']
 
     def test_persister(self):
         ifrefs = IfRef.objects.filter(device__name="router_a")
@@ -295,7 +295,7 @@ timeseries_test_data = """
 """
 if tsdb:
     class TestTSDBPollPersister(TestCase):
-        fixtures = ['test_routers.json', 'oidsets.json']
+        fixtures = ['test_devices.json', 'oidsets.json']
     
         def test_persister(self):
             """This is a very basic smoke test for a TSDB persister."""
