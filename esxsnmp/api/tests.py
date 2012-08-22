@@ -13,7 +13,14 @@ from collections import namedtuple
 from django.test import TestCase
 from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 
-from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, PersistQueueEmpty
+from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
+     PersistQueueEmpty, TSDBPollPersister
+from esxsnmp.config import get_config, get_config_path
+
+try:
+    import tsdb
+except ImportError:
+    tsdb = None
 
 ifref_test_data = """
 [{
@@ -225,3 +232,87 @@ class TestALUSAPRefPersister(TestCase):
         self.assertTrue(len(ifrefs) == 2)
        
         self.assertTrue(ifrefs[1].end_time < datetime.datetime.max)
+
+# XXX(jdugan): it would probably be better and easier in the long run to keep
+# these JSON blobs in files and define a small class to load them
+timeseries_test_data = """
+[
+    {
+        "oidset_name": "FastPollHC", 
+        "device_name": "router_a", 
+        "timestamp": 1343953700,
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                "ifHCInOctets/GigabitEthernet0_1", 
+                25066556556930
+            ], 
+            [
+                "ifHCInOctets/GigabitEthernet0_2", 
+                126782001836
+            ], 
+            [
+                "ifHCInOctets/GigabitEthernet0_3", 
+                27871397880
+            ], 
+            [
+                "ifHCInOctets/Loopback0", 
+                0
+            ] 
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    },
+    {
+        "oidset_name": "FastPollHC", 
+        "device_name": "router_a", 
+        "timestamp": 1343953730,
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                "ifHCInOctets/GigabitEthernet0_1", 
+                25066575790604
+            ], 
+            [
+                "ifHCInOctets/GigabitEthernet0_2", 
+                126782005062
+            ], 
+            [
+                "ifHCInOctets/GigabitEthernet0_3", 
+                27871411592
+            ], 
+            [
+                "ifHCInOctets/Loopback0", 
+                0
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }
+]
+"""
+if tsdb:
+    class TestTSDBPollPersister(TestCase):
+        fixtures = ['test_routers.json', 'oidsets.json']
+    
+        def test_persister(self):
+            """This is a very basic smoke test for a TSDB persister."""
+            config = get_config(get_config_path())
+    
+            test_data = json.loads(timeseries_test_data)
+            q = TestPersistQueue(test_data)
+            p = TSDBPollPersister(config, "test", persistq=q)
+            p.run()
+
+            test_data = json.loads(timeseries_test_data)
+            db = tsdb.TSDB(config.tsdb_root)
+            for pr in test_data:
+                for oid, val in pr['data']:
+                    iface = oid.split('/')[-1]
+                    path = "%s/%s/%s/%s/" % (pr['device_name'],
+                            pr['oidset_name'], pr['oid_name'], iface)
+                    v = db.get_var(path)
+                    d = v.get(pr['timestamp'])
+                    self.assertEqual(val, d.value)

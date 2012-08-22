@@ -112,9 +112,9 @@ class OIDSet(models.Model):
     frequency = models.IntegerField(help_text="Polling frequency in seconds.")
     pollerid = models.ForeignKey(Poller,db_column="pollerid", 
         help_text="Which poller to use for this OIDSet")
-    poller_args = models.CharField(max_length=256, 
+    poller_args = models.CharField(max_length=256, null=True, blank=True,
         help_text="Arguments for the Poller")
-    oid_set = models.ManyToManyField(OID, through = "OIDSetMember", 
+    oids = models.ManyToManyField(OID, through = "OIDSetMember", 
             help_text="List of OIDs in the OIDSet")
 
     class Meta:

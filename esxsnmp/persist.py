@@ -195,8 +195,8 @@ class TSDBPollPersister(PollPersister):
 
     """
 
-    def __init__(self, config, qname):
-        PollPersister.__init__(self, config, qname)
+    def __init__(self, config, qname, persistq):
+        PollPersister.__init__(self, config, qname, persistq)
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
@@ -216,15 +216,15 @@ class TSDBPollPersister(PollPersister):
                     d[k] = v
                 self.poller_args[oidset.name] = d
 
-            for oid in oidset.oids:
+            for oid in oidset.oids.all():
                 self.oids[oid.name] = oid
                 try:
                     self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
-                            oid.type.name)
+                            oid.oid_type.name)
                 except AttributeError:
                     self.log.warning(
                             "warning don't have a TSDBRow for %s in %s" %
-                            (oid.type.name, oidset.name))
+                            (oid.oid_type.name, oidset.name))
 
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
