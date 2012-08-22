@@ -105,6 +105,7 @@ class ESxSNMPConfig(object):
                 'poll_timeout',
                 'reload_interval',
                 'rrd_path',
+                'sql_db_engine',
                 'sql_db_host',
                 'sql_db_name',
                 'sql_db_password',
