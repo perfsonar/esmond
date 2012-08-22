@@ -13,6 +13,8 @@ include
 develop-eggs
 venv
 esxsnmp.env
+.env
+esxsnmp.db
 .Python
 src
 devel/tsdb-data
