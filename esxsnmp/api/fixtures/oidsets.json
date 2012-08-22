@@ -1,5 +1,19 @@
 [
     {
+        "pk": 2,
+        "model": "api.poller",
+        "fields": {
+            "name": "UncorrelatedPoller"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "api.poller",
+        "fields": {
+            "name": "CorrelatedPoller"
+        }
+    },
+    {
         "pk": 1,
         "model": "api.oid",
         "fields": {
