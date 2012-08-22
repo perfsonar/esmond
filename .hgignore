@@ -19,3 +19,4 @@ esxsnmp.db
 src
 devel/tsdb-data
 docs/_build
+.DS_Store
