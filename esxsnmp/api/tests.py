@@ -14,7 +14,7 @@ from django.test import TestCase
 from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 
 from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
-     PersistQueueEmpty, TSDBPollPersister
+     PersistQueueEmpty, TSDBPollPersister, MongoDBPollPersister
 from esxsnmp.config import get_config, get_config_path
 
 try:
@@ -293,6 +293,18 @@ timeseries_test_data = """
     }
 ]
 """
+class TestMongoDBPollPersister(TestCase):
+    fixtures = ['test_devices.json', 'oidsets.json']
+    def test_persister(self):
+        """This is a very basic smoke test for a MongoDB persister."""
+        config = get_config(get_config_path())
+
+        test_data = json.loads(timeseries_test_data)
+        q = TestPersistQueue(test_data)
+        p = MongoDBPollPersister(config, "test", persistq=q)
+        p.run()
+
+
 if tsdb:
     class TestTSDBPollPersister(TestCase):
         fixtures = ['test_devices.json', 'oidsets.json']

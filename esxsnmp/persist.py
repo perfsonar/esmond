@@ -339,6 +339,198 @@ class TSDBPollPersister(PollPersister):
             update_agg()
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
+            
+            
+class MongoDBPollPersister(PollPersister):
+    """Given a ``PollResult`` write the data to a MongoDB instance.
+
+    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
+    write to.
+
+    The ``data`` member of the PollResult must be a list of (name,value)
+    pairs.  The ``metadata`` member of PollResult must contain the following
+    keys::
+
+        ``tsdb_flags``
+            TSDB flags to be used
+
+    """
+
+    def __init__(self, config, qname, persistq):
+        PollPersister.__init__(self, config, qname, persistq)
+
+        self.tsdb = tsdb.TSDB(self.config.tsdb_root)
+
+        self.oidsets = {}
+        self.poller_args = {}
+        self.oids = {}
+        self.oid_type_map = {}
+        
+        oidsets = OIDSet.objects.all()
+
+        for oidset in oidsets:
+            self.oidsets[oidset.name] = oidset
+            d = {}
+            if oidset.poller_args:
+                for arg in oidset.poller_args.split():
+                    (k, v) = arg.split('=')
+                    d[k] = v
+                self.poller_args[oidset.name] = d
+
+            for oid in oidset.oids.all():
+                self.oids[oid.name] = oid
+                # XXX(mmg): creates oid.name/tsdb row
+                # how can I get rid of this?
+                try:
+                    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
+                            oid.oid_type.name)
+                except AttributeError:
+                    self.log.warning(
+                            "warning don't have a TSDBRow for %s in %s" %
+                            (oid.oid_type.name, oidset.name))
+                            
+        for k,v in self.oidsets.items():
+            print k,v
+        print '---'
+        for k,v in self.poller_args.items():
+            print k,v
+        print '---'
+        for k,v in self.oids.items():
+            print k,v
+        print '---'
+        for k,v in self.oid_type_map.items():
+            #print k,v
+            pass
+
+    def store(self, result):
+        oidset = self.oidsets[result.oidset_name]
+        set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
+        basename = os.path.join(result.device_name, set_name)
+        oid = self.oids[result.oid_name]
+        flags = result.metadata['tsdb_flags']
+
+        var_type = self.oid_type_map[oid.name]
+
+        t0 = time.time()
+        nvar = 0
+        
+        print result.data
+
+        for var, val in result.data:
+            if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
+                val = float(val) * 100
+            nvar += 1
+
+            var_name = os.path.join(basename, var)
+            # var_name example:
+            # router_a/FastPollHC/ifHCInOctets/GigabitEthernet0_1
+            # device/oidset/oid/interface?
+            
+            try:
+                # XXX(mmg): look up what this does - fetches
+                # a class instance
+                tsdb_var = self.tsdb.get_var(var_name)
+            except tsdb.TSDBVarDoesNotExistError:
+                tsdb_var = self._create_var(var_type, var_name, oidset, oid)
+            except tsdb.InvalidMetaData:
+                tsdb_var = self._repair_var_metadata(var_type, var_name,
+                        oidset, oid)
+                continue  # XXX(jdugan): remove this once repair actually works
+
+            # XXX(mmg): raw data insert happens here
+            #tsdb_var.insert(var_type(result.timestamp, flags, val))
+            
+            print '***', tsdb_var, result.timestamp, flags, val
+            
+
+            if oid.aggregate:
+                # XXX:refactor uptime should be handled better
+                uptime_name = os.path.join(basename, 'sysUpTime')
+                # XXX(mmg): uptime_name example:
+                # router_a/FastPollHC/sysUpTime
+                print '****', tsdb_var, var_name, result.timestamp, uptime_name, oidset, oidset.frequency
+                sys.exit()
+                try:
+                    self._aggregate(tsdb_var, var_name, result.timestamp,
+                            uptime_name, oidset)
+                except TSDBError, e:
+                    self.log.error("Error aggregating: %s %s: %s" %
+                            (result.device_name, result.oidset_name, str(e)))
+
+        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
+            time.time() - t0, result))
+
+    def _create_var(self, var_type, var, oidset, oid):
+        self.log.debug("creating TSDBVar: %s" % str(var))
+        chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
+
+        tsdb_var = self.tsdb.add_var(var, var_type,
+                oidset.frequency, chunk_mapper)
+
+        if oid.aggregate:
+            self._create_aggs(tsdb_var, oidset)
+
+        tsdb_var.flush()
+
+        return tsdb_var
+
+    def _create_agg(self, tsdb_var, oidset, period):
+        chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
+        if period == oidset.frequency:
+            aggs = ['average', 'delta']
+        else:
+            aggs = ['average', 'delta', 'min', 'max']
+
+        try:
+            tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
+        except Exception, e:
+            self.log.error("Couldn't create aggregate %s" % (e))
+
+    def _create_aggs(self, tsdb_var, oidset):
+        self._create_agg(tsdb_var, oidset, oidset.frequency)
+
+        if 'aggregates' in self.poller_args[oidset.name]:
+            aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
+            for agg in aggregates:
+                self._create_agg(tsdb_var, oidset, int(agg))
+
+    def _repair_var_metadata(self, var_type, var, oidset, oid):
+        self.log.error("var needs repair, skipping: %s" % var)
+        #chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
+
+    def _aggregate(self, tsdb_var, var_name, timestamp, uptime_name, oidset):
+        try:
+            uptime = self.tsdb.get_var(uptime_name)
+        except TSDBVarDoesNotExistError:
+            # XXX this is killing the logger in testing revisit
+            #self.log.warning("unable to get uptime for %s" % var_name)
+            uptime = None
+
+        min_last_update = timestamp - oidset.frequency * 40
+
+        def log_bad(ancestor, agg, rate, prev, curr):
+            self.log.debug("bad data for %s at %d: %f" % (ancestor.path,
+                curr.timestamp, rate))
+
+        def update_agg():
+            # XXX(mmg): looks like all the magic happens here.
+            tsdb_var.update_aggregate(str(oidset.frequency),
+                uptime_var=uptime,
+                min_last_update=min_last_update,
+                # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
+                max_rate=int(110e9),
+                max_rate_callback=log_bad)
+
+        try:
+            update_agg()
+        except TSDBAggregateDoesNotExistError:
+            # XXX(jdugan): this needs to be reworked when we update all aggs
+            self.log.error("creating missing aggregate for %s" % var_name)
+            self._create_agg(tsdb_var, oidset, oidset.frequency)
+            tsdb_var.flush()
+            update_agg()
+        except InvalidMetaData:
+            self.log.error("bad metadata for %s" % var_name)
 
 
 class HistoryTablePersister(PollPersister):
