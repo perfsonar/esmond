@@ -54,6 +54,8 @@ class ESxSNMPConfig(object):
         self.htpasswd_file = None
         self.mib_dirs = []
         self.mibs = []
+        self.mongo_host = None
+        self.mongo_port = None
         self.pid_dir = None
         self.poll_retries = 5
         self.poll_timeout = 2
@@ -100,6 +102,8 @@ class ESxSNMPConfig(object):
                 'htpasswd_file',
                 'mib_dirs',
                 'mibs',
+                'mongo_host',
+                'mongo_port',
                 'pid_dir',
                 'poll_retries',
                 'poll_timeout',
@@ -154,6 +158,8 @@ class ESxSNMPConfig(object):
             self.poll_retries = int(self.poll_retries)
         if self.reload_interval:
             self.reload_interval = int(self.reload_interval)
+        if self.mongo_port:
+            self.mongo_port = int(self.mongo_port)
 
         if self.error_email_to is not None \
                 and self.error_email_subject is not None \
