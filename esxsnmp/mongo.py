@@ -4,16 +4,69 @@
 Work in progress code for mongo development.  These things will get a new 
 home.
 """
-
+# Standard
 import sys
 import os
-import unittest
-
+# Third party
+import pymongo
+from pymongo.connection import Connection
+from pymongo.errors import ConnectionFailure
+# TSDB
 from tsdb.error import *
 from tsdb.row import Aggregate, ROW_VALID, ROW_TYPE_MAP
 from tsdb.chunk_mapper import CHUNK_MAPPER_MAP
 from tsdb.util import write_dict, calculate_interval, calculate_slot
 from tsdb.filesystem import get_fs
+
+class ConnectionException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class MONGO_DB(object):
+    
+    database = 'esxsnmp'
+    
+    def __init__(self, host, port, user='', password='', flush_all=False):
+        try:
+            self.connection = pymongo.Connection(host=host, port=port)
+        except ConnectionFailure:
+            raise ConnectionException("Couldn't connect to DB "
+                                      "at %s:%d" % (host, port))
+                                      
+        self.db = self.connection[self.database]
+        
+        if user != '':
+            success = self.db.authenticate(user, password)
+            if not success:
+                raise ConnectionException("Could not authenticate to "
+                                          "database as user '%s'" % (user))
+                                          
+        if flush_all:
+            self.connection.drop_database(self.database)
+                                          
+        
+                                          
+    def insert_raw_data(self, device, oidset, oid, path, timestamp,
+        flags, val, rate):
+        raw_doc = {
+            'device': device,
+            'oidset': oidset,
+            'oid': oid,
+            'path': path,
+            'ts': timestamp,
+            'flags': flags,
+            'val': val,
+            'rate': rate,
+        }
+        self.db.raw_data.insert(raw_doc, safe=True)
+
+
+#
+# Anything below here is temporary cut and paste from the TSDB module
+# and will be going away as it gets deprecated.
+#
 
 class MONGODBBase(object):
     """TSDBBase is a base class for other TSDB containers.

@@ -341,25 +341,19 @@ class TSDBPollPersister(PollPersister):
             self.log.error("bad metadata for %s" % var_name)
             
 
-from esxsnmp.mongo import MONGODB
+from esxsnmp.mongo import MONGODB, MONGO_DB
 class MongoDBPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a MongoDB instance.
-
-    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
-    write to.
-
-    The ``data`` member of the PollResult must be a list of (name,value)
-    pairs.  The ``metadata`` member of PollResult must contain the following
-    keys::
-
-        ``tsdb_flags``
-            TSDB flags to be used
 
     """
 
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
 
+        self.db = MONGO_DB(config.mongo_host, config.mongo_port,
+            config.mongo_user, config.mongo_pass, 
+            os.environ.get("ESXSNMP_TESTING", False))
+        
         self.tsdb = MONGODB(self.config.tsdb_root)
         
         self.oidsets = {}
@@ -403,7 +397,7 @@ class MongoDBPollPersister(PollPersister):
         t0 = time.time()
         nvar = 0
         
-        #print result.data
+        print result.data
 
         for var, val in result.data:
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
@@ -413,9 +407,12 @@ class MongoDBPollPersister(PollPersister):
             var_name = os.path.join(basename, var)
             # var_name example:
             # router_a/FastPollHC/ifHCInOctets/GigabitEthernet0_1
-            # device/oidset/oid/interface?
             
-            print var_name
+            device_n,oidset_n,oid_n,path_n = var_name.split('/')
+            
+            self.db.insert_raw_data(device_n, oidset_n, oid_n, path_n,
+                    result.timestamp, flags, val, oidset.frequency)
+            continue
             
             try:
                 # XXX(mmg): look up what this does - fetches
@@ -432,7 +429,7 @@ class MongoDBPollPersister(PollPersister):
             #tsdb_var.insert(var_type(result.timestamp, flags, val))
             
             #print '***', tsdb_var, result.timestamp, flags, val
-            #continue
+            continue
 
             if oid.aggregate:
                 # XXX:refactor uptime should be handled better
