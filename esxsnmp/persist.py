@@ -340,7 +340,8 @@ class TSDBPollPersister(PollPersister):
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
             
-            
+
+from esxsnmp.mongo import MONGODB
 class MongoDBPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a MongoDB instance.
 
@@ -359,8 +360,8 @@ class MongoDBPollPersister(PollPersister):
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
 
-        self.tsdb = tsdb.TSDB(self.config.tsdb_root)
-
+        self.tsdb = MONGODB(self.config.tsdb_root)
+        
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
@@ -388,19 +389,7 @@ class MongoDBPollPersister(PollPersister):
                     self.log.warning(
                             "warning don't have a TSDBRow for %s in %s" %
                             (oid.oid_type.name, oidset.name))
-                            
-        for k,v in self.oidsets.items():
-            print k,v
-        print '---'
-        for k,v in self.poller_args.items():
-            print k,v
-        print '---'
-        for k,v in self.oids.items():
-            print k,v
-        print '---'
-        for k,v in self.oid_type_map.items():
-            #print k,v
-            pass
+            
 
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
@@ -414,7 +403,7 @@ class MongoDBPollPersister(PollPersister):
         t0 = time.time()
         nvar = 0
         
-        print result.data
+        #print result.data
 
         for var, val in result.data:
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
@@ -425,6 +414,8 @@ class MongoDBPollPersister(PollPersister):
             # var_name example:
             # router_a/FastPollHC/ifHCInOctets/GigabitEthernet0_1
             # device/oidset/oid/interface?
+            
+            print var_name
             
             try:
                 # XXX(mmg): look up what this does - fetches
@@ -440,16 +431,15 @@ class MongoDBPollPersister(PollPersister):
             # XXX(mmg): raw data insert happens here
             #tsdb_var.insert(var_type(result.timestamp, flags, val))
             
-            print '***', tsdb_var, result.timestamp, flags, val
-            
+            #print '***', tsdb_var, result.timestamp, flags, val
+            #continue
 
             if oid.aggregate:
                 # XXX:refactor uptime should be handled better
                 uptime_name = os.path.join(basename, 'sysUpTime')
                 # XXX(mmg): uptime_name example:
                 # router_a/FastPollHC/sysUpTime
-                print '****', tsdb_var, var_name, result.timestamp, uptime_name, oidset, oidset.frequency
-                sys.exit()
+                #print '****', tsdb_var, var_name, result.timestamp, uptime_name, oidset, oidset.frequency
                 try:
                     self._aggregate(tsdb_var, var_name, result.timestamp,
                             uptime_name, oidset)
@@ -520,7 +510,6 @@ class MongoDBPollPersister(PollPersister):
                 # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
                 max_rate=int(110e9),
                 max_rate_callback=log_bad)
-
         try:
             update_agg()
         except TSDBAggregateDoesNotExistError:
