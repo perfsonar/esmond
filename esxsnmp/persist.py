@@ -428,18 +428,11 @@ class MongoDBPollPersister(PollPersister):
                         oidset, oid)
                 continue  # XXX(jdugan): remove this once repair actually works
 
-            # XXX(mmg): raw data insert happens here
-            #tsdb_var.insert(var_type(result.timestamp, flags, val))
-            
-            #print '***', tsdb_var, result.timestamp, flags, val
-            #continue
-
             if oid.aggregate:
                 # XXX:refactor uptime should be handled better
                 uptime_name = os.path.join(basename, 'sysUpTime')
                 # XXX(mmg): uptime_name example:
                 # router_a/FastPollHC/sysUpTime
-                #print '****', tsdb_var, var_name, result.timestamp, uptime_name, oidset, oidset.frequency
                 try:
                     self._aggregate(tsdb_var, var_name, result.timestamp,
                             uptime_name, oidset)
