@@ -414,9 +414,8 @@ class MongoDBPollPersister(PollPersister):
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)
-             
+            
             self.db.insert_raw_data(raw_data)
-
             continue # done to here for now
             
             try:

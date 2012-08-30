@@ -61,7 +61,12 @@ class DataContainerBase(object):
         self.path = path
         
     def _handle_date(self,d):
-        return datetime.datetime.fromtimestamp(d)
+        # don't reconvert if we are instantiating from 
+        # returned mongo document
+        if type(d) == type(datetime.datetime.now()):
+            return d
+        else:
+            return datetime.datetime.fromtimestamp(d)
 
     def get_document(self):
         doc = {}
@@ -72,7 +77,13 @@ class DataContainerBase(object):
         return doc
         
 class RawData(DataContainerBase):
-    def __init__(self, device, oidset, oid, path, ts, flags, val, rate):
+    """
+    Container for raw data rows.  Can be instantiated from args when
+    reading from persist queue, or via **kw when reading data back
+    out of mongo.
+    """
+    def __init__(self, device=None, oidset=None, oid=None, path=None, 
+            ts=None, flags=None, val=None, rate=None):
         DataContainerBase.__init__(self, device, oidset, oid, path)
         self.ts = self._handle_date(ts)
         self.flags = flags
