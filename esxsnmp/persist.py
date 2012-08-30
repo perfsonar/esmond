@@ -341,7 +341,9 @@ class TSDBPollPersister(PollPersister):
             self.log.error("bad metadata for %s" % var_name)
             
 
-from esxsnmp.mongo import MONGODB, MONGO_DB
+# XXX(mmg): move this when it's done
+from esxsnmp.mongo import MONGODB, MONGO_DB, RawData
+        
 class MongoDBPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a MongoDB instance.
 
@@ -359,7 +361,7 @@ class MongoDBPollPersister(PollPersister):
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
-        self.oid_type_map = {}
+        #self.oid_type_map = {}
         
         oidsets = OIDSet.objects.all()
 
@@ -374,15 +376,15 @@ class MongoDBPollPersister(PollPersister):
 
             for oid in oidset.oids.all():
                 self.oids[oid.name] = oid
-                # XXX(mmg): creates oid.name/tsdb row
-                # how can I get rid of this?
-                try:
-                    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
-                            oid.oid_type.name)
-                except AttributeError:
-                    self.log.warning(
-                            "warning don't have a TSDBRow for %s in %s" %
-                            (oid.oid_type.name, oidset.name))
+                # XXX(mmg): get rid of then when I can cut
+                # this bit loose from the tsdb logic.
+                #try:
+                #    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
+                #            oid.oid_type.name)
+                #except AttributeError:
+                #    self.log.warning(
+                #            "warning don't have a TSDBRow for %s in %s" %
+                #            (oid.oid_type.name, oidset.name))
             
 
     def store(self, result):
@@ -392,7 +394,7 @@ class MongoDBPollPersister(PollPersister):
         oid = self.oids[result.oid_name]
         flags = result.metadata['tsdb_flags']
 
-        var_type = self.oid_type_map[oid.name]
+        #var_type = self.oid_type_map[oid.name]
 
         t0 = time.time()
         nvar = 0
@@ -410,13 +412,14 @@ class MongoDBPollPersister(PollPersister):
             
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
             
-            self.db.insert_raw_data(device_n, oidset_n, oid_n, path_n,
+            raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)
-            continue
+             
+            self.db.insert_raw_data(raw_data)
+
+            continue # done to here for now
             
             try:
-                # XXX(mmg): look up what this does - fetches
-                # a class instance
                 tsdb_var = self.tsdb.get_var(var_name)
             except tsdb.TSDBVarDoesNotExistError:
                 tsdb_var = self._create_var(var_type, var_name, oidset, oid)
@@ -429,7 +432,7 @@ class MongoDBPollPersister(PollPersister):
             #tsdb_var.insert(var_type(result.timestamp, flags, val))
             
             #print '***', tsdb_var, result.timestamp, flags, val
-            continue
+            #continue
 
             if oid.aggregate:
                 # XXX:refactor uptime should be handled better

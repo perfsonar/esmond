@@ -5,6 +5,7 @@ Work in progress code for mongo development.  These things will get a new
 home.
 """
 # Standard
+import datetime
 import sys
 import os
 # Third party
@@ -27,6 +28,7 @@ class ConnectionException(Exception):
 class MONGO_DB(object):
     
     database = 'esxsnmp'
+    insert_flags = { 'safe': True }
     
     def __init__(self, host, port, user='', password='', flush_all=False):
         try:
@@ -46,26 +48,41 @@ class MONGO_DB(object):
         if flush_all:
             self.connection.drop_database(self.database)
                                           
-        
                                           
-    def insert_raw_data(self, device, oidset, oid, path, timestamp,
-        flags, val, rate):
-        raw_doc = {
-            'device': device,
-            'oidset': oidset,
-            'oid': oid,
-            'path': path,
-            'ts': timestamp,
-            'flags': flags,
-            'val': val,
-            'rate': rate,
-        }
-        self.db.raw_data.insert(raw_doc, safe=True)
+    def insert_raw_data(self, raw_data):
+        self.db.raw_data.insert(raw_data.get_document(), **self.insert_flags)
+        
+        
+class DataContainerBase(object):
+    def __init__(self, device, oidset, oid, path):
+        self.device = device
+        self.oidset = oidset
+        self.oid = oid
+        self.path = path
+        
+    def _handle_date(self,d):
+        return datetime.datetime.fromtimestamp(d)
+
+    def get_document(self):
+        doc = {}
+        for k,v in self.__dict__.items():
+            if k.startswith('_'):
+                continue
+            doc[k] = v
+        return doc
+        
+class RawData(DataContainerBase):
+    def __init__(self, device, oidset, oid, path, ts, flags, val, rate):
+        DataContainerBase.__init__(self, device, oidset, oid, path)
+        self.ts = self._handle_date(ts)
+        self.flags = flags
+        self.val = val
+        self.rate = rate
 
 
 #
 # Anything below here is temporary cut and paste from the TSDB module
-# and will be going away as it gets deprecated.
+# and will be going away as it gets replaced/made irrelevant.
 #
 
 class MONGODBBase(object):
