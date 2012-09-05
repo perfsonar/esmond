@@ -378,13 +378,13 @@ class MongoDBPollPersister(PollPersister):
                 self.oids[oid.name] = oid
                 # XXX(mmg): get rid of then when I can cut
                 # this bit loose from the tsdb logic.
-                #try:
-                #    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
-                #            oid.oid_type.name)
-                #except AttributeError:
-                #    self.log.warning(
-                #            "warning don't have a TSDBRow for %s in %s" %
-                #            (oid.oid_type.name, oidset.name))
+                try:
+                    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
+                            oid.oid_type.name)
+                except AttributeError:
+                    self.log.warning(
+                            "warning don't have a TSDBRow for %s in %s" %
+                            (oid.oid_type.name, oidset.name))
             
 
     def store(self, result):
@@ -399,7 +399,7 @@ class MongoDBPollPersister(PollPersister):
         t0 = time.time()
         nvar = 0
         
-        print result.data
+        print 'result.data:', result.data
 
         for var, val in result.data:
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
@@ -409,14 +409,13 @@ class MongoDBPollPersister(PollPersister):
             var_name = os.path.join(basename, var)
             # var_name example:
             # router_a/FastPollHC/ifHCInOctets/GigabitEthernet0_1
-            
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)
             
-            self.db.insert_raw_data(raw_data)
-            continue # done to here for now
+            self.db.set_raw_data(raw_data)
+            #continue # done to here for now
             
             try:
                 tsdb_var = self.tsdb.get_var(var_name)
@@ -426,6 +425,8 @@ class MongoDBPollPersister(PollPersister):
                 tsdb_var = self._repair_var_metadata(var_type, var_name,
                         oidset, oid)
                 continue  # XXX(jdugan): remove this once repair actually works
+            
+            self.new_aggregate(raw_data)
 
             if oid.aggregate:
                 # XXX:refactor uptime should be handled better
@@ -441,6 +442,27 @@ class MongoDBPollPersister(PollPersister):
 
         self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
             time.time() - t0, result))
+            
+    def new_aggregate(self, data):
+        print 'New_a(): 1',
+        print 'step', data.rate,
+        print 'min_l_u', data.min_last_update
+        
+        print 'New_a(): 2',
+        metadata = self.db.get_metadata(data)
+        last_update = metadata.ts_to_unixtime('last_update')
+        print 'l_u_meta', last_update,
+        
+        if data.min_last_update and data.min_last_update > last_update:
+            last_update = min_last_update
+        print 'l_u_calc', last_update
+        print 'New_a(): 3'
+        print 'slot', data.slot
+        
+        # When I get to min timestamp, put in checking/update
+        # with metatdata
+        
+        
 
     def _create_var(self, var_type, var, oidset, oid):
         self.log.debug("creating TSDBVar: %s" % str(var))
