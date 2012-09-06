@@ -86,11 +86,12 @@ class MONGO_DB(object):
         
         
 class DataContainerBase(object):
-    def __init__(self, device, oidset, oid, path):
+    def __init__(self, device, oidset, oid, path, _id):
         self.device = device
         self.oidset = oidset
         self.oid = oid
         self.path = path
+        self._id = _id
         
     def _handle_date(self,d):
         # don't reconvert if we are instantiating from 
@@ -132,7 +133,7 @@ class RawData(DataContainerBase):
     """
     def __init__(self, device=None, oidset=None, oid=None, path=None, 
             ts=None, flags=None, val=None, rate=None, _id=None):
-        DataContainerBase.__init__(self, device, oidset, oid, path)
+        DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self.ts = self._handle_date(ts)
         self.flags = flags
         self.val = val
@@ -150,7 +151,7 @@ class RawData(DataContainerBase):
 class Metadata(DataContainerBase):
     def __init__(self, device=None, oidset=None, oid=None, path=None,
             last_update=None, last_val=None, _id=None):
-        DataContainerBase.__init__(self, device, oidset, oid, path)
+        DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self.last_update = self._handle_date(last_update)
         self.last_val = last_val
 
