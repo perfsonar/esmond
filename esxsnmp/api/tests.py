@@ -5,12 +5,17 @@ when you run "manage.py test".
 Replace this with more appropriate tests for your application.
 """
 
+import os
+import os.path
 import json
 import datetime
+import shutil
 
 from collections import namedtuple
 
 from django.test import TestCase
+from django.conf import settings
+
 from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 
 from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
@@ -21,6 +26,12 @@ try:
     import tsdb
 except ImportError:
     tsdb = None
+
+
+def load_test_data(name):
+    path = os.path.join(settings.ESXSNMP_ROOT, "..", "test_data", name)
+    d = json.loads(open(path).read())
+    return d
 
 ifref_test_data = """
 [{
@@ -308,6 +319,12 @@ class TestMongoDBPollPersister(TestCase):
 if tsdb:
     class TestTSDBPollPersister(TestCase):
         fixtures = ['test_devices.json', 'oidsets.json']
+
+        def setUp(self):
+            """make sure we have a clean router_a directory to start with."""
+            shutil.rmtree(
+                    os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a"))
+
     
         def test_persister(self):
             """This is a very basic smoke test for a TSDB persister."""
@@ -328,3 +345,46 @@ if tsdb:
                     v = db.get_var(path)
                     d = v.get(pr['timestamp'])
                     self.assertEqual(val, d.value)
+
+        def test_persister_long(self):
+            """Use actual data to test persister"""
+            config = get_config(get_config_path())
+
+            # load example data
+
+            test_data = load_test_data("router_a_ifhcin_long.json")
+            q = TestPersistQueue(test_data)
+            p = TSDBPollPersister(config, "test", persistq=q)
+            p.run()
+
+            test_data = load_test_data("router_a_ifhcin_long.json")
+            ts0 = test_data[0]['timestamp']
+            tsn = test_data[-1]['timestamp']
+
+            # make sure it got written to disk as expected
+
+            db = tsdb.TSDB(config.tsdb_root)
+            paths = []
+            for pr in test_data:
+                for oid, val in pr['data']:
+                    iface = oid.split('/')[-1]
+                    path = "%s/%s/%s/%s/" % (pr['device_name'],
+                            pr['oidset_name'], pr['oid_name'], iface)
+                    if path not in paths:
+                        paths.append(path)
+                    v = db.get_var(path)
+                    d = v.get(pr['timestamp'])
+                    self.assertEqual(val, d.value)
+
+            # check that aggregates were calculated as expected
+
+            db = tsdb.TSDB(config.tsdb_root)
+            aggs = load_test_data("router_a_ifhcin_long_agg.json")
+            for path in paths:
+                p = path + "TSDBAggregates/30"
+                v = db.get_var(p)
+                for d in v.select(begin=ts0, end=tsn):
+                    average, delta = aggs[p][str(d.timestamp)]
+                    self.assertEqual(d.average, average)
+                    self.assertEqual(d.delta, delta)
+                v.close()
