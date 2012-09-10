@@ -310,7 +310,7 @@ class TestMongoDBPollPersister(TestCase):
         """This is a very basic smoke test for a MongoDB persister."""
         config = get_config(get_config_path())
 
-        test_data = json.loads(timeseries_test_data)
+        test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = MongoDBPollPersister(config, "test", persistq=q)
         p.run()
