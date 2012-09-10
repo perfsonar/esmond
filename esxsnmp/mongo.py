@@ -5,6 +5,7 @@ Work in progress code for mongo development.  These things will get a new
 home.
 """
 # Standard
+import calendar
 import datetime
 import sys
 import os
@@ -28,9 +29,16 @@ class ConnectionException(Exception):
 class MONGO_DB(object):
     
     database = 'esxsnmp'
+    raw_coll = 'raw_data'
+    meta_coll = 'metadata'
+    
+    raw_idx = []
+    meta_idx = [('device',1),('oidset',1),('oid',1),('path',1)]
+    
     insert_flags = { 'safe': True }
     
     def __init__(self, host, port, user='', password='', flush_all=False):
+        # Connection
         try:
             self.connection = pymongo.Connection(host=host, port=port)
         except ConnectionFailure:
@@ -47,18 +55,43 @@ class MONGO_DB(object):
                                           
         if flush_all:
             self.connection.drop_database(self.database)
-                                          
-                                          
-    def insert_raw_data(self, raw_data):
-        self.db.raw_data.insert(raw_data.get_document(), **self.insert_flags)
+            
+        # Collections
+        self.raw_data = self.db[self.raw_coll]
+        self.metadata = self.db[self.meta_coll]
+        
+        # Indexes
+        self.metadata.ensure_index(self.meta_idx)
+        
+        
+    def set_raw_data(self, raw_data):
+        self.raw_data.insert(raw_data.get_document(), **self.insert_flags)
+        
+    def set_metadata(self, meta_d):
+        self.metadata.insert(meta_d.get_document(), **self.insert_flags)
+        
+    def get_metadata(self, raw_data):
+        
+        meta_d = self.metadata.find_one(raw_data.get_path())
+        
+        if not meta_d:
+            # Seeing first row - intialize with vals
+            meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
+                **raw_data.get_path())
+            self.set_metadata(meta_d)
+        else:
+            meta_d = Metadata(**meta_d)
+        
+        return meta_d
         
         
 class DataContainerBase(object):
-    def __init__(self, device, oidset, oid, path):
+    def __init__(self, device, oidset, oid, path, _id):
         self.device = device
         self.oidset = oidset
         self.oid = oid
         self.path = path
+        self._id = _id
         
     def _handle_date(self,d):
         # don't reconvert if we are instantiating from 
@@ -66,7 +99,7 @@ class DataContainerBase(object):
         if type(d) == type(datetime.datetime.now()):
             return d
         else:
-            return datetime.datetime.fromtimestamp(d)
+            return datetime.datetime.utcfromtimestamp(d)
 
     def get_document(self):
         doc = {}
@@ -76,6 +109,22 @@ class DataContainerBase(object):
             doc[k] = v
         return doc
         
+    def get_path(self):
+        p = {}
+        for k,v in self.__dict__.items():
+            if k not in ['device', 'oidset', 'oid', 'path']:
+                continue
+            p[k] = v
+        return p
+        
+    def get_path_tuple(self):
+        p = self.get_path()
+        return (p['device'], p['oidset'], p['oid'], p['path'])
+        
+    def ts_to_unixtime(self, t='ts'):
+        ts = getattr(self, t)
+        return calendar.timegm(ts.utctimetuple())
+        
 class RawData(DataContainerBase):
     """
     Container for raw data rows.  Can be instantiated from args when
@@ -83,12 +132,28 @@ class RawData(DataContainerBase):
     out of mongo.
     """
     def __init__(self, device=None, oidset=None, oid=None, path=None, 
-            ts=None, flags=None, val=None, rate=None):
-        DataContainerBase.__init__(self, device, oidset, oid, path)
+            ts=None, flags=None, val=None, rate=None, _id=None):
+        DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self.ts = self._handle_date(ts)
         self.flags = flags
         self.val = val
         self.rate = rate
+        
+    @property
+    def min_last_update(self):
+        return self.ts_to_unixtime() - self.rate * 40
+        
+    @property
+    def slot(self):
+        return (self.ts_to_unixtime() / self.rate) * self.rate
+    
+        
+class Metadata(DataContainerBase):
+    def __init__(self, device=None, oidset=None, oid=None, path=None,
+            last_update=None, last_val=None, _id=None):
+        DataContainerBase.__init__(self, device, oidset, oid, path, _id)
+        self.last_update = self._handle_date(last_update)
+        self.last_val = last_val
 
 
 #
@@ -590,7 +655,6 @@ class MONGODBVar(MONGODBBase):
         the minimum _valid_ timestamp."""
         if recalculate or not self.metadata.has_key('MIN_TIMESTAMP'):
             chunks = self.all_chunks()
-
             self.metadata['MIN_TIMESTAMP'] = self.chunk_mapper.begin(chunks[0])
             try:
                 self.save_metadata() # XXX good idea?
@@ -903,21 +967,38 @@ class Aggregator(object):
                 |                   |
                 |<---- delta_t ---->|
         """
+        print 'A.upd(): 1',
+        # XXX(mmg): not sure if this assert is necessary since
+        # the step value will be included in the original raw_data row.
         step = self.agg.metadata['STEP']
-        assert self.ancestor.metadata['STEP'] == step
+        assert self.ancestor.metadata['STEP'] == step # this in the raw data
+        print 'step', step,
+        print 'min_l_u', min_last_update
+        
+        print 'A.upd(): 2',
 
         last_update = self.agg.metadata['LAST_UPDATE']
+        print 'l_u_meta', last_update,
         if min_last_update and min_last_update > last_update:
             last_update = min_last_update
+        print 'l_u_calc', last_update
+        print 'A.upd(): 3'
 
+        # When there is no previous data to look at, an exception
+        # will be raised upstream and the whole method will exit here.
         min_ts = self.ancestor.min_timestamp()
+        
+        print 'A.upd(): 4'
+        # This is an error/edge case
         if min_ts > last_update:
             last_update = min_ts
             self.agg.metadata['LAST_UPDATE'] = last_update
        
         prev = self.ancestor.get(last_update)
         
-        print sys.exit()
+        print 'A.upd(): 5'
+        
+        sys.exit()
 
         # XXX this only works for Counter types right now
         for curr in self.ancestor.select(begin=last_update+step,
