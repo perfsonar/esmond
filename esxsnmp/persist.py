@@ -342,27 +342,37 @@ class TSDBPollPersister(PollPersister):
             
 
 # XXX(mmg): move this when it's done
-from esxsnmp.mongo import MONGODB, MONGO_DB, RawData
-        
+from esxsnmp.mongo import MONGO_DB, RawData
+
 class MongoDBPollPersister(PollPersister):
-    """Given a ``PollResult`` write the data to a MongoDB instance.
+    """Given a ``PollResult`` write the data to a TSDB.
+
+    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
+    write to.
+
+    The ``data`` member of the PollResult must be a list of (name,value)
+    pairs.  The ``metadata`` member of PollResult must contain the following
+    keys::
+
+        ``tsdb_flags``
+            TSDB flags to be used
 
     """
 
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
-
+        
         self.db = MONGO_DB(config.mongo_host, config.mongo_port,
             config.mongo_user, config.mongo_pass, 
             os.environ.get("ESXSNMP_TESTING", False))
-        
-        self.tsdb = MONGODB(self.config.tsdb_root)
-        
+
+        self.tsdb = tsdb.TSDB(self.config.tsdb_root)
+
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
-        #self.oid_type_map = {}
-        
+        self.oid_type_map = {} # XXX(mmg): go
+
         oidsets = OIDSet.objects.all()
 
         for oidset in oidsets:
@@ -376,8 +386,7 @@ class MongoDBPollPersister(PollPersister):
 
             for oid in oidset.oids.all():
                 self.oids[oid.name] = oid
-                # XXX(mmg): get rid of then when I can cut
-                # this bit loose from the tsdb logic.
+                # XXX(mmg): go
                 try:
                     self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
                             oid.oid_type.name)
@@ -385,7 +394,6 @@ class MongoDBPollPersister(PollPersister):
                     self.log.warning(
                             "warning don't have a TSDBRow for %s in %s" %
                             (oid.oid_type.name, oidset.name))
-            
 
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
@@ -394,12 +402,11 @@ class MongoDBPollPersister(PollPersister):
         oid = self.oids[result.oid_name]
         flags = result.metadata['tsdb_flags']
 
-        #var_type = self.oid_type_map[oid.name]
+        # XXX(mmg): go
+        var_type = self.oid_type_map[oid.name]
 
         t0 = time.time()
         nvar = 0
-        
-        print 'result.data:', result.data
 
         for var, val in result.data:
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
@@ -409,14 +416,19 @@ class MongoDBPollPersister(PollPersister):
             var_name = os.path.join(basename, var)
             # var_name example:
             # router_a/FastPollHC/ifHCInOctets/GigabitEthernet0_1
+            print '\n', var_name, val, result.timestamp
+            
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
+            
+            if path_n != 'GigabitEthernet0_1':
+                continue
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)
             
             self.db.set_raw_data(raw_data)
-            #continue # done to here for now
-            
+
+            # XXX(mmg): go
             try:
                 tsdb_var = self.tsdb.get_var(var_name)
             except tsdb.TSDBVarDoesNotExistError:
@@ -425,14 +437,13 @@ class MongoDBPollPersister(PollPersister):
                 tsdb_var = self._repair_var_metadata(var_type, var_name,
                         oidset, oid)
                 continue  # XXX(jdugan): remove this once repair actually works
-            
-            self.new_aggregate(raw_data)
+
+            tsdb_var.insert(var_type(result.timestamp, flags, val))
 
             if oid.aggregate:
+                self.new_aggregate(raw_data)
                 # XXX:refactor uptime should be handled better
                 uptime_name = os.path.join(basename, 'sysUpTime')
-                # XXX(mmg): uptime_name example:
-                # router_a/FastPollHC/sysUpTime
                 try:
                     self._aggregate(tsdb_var, var_name, result.timestamp,
                             uptime_name, oidset)
@@ -447,22 +458,31 @@ class MongoDBPollPersister(PollPersister):
         print 'New_a(): 1',
         print 'step', data.rate,
         print 'min_l_u', data.min_last_update
-        
+
         print 'New_a(): 2',
         metadata = self.db.get_metadata(data)
         last_update = metadata.ts_to_unixtime('last_update')
         print 'l_u_meta', last_update,
-        
+
         if data.min_last_update and data.min_last_update > last_update:
-            last_update = min_last_update
+            last_update = data.min_last_update
         print 'l_u_calc', last_update
-        print 'New_a(): 3'
-        print 'slot', data.slot
+        print 'New_a(): 3',
         
+        min_ts = metadata.ts_to_unixtime('min_ts')
+        print 'min_ts', min_ts
+        #print 'slot', data.slot
+        
+        print 'New_a(): 4',
+        
+        if min_ts > last_update:
+            print 'min > last', 
+            last_update = min_ts
+            metatdata.last_update = last_update
+
         # When I get to min timestamp, put in checking/update
         # with metatdata
-        
-        
+        print
 
     def _create_var(self, var_type, var, oidset, oid):
         self.log.debug("creating TSDBVar: %s" % str(var))
@@ -517,13 +537,13 @@ class MongoDBPollPersister(PollPersister):
                 curr.timestamp, rate))
 
         def update_agg():
-            # XXX(mmg): looks like all the magic happens here.
             tsdb_var.update_aggregate(str(oidset.frequency),
                 uptime_var=uptime,
                 min_last_update=min_last_update,
                 # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
                 max_rate=int(110e9),
                 max_rate_callback=log_bad)
+
         try:
             update_agg()
         except TSDBAggregateDoesNotExistError:
@@ -534,7 +554,6 @@ class MongoDBPollPersister(PollPersister):
             update_agg()
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
-
 
 class HistoryTablePersister(PollPersister):
     """Provides common methods for table histories."""

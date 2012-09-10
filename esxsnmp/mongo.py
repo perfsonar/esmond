@@ -77,7 +77,7 @@ class MONGO_DB(object):
         if not meta_d:
             # Seeing first row - intialize with vals
             meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
-                **raw_data.get_path())
+                min_ts=raw_data.ts, **raw_data.get_path())
             self.set_metadata(meta_d)
         else:
             meta_d = Metadata(**meta_d)
@@ -131,7 +131,7 @@ class RawData(DataContainerBase):
     reading from persist queue, or via **kw when reading data back
     out of mongo.
     """
-    def __init__(self, device=None, oidset=None, oid=None, path=None, 
+    def __init__(self, device=None, oidset=None, oid=None, path=None,
             ts=None, flags=None, val=None, rate=None, _id=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self.ts = self._handle_date(ts)
@@ -149,8 +149,32 @@ class RawData(DataContainerBase):
     
         
 class Metadata(DataContainerBase):
-    def __init__(self, device=None, oidset=None, oid=None, path=None,
-            last_update=None, last_val=None, _id=None):
+    def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None,
+            last_update=None, last_val=None, min_ts=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
-        self.last_update = self._handle_date(last_update)
+        self._min_ts = self._last_update = None
+        self.last_update = last_update
         self.last_val = last_val
+        self.min_ts = min_ts
+        
+    @property
+    def min_ts(self):
+        return self._min_ts
+        
+    @min_ts.setter
+    def min_ts(self, value):
+        self._min_ts = self._handle_date(value)
+    
+    @property
+    def last_update(self):
+        return self._last_update
+        
+    @last_update.setter
+    def last_update(self, value):
+        self._last_update = self._handle_date(value)
+        
+    def get_document(self):
+        d = DataContainerBase.get_document(self)
+        d['min_ts'] = self.min_ts
+        d['last_update'] = self.last_update
+        return d
