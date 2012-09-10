@@ -633,11 +633,11 @@ class MONGODBVar(MONGODBBase):
 
             try:
                 self.chunks[name] = \
-                        TSDBVarChunk(self, name, use_mmap=self.use_mmap)
+                        MONGODBVarChunk(self, name, use_mmap=self.use_mmap)
             except TSDBVarChunkDoesNotExistError:
                 if create:
                     self.chunks[name] = \
-                            TSDBVarChunk.create(self, name,
+                            MONGODBVarChunk.create(self, name,
                                                 use_mmap=self.use_mmap)
                     #self.min_timestamp(recalculate=True)
                     #self.max_timestamp(recalculate=True)
@@ -865,6 +865,124 @@ class MONGODBVar(MONGODBBase):
 
         Note: NOT IMPLEMENTED."""
         warnings.warn("locking not implemented yet")
+        
+class MONGODBVarChunk(object):
+    """A TSDBVarChunk is a physical file containing a portion of the data for
+    a TSDBVar."""
+
+    def __init__(self, tsdb_var, name, use_mmap=False):
+        """Load the specified TSDBVarChunk."""
+
+        self.tsdb_var = tsdb_var
+        self.name = name
+        self.use_mmap = use_mmap
+        self.mode = self.tsdb_var.db.mode
+        self.fs = tsdb_var.fs
+
+        self.path = os.path.join(tsdb_var.path, name)
+
+        if not self.fs.exists(self.path):
+            raise TSDBVarChunkDoesNotExistError(self.path)
+
+        try:
+            self.file = self.fs.open(self.path, self.mode)
+        except IOError, e:
+            # XXX this should be removed, left for now for compat
+            if e.errno == errno.EACCES:
+                self.file = self.fs.open(self.path, "r")
+            else:
+                raise
+
+        self.size = self.fs.getsize(self.path)
+
+        if self.use_mmap:
+            self.mmap = mmap.mmap(self.file.fileno(), self.size)
+            self.io = self.mmap
+        else:
+            self.io = self.file
+
+        self.begin = tsdb_var.chunk_mapper.begin(os.path.basename(self.path))
+
+    def __str__(self):
+        return 'TSDBVarChunk [%s]' % (self.path, )
+
+    def __repr__(self):
+        return '<TSDBVarChunk %s>' % (self.path, )
+
+    @classmethod
+    def create(klass, tsdb_var, name, use_mmap=False):
+        """Create the named TSDBVarChunk."""
+
+        path = os.path.join(tsdb_var.path, name)
+
+        try:
+            f = tsdb_var.fs.open(path, "w")
+            f.write("\0" * tsdb_var.chunk_mapper.size(os.path.basename(path),
+                tsdb_var.rowsize(), tsdb_var.metadata['STEP']))
+            f.close()
+        except IOError, e:
+            raise UnableToCreateVarChunk(e)
+
+        return TSDBVarChunk(tsdb_var, name, use_mmap=use_mmap)
+
+
+    def flush(self):
+        """Flush this TSDBVarChunk to disk."""
+        return self.io.flush()
+
+    def close(self):
+        """Close this TSDBVarChunk."""
+        return self.io.close()
+
+    def seek(self, position, whence=0):
+        """Seek to the specified position."""
+        return self.io.seek(position, whence)
+
+    def tell(self):
+        """Get the current position in the chunk."""
+        return self.io.tell()
+
+    def write(self, s):
+        """Write data at the current position."""
+        return self.io.write(s)
+
+    def read(self, n):
+        """Read n bytes starting at the current position."""
+        return self.io.read(n)
+
+    def _offset(self, timestamp):
+        """Calculate the offset chunk for a timestamp.
+
+        This offset is relative to the beginning of this TSDBVarChunk."""
+        o = int((timestamp - self.begin) / self.tsdb_var.metadata['STEP']) \
+                * self.tsdb_var.rowsize()
+        assert o >= 0
+        return o
+
+    def write_row(self, data):
+        """Write a TSDBRow to disk."""
+        if self.use_mmap:
+            o = self._offset(data.timestamp)
+            self.mmap[o:o+self.tsdb_var.rowsize()] = \
+                    data.pack(self.tsdb_var.metadata)
+        else:
+            self.io.seek(self._offset(data.timestamp))
+            return self.io.write(data.pack(self.tsdb_var.metadata))
+
+    def read_row(self, timestamp):
+        """Read a TSDBRow from disk."""
+        if self.use_mmap:
+            o = self._offset(timestamp)
+            return self.tsdb_var.type.unpack(
+                    self.mmap[o:o+self.tsdb_var.rowsize()],
+                    self.tsdb_var.metadata)
+        else:
+            self.io.seek(self._offset(timestamp))
+            return self.tsdb_var.type.unpack(
+                    self.io.read(self.tsdb_var.rowsize()),
+                    self.tsdb_var.metadata)
+
+
         
 # ====
 
