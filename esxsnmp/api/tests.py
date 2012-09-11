@@ -21,6 +21,7 @@ from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
      PersistQueueEmpty, TSDBPollPersister, MongoDBPollPersister
 from esxsnmp.config import get_config, get_config_path
+from esxsnmp.mongo import MONGO_DB
 
 try:
     import tsdb
@@ -307,23 +308,53 @@ timeseries_test_data = """
 class TestMongoDBPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
     
-    def setUp(self):
-        # XXX(mmg): this should can go later.
-        """make sure we have a clean router_a directory to start with."""
+    def test_persister(self):
+        """This is a very basic smoke test for a MongoDB persister."""
         router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
         if os.path.exists(router_a_path):
             shutil.rmtree(router_a_path)
-    
-    def test_persister(self):
-        """This is a very basic smoke test for a MongoDB persister."""
+        
         config = get_config(get_config_path())
-
+        
         test_data = load_test_data("router_a_ifhcin_long.json")
         #test_data = json.loads(timeseries_test_data)
         q = TestPersistQueue(test_data)
         p = MongoDBPollPersister(config, "test", persistq=q)
         p.run()
-
+        
+    def test_persister_data(self):
+        """Make sure the tsdb and mongo data match"""
+        config = get_config(get_config_path())
+        
+        ts_db = tsdb.TSDB(config.tsdb_root)
+        
+        db = MONGO_DB(config.mongo_host, config.mongo_port,
+            config.mongo_user, config.mongo_pass)
+        
+        paths = {}
+        
+        for row in db.rates.find():
+            path = '%s/%s/%s/%s/TSDBAggregates/30' % (row['device'], row['oidset'], row['oid'], row['path'])
+            if not paths.has_key(path):
+                paths[path] = 1
+                
+        for p in paths.keys():
+            v = ts_db.get_var(p)
+            device,oidset,oid,path,tmp1,tmp2 = p.split('/')
+            for d in v.select():
+                ret = db.rates.find_one(
+                    {
+                        'device': device,
+                        'oidset': oidset,
+                        'oid': oid,
+                        'path': path,
+                        'ts': datetime.datetime.utcfromtimestamp(d.timestamp)
+                    }
+                )
+                if not ret:
+                    print 'no value found for', d
+                    continue
+                assert ret['val'] == d.delta
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):
@@ -331,8 +362,9 @@ if tsdb:
 
         def setUp(self):
             """make sure we have a clean router_a directory to start with."""
-            shutil.rmtree(
-                    os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a"))
+            router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
+            if os.path.exists(router_a_path):
+                shutil.rmtree(router_a_path)
 
     
         def test_persister(self):

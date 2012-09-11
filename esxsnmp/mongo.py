@@ -31,9 +31,12 @@ class MONGO_DB(object):
     database = 'esxsnmp'
     raw_coll = 'raw_data'
     meta_coll = 'metadata'
+    rate_coll = 'rates'
     
+    path_idx = [('device',1),('oidset',1),('oid',1),('path',1)]
     raw_idx = []
-    meta_idx = [('device',1),('oidset',1),('oid',1),('path',1)]
+    meta_idx = path_idx
+    rate_idx = path_idx + [('ts',1)]
     
     insert_flags = { 'safe': True }
     
@@ -59,16 +62,18 @@ class MONGO_DB(object):
         # Collections
         self.raw_data = self.db[self.raw_coll]
         self.metadata = self.db[self.meta_coll]
+        self.rates    = self.db[self.rate_coll]
         
         # Indexes
         self.metadata.ensure_index(self.meta_idx)
+        self.rates.ensure_index(self.rate_idx)
         
         
     def set_raw_data(self, raw_data):
-        self.raw_data.insert(raw_data.get_document(), **self.insert_flags)
+        ret = self.raw_data.insert(raw_data.get_document(), **self.insert_flags)
         
     def set_metadata(self, meta_d):
-        self.metadata.insert(meta_d.get_document(), **self.insert_flags)
+        ret = self.metadata.insert(meta_d.get_document(), **self.insert_flags)
         
     def get_metadata(self, raw_data):
         
@@ -85,8 +90,14 @@ class MONGO_DB(object):
         return meta_d
         
     def update_metadata(self, metadata):
-        self.metadata.update(
-            metadata.get_path(), # XXX(mmg) - optimize ordering on this?
+        p = metadata.get_path()
+        ret = self.metadata.update(
+            {
+                'device': p['device'],
+                'oidset': p['oidset'],
+                'oid':    p['oid'],
+                'path':   p['path']
+            },
             {
                 '$set': {
                     'last_val': metadata.last_val,
@@ -97,6 +108,25 @@ class MONGO_DB(object):
             upsert=False, **self.insert_flags
         )
         
+    def update_rate_bin(self, ratebin):
+        p = ratebin.get_path()
+        
+        ret = self.rates.update(
+            {
+               'device': p['device'],
+               'oidset': p['oidset'],
+               'oid':    p['oid'],
+               'path':   p['path'],
+               'ts':     ratebin.ts
+            }, 
+            {
+                '$set': { 'freq': ratebin.freq },
+                '$inc': { 'val': ratebin.val }
+            },
+            upsert=True, **self.insert_flags
+        )
+
+
 # Objects to hold the data
         
 class DataContainerBase(object):
@@ -155,13 +185,13 @@ class RawData(DataContainerBase):
     _doc_properties = ['ts']
     
     def __init__(self, device=None, oidset=None, oid=None, path=None,
-            ts=None, flags=None, val=None, rate=None, _id=None):
+            ts=None, flags=None, val=None, freq=None, _id=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self._ts = None
         self.ts = ts
         self.flags = flags
         self.val = val
-        self.rate = rate
+        self.freq = freq
         
     @property
     def ts(self):
@@ -173,11 +203,11 @@ class RawData(DataContainerBase):
         
     @property
     def min_last_update(self):
-        return self.ts_to_unixtime() - self.rate * 40
+        return self.ts_to_unixtime() - self.freq * 40
         
     @property
     def slot(self):
-        return (self.ts_to_unixtime() / self.rate) * self.rate
+        return (self.ts_to_unixtime() / self.freq) * self.freq
     
         
 class Metadata(DataContainerBase):
@@ -214,18 +244,27 @@ class Metadata(DataContainerBase):
         self.last_update = data.ts
         self.last_val = data.val
         
+class RateBin(DataContainerBase):
+    
+    _doc_properties = ['ts']
+    
+    def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None, 
+            ts=None, freq=None, val=None):
+        DataContainerBase.__init__(self, device, oidset, oid, path, _id)
+        self._ts = None
+        self.ts = ts
+        self.freq = freq
+        self.val = val
 
-###
+    @property
+    def ts(self):
+        return self._ts
 
-
-
-
-
-
-
-
-
-
-
-
+    @ts.setter
+    def ts(self, value):
+        self._ts = self._handle_date(value)
+        
+    @property
+    def rate(self):
+        return self.val / self.freq
 

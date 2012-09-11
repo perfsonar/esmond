@@ -342,7 +342,7 @@ class TSDBPollPersister(PollPersister):
             
 
 # XXX(mmg): move this when it's done
-from esxsnmp.mongo import MONGO_DB, RawData
+from esxsnmp.mongo import MONGO_DB, RawData, RateBin
 from math import floor, ceil
 
 class MongoDBPollPersister(PollPersister):
@@ -422,7 +422,9 @@ class MongoDBPollPersister(PollPersister):
             
             #if path_n != 'GigabitEthernet0_1':
             #    continue
-            if path_n != 'lo0':
+            #if path_n != 'lo0':
+            #    continue
+            if path_n != 'fxp0.0':
                 continue
             print '\n', var_name, val, result.timestamp
             
@@ -463,7 +465,7 @@ class MongoDBPollPersister(PollPersister):
             
     def new_aggregate(self, data):
         print 'New_a(): 1',
-        print 'step', data.rate,
+        print 'step', data.freq,
         print 'min_l_u', data.min_last_update
 
         print 'New_a(): 2',
@@ -504,8 +506,8 @@ class MongoDBPollPersister(PollPersister):
         delta_t = data.ts_to_unixtime() - metadata.ts_to_unixtime('last_update')
         delta_v = data.val - metadata.last_val
         
-        prev_slot = (metadata.ts_to_unixtime('last_update') / data.rate) * data.rate
-        curr_slot = (data.ts_to_unixtime() / data.rate) * data.rate
+        prev_slot = (metadata.ts_to_unixtime('last_update') / data.freq) * data.freq
+        curr_slot = (data.ts_to_unixtime() / data.freq) * data.freq
         
         print 'delta_t', delta_t, 'delta_v', delta_v,
         print 'prev_slot', prev_slot, 'curr_slot', curr_slot
@@ -527,7 +529,7 @@ class MongoDBPollPersister(PollPersister):
         
         print 'New_a(): 9',
         prev_frac = int( floor(
-                delta_v * (prev_slot + data.rate - metadata.ts_to_unixtime('last_update'))
+                delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
                 / float(delta_t)
                 ))
 
@@ -541,9 +543,35 @@ class MongoDBPollPersister(PollPersister):
         # XXX(mmg): revisit if we need to include HEARTBEAT backfill
         # logic here.
         
-        # XXX(mmg): create aggregation objects here and upsert
+        prev_bin = RateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
+                **data.get_path())
+        curr_bin = RateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
+                **data.get_path())
         
-        # XXX(mmg): look into secondary backfilling logic here.
+        self.db.update_rate_bin(prev_bin)
+        self.db.update_rate_bin(curr_bin)
+        
+        # bad slot: 1343955990
+        
+        # backfill logic from the tsdb.aggregator
+        
+        if curr_frac + prev_frac != delta_v:
+            missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
+            if not missed_slots:
+                missed_slots = [curr_slot]
+            missed = delta_v - (curr_frac + prev_frac)
+            if missed > 0:
+                missed_frac = missed / len(missed_slots)
+                missed_rem = missed % (missed_frac * len(missed_slots))
+                for slot in missed_slots:
+                    miss_bin = RateBin(ts=slot, freq=data.freq, val=missed_frac,
+                            **data.get_path())
+                    self.db.update_rate_bin(miss_bin)
+                    
+                    for i in range(missed_rem):
+                        dist_bin = RateBin(ts=missed_slots[i], freq=data.freq,
+                            val=1, **data.get_path())
+        
         
         metadata.refresh_from_raw(data)
         self.db.update_metadata(metadata)
