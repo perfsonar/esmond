@@ -84,6 +84,20 @@ class MONGO_DB(object):
         
         return meta_d
         
+    def update_metadata(self, metadata):
+        self.metadata.update(
+            metadata.get_path(), # XXX(mmg) - optimize ordering on this?
+            {
+                '$set': {
+                    'last_val': metadata.last_val,
+                    'min_ts': metadata.min_ts,
+                    'last_update': metadata.last_update,
+                },
+            },
+            upsert=False, **self.insert_flags
+        )
+        
+# Objects to hold the data
         
 class DataContainerBase(object):
     
@@ -193,3 +207,25 @@ class Metadata(DataContainerBase):
     @last_update.setter
     def last_update(self, value):
         self._last_update = self._handle_date(value)
+        
+    def refresh_from_raw(self, data):
+        if self.min_ts > data.ts:
+            self.min_ts = data.ts
+        self.last_update = data.ts
+        self.last_val = data.val
+        
+
+###
+
+
+
+
+
+
+
+
+
+
+
+
+

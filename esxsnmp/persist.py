@@ -343,6 +343,7 @@ class TSDBPollPersister(PollPersister):
 
 # XXX(mmg): move this when it's done
 from esxsnmp.mongo import MONGO_DB, RawData
+from math import floor, ceil
 
 class MongoDBPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a TSDB.
@@ -416,12 +417,14 @@ class MongoDBPollPersister(PollPersister):
             var_name = os.path.join(basename, var)
             # var_name example:
             # router_a/FastPollHC/ifHCInOctets/GigabitEthernet0_1
-            print '\n', var_name, val, result.timestamp
             
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
             
-            if path_n != 'GigabitEthernet0_1':
+            #if path_n != 'GigabitEthernet0_1':
+            #    continue
+            if path_n != 'lo0':
                 continue
+            print '\n', var_name, val, result.timestamp
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)
@@ -450,6 +453,10 @@ class MongoDBPollPersister(PollPersister):
                 except TSDBError, e:
                     self.log.error("Error aggregating: %s %s: %s" %
                             (result.device_name, result.oidset_name, str(e)))
+            else:
+                # XXX(mmg): put non-rate value handling here and also
+                # metadata updates for said.
+                pass
 
         self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
             time.time() - t0, result))
@@ -479,10 +486,67 @@ class MongoDBPollPersister(PollPersister):
             print 'min > last', 
             last_update = min_ts
             metatdata.last_update = last_update
+        else:
+            print
+            
+        print 'New_a(): 5',
+        print 'prev.ts', metadata.ts_to_unixtime('last_update'), 'prev.val', metadata.last_val
+        
+        # This mimics logic in the tsdb persister - skip any further 
+        # processing of the rate aggregate if this is the first value
+        
+        if data.val == metadata.last_val and \
+            data.ts == metadata.last_update:
+            return
+        
+        print 'New_a(): 6',
+        
+        delta_t = data.ts_to_unixtime() - metadata.ts_to_unixtime('last_update')
+        delta_v = data.val - metadata.last_val
+        
+        prev_slot = (metadata.ts_to_unixtime('last_update') / data.rate) * data.rate
+        curr_slot = (data.ts_to_unixtime() / data.rate) * data.rate
+        
+        print 'delta_t', delta_t, 'delta_v', delta_v,
+        print 'prev_slot', prev_slot, 'curr_slot', curr_slot
+        
+        print 'New_a(): 7',
+        rate = float(delta_v) / float(delta_t)
+        print 'rate', rate
+        
+        print 'New_a(): 8',
+        max_rate = int(110e9)
+        if rate > max_rate:
+            print 'max_rate_exceeded'
+            # XXX(mmg): 1) log this and 2) update metadata with current
+            # info (ie: prev = current) and then 3) return/stop processing.
+        else:
+            print
+            
+        assert delta_v >= 0
+        
+        print 'New_a(): 9',
+        prev_frac = int( floor(
+                delta_v * (prev_slot + data.rate - metadata.ts_to_unixtime('last_update'))
+                / float(delta_t)
+                ))
 
-        # When I get to min timestamp, put in checking/update
-        # with metatdata
-        print
+        curr_frac = int( ceil(
+                    delta_v * (data.ts_to_unixtime() - curr_slot)
+                    / float(delta_t)
+                ))
+                
+        print 'prev_frac', prev_frac, 'curr_frac', curr_frac
+        
+        # XXX(mmg): revisit if we need to include HEARTBEAT backfill
+        # logic here.
+        
+        # XXX(mmg): create aggregation objects here and upsert
+        
+        # XXX(mmg): look into secondary backfilling logic here.
+        
+        metadata.refresh_from_raw(data)
+        self.db.update_metadata(metadata)
 
     def _create_var(self, var_type, var, oidset, oid):
         self.log.debug("creating TSDBVar: %s" % str(var))

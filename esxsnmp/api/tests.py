@@ -306,11 +306,20 @@ timeseries_test_data = """
 """
 class TestMongoDBPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
+    
+    def setUp(self):
+        # XXX(mmg): this should can go later.
+        """make sure we have a clean router_a directory to start with."""
+        router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
+        if os.path.exists(router_a_path):
+            shutil.rmtree(router_a_path)
+    
     def test_persister(self):
         """This is a very basic smoke test for a MongoDB persister."""
         config = get_config(get_config_path())
 
         test_data = load_test_data("router_a_ifhcin_long.json")
+        #test_data = json.loads(timeseries_test_data)
         q = TestPersistQueue(test_data)
         p = MongoDBPollPersister(config, "test", persistq=q)
         p.run()
@@ -356,6 +365,7 @@ if tsdb:
             q = TestPersistQueue(test_data)
             p = TSDBPollPersister(config, "test", persistq=q)
             p.run()
+            sys.exit()
 
             test_data = load_test_data("router_a_ifhcin_long.json")
             ts0 = test_data[0]['timestamp']
