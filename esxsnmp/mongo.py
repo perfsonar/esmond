@@ -144,7 +144,7 @@ class RawData(DataContainerBase):
             ts=None, flags=None, val=None, rate=None, _id=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self._ts = None
-        self.ts = self._handle_date(ts)
+        self.ts = ts
         self.flags = flags
         self.val = val
         self.rate = rate
