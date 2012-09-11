@@ -86,6 +86,9 @@ class MONGO_DB(object):
         
         
 class DataContainerBase(object):
+    
+    _doc_properties = []
+    
     def __init__(self, device, oidset, oid, path, _id):
         self.device = device
         self.oidset = oidset
@@ -107,6 +110,10 @@ class DataContainerBase(object):
             if k.startswith('_'):
                 continue
             doc[k] = v
+            
+        for p in self._doc_properties:
+            exec("doc['%s'] = self.%s" % (p, p))
+        
         return doc
         
     def get_path(self):
@@ -131,13 +138,24 @@ class RawData(DataContainerBase):
     reading from persist queue, or via **kw when reading data back
     out of mongo.
     """
+    _doc_properties = ['ts']
+    
     def __init__(self, device=None, oidset=None, oid=None, path=None,
             ts=None, flags=None, val=None, rate=None, _id=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
+        self._ts = None
         self.ts = self._handle_date(ts)
         self.flags = flags
         self.val = val
         self.rate = rate
+        
+    @property
+    def ts(self):
+        return self._ts
+        
+    @ts.setter
+    def ts(self, value):
+        self._ts = self._handle_date(value)
         
     @property
     def min_last_update(self):
@@ -149,6 +167,9 @@ class RawData(DataContainerBase):
     
         
 class Metadata(DataContainerBase):
+    
+    _doc_properties = ['min_ts', 'last_update']
+    
     def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None,
             last_update=None, last_val=None, min_ts=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
@@ -172,9 +193,3 @@ class Metadata(DataContainerBase):
     @last_update.setter
     def last_update(self, value):
         self._last_update = self._handle_date(value)
-        
-    def get_document(self):
-        d = DataContainerBase.get_document(self)
-        d['min_ts'] = self.min_ts
-        d['last_update'] = self.last_update
-        return d
