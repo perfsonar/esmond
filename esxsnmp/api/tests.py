@@ -322,7 +322,7 @@ class TestMongoDBPollPersister(TestCase):
         p = MongoDBPollPersister(config, "test", persistq=q)
         p.run()
         
-    def test_persister_data(self):
+    def test_persister_long(self):
         """Make sure the tsdb and mongo data match"""
         config = get_config(get_config_path())
         
@@ -332,6 +332,8 @@ class TestMongoDBPollPersister(TestCase):
             config.mongo_user, config.mongo_pass)
         
         paths = {}
+        count_bad = 0
+        tsdb_aggs = 0
         
         for row in db.rates.find():
             path = '%s/%s/%s/%s/TSDBAggregates/30' % (row['device'], row['oidset'], row['oid'], row['path'])
@@ -342,6 +344,7 @@ class TestMongoDBPollPersister(TestCase):
             v = ts_db.get_var(p)
             device,oidset,oid,path,tmp1,tmp2 = p.split('/')
             for d in v.select():
+                tsdb_aggs += 1
                 ret = db.rates.find_one(
                     {
                         'device': device,
@@ -352,9 +355,13 @@ class TestMongoDBPollPersister(TestCase):
                     }
                 )
                 if not ret:
-                    print 'no value found for', d
+                    count_bad += 1
                     continue
+                    
                 assert ret['val'] == d.delta
+                
+        assert db.rates.count() == tsdb_aggs
+        assert count_bad == 0
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):

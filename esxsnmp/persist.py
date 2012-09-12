@@ -425,7 +425,7 @@ class MongoDBPollPersister(PollPersister):
             #if path_n != 'lo0':
             #    continue
             if path_n != 'fxp0.0':
-                continue
+               continue
             print '\n', var_name, val, result.timestamp
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
@@ -527,6 +527,9 @@ class MongoDBPollPersister(PollPersister):
             
         assert delta_v >= 0
         
+        # bad ts: 1343956020 skip 5990: prev_slot 1343955960 curr_slot 1343956020
+        # bad_slots = [1343955990, 1343957730]
+        
         print 'New_a(): 9',
         prev_frac = int( floor(
                 delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
@@ -551,26 +554,34 @@ class MongoDBPollPersister(PollPersister):
         self.db.update_rate_bin(prev_bin)
         self.db.update_rate_bin(curr_bin)
         
-        # bad slot: 1343955990
-        
         # backfill logic from the tsdb.aggregator
+        # This has been modified from the orignial!
         
-        if curr_frac + prev_frac != delta_v:
+        if (curr_slot - prev_slot) > data.freq: # XXX: new logic
+            print 'New_a(): BACKFILL:', curr_frac + prev_frac, delta_v,
             missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
             if not missed_slots:
                 missed_slots = [curr_slot]
+            print missed_slots,
             missed = delta_v - (curr_frac + prev_frac)
-            if missed > 0:
-                missed_frac = missed / len(missed_slots)
+            #if missed > 0: # XXX: removed cond, b'proof against modulo 0
+            print 'yes',
+            missed_frac = missed / len(missed_slots)
+            print 'm_f', missed_frac, 
+            if missed_frac > 0:
                 missed_rem = missed % (missed_frac * len(missed_slots))
-                for slot in missed_slots:
-                    miss_bin = RateBin(ts=slot, freq=data.freq, val=missed_frac,
-                            **data.get_path())
-                    self.db.update_rate_bin(miss_bin)
-                    
-                    for i in range(missed_rem):
-                        dist_bin = RateBin(ts=missed_slots[i], freq=data.freq,
-                            val=1, **data.get_path())
+            else:
+                missed_rem = 0
+            for slot in missed_slots:
+                miss_bin = RateBin(ts=slot, freq=data.freq, val=missed_frac,
+                        **data.get_path())
+                print '%', miss_bin.ts_to_unixtime()
+                self.db.update_rate_bin(miss_bin)
+                
+                for i in range(missed_rem):
+                    print 'REM', i
+                    dist_bin = RateBin(ts=missed_slots[i], freq=data.freq,
+                        val=1, **data.get_path())
         
         
         metadata.refresh_from_raw(data)
