@@ -316,8 +316,7 @@ class TestMongoDBPollPersister(TestCase):
         
         config = get_config(get_config_path())
         
-        test_data = load_test_data("router_a_ifhcin_long.json")
-        #test_data = json.loads(timeseries_test_data)
+        test_data = json.loads(timeseries_test_data)
         q = TestPersistQueue(test_data)
         p = MongoDBPollPersister(config, "test", persistq=q)
         p.run()
