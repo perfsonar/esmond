@@ -10,6 +10,7 @@ import errno
 import datetime
 import __main__
 
+from math import floor, ceil
 from subprocess import Popen, PIPE, STDOUT
 
 import cPickle as pickle
@@ -31,6 +32,8 @@ from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
 
 from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
+
+from esxsnmp.mongo import MONGO_DB, RawData, RateBin, INVALID_VALUE
 
 try:
     import cmemcache as memcache
@@ -372,7 +375,6 @@ class MongoDBPollPersister(PollPersister):
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
-        self.oid_type_map = {} # XXX(mmg): go
 
         oidsets = OIDSet.objects.all()
 
@@ -387,24 +389,13 @@ class MongoDBPollPersister(PollPersister):
 
             for oid in oidset.oids.all():
                 self.oids[oid.name] = oid
-                # XXX(mmg): go
-                try:
-                    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
-                            oid.oid_type.name)
-                except AttributeError:
-                    self.log.warning(
-                            "warning don't have a TSDBRow for %s in %s" %
-                            (oid.oid_type.name, oidset.name))
-
+    
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
         set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
         basename = os.path.join(result.device_name, set_name)
         oid = self.oids[result.oid_name]
         flags = result.metadata['tsdb_flags']
-
-        # XXX(mmg): go
-        var_type = self.oid_type_map[oid.name]
 
         t0 = time.time()
         nvar = 0
@@ -415,46 +406,20 @@ class MongoDBPollPersister(PollPersister):
             nvar += 1
 
             var_name = os.path.join(basename, var)
-            # var_name example:
-            # router_a/FastPollHC/ifHCInOctets/GigabitEthernet0_1
-            
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
             
-            #if path_n != 'GigabitEthernet0_1':
-            #    continue
-            #if path_n != 'lo0':
-            #    continue
-            if path_n != 'fxp0.0':
-               continue
-            print '\n', var_name, val, result.timestamp
+            #if path_n != 'fxp0.0':
+            #   continue
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)
             
             self.db.set_raw_data(raw_data)
 
-            # XXX(mmg): go
-            try:
-                tsdb_var = self.tsdb.get_var(var_name)
-            except tsdb.TSDBVarDoesNotExistError:
-                tsdb_var = self._create_var(var_type, var_name, oidset, oid)
-            except tsdb.InvalidMetaData:
-                tsdb_var = self._repair_var_metadata(var_type, var_name,
-                        oidset, oid)
-                continue  # XXX(jdugan): remove this once repair actually works
-
-            tsdb_var.insert(var_type(result.timestamp, flags, val))
-
             if oid.aggregate:
-                self.new_aggregate(raw_data)
-                # XXX:refactor uptime should be handled better
+                self.aggregate_base_rate(raw_data)
                 uptime_name = os.path.join(basename, 'sysUpTime')
-                try:
-                    self._aggregate(tsdb_var, var_name, result.timestamp,
-                            uptime_name, oidset)
-                except TSDBError, e:
-                    self.log.error("Error aggregating: %s %s: %s" %
-                            (result.device_name, result.oidset_name, str(e)))
+                # XXX(mmg) how do we handle this uptime?
             else:
                 # XXX(mmg): put non-rate value handling here and also
                 # metadata updates for said.
@@ -463,37 +428,20 @@ class MongoDBPollPersister(PollPersister):
         self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
             time.time() - t0, result))
             
-    def new_aggregate(self, data):
-        print 'New_a(): 1',
-        print 'step', data.freq,
-        print 'min_l_u', data.min_last_update
+    def aggregate_base_rate(self, data):
 
-        print 'New_a(): 2',
         metadata = self.db.get_metadata(data)
         last_update = metadata.ts_to_unixtime('last_update')
-        print 'l_u_meta', last_update,
 
         if data.min_last_update and data.min_last_update > last_update:
             last_update = data.min_last_update
-        print 'l_u_calc', last_update
-        print 'New_a(): 3',
         
         min_ts = metadata.ts_to_unixtime('min_ts')
-        print 'min_ts', min_ts
-        #print 'slot', data.slot
-        
-        print 'New_a(): 4',
         
         if min_ts > last_update:
-            print 'min > last', 
             last_update = min_ts
             metatdata.last_update = last_update
-        else:
-            print
             
-        print 'New_a(): 5',
-        print 'prev.ts', metadata.ts_to_unixtime('last_update'), 'prev.val', metadata.last_val
-        
         # This mimics logic in the tsdb persister - skip any further 
         # processing of the rate aggregate if this is the first value
         
@@ -501,36 +449,23 @@ class MongoDBPollPersister(PollPersister):
             data.ts == metadata.last_update:
             return
         
-        print 'New_a(): 6',
-        
         delta_t = data.ts_to_unixtime() - metadata.ts_to_unixtime('last_update')
         delta_v = data.val - metadata.last_val
         
         prev_slot = (metadata.ts_to_unixtime('last_update') / data.freq) * data.freq
         curr_slot = (data.ts_to_unixtime() / data.freq) * data.freq
         
-        print 'delta_t', delta_t, 'delta_v', delta_v,
-        print 'prev_slot', prev_slot, 'curr_slot', curr_slot
-        
-        print 'New_a(): 7',
         rate = float(delta_v) / float(delta_t)
-        print 'rate', rate
-        
-        print 'New_a(): 8',
         max_rate = int(110e9)
+
         if rate > max_rate:
             print 'max_rate_exceeded'
             # XXX(mmg): 1) log this and 2) update metadata with current
             # info (ie: prev = current) and then 3) return/stop processing.
-        else:
-            print
+            raise
             
         assert delta_v >= 0
         
-        # bad ts: 1343956020 skip 5990: prev_slot 1343955960 curr_slot 1343956020
-        # bad_slots = [1343955990, 1343957730]
-        
-        print 'New_a(): 9',
         prev_frac = int( floor(
                 delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
                 / float(delta_t)
@@ -541,10 +476,7 @@ class MongoDBPollPersister(PollPersister):
                     / float(delta_t)
                 ))
                 
-        print 'prev_frac', prev_frac, 'curr_frac', curr_frac
-        
-        # XXX(mmg): revisit if we need to include HEARTBEAT backfill
-        # logic here.
+        # XXX(mmg): include HEARTBEAT backfill logic here.
         
         prev_bin = RateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
                 **data.get_path())
@@ -557,106 +489,35 @@ class MongoDBPollPersister(PollPersister):
         # backfill logic from the tsdb.aggregator
         # This has been modified from the orignial!
         
-        if (curr_slot - prev_slot) > data.freq: # XXX: new logic
-            print 'New_a(): BACKFILL:', curr_frac + prev_frac, delta_v,
+        if (curr_slot - prev_slot) > data.freq: # New condition - missing bins?
             missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
             if not missed_slots:
                 missed_slots = [curr_slot]
-            print missed_slots,
             missed = delta_v - (curr_frac + prev_frac)
-            #if missed > 0: # XXX: removed cond, b'proof against modulo 0
-            print 'yes',
-            missed_frac = missed / len(missed_slots)
-            print 'm_f', missed_frac, 
-            if missed_frac > 0:
+            if missed > 0:
+                # Presume valid data (old logic)
+                missed_frac = missed / len(missed_slots)
                 missed_rem = missed % (missed_frac * len(missed_slots))
-            else:
-                missed_rem = 0
-            for slot in missed_slots:
-                miss_bin = RateBin(ts=slot, freq=data.freq, val=missed_frac,
-                        **data.get_path())
-                print '%', miss_bin.ts_to_unixtime()
-                self.db.update_rate_bin(miss_bin)
+                for slot in missed_slots:
+                    miss_bin = RateBin(ts=slot, freq=data.freq, val=missed_frac,
+                            **data.get_path())
+                    self.db.update_rate_bin(miss_bin)
                 
-                for i in range(missed_rem):
-                    print 'REM', i
-                    dist_bin = RateBin(ts=missed_slots[i], freq=data.freq,
-                        val=1, **data.get_path())
+                    for i in range(missed_rem):
+                        dist_bin = RateBin(ts=missed_slots[i], freq=data.freq,
+                            val=1, **data.get_path())
+            else:
+                # Presume invalid data (new logic)
+                for slot in missed_slots:
+                    # XXX(mmg): rectify using -9999 - this is a stopgap
+                    # to get some code pushed.
+                    miss_bin = RateBin(ts=slot, freq=data.freq, val=INVALID_VALUE,
+                            **data.get_path())
+                    self.db.update_rate_bin(miss_bin)
         
         
         metadata.refresh_from_raw(data)
         self.db.update_metadata(metadata)
-
-    def _create_var(self, var_type, var, oidset, oid):
-        self.log.debug("creating TSDBVar: %s" % str(var))
-        chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
-
-        tsdb_var = self.tsdb.add_var(var, var_type,
-                oidset.frequency, chunk_mapper)
-
-        if oid.aggregate:
-            self._create_aggs(tsdb_var, oidset)
-
-        tsdb_var.flush()
-
-        return tsdb_var
-
-    def _create_agg(self, tsdb_var, oidset, period):
-        chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
-        if period == oidset.frequency:
-            aggs = ['average', 'delta']
-        else:
-            aggs = ['average', 'delta', 'min', 'max']
-
-        try:
-            tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
-        except Exception, e:
-            self.log.error("Couldn't create aggregate %s" % (e))
-
-    def _create_aggs(self, tsdb_var, oidset):
-        self._create_agg(tsdb_var, oidset, oidset.frequency)
-
-        if 'aggregates' in self.poller_args[oidset.name]:
-            aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
-            for agg in aggregates:
-                self._create_agg(tsdb_var, oidset, int(agg))
-
-    def _repair_var_metadata(self, var_type, var, oidset, oid):
-        self.log.error("var needs repair, skipping: %s" % var)
-        #chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
-
-    def _aggregate(self, tsdb_var, var_name, timestamp, uptime_name, oidset):
-        try:
-            uptime = self.tsdb.get_var(uptime_name)
-        except TSDBVarDoesNotExistError:
-            # XXX this is killing the logger in testing revisit
-            #self.log.warning("unable to get uptime for %s" % var_name)
-            uptime = None
-
-        min_last_update = timestamp - oidset.frequency * 40
-
-        def log_bad(ancestor, agg, rate, prev, curr):
-            self.log.debug("bad data for %s at %d: %f" % (ancestor.path,
-                curr.timestamp, rate))
-
-        def update_agg():
-            tsdb_var.update_aggregate(str(oidset.frequency),
-                uptime_var=uptime,
-                min_last_update=min_last_update,
-                # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
-                max_rate=int(110e9),
-                max_rate_callback=log_bad)
-
-        try:
-            update_agg()
-        except TSDBAggregateDoesNotExistError:
-            # XXX(jdugan): this needs to be reworked when we update all aggs
-            self.log.error("creating missing aggregate for %s" % var_name)
-            self._create_agg(tsdb_var, oidset, oidset.frequency)
-            tsdb_var.flush()
-            update_agg()
-        except InvalidMetaData:
-            self.log.error("bad metadata for %s" % var_name)
 
 class HistoryTablePersister(PollPersister):
     """Provides common methods for table histories."""

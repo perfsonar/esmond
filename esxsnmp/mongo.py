@@ -13,12 +13,8 @@ import os
 import pymongo
 from pymongo.connection import Connection
 from pymongo.errors import ConnectionFailure
-# TSDB
-from tsdb.error import *
-from tsdb.row import Aggregate, ROW_VALID, ROW_TYPE_MAP
-from tsdb.chunk_mapper import CHUNK_MAPPER_MAP
-from tsdb.util import write_dict, calculate_interval, calculate_slot
-from tsdb.filesystem import get_fs
+
+INVALID_VALUE = -9999
 
 class ConnectionException(Exception):
     def __init__(self, value):
@@ -265,6 +261,6 @@ class RateBin(DataContainerBase):
         self._ts = self._handle_date(value)
         
     @property
-    def rate(self):
+    def avg(self):
         return self.val / self.freq
 

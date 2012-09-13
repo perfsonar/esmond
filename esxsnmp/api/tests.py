@@ -21,10 +21,11 @@ from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
      PersistQueueEmpty, TSDBPollPersister, MongoDBPollPersister
 from esxsnmp.config import get_config, get_config_path
-from esxsnmp.mongo import MONGO_DB
+from esxsnmp.mongo import MONGO_DB, INVALID_VALUE
 
 try:
     import tsdb
+    from tsdb.row import ROW_VALID
 except ImportError:
     tsdb = None
 
@@ -308,12 +309,14 @@ timeseries_test_data = """
 class TestMongoDBPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
     
-    def test_persister(self):
-        """This is a very basic smoke test for a MongoDB persister."""
+    def setUp(self):
+        """make sure we have a clean router_a directory to start with."""
         router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
         if os.path.exists(router_a_path):
             shutil.rmtree(router_a_path)
-        
+    
+    def test_persister(self):
+        """This is a very basic smoke test for a MongoDB persister."""
         config = get_config(get_config_path())
         
         test_data = json.loads(timeseries_test_data)
@@ -325,6 +328,16 @@ class TestMongoDBPollPersister(TestCase):
         """Make sure the tsdb and mongo data match"""
         config = get_config(get_config_path())
         
+        test_data = load_test_data("router_a_ifhcin_long.json")
+        q = TestPersistQueue(test_data)
+        p = TSDBPollPersister(config, "test", persistq=q)
+        p.run()
+        
+        test_data = load_test_data("router_a_ifhcin_long.json")
+        q = TestPersistQueue(test_data)
+        p = MongoDBPollPersister(config, "test", persistq=q)
+        p.run()
+        
         ts_db = tsdb.TSDB(config.tsdb_root)
         
         db = MONGO_DB(config.mongo_host, config.mongo_port,
@@ -335,7 +348,8 @@ class TestMongoDBPollPersister(TestCase):
         tsdb_aggs = 0
         
         for row in db.rates.find():
-            path = '%s/%s/%s/%s/TSDBAggregates/30' % (row['device'], row['oidset'], row['oid'], row['path'])
+            path = '%s/%s/%s/%s/TSDBAggregates/30' \
+                % (row['device'], row['oidset'], row['oid'], row['path'])
             if not paths.has_key(path):
                 paths[path] = 1
                 
@@ -353,14 +367,19 @@ class TestMongoDBPollPersister(TestCase):
                         'ts': datetime.datetime.utcfromtimestamp(d.timestamp)
                     }
                 )
+                
                 if not ret:
+                    print 'missing value', d
                     count_bad += 1
                     continue
-                    
-                assert ret['val'] == d.delta
-                
+
+                if d.flags != ROW_VALID:
+                    assert ret['val'] == INVALID_VALUE
+                else:
+                    assert ret['val'] == d.delta
+         
+        assert count_bad == 0       
         assert db.rates.count() == tsdb_aggs
-        assert count_bad == 0
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):
