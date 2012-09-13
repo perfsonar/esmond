@@ -65,8 +65,8 @@ class MONGO_DB(object):
         self.rates    = self.db[self.rate_coll]
         
         # Indexes
-        self.metadata.ensure_index(self.meta_idx)
-        self.rates.ensure_index(self.rate_idx)
+        self.metadata.ensure_index(self.meta_idx, unique=True)
+        self.rates.ensure_index(self.rate_idx, unique=True)
         
         
     def set_raw_data(self, raw_data):
