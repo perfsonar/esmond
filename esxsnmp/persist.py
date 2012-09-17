@@ -344,10 +344,6 @@ class TSDBPollPersister(PollPersister):
             self.log.error("bad metadata for %s" % var_name)
             
 
-# XXX(mmg): move this when it's done
-from esxsnmp.mongo import MONGO_DB, RawData, RateBin
-from math import floor, ceil
-
 class MongoDBPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a TSDB.
 
@@ -409,7 +405,7 @@ class MongoDBPollPersister(PollPersister):
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
             
             #if path_n != 'fxp0.0':
-            #   continue
+            #  continue
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)

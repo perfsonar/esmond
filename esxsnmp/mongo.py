@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Work in progress code for mongo development.  These things will get a new 
-home.
+Mongo DB interface calls and data encapsulation objects.
 """
 # Standard
 import calendar
 import datetime
-import sys
 import os
+import sys
+import time
 # Third party
 import pymongo
 from pymongo.connection import Connection
@@ -64,15 +64,28 @@ class MONGO_DB(object):
         self.metadata.ensure_index(self.meta_idx, unique=True)
         self.rates.ensure_index(self.rate_idx, unique=True)
         
+        # Timing
+        self._data_insert_time = 0
+        self._data_insert_count = 0
+        self._m_data_fetch_time = 0
+        self._m_data_fetch_count = 0
+        self._m_data_update_time = 0
+        self._m_data_update_count = 0
+        self._base_rate_update_time = 0
+        self._base_rate_update_count = 0
+        
         
     def set_raw_data(self, raw_data):
+        t = time.time()
         ret = self.raw_data.insert(raw_data.get_document(), **self.insert_flags)
+        self._data_insert_time += (time.time() - t)
+        self._data_insert_count += 1
         
     def set_metadata(self, meta_d):
         ret = self.metadata.insert(meta_d.get_document(), **self.insert_flags)
         
     def get_metadata(self, raw_data):
-        
+        t = time.time()
         meta_d = self.metadata.find_one(raw_data.get_path())
         
         if not meta_d:
@@ -83,10 +96,13 @@ class MONGO_DB(object):
         else:
             meta_d = Metadata(**meta_d)
         
+        self._m_data_fetch_time += (time.time() - t)
+        self._m_data_fetch_count += 1
         return meta_d
         
     def update_metadata(self, metadata):
         p = metadata.get_path()
+        t = time.time()
         ret = self.metadata.update(
             {
                 'device': p['device'],
@@ -103,10 +119,12 @@ class MONGO_DB(object):
             },
             upsert=False, **self.insert_flags
         )
+        self._m_data_update_time += (time.time() - t)
+        self._m_data_update_count += 1
         
     def update_rate_bin(self, ratebin):
         p = ratebin.get_path()
-        
+        t = time.time()
         ret = self.rates.update(
             {
                'device': p['device'],
@@ -121,7 +139,36 @@ class MONGO_DB(object):
             },
             upsert=True, **self.insert_flags
         )
+        self._base_rate_update_time += (time.time() - t)
+        self._base_rate_update_count += 1
+        
+    def get_metrics(self):
+        
+        # XXX(mmg) - change to logging
+        
+        def format_stat(action, kind, count, time):
+            s = '%s %s %s in %.3f (%.3f per sec)' \
+             % (action, count, kind, time, (count/time))
+            return s
+            
+        print format_stat('Inserted', 'raw', 
+            self._data_insert_count, self._data_insert_time)
+        print format_stat('Fetched', 'm_data', 
+            self._m_data_fetch_count, self._m_data_fetch_time)
+        print format_stat('Updated', 'm_data', 
+            self._m_data_update_count, self._m_data_update_time)
+        print format_stat('Updated', 'base rate', 
+            self._base_rate_update_count, self._base_rate_update_time)
 
+        print 'Total DB fetch/in/upsert time: %.3f' \
+            % (self._data_insert_time + self._m_data_fetch_time + \
+            self._m_data_update_time + self._base_rate_update_time)
+        print 'Total DB fetch/in/upsert transactions: %s' \
+            % (self._data_insert_count + self._m_data_fetch_count + \
+            self._m_data_update_count + self._base_rate_update_count)
+            
+    def __del__(self):
+        pass
 
 # Objects to hold the data
         
