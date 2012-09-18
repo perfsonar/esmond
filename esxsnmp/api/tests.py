@@ -341,8 +341,7 @@ class TestMongoDBPollPersister(TestCase):
         
         ts_db = tsdb.TSDB(config.tsdb_root)
         
-        db = MONGO_DB(config.mongo_host, config.mongo_port,
-            config.mongo_user, config.mongo_pass)
+        db = MONGO_DB(config)
         
         paths = {}
         count_bad = 0

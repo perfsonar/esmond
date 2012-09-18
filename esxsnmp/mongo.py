@@ -16,12 +16,16 @@ from pymongo.errors import ConnectionFailure
 
 INVALID_VALUE = -9999
 
-class ConnectionException(Exception):
+class MongoException(Exception):
+    """Common base"""
+    pass
+
+class ConnectionException(MongoException):
     def __init__(self, value):
         self.value = value
     def __str__(self):
         return repr(self.value)
-
+        
 class MONGO_DB(object):
     
     database = 'esxsnmp'
@@ -36,23 +40,24 @@ class MONGO_DB(object):
     
     insert_flags = { 'safe': True }
     
-    def __init__(self, host, port, user='', password='', flush_all=False):
+    def __init__(self, config, clear_on_test=False):
         # Connection
         try:
-            self.connection = pymongo.Connection(host=host, port=port)
+            self.connection = pymongo.Connection(host=config.mongo_host, 
+                    port=config.mongo_port)
         except ConnectionFailure:
             raise ConnectionException("Couldn't connect to DB "
-                                      "at %s:%d" % (host, port))
+                            "at %s:%d" % (config.mongo_host, config.mongo_port))
                                       
         self.db = self.connection[self.database]
         
-        if user != '':
-            success = self.db.authenticate(user, password)
+        if config.mongo_user != '':
+            success = self.db.authenticate(config.mongo_user, config.mongo_pass)
             if not success:
                 raise ConnectionException("Could not authenticate to "
-                                          "database as user '%s'" % (user))
+                                          "database as user '%s'" % (config.mongo_user))
                                           
-        if flush_all:
+        if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
             self.connection.drop_database(self.database)
             
         # Collections

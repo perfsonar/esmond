@@ -362,9 +362,7 @@ class MongoDBPollPersister(PollPersister):
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
         
-        self.db = MONGO_DB(config.mongo_host, config.mongo_port,
-            config.mongo_user, config.mongo_pass, 
-            os.environ.get("ESXSNMP_TESTING", False))
+        self.db = MONGO_DB(config, clear_on_test=True)
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
