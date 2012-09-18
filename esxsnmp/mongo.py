@@ -70,13 +70,13 @@ class MONGO_DB(object):
         self.rates.ensure_index(self.rate_idx, unique=True)
         
         # Timing
-        self.stats = MongoStats()
+        self.stats = DatabaseMetrics()
         
         
     def set_raw_data(self, raw_data):
         t = time.time()
         ret = self.raw_data.insert(raw_data.get_document(), **self.insert_flags)
-        self.stats.update_raw(time.time() - t)
+        self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
         ret = self.metadata.insert(meta_d.get_document(), **self.insert_flags)
@@ -93,7 +93,7 @@ class MONGO_DB(object):
         else:
             meta_d = Metadata(**meta_d)
         
-        self.stats.update_meta_fetch((time.time() - t))
+        self.stats.meta_fetch((time.time() - t))
         return meta_d
         
     def update_metadata(self, metadata):
@@ -115,7 +115,7 @@ class MONGO_DB(object):
             },
             upsert=False, **self.insert_flags
         )
-        self.stats.update_meta_update((time.time() - t))
+        self.stats.meta_update((time.time() - t))
         
     def update_rate_bin(self, ratebin):
         p = ratebin.get_path()
@@ -134,69 +134,80 @@ class MONGO_DB(object):
             },
             upsert=True, **self.insert_flags
         )
-        self.stats.update_base_rate((time.time() - t))
-        
-    def get_metrics(self):
-        
-        # XXX(mmg) - change to logging
-        
-        def format_stat(action, kind, count, time):
-            s = '%s %s %s in %.3f (%.3f per sec)' \
-             % (action, count, kind, time, (count/time))
-            return s
-            
-        print format_stat('Inserted', 'raw', 
-            self._data_insert_count, self._data_insert_time)
-        print format_stat('Fetched', 'm_data', 
-            self._m_data_fetch_count, self._m_data_fetch_time)
-        print format_stat('Updated', 'm_data', 
-            self._m_data_update_count, self._m_data_update_time)
-        print format_stat('Updated', 'base rate', 
-            self._base_rate_update_count, self._base_rate_update_time)
-
-        print 'Total DB fetch/in/upsert time: %.3f' \
-            % (self._data_insert_time + self._m_data_fetch_time + \
-            self._m_data_update_time + self._base_rate_update_time)
-        print 'Total DB fetch/in/upsert transactions: %s' \
-            % (self._data_insert_count + self._m_data_fetch_count + \
-            self._m_data_update_count + self._base_rate_update_count)
+        self.stats.baserate_update((time.time() - t))
+    
             
     def __del__(self):
         pass
 
 # Stats/timing code for connection class
 
-class MongoStats(object):
+class DatabaseMetrics(object):
+    
+    _individual_metrics = ['raw_insert', 'meta_fetch', 'meta_update', 'baserate_update']
+    _all_metrics = _individual_metrics + ['total', 'all']
+    
     def __init__(self):
-        self.raw_time = 0
-        self.raw_count = 0
+        self.raw_insert_time = 0
+        self.raw_insert_count = 0
         self.meta_fetch_time = 0
         self.meta_fetch_count = 0
         self.meta_update_time = 0
         self.meta_update_count = 0
-        self.base_rate_time = 0
-        self.base_rate_count = 0
+        self.baserate_update_time = 0
+        self.baserate_update_count = 0
         
-    def update_raw(self, t):
-        self.raw_time += t
-        self.raw_count += 1
+    def raw_insert(self, t):
+        self.raw_insert_time += t
+        self.raw_insert_count += 1
         
-    def update_meta_fetch(self, t):
+    def meta_fetch(self, t):
         self.meta_fetch_time += t
         self.meta_fetch_count += 1
         
-    def update_meta_update(self, t):
+    def meta_update(self, t):
         self.meta_update_time += t
         self.meta_update_count += 1
         
-    def update_base_rate(self, t):
-        self.base_rate_time += t
-        self.base_rate_count += 1
+    def baserate_update(self, t):
+        self.baserate_update_time += t
+        self.baserate_update_count += 1
         
-    def report(self):
-        print '====='
-        print 'raw', self.raw_time, self.raw_count
-        print '====='
+    def report(self, metric='all'):
+        
+        if metric not in self._all_metrics:
+            print 'bad metric' # XXX(mmg): log this
+            return
+            
+        s = ''
+        time = count = 0
+            
+        if metric in self._individual_metrics:
+            datatype, action = metric.split('_')
+            action = action.title()
+            exec('time = self.%s_time' % metric)
+            exec('count = self.%s_count' % metric)
+            s = '%s %s %s data in %.3f (%.3f per sec)' \
+                % (action, count, datatype, time, (count/time))
+        elif metric == 'total':
+            for k,v in self.__dict__.items():
+                if k.endswith('_count'):
+                    count += v
+                elif k.endswith('_time'):
+                    time += v
+                else:
+                    pass
+            s = 'Total: %s db transactions in %.3f (%.3f per sec)' \
+                % (count, time, (count/time))
+        elif metric == 'all':
+            for m in self._all_metrics:
+                if m == 'all':
+                    continue
+                else:
+                    self.report(m)
+                    
+        print s # XXX(mmg): log this
+
 
 # Data encapsulation objects
         

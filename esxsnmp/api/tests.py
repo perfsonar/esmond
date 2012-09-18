@@ -337,7 +337,7 @@ class TestMongoDBPollPersister(TestCase):
         q = TestPersistQueue(test_data)
         p = MongoDBPollPersister(config, "test", persistq=q)
         p.run()
-        p.db.stats.report()
+        p.db.stats.report('all')
         
         ts_db = tsdb.TSDB(config.tsdb_root)
         
