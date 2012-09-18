@@ -403,7 +403,7 @@ class MongoDBPollPersister(PollPersister):
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
             
             #if path_n != 'fxp0.0':
-            #  continue
+            # continue
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)

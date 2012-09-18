@@ -70,21 +70,13 @@ class MONGO_DB(object):
         self.rates.ensure_index(self.rate_idx, unique=True)
         
         # Timing
-        self._data_insert_time = 0
-        self._data_insert_count = 0
-        self._m_data_fetch_time = 0
-        self._m_data_fetch_count = 0
-        self._m_data_update_time = 0
-        self._m_data_update_count = 0
-        self._base_rate_update_time = 0
-        self._base_rate_update_count = 0
+        self.stats = MongoStats()
         
         
     def set_raw_data(self, raw_data):
         t = time.time()
         ret = self.raw_data.insert(raw_data.get_document(), **self.insert_flags)
-        self._data_insert_time += (time.time() - t)
-        self._data_insert_count += 1
+        self.stats.update_raw(time.time() - t)
         
     def set_metadata(self, meta_d):
         ret = self.metadata.insert(meta_d.get_document(), **self.insert_flags)
@@ -101,8 +93,7 @@ class MONGO_DB(object):
         else:
             meta_d = Metadata(**meta_d)
         
-        self._m_data_fetch_time += (time.time() - t)
-        self._m_data_fetch_count += 1
+        self.stats.update_meta_fetch((time.time() - t))
         return meta_d
         
     def update_metadata(self, metadata):
@@ -124,8 +115,7 @@ class MONGO_DB(object):
             },
             upsert=False, **self.insert_flags
         )
-        self._m_data_update_time += (time.time() - t)
-        self._m_data_update_count += 1
+        self.stats.update_meta_update((time.time() - t))
         
     def update_rate_bin(self, ratebin):
         p = ratebin.get_path()
@@ -144,8 +134,7 @@ class MONGO_DB(object):
             },
             upsert=True, **self.insert_flags
         )
-        self._base_rate_update_time += (time.time() - t)
-        self._base_rate_update_count += 1
+        self.stats.update_base_rate((time.time() - t))
         
     def get_metrics(self):
         
@@ -175,7 +164,41 @@ class MONGO_DB(object):
     def __del__(self):
         pass
 
-# Objects to hold the data
+# Stats/timing code for connection class
+
+class MongoStats(object):
+    def __init__(self):
+        self.raw_time = 0
+        self.raw_count = 0
+        self.meta_fetch_time = 0
+        self.meta_fetch_count = 0
+        self.meta_update_time = 0
+        self.meta_update_count = 0
+        self.base_rate_time = 0
+        self.base_rate_count = 0
+        
+    def update_raw(self, t):
+        self.raw_time += t
+        self.raw_count += 1
+        
+    def update_meta_fetch(self, t):
+        self.meta_fetch_time += t
+        self.meta_fetch_count += 1
+        
+    def update_meta_update(self, t):
+        self.meta_update_time += t
+        self.meta_update_count += 1
+        
+    def update_base_rate(self, t):
+        self.base_rate_time += t
+        self.base_rate_count += 1
+        
+    def report(self):
+        print '====='
+        print 'raw', self.raw_time, self.raw_count
+        print '====='
+
+# Data encapsulation objects
         
 class DataContainerBase(object):
     
@@ -223,6 +246,7 @@ class DataContainerBase(object):
     def ts_to_unixtime(self, t='ts'):
         ts = getattr(self, t)
         return calendar.timegm(ts.utctimetuple())
+        
         
 class RawData(DataContainerBase):
     """
@@ -292,6 +316,7 @@ class Metadata(DataContainerBase):
         self.last_update = data.ts
         self.last_val = data.val
         
+
 class RateBin(DataContainerBase):
     
     _doc_properties = ['ts']
