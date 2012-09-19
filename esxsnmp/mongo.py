@@ -36,7 +36,7 @@ class MONGO_DB(object):
     path_idx = [('device',1),('oidset',1),('oid',1),('path',1)]
     raw_idx = []
     meta_idx = path_idx
-    rate_idx = path_idx + [('ts',1)]
+    rate_idx = path_idx + [('ts',-1)]
     
     insert_flags = { 'safe': True }
     
