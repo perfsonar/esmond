@@ -11,6 +11,7 @@ import sys
 import time
 # Third party
 import pymongo
+from pymongo import ASCENDING, DESCENDING
 from pymongo.connection import Connection
 from pymongo.errors import ConnectionFailure
 
@@ -33,10 +34,15 @@ class MONGO_DB(object):
     meta_coll = 'metadata'
     rate_coll = 'rates'
     
-    path_idx = [('device',1),('oidset',1),('oid',1),('path',1)]
+    path_idx = [
+        ('device', ASCENDING),
+        ('oidset', ASCENDING),
+        ('oid', ASCENDING),
+        ('path', ASCENDING)
+    ]
     raw_idx = []
     meta_idx = path_idx
-    rate_idx = path_idx + [('ts',-1)]
+    rate_idx = path_idx + [('ts', DESCENDING)]
     
     insert_flags = { 'safe': True }
     
