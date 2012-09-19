@@ -33,7 +33,7 @@ from esxsnmp.error import ConfigError
 
 from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
 
-from esxsnmp.mongo import MONGO_DB, RawData, RateBin, INVALID_VALUE
+from esxsnmp.mongo import MONGO_DB, RawData, BaseRateBin, INVALID_VALUE
 
 try:
     import cmemcache as memcache
@@ -472,9 +472,9 @@ class MongoDBPollPersister(PollPersister):
                 
         # XXX(mmg): include HEARTBEAT backfill logic here.
         
-        prev_bin = RateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
+        prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
                 **data.get_path())
-        curr_bin = RateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
+        curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
                 **data.get_path())
         
         self.db.update_rate_bin(prev_bin)
@@ -493,19 +493,19 @@ class MongoDBPollPersister(PollPersister):
                 missed_frac = missed / len(missed_slots)
                 missed_rem = missed % (missed_frac * len(missed_slots))
                 for slot in missed_slots:
-                    miss_bin = RateBin(ts=slot, freq=data.freq, val=missed_frac,
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=missed_frac,
                             **data.get_path())
                     self.db.update_rate_bin(miss_bin)
                 
                     for i in range(missed_rem):
-                        dist_bin = RateBin(ts=missed_slots[i], freq=data.freq,
+                        dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
                             val=1, **data.get_path())
             else:
                 # Presume invalid data (new logic)
                 for slot in missed_slots:
                     # XXX(mmg): rectify using -9999 - this is a stopgap
                     # to get some code pushed.
-                    miss_bin = RateBin(ts=slot, freq=data.freq, val=INVALID_VALUE,
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=INVALID_VALUE,
                             **data.get_path())
                     self.db.update_rate_bin(miss_bin)
         

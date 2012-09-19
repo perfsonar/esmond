@@ -337,7 +337,7 @@ class Metadata(DataContainerBase):
         self.last_val = data.val
         
 
-class RateBin(DataContainerBase):
+class BaseRateBin(DataContainerBase):
     
     _doc_properties = ['ts']
     
@@ -360,4 +360,6 @@ class RateBin(DataContainerBase):
     @property
     def avg(self):
         return self.val / self.freq
+    
+        
 
