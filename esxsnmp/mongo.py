@@ -82,8 +82,16 @@ class MONGO_DB(object):
         ret = self.metadata.insert(meta_d.get_document(), **self.insert_flags)
         
     def get_metadata(self, raw_data):
+        p = raw_data.get_path()
         t = time.time()
-        meta_d = self.metadata.find_one(raw_data.get_path())
+        meta_d = self.metadata.find_one(
+            {
+                'device': p['device'],
+                'oidset': p['oidset'],
+                'oid':    p['oid'],
+                'path':   p['path'],
+            }
+        )
         
         if not meta_d:
             # Seeing first row - intialize with vals
