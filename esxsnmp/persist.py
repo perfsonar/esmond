@@ -33,7 +33,7 @@ from esxsnmp.error import ConfigError
 
 from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
 
-from esxsnmp.mongo import MONGO_DB, RawData, BaseRateBin, INVALID_VALUE
+from esxsnmp.mongo import MONGO_DB, RawData, BaseRateBin, AggregationBin, INVALID_VALUE
 
 try:
     import cmemcache as memcache

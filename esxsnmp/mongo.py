@@ -361,5 +361,18 @@ class BaseRateBin(DataContainerBase):
     def avg(self):
         return self.val / self.freq
     
+
+class AggregationBin(BaseRateBin):
+    
+    def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None,
+            ts=None, freq=None, val=None, count=None, min=None, max=None):
+        BaseRateBin.__init__(self, device, oidset, oid, path, _id, ts, freq, val)
+        
+        self.count = count
+        self.min = min
+        self.max = max
+
+    # XXX(mmg): will need to override avg property in this subclass
+        
         
 
