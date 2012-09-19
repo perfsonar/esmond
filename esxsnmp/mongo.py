@@ -96,7 +96,7 @@ class MONGO_DB(object):
         if not meta_d:
             # Seeing first row - intialize with vals
             meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
-                min_ts=raw_data.ts, **raw_data.get_path())
+                min_ts=raw_data.ts, freq=raw_data.freq, **raw_data.get_path())
             self.set_metadata(meta_d)
         else:
             meta_d = Metadata(**meta_d)
@@ -306,12 +306,13 @@ class Metadata(DataContainerBase):
     _doc_properties = ['min_ts', 'last_update']
     
     def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None,
-            last_update=None, last_val=None, min_ts=None):
+            last_update=None, last_val=None, min_ts=None, freq=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self._min_ts = self._last_update = None
         self.last_update = last_update
         self.last_val = last_val
         self.min_ts = min_ts
+        self.freq = freq
         
     @property
     def min_ts(self):
