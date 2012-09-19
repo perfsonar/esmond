@@ -193,8 +193,8 @@ class DatabaseMetrics(object):
         if metric in self._individual_metrics:
             datatype, action = metric.split('_')
             action = action.title()
-            exec('time = self.%s_time' % metric)
-            exec('count = self.%s_count' % metric)
+            time = getattr(self, '%s_time' % metric)
+            count = getattr(self, '%s_count' % metric)
             s = '%s %s %s data in %.3f (%.3f per sec)' \
                 % (action, count, datatype, time, (count/time))
         elif metric == 'total':
@@ -246,7 +246,7 @@ class DataContainerBase(object):
             doc[k] = v
             
         for p in self._doc_properties:
-            exec("doc['%s'] = self.%s" % (p, p))
+            doc[p] = getattr(self, '%s' % p)
         
         return doc
         
