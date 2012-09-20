@@ -169,11 +169,12 @@ class MONGO_DB(object):
         self.stats.aggregation_find((time.time() - t))
         
         if not ret:
-            # There's not an existing document - insert a new one
+            # There's not an existing document - insert a new one.
             agg = AggregationBin(
                 ts=agg_ts, freq=freq, val=raw_data.val, count=1,
                 min=raw_data.val, max=raw_data.val, **raw_data.get_path()
             )
+            # Not timing the inserts because they are fast and infrequent.
             self.aggs.insert(agg.get_document())
         else:
             # Do we need to update min or max in the aggregation?
@@ -271,7 +272,7 @@ class DatabaseMetrics(object):
             s = '%s %s %s data in %.3f (%.3f per sec)' \
                 % (action, count, datatype, time, (count/time))
             if metric.find('total') > -1:
-                s += ' (not included in total)'
+                s += ' (informational - not in total)'
         elif metric == 'total':
             for k,v in self.__dict__.items():
                 if k.find('total') > -1:
