@@ -129,7 +129,7 @@ class MONGO_DB(object):
     def update_metadata(self, metadata):
         t = time.time()
         ret = self.metadata.update(
-            self._get_query_criteria(metadata.get_path()),
+            { '_id': metadata._id },
             {
                 '$set': {
                     'last_val': metadata.last_val,
@@ -181,7 +181,7 @@ class MONGO_DB(object):
                 
             if update_attr:
                 self.aggs.update(
-                    self._get_query_criteria(raw_data.get_path(), ts=agg_ts, freq=freq),
+                    { '_id': ret['_id'] },
                     { '$set': { update_attr : raw_data.val} },
                     new=True, upsert=False, **self.insert_flags
                 )
