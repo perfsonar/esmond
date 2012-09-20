@@ -99,6 +99,7 @@ class MONGO_DB(object):
         if ts:
             q_c.append(('ts', ts))
         
+        # The SON is an ordered dict (fyi).
         return SON(q_c)
         
     def get_metadata(self, raw_data):
