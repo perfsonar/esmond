@@ -42,6 +42,7 @@ class MONGO_DB(object):
         ('oid', ASCENDING),
         ('path', ASCENDING)
     ]
+    
     raw_idx  = []
     meta_idx = path_idx
     rate_idx = path_idx + [ ('ts', DESCENDING) ]
@@ -165,6 +166,7 @@ class MONGO_DB(object):
             new=True,
             upsert=False
         )
+        self.stats.aggregation_find((time.time() - t))
         
         if not ret:
             # There's not an existing document - insert a new one
@@ -176,17 +178,19 @@ class MONGO_DB(object):
         else:
             # Do we need to update min or max in the aggregation?
             update_attr = None
+            
             if raw_data.val > ret['max'] or raw_data.val < ret['min']:
-                update_attr = 'max' if raw_data.val > ret['max'] else 'min'
-                
+                update_attr = 'max' if raw_data.val > ret['max'] else 'min'    
             if update_attr:
+                t1 = time.time()
                 self.aggs.update(
                     { '_id': ret['_id'] },
                     { '$set': { update_attr : raw_data.val} },
                     new=True, upsert=False, **self.insert_flags
                 )
-                
-        self.stats.aggregation_update((time.time() - t))
+                self.stats.aggregation_update((time.time() - t1))
+        
+        self.stats.aggregation_build((time.time() - t))
             
     def __del__(self):
         pass
@@ -200,6 +204,8 @@ class DatabaseMetrics(object):
         'meta_fetch', 
         'meta_update', 
         'baserate_update',
+        'aggregation_build',
+        'aggregation_find',
         'aggregation_update'
     ]
     _all_metrics = _individual_metrics + ['total', 'all']
@@ -213,6 +219,10 @@ class DatabaseMetrics(object):
         self.meta_update_count = 0
         self.baserate_update_time = 0
         self.baserate_update_count = 0
+        self.aggregation_build_time = 0
+        self.aggregation_build_count = 0
+        self.aggregation_find_time = 0
+        self.aggregation_find_count = 0
         self.aggregation_update_time = 0
         self.aggregation_update_count = 0
         
@@ -231,6 +241,14 @@ class DatabaseMetrics(object):
     def baserate_update(self, t):
         self.baserate_update_time += t
         self.baserate_update_count += 1
+        
+    def aggregation_build(self, t):
+        self.aggregation_build_time += t
+        self.aggregation_build_count += 1
+        
+    def aggregation_find(self, t):
+        self.aggregation_find_time += t
+        self.aggregation_find_count += 1
         
     def aggregation_update(self, t):
         self.aggregation_update_time += t
@@ -252,8 +270,13 @@ class DatabaseMetrics(object):
             count = getattr(self, '%s_count' % metric)
             s = '%s %s %s data in %.3f (%.3f per sec)' \
                 % (action, count, datatype, time, (count/time))
+            if metric == 'aggregation_build':
+                s += ' (not included in total)'
         elif metric == 'total':
             for k,v in self.__dict__.items():
+                if k.startswith('aggregation_build'):
+                    # don't double count the agg numbers
+                    continue
                 if k.endswith('_count'):
                     count += v
                 elif k.endswith('_time'):
