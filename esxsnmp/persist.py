@@ -403,7 +403,7 @@ class MongoDBPollPersister(PollPersister):
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
             
             #if path_n != 'fxp0.0':
-            # continue
+            #    continue
             
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)
@@ -414,6 +414,10 @@ class MongoDBPollPersister(PollPersister):
                 self.aggregate_base_rate(raw_data)
                 uptime_name = os.path.join(basename, 'sysUpTime')
                 # XXX(mmg) how do we handle this uptime?
+                
+                # May want a condition on this, so build higher
+                # level aggregations elsewhere
+                self.generate_aggregations(raw_data)
             else:
                 # XXX(mmg): put non-rate value handling here and also
                 # metadata updates for said.
@@ -512,6 +516,25 @@ class MongoDBPollPersister(PollPersister):
         
         metadata.refresh_from_raw(data)
         self.db.update_metadata(metadata)
+        
+    def _short_agg_ts(self, ts):
+        # Squish to an hour
+        return (ts.replace(minute=0, second=0, microsecond=0), 3600)
+        
+    def _log_agg_ts(self, ts):
+        # Squish to a day
+        return (ts.replace(hour=0, minute=0, second=0, microsecond=0), 86400)
+        
+    def generate_aggregations(self, data):
+        short_ts, short_freq = self._short_agg_ts(data.ts)
+        long_ts, long_freq = self._log_agg_ts(data.ts)
+        
+        # Might want a condition here - might not build two
+        # aggs for every measurement?
+        
+        self.db.update_aggregation(data, short_ts, short_freq)
+        
+        self.db.update_aggregation(data, long_ts, long_freq)
 
 class HistoryTablePersister(PollPersister):
     """Provides common methods for table histories."""

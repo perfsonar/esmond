@@ -33,7 +33,8 @@ class MONGO_DB(object):
     database = 'esxsnmp'
     raw_coll = 'raw_data'
     meta_coll = 'metadata'
-    rate_coll = 'rates'
+    rate_coll = 'base_rates'
+    agg_coll = 'aggregations'
     
     path_idx = [
         ('device', ASCENDING),
@@ -41,9 +42,10 @@ class MONGO_DB(object):
         ('oid', ASCENDING),
         ('path', ASCENDING)
     ]
-    raw_idx = []
+    raw_idx  = []
     meta_idx = path_idx
-    rate_idx = path_idx + [('ts', DESCENDING)]
+    rate_idx = path_idx + [ ('ts', DESCENDING) ]
+    agg_idx  = path_idx + [ ('ts', DESCENDING) ]
     
     insert_flags = { 'safe': True }
     
@@ -71,10 +73,12 @@ class MONGO_DB(object):
         self.raw_data = self.db[self.raw_coll]
         self.metadata = self.db[self.meta_coll]
         self.rates    = self.db[self.rate_coll]
+        self.aggs     = self.db[self.agg_coll]
         
         # Indexes
         self.metadata.ensure_index(self.meta_idx, unique=True)
         self.rates.ensure_index(self.rate_idx, unique=True)
+        self.aggs.ensure_index(self.agg_idx, unique=True)
         
         # Timing
         self.stats = DatabaseMetrics()
@@ -88,7 +92,7 @@ class MONGO_DB(object):
     def set_metadata(self, meta_d):
         ret = self.metadata.insert(meta_d.get_document(), **self.insert_flags)
         
-    def _get_query_criteria(self, path, ts=None):
+    def _get_query_criteria(self, path, ts=None, freq=None):
         q_c = [
             ('device', path['device']),
             ('oidset', path['oidset']),
@@ -98,6 +102,9 @@ class MONGO_DB(object):
         
         if ts:
             q_c.append(('ts', ts))
+        
+        if freq:
+            q_c.append(('freq', freq))
         
         # The SON is an ordered dict (fyi).
         return SON(q_c)
@@ -137,7 +144,7 @@ class MONGO_DB(object):
     def update_rate_bin(self, ratebin):
         t = time.time()
         ret = self.rates.update(
-            self._get_query_criteria(ratebin.get_path(), ratebin.ts),
+            self._get_query_criteria(ratebin.get_path(), ts=ratebin.ts),
             {
                 '$set': { 'freq': ratebin.freq },
                 '$inc': { 'val': ratebin.val }
@@ -145,7 +152,41 @@ class MONGO_DB(object):
             upsert=True, **self.insert_flags
         )
         self.stats.baserate_update((time.time() - t))
-    
+        
+        
+    def update_aggregation(self, raw_data, agg_ts, freq):
+        t = time.time()
+        ret = self.aggs.find_and_modify(
+            self._get_query_criteria(raw_data.get_path(), ts=agg_ts, freq=freq),
+            {
+                '$set': { 'freq': freq },
+                '$inc': { 'count': 1, 'val': raw_data.val },
+            },
+            new=True,
+            upsert=False
+        )
+        
+        if not ret:
+            # There's not an existing document - insert a new one
+            agg = AggregationBin(
+                ts=agg_ts, freq=freq, val=raw_data.val, count=1,
+                min=raw_data.val, max=raw_data.val, **raw_data.get_path()
+            )
+            self.aggs.insert(agg.get_document())
+        else:
+            # Do we need to update min or max in the aggregation?
+            update_attr = None
+            if raw_data.val > ret['max'] or raw_data.val < ret['min']:
+                update_attr = 'max' if raw_data.val > ret['max'] else 'min'
+                
+            if update_attr:
+                self.aggs.update(
+                    self._get_query_criteria(raw_data.get_path(), ts=agg_ts, freq=freq),
+                    { '$set': { update_attr : raw_data.val} },
+                    new=True, upsert=False, **self.insert_flags
+                )
+                
+        self.stats.aggregation_update((time.time() - t))
             
     def __del__(self):
         pass
@@ -154,7 +195,13 @@ class MONGO_DB(object):
 
 class DatabaseMetrics(object):
     
-    _individual_metrics = ['raw_insert', 'meta_fetch', 'meta_update', 'baserate_update']
+    _individual_metrics = [
+        'raw_insert', 
+        'meta_fetch', 
+        'meta_update', 
+        'baserate_update',
+        'aggregation_update'
+    ]
     _all_metrics = _individual_metrics + ['total', 'all']
     
     def __init__(self):
@@ -166,6 +213,8 @@ class DatabaseMetrics(object):
         self.meta_update_count = 0
         self.baserate_update_time = 0
         self.baserate_update_count = 0
+        self.aggregation_update_time = 0
+        self.aggregation_update_count = 0
         
     def raw_insert(self, t):
         self.raw_insert_time += t
@@ -182,6 +231,10 @@ class DatabaseMetrics(object):
     def baserate_update(self, t):
         self.baserate_update_time += t
         self.baserate_update_count += 1
+        
+    def aggregation_update(self, t):
+        self.aggregation_update_time += t
+        self.aggregation_update_count += 1
         
     def report(self, metric='all'):
         
