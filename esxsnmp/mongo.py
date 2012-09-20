@@ -190,7 +190,7 @@ class MONGO_DB(object):
                 )
                 self.stats.aggregation_update((time.time() - t1))
         
-        self.stats.aggregation_build((time.time() - t))
+        self.stats.aggregation_total((time.time() - t))
             
     def __del__(self):
         pass
@@ -204,7 +204,7 @@ class DatabaseMetrics(object):
         'meta_fetch', 
         'meta_update', 
         'baserate_update',
-        'aggregation_build',
+        'aggregation_total',
         'aggregation_find',
         'aggregation_update'
     ]
@@ -219,8 +219,8 @@ class DatabaseMetrics(object):
         self.meta_update_count = 0
         self.baserate_update_time = 0
         self.baserate_update_count = 0
-        self.aggregation_build_time = 0
-        self.aggregation_build_count = 0
+        self.aggregation_total_time = 0
+        self.aggregation_total_count = 0
         self.aggregation_find_time = 0
         self.aggregation_find_count = 0
         self.aggregation_update_time = 0
@@ -242,9 +242,9 @@ class DatabaseMetrics(object):
         self.baserate_update_time += t
         self.baserate_update_count += 1
         
-    def aggregation_build(self, t):
-        self.aggregation_build_time += t
-        self.aggregation_build_count += 1
+    def aggregation_total(self, t):
+        self.aggregation_total_time += t
+        self.aggregation_total_count += 1
         
     def aggregation_find(self, t):
         self.aggregation_find_time += t
@@ -270,11 +270,11 @@ class DatabaseMetrics(object):
             count = getattr(self, '%s_count' % metric)
             s = '%s %s %s data in %.3f (%.3f per sec)' \
                 % (action, count, datatype, time, (count/time))
-            if metric == 'aggregation_build':
+            if metric.find('total') > -1:
                 s += ' (not included in total)'
         elif metric == 'total':
             for k,v in self.__dict__.items():
-                if k.startswith('aggregation_build'):
+                if k.find('total') > -1:
                     # don't double count the agg numbers
                     continue
                 if k.endswith('_count'):
