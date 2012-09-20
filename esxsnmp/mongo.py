@@ -212,48 +212,35 @@ class DatabaseMetrics(object):
     _all_metrics = _individual_metrics + ['total', 'all']
     
     def __init__(self):
-        self.raw_insert_time = 0
-        self.raw_insert_count = 0
-        self.meta_fetch_time = 0
-        self.meta_fetch_count = 0
-        self.meta_update_time = 0
-        self.meta_update_count = 0
-        self.baserate_update_time = 0
-        self.baserate_update_count = 0
-        self.aggregation_total_time = 0
-        self.aggregation_total_count = 0
-        self.aggregation_find_time = 0
-        self.aggregation_find_count = 0
-        self.aggregation_update_time = 0
-        self.aggregation_update_count = 0
+        for im in self._individual_metrics:
+            setattr(self, '%s_time' % im, 0)
+            setattr(self, '%s_count' % im, 0)
         
+        
+    def _increment(self, m, t):
+        setattr(self, '%s_time' % m, getattr(self, '%s_time' % m) + t)
+        setattr(self, '%s_count' % m, getattr(self, '%s_count' % m) + 1)
+
     def raw_insert(self, t):
-        self.raw_insert_time += t
-        self.raw_insert_count += 1
-        
+        self._increment('raw_insert', t)
+
     def meta_fetch(self, t):
-        self.meta_fetch_time += t
-        self.meta_fetch_count += 1
-        
+        self._increment('meta_fetch', t)
+
     def meta_update(self, t):
-        self.meta_update_time += t
-        self.meta_update_count += 1
-        
+        self._increment('meta_update', t)
+
     def baserate_update(self, t):
-        self.baserate_update_time += t
-        self.baserate_update_count += 1
-        
+        self._increment('baserate_update', t)
+
     def aggregation_total(self, t):
-        self.aggregation_total_time += t
-        self.aggregation_total_count += 1
-        
+        self._increment('aggregation_total', t)
+
     def aggregation_find(self, t):
-        self.aggregation_find_time += t
-        self.aggregation_find_count += 1
-        
+        self._increment('aggregation_find', t)
+
     def aggregation_update(self, t):
-        self.aggregation_update_time += t
-        self.aggregation_update_count += 1
+        self._increment('aggregation_update', t)
         
     def report(self, metric='all'):
         
