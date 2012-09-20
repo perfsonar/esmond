@@ -14,6 +14,7 @@ import pymongo
 from pymongo import ASCENDING, DESCENDING
 from pymongo.connection import Connection
 from pymongo.errors import ConnectionFailure
+from bson.son import SON
 
 INVALID_VALUE = -9999
 
@@ -87,16 +88,23 @@ class MONGO_DB(object):
     def set_metadata(self, meta_d):
         ret = self.metadata.insert(meta_d.get_document(), **self.insert_flags)
         
+    def _get_query_criteria(self, path, ts=None):
+        q_c = [
+            ('device', path['device']),
+            ('oidset', path['oidset']),
+            ('oid', path['oid']),
+            ('path', path['path'])
+        ]
+        
+        if ts:
+            q_c.append(('ts', ts))
+        
+        return SON(q_c)
+        
     def get_metadata(self, raw_data):
-        p = raw_data.get_path()
         t = time.time()
         meta_d = self.metadata.find_one(
-            {
-                'device': p['device'],
-                'oidset': p['oidset'],
-                'oid':    p['oid'],
-                'path':   p['path'],
-            }
+            self._get_query_criteria(raw_data.get_path()),
         )
         
         if not meta_d:
@@ -111,15 +119,9 @@ class MONGO_DB(object):
         return meta_d
         
     def update_metadata(self, metadata):
-        p = metadata.get_path()
         t = time.time()
         ret = self.metadata.update(
-            {
-                'device': p['device'],
-                'oidset': p['oidset'],
-                'oid':    p['oid'],
-                'path':   p['path']
-            },
+            self._get_query_criteria(metadata.get_path()),
             {
                 '$set': {
                     'last_val': metadata.last_val,
@@ -132,16 +134,9 @@ class MONGO_DB(object):
         self.stats.meta_update((time.time() - t))
         
     def update_rate_bin(self, ratebin):
-        p = ratebin.get_path()
         t = time.time()
         ret = self.rates.update(
-            {
-               'device': p['device'],
-               'oidset': p['oidset'],
-               'oid':    p['oid'],
-               'path':   p['path'],
-               'ts':     ratebin.ts
-            }, 
+            self._get_query_criteria(ratebin.get_path(), ratebin.ts),
             {
                 '$set': { 'freq': ratebin.freq },
                 '$inc': { 'val': ratebin.val }
