@@ -45,8 +45,8 @@ class MONGO_DB(object):
     
     raw_idx  = []
     meta_idx = path_idx
-    rate_idx = path_idx + [ ('ts', DESCENDING) ]
-    agg_idx  = path_idx + [ ('ts', DESCENDING) ]
+    rate_idx = path_idx + [ ('ts', ASCENDING) ]
+    agg_idx  = path_idx + [ ('ts', ASCENDING) ]
     
     insert_flags = { 'safe': True }
     
@@ -178,9 +178,9 @@ class MONGO_DB(object):
         else:
             # Do we need to update min or max in the aggregation?
             update_attr = None
-            
             if raw_data.val > ret['max'] or raw_data.val < ret['min']:
                 update_attr = 'max' if raw_data.val > ret['max'] else 'min'    
+            
             if update_attr:
                 t1 = time.time()
                 self.aggs.update(
@@ -275,7 +275,7 @@ class DatabaseMetrics(object):
         elif metric == 'total':
             for k,v in self.__dict__.items():
                 if k.find('total') > -1:
-                    # don't double count the agg numbers
+                    # don't double count the agg total numbers
                     continue
                 if k.endswith('_count'):
                     count += v
