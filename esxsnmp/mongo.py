@@ -38,9 +38,8 @@ class MONGO_DB(object):
     
     path_idx = [
         ('device', ASCENDING),
-        ('oidset', ASCENDING),
+        ('path', ASCENDING),
         ('oid', ASCENDING),
-        ('path', ASCENDING)
     ]
     
     raw_idx  = []
@@ -94,18 +93,18 @@ class MONGO_DB(object):
         ret = self.metadata.insert(meta_d.get_document(), **self.insert_flags)
         
     def _get_query_criteria(self, path, ts=None, freq=None):
+        
         q_c = [
             ('device', path['device']),
-            ('oidset', path['oidset']),
+            ('path', path['path']),
             ('oid', path['oid']),
-            ('path', path['path'])
         ]
-        
-        if ts:
-            q_c.append(('ts', ts))
         
         if freq:
             q_c.append(('freq', freq))
+            
+        if ts:
+            q_c.append(('ts', ts))
         
         # The SON is an ordered dict (fyi).
         return SON(q_c)
@@ -147,7 +146,9 @@ class MONGO_DB(object):
         ret = self.rates.update(
             self._get_query_criteria(ratebin.get_path(), ts=ratebin.ts),
             {
-                '$set': { 'freq': ratebin.freq },
+                # Manually setting oidset because it has been taken
+                # out of the upsert search criteria.
+                '$set': { 'freq': ratebin.freq, 'oidset': ratebin.oidset },
                 '$inc': { 'val': ratebin.val }
             },
             upsert=True, **self.insert_flags
