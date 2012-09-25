@@ -411,13 +411,18 @@ class MongoDBPollPersister(PollPersister):
             self.db.set_raw_data(raw_data)
 
             if oid.aggregate:
-                self.aggregate_base_rate(raw_data)
+                delta_v = self.aggregate_base_rate(raw_data)
                 uptime_name = os.path.join(basename, 'sysUpTime')
                 # XXX(mmg) how do we handle this uptime?
                 
                 # May want a condition on this, so build higher
                 # level aggregations elsewhere
-                self.generate_aggregations(raw_data)
+                
+                if delta_v:
+                    # We got a good delta back from base rate, so
+                    # build an aggregation with it
+                    raw_data.val = delta_v
+                    self.generate_aggregations(raw_data)
             else:
                 # XXX(mmg): put non-rate value handling here and also
                 # metadata updates for said.
@@ -516,6 +521,8 @@ class MongoDBPollPersister(PollPersister):
         
         metadata.refresh_from_raw(data)
         self.db.update_metadata(metadata)
+        
+        return delta_v
         
     def _short_agg_ts(self, ts):
         # Squish to an hour
