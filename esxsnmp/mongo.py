@@ -438,8 +438,7 @@ class AggregationBin(BaseRateBin):
         self.count = count
         self.min = min
         self.max = max
-
-    # XXX(mmg): will need to override avg property in this subclass
         
-        
-
+    @property
+    def avg(self):
+        return self.val / (self.count * self.freq)
