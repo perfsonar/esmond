@@ -457,10 +457,10 @@ class MongoDBPollPersister(PollPersister):
         max_rate = int(110e9)
 
         if rate > max_rate:
-            print 'max_rate_exceeded'
-            # XXX(mmg): 1) log this and 2) update metadata with current
-            # info (ie: prev = current) and then 3) return/stop processing.
-            raise
+            self.log.error('max_rate_exceeded - %s - %s - %s' \
+                % (rate, metadata.last_val, data.val))
+            metadata.refresh_from_raw(data)
+            return
             
         assert delta_v >= 0
         
