@@ -172,7 +172,7 @@ class MONGO_DB(object):
         if not ret:
             # There's not an existing document - insert a new one.
             agg = AggregationBin(
-                ts=agg_ts, freq=freq, val=raw_data.val, val_freq=raw_data.freq, count=1,
+                ts=agg_ts, freq=freq, val=raw_data.val, base_freq=raw_data.freq, count=1,
                 min=raw_data.val, max=raw_data.val, **raw_data.get_path()
             )
             # Not timing the inserts because they are fast and infrequent.
@@ -432,15 +432,15 @@ class BaseRateBin(DataContainerBase):
 class AggregationBin(BaseRateBin):
     
     def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None,
-            ts=None, freq=None, val=None, val_freq=None, count=None, 
+            ts=None, freq=None, val=None, base_freq=None, count=None, 
             min=None, max=None):
         BaseRateBin.__init__(self, device, oidset, oid, path, _id, ts, freq, val)
         
         self.count = count
         self.min = min
         self.max = max
-        self.val_freq = val_freq
+        self.base_freq = base_freq
         
     @property
     def avg(self):
-        return self.val / (self.count * self.val_freq)
+        return self.val / (self.count * self.base_freq)

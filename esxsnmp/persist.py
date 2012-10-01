@@ -528,13 +528,13 @@ class MongoDBPollPersister(PollPersister):
         # Squish to an hour
         return (ts.replace(minute=0, second=0, microsecond=0), 3600)
         
-    def _log_agg_ts(self, ts):
+    def _long_agg_ts(self, ts):
         # Squish to a day
         return (ts.replace(hour=0, minute=0, second=0, microsecond=0), 86400)
         
     def generate_aggregations(self, data):
         short_ts, short_freq = self._short_agg_ts(data.ts)
-        long_ts, long_freq = self._log_agg_ts(data.ts)
+        long_ts, long_freq = self._long_agg_ts(data.ts)
         
         # Might want a condition here - might not build two
         # aggs for every measurement?
