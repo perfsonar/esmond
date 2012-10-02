@@ -193,6 +193,35 @@ class MONGO_DB(object):
                 self.stats.aggregation_update((time.time() - t1))
         
         self.stats.aggregation_total((time.time() - t))
+        
+    def _to_datetime(self,d):
+        if type(d) == type(datetime.datetime.now()):
+            return d
+        else:
+            return datetime.datetime.utcfromtimestamp(d)
+        
+    def query_baserate_timerange(self, device=None, path=None, oid=None, 
+                ts_min=None, ts_max=None):
+        
+        ret = self.rates.find(
+            {
+                'device': device, 
+                'path': path, 
+                'oid': oid,
+                'ts': {
+                    '$gte': self._to_datetime(ts_min),
+                    '$lte': self._to_datetime(ts_max),
+                },
+            }
+        ).sort('ts', ASCENDING)
+        
+        # Just return the results and format elsewhere.
+        results = []
+        
+        for r in ret:
+            results.append(r)
+        
+        return results
             
     def __del__(self):
         pass

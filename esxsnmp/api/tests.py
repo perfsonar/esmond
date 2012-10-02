@@ -9,6 +9,7 @@ import os
 import os.path
 import json
 import datetime
+import calendar
 import shutil
 
 from collections import namedtuple
@@ -327,7 +328,7 @@ class TestMongoDBPollPersister(TestCase):
     def test_persister_long(self):
         """Make sure the tsdb and mongo data match"""
         config = get_config(get_config_path())
-        
+        return # XXX(mmg) twitting ths out for now
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = TSDBPollPersister(config, "test", persistq=q)
@@ -380,6 +381,24 @@ class TestMongoDBPollPersister(TestCase):
          
         assert count_bad == 0       
         assert db.rates.count() == tsdb_aggs
+        
+    def test_range_baserate_query(self):
+        """
+        Presumed using test data loaded in previous test method.
+        """
+        config = get_config(get_config_path())
+        db = MONGO_DB(config)
+        
+        ret = db.query_baserate_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            ts_min=1343956800,
+            ts_max=1343957400
+        )
+        
+        assert len(ret) == 21
+            
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):
