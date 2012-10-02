@@ -6,6 +6,7 @@ Mongo DB interface calls and data encapsulation objects.
 # Standard
 import calendar
 import datetime
+import json
 import os
 import sys
 import time
@@ -201,7 +202,7 @@ class MONGO_DB(object):
             return datetime.datetime.utcfromtimestamp(d)
         
     def query_baserate_timerange(self, device=None, path=None, oid=None, 
-                ts_min=None, ts_max=None):
+                ts_min=None, ts_max=None, as_json=False):
         
         ret = self.rates.find(
             {
@@ -220,11 +221,56 @@ class MONGO_DB(object):
         
         for r in ret:
             results.append(r)
-        
-        return results
+            
+        if as_json: # format results for query interface
+            freq = None
+            # Get the frequency from the metatdata if the result set is empty
+            if not results:
+                m_lookup = self.metadata.find_one(
+                    {
+                        'device': device, 
+                        'path': path, 
+                        'oid': oid,
+                    }
+                )
+                freq = m_lookup['freq']
+            return FormattedOutput.base_rate(ts_min, ts_max, results, freq)
+        else:
+            return results
             
     def __del__(self):
         pass
+
+class FormattedOutput(object):
+    
+    @staticmethod
+    def _from_datetime(d):
+        if type(d) != type(datetime.datetime.now()):
+            return d
+        else:
+            return calendar.timegm(d.utctimetuple())
+    
+    @staticmethod
+    def base_rate(ts_min, ts_max, results, freq=None):
+        fmt = [
+            ('agg', freq if freq else results[0]['freq']),
+            ('end_time', ts_max),
+            ('data', []),
+            ('cf', 'XXX(mmg)'),
+            ('begin_time', ts_min)
+        ]
+        
+        fmt = SON(fmt)
+        
+        for r in results:
+            fmt['data'].append(
+                [
+                    FormattedOutput._from_datetime(r['ts']), 
+                    None if r['val'] == INVALID_VALUE else r['val']
+                ]
+            )
+        
+        return json.dumps(fmt)
 
 # Stats/timing code for connection class
 

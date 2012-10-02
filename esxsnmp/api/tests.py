@@ -389,15 +389,34 @@ class TestMongoDBPollPersister(TestCase):
         config = get_config(get_config_path())
         db = MONGO_DB(config)
         
+        start_time = 1343956800
+        end_time = 1343957400
+        expected_results = 21
+        
         ret = db.query_baserate_timerange(
             device='router_a',
             path='fxp0.0',
             oid='ifHCInOctets',
-            ts_min=1343956800,
-            ts_max=1343957400
+            ts_min=start_time,
+            ts_max=end_time
         )
         
-        assert len(ret) == 21
+        assert len(ret) == expected_results
+        
+        ret = db.query_baserate_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            ts_min=start_time,
+            ts_max=end_time,
+            as_json=True
+        )
+        
+        ret = json.loads(ret)
+        
+        assert len(ret['data']) == expected_results
+        assert ret['begin_time'] == start_time
+        assert ret['end_time'] == end_time
             
 
 if tsdb:
