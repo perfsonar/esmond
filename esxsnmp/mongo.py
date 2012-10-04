@@ -239,7 +239,7 @@ class MONGO_DB(object):
             return results
             
     def query_aggregation_timerange(self, device=None, path=None, oid=None, 
-                ts_min=None, ts_max=None, freq=None, cf='average', as_json=False):
+                ts_min=None, ts_max=None, freq=None, cf=None, as_json=False):
                 
         ret = self.aggs.find(
             {
@@ -266,6 +266,43 @@ class MONGO_DB(object):
         else:
             return results
             
+    def query_raw_data(self, device=None, path=None, oid=None, 
+                ts_min=None, ts_max=None, as_json=False):
+                
+        ret = self.raw_data.find(
+            {
+                'device': device, 
+                'path': path, 
+                'oid': oid,
+                'ts': {
+                    '$gte': self._to_datetime(ts_min),
+                    '$lte': self._to_datetime(ts_max),
+                },
+            }
+        ).sort('ts', ASCENDING)
+
+        # Just return the results and format elsewhere.
+        results = []
+
+        for r in ret:
+            results.append(r)
+            
+        if as_json: # format results for query interface
+            freq = None
+            # Get the frequency from the metatdata if the result set is empty
+            if not results:
+                m_lookup = self.metadata.find_one(
+                    {
+                        'device': device, 
+                        'path': path, 
+                        'oid': oid,
+                    }
+                )
+                freq = m_lookup['freq']
+            return FormattedOutput.raw_data(ts_min, ts_max, results, freq)
+        else:
+            return results
+            
     def __del__(self):
         pass
 
@@ -279,12 +316,12 @@ class FormattedOutput(object):
             return calendar.timegm(d.utctimetuple())
     
     @staticmethod
-    def base_rate(ts_min, ts_max, results, freq=None, cf='average'):
+    def base_rate(ts_min, ts_max, results, freq=None):
         fmt = [
             ('agg', freq if freq else results[0]['freq']),
             ('end_time', ts_max),
             ('data', []),
-            ('cf', cf),
+            ('cf', 'average'),
             ('begin_time', ts_min)
         ]
         
@@ -321,6 +358,28 @@ class FormattedOutput(object):
                 ]
             )
             
+        return json.dumps(fmt)
+        
+    @staticmethod
+    def raw_data(ts_min, ts_max, results, freq=None):
+        fmt = [
+            ('agg', freq if freq else results[0]['freq']),
+            ('end_time', ts_max),
+            ('data', []),
+            ('cf', 'raw'),
+            ('begin_time', ts_min)
+        ]
+        
+        fmt = SON(fmt)
+        
+        for r in results:
+            fmt['data'].append(
+                [
+                    FormattedOutput._from_datetime(r['ts']), 
+                    float(r['val'])
+                ]
+            )
+        
         return json.dumps(fmt)
 
 # Stats/timing code for connection class

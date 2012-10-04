@@ -328,7 +328,7 @@ class TestMongoDBPollPersister(TestCase):
     def test_persister_long(self):
         """Make sure the tsdb and mongo data match"""
         config = get_config(get_config_path())
-        return # XXX(mmg) twitting ths out for now
+        
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = TSDBPollPersister(config, "test", persistq=q)
@@ -385,6 +385,10 @@ class TestMongoDBPollPersister(TestCase):
     def test_range_baserate_query(self):
         """
         Presumed using test data loaded in previous test method.
+        
+        Shows the three query methods that return json formatted data.
+        
+        All args shown other than as_json are required.
         """
         config = get_config(get_config_path())
         db = MONGO_DB(config)
@@ -424,8 +428,8 @@ class TestMongoDBPollPersister(TestCase):
             oid='ifHCInOctets',
             ts_min=start_time - 3600,
             ts_max=end_time,
-            freq=3600,
-            cf='min', # min | max | average
+            freq=3600, # required!
+            cf='min',  # min | max | average - also required!
             as_json=True
         )
         
@@ -433,6 +437,19 @@ class TestMongoDBPollPersister(TestCase):
         
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 60
+        
+        ret = db.query_raw_data(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            ts_min=start_time,
+            ts_max=end_time,
+            as_json=True
+        )
+        
+        ret = json.loads(ret)
+        
+        assert len(ret['data']) == expected_results - 1
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):
