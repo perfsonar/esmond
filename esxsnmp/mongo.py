@@ -238,6 +238,34 @@ class MONGO_DB(object):
         else:
             return results
             
+    def query_aggregation_timerange(self, device=None, path=None, oid=None, 
+                ts_min=None, ts_max=None, freq=None, cf='average', as_json=False):
+                
+        ret = self.aggs.find(
+            {
+                'device': device, 
+                'path': path, 
+                'oid': oid,
+                'freq': freq,
+                'ts': {
+                    '$gte': self._to_datetime(ts_min),
+                    '$lte': self._to_datetime(ts_max),
+                },
+            }
+        ).sort('ts', ASCENDING)
+
+        # Just return the results and format elsewhere.
+        results = []
+        
+        for r in ret:
+            results.append(r)
+        
+        if as_json: # format results for query interface
+            return FormattedOutput.aggregate_rate(ts_min, ts_max, results, freq,
+                    cf.replace('average', 'avg'))
+        else:
+            return results
+            
     def __del__(self):
         pass
 
@@ -251,12 +279,12 @@ class FormattedOutput(object):
             return calendar.timegm(d.utctimetuple())
     
     @staticmethod
-    def base_rate(ts_min, ts_max, results, freq=None):
+    def base_rate(ts_min, ts_max, results, freq=None, cf='average'):
         fmt = [
             ('agg', freq if freq else results[0]['freq']),
             ('end_time', ts_max),
             ('data', []),
-            ('cf', 'XXX(mmg)'),
+            ('cf', cf),
             ('begin_time', ts_min)
         ]
         
@@ -266,10 +294,33 @@ class FormattedOutput(object):
             fmt['data'].append(
                 [
                     FormattedOutput._from_datetime(r['ts']), 
-                    None if r['val'] == INVALID_VALUE else r['val']
+                    None if r['val'] == INVALID_VALUE else float(r['val'])
                 ]
             )
         
+        return json.dumps(fmt)
+        
+    @staticmethod
+    def aggregate_rate(ts_min, ts_max, results, freq, cf):
+        fmt = [
+            ('agg', freq),
+            ('end_time', ts_max),
+            ('data', []),
+            ('cf', cf),
+            ('begin_time', ts_min)
+        ]
+    
+        fmt = SON(fmt)
+        
+        for r in results:
+            ro = AggregationBin(**r)
+            fmt['data'].append(
+                [
+                    ro.ts_to_unixtime(),
+                    getattr(ro, cf)
+                ]
+            )
+            
         return json.dumps(fmt)
 
 # Stats/timing code for connection class

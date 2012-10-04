@@ -417,7 +417,22 @@ class TestMongoDBPollPersister(TestCase):
         assert len(ret['data']) == expected_results
         assert ret['begin_time'] == start_time
         assert ret['end_time'] == end_time
-            
+        
+        ret = db.query_aggregation_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            ts_min=start_time - 3600,
+            ts_max=end_time,
+            freq=3600,
+            cf='min', # min | max | average
+            as_json=True
+        )
+        
+        ret = json.loads(ret)
+        
+        assert ret['agg'] == 3600
+        assert ret['data'][0][1] == 60
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):
