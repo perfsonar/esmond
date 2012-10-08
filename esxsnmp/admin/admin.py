@@ -3,7 +3,7 @@ from django.contrib import admin
 from esxsnmp.api.models import *
 
 class IfRefAdmin(admin.ModelAdmin):
-    list_filter = ('deviceid',)
+    list_filter = ('device',)
 
 class OIDSetDeviceInline(admin.TabularInline):
     model=DeviceOIDSetMap
@@ -23,7 +23,6 @@ class OIDSetAdmin(admin.ModelAdmin):
 
 admin.site.register(DeviceTag)
 admin.site.register(DeviceTagMap)
-admin.site.register(OIDCorrelator)
 admin.site.register(OIDType)
 admin.site.register(OID)
 admin.site.register(Poller)
