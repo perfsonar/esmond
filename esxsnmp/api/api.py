@@ -87,6 +87,11 @@ class DeviceResource(ModelResource):
     # data formatting
     # time based limits on view
     # decide to how represent -infinity/infinity timestamps
+    # figure out what we need from newdb.py
+    # add docs, start with stuff in newdb.py
+    #
+    # add mapping between oidset and REST API.  Something similar to declarative
+    # models/resources ala Django models
 
     def get_interface_list(self, request, **kwargs):
         return InterfaceResource().get_list(request, device__name=kwargs['name'])
