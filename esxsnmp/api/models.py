@@ -123,6 +123,17 @@ class OIDSet(models.Model):
     def __unicode__(self):
         return self.name
 
+    @property
+    def aggregates(self):
+        aggs = []
+        if self.poller_args:
+            for i in self.poller_args.split(" "):
+                k,v = i.split("=")
+                if k == "aggregates":
+                    aggs = v.split(",")
+                    break
+        return aggs
+
 class OIDSetMember(models.Model):
     """Associate :py:class:`.OID`s with :py:class:`.OIDSets`"""
 
