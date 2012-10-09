@@ -422,7 +422,7 @@ class MongoDBPollPersister(PollPersister):
                     # We got a good delta back from base rate, so
                     # build an aggregation with it
                     raw_data.val = delta_v
-                    self.generate_aggregations(raw_data)
+                    self.generate_aggregations(raw_data, oidset.aggregates)
             else:
                 # XXX(mmg): put non-rate value handling here and also
                 # metadata updates for said.
@@ -527,11 +527,9 @@ class MongoDBPollPersister(PollPersister):
     def _agg_timestamp(self, data, freq):
         return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
         
-    def generate_aggregations(self, data):
+    def generate_aggregations(self, data, aggregate_freqs):
         
-        freqs = [3600, 86400] # XXX(mmg): replace with data from db
-        
-        for freq in freqs:
+        for freq in aggregate_freqs:
             self.db.update_aggregation(data, self._agg_timestamp(data, freq), freq)
             
         
