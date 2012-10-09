@@ -130,7 +130,7 @@ class OIDSet(models.Model):
             for i in self.poller_args.split(" "):
                 k,v = i.split("=")
                 if k == "aggregates":
-                    aggs = v.split(",")
+                    aggs = map(int, v.split(","))
                     break
         return aggs
 
