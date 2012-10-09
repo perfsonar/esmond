@@ -524,24 +524,17 @@ class MongoDBPollPersister(PollPersister):
         
         return delta_v
         
-    def _short_agg_ts(self, ts):
-        # Squish to an hour
-        return (ts.replace(minute=0, second=0, microsecond=0), 3600)
-        
-    def _long_agg_ts(self, ts):
-        # Squish to a day
-        return (ts.replace(hour=0, minute=0, second=0, microsecond=0), 86400)
+    def _agg_timestamp(self, data, freq):
+        return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
         
     def generate_aggregations(self, data):
-        short_ts, short_freq = self._short_agg_ts(data.ts)
-        long_ts, long_freq = self._long_agg_ts(data.ts)
         
-        # Might want a condition here - might not build two
-        # aggs for every measurement?
+        freqs = [3600, 86400] # XXX(mmg): replace with data from db
         
-        self.db.update_aggregation(data, short_ts, short_freq)
+        for freq in freqs:
+            self.db.update_aggregation(data, self._agg_timestamp(data, freq), freq)
+            
         
-        self.db.update_aggregation(data, long_ts, long_freq)
 
 class HistoryTablePersister(PollPersister):
     """Provides common methods for table histories."""
