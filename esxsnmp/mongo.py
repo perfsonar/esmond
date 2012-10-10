@@ -15,6 +15,7 @@ import pymongo
 from pymongo import ASCENDING, DESCENDING
 from pymongo.connection import Connection
 from pymongo.errors import ConnectionFailure
+from pymongo.read_preferences import ReadPreference as rp
 from bson.son import SON
 
 INVALID_VALUE = -9999
@@ -54,7 +55,7 @@ class MONGO_DB(object):
         # Connection
         try:
             self.connection = pymongo.Connection(host=config.mongo_host, 
-                    port=config.mongo_port)
+                    port=config.mongo_port, read_preference=rp.SECONDARY_PREFERRED)
         except ConnectionFailure:
             raise ConnectionException("Couldn't connect to DB "
                             "at %s:%d" % (config.mongo_host, config.mongo_port))
