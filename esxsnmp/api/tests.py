@@ -337,7 +337,11 @@ class TestMongoDBPollPersister(TestCase):
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = MongoDBPollPersister(config, "test", persistq=q)
-        p.run()
+        try:
+            p.run()
+        except KeyboardInterrupt:
+            p.running = False
+        
         p.db.stats.report('all')
         
         ts_db = tsdb.TSDB(config.tsdb_root)
@@ -437,6 +441,10 @@ class TestMongoDBPollPersister(TestCase):
         
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 60
+        
+        # If using this with mongo_raw_expire set in the configuration
+        # it will fail if the expiry time is set to less than the dates
+        # of the test data.
         
         ret = db.query_raw_data(
             device='router_a',

@@ -58,6 +58,7 @@ class ESxSNMPConfig(object):
         self.mongo_pass = None
         self.mongo_port = None
         self.mongo_user = None
+        self.mongo_raw_expire = None
         self.pid_dir = None
         self.poll_retries = 5
         self.poll_timeout = 2
@@ -108,6 +109,7 @@ class ESxSNMPConfig(object):
                 'mongo_pass',
                 'mongo_port',
                 'mongo_user',
+                'mongo_raw_expire',
                 'pid_dir',
                 'poll_retries',
                 'poll_timeout',
@@ -158,6 +160,8 @@ class ESxSNMPConfig(object):
             self.mibs = map(str.strip, self.mibs.split(','))
         if self.mongo_port:
             self.mongo_port = int(self.mongo_port)
+        if self.mongo_raw_expire:
+            self.mongo_raw_expire = int(self.mongo_raw_expire)
         if self.poll_timeout:
             self.poll_timeout = int(self.poll_timeout)
         if self.poll_retries:

@@ -82,6 +82,10 @@ class MONGO_DB(object):
         self.rates.ensure_index(self.rate_idx, unique=True)
         self.aggs.ensure_index(self.agg_idx, unique=True)
         
+        if config.mongo_raw_expire:
+            self.raw_data.ensure_index([('ts', ASCENDING)], 
+                                        expireAfterSeconds=config.mongo_raw_expire)
+        
         # Timing
         self.stats = DatabaseMetrics()
         
