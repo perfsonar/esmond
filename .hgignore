@@ -25,3 +25,4 @@ docs/_build
 *.swp
 *.py.orig
 pysqlite2-doc/install-source.txt
+crashlog
