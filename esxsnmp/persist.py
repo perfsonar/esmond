@@ -1090,6 +1090,12 @@ class PersistManager(object):
 
         self.processes = {}
 
+        if config.tsdb_root and not os.path.isdir(config.tsdb_root):
+            try:
+                tsdb.TSDB.create(config.tsdb_root)
+            except Exception, e:
+                print >>sys.stderr, "unable to create TSDB root: %s: %s" % (config.tsdb_root, str(e))
+
         init_logging(config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
