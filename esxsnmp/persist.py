@@ -1215,7 +1215,7 @@ def espersistd():
             worker(name, config, opts)
         except Exception, e:
             log.error("Problem with worker module: %s" % e, exc_info=True)
-            raise e
+            raise
             sys.exit(1)
     elif opts.role == 'stats':
         stats(name, config, opts)
