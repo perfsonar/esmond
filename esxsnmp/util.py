@@ -118,7 +118,7 @@ def setproctitle(name):
     global proctitle
     proctitle = name
 
-def init_logging(facility, level=logging.INFO,
+def init_logging(name, facility, level=logging.INFO,
         format="%(name)s [%(process)d] %(message)s", debug=False):
 
     log = logging.getLogger()
@@ -131,6 +131,7 @@ def init_logging(facility, level=logging.INFO,
     else:
         syslog = logging.handlers.SysLogHandler("/dev/log", facility=facility)
     syslog.setFormatter(logging.Formatter(format))
+    syslog.addFilter(logging.Filter(name=name))
     log.addHandler(syslog)
 
     if debug:

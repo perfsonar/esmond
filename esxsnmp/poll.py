@@ -862,7 +862,7 @@ def espoll():
         print e
         sys.exit(1)
 
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging("espoll", config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     try:
@@ -926,7 +926,7 @@ def espolld():
 
     name = "espolld"
 
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
     log = get_logger(name)
 

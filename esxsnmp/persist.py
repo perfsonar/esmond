@@ -1065,7 +1065,7 @@ def worker(name, config, opts):
 
     os.umask(0022)
 
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     (qclass, nworkers) = config.persist_queues[opts.qname]
@@ -1096,7 +1096,7 @@ class PersistManager(object):
             except Exception, e:
                 print >>sys.stderr, "unable to create TSDB root: %s: %s" % (config.tsdb_root, str(e))
 
-        init_logging(config.syslog_facility, level=config.syslog_priority,
+        init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
         self.log = get_logger(name)
