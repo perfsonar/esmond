@@ -69,15 +69,19 @@ class MONGO_DB(object):
                                           "database as user '%s'" % (config.mongo_user))
                                           
         serverVersion = tuple(self.connection.server_info()['version'].split('.'))
-                                          
-        if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
-            self.connection.drop_database(self.database)
             
         # Collections
         self.raw_data = self.db[self.raw_coll]
         self.metadata = self.db[self.meta_coll]
         self.rates    = self.db[self.rate_coll]
         self.aggs     = self.db[self.agg_coll]
+        
+        if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
+            self.raw_data.drop()
+            self.metadata.drop()
+            self.rates.drop()
+            self.aggs.drop()
+            #self.connection.drop_database(self.database)
         
         # Indexes
         self.metadata.ensure_index(self.meta_idx, unique=True)
