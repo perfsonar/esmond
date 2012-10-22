@@ -129,7 +129,7 @@ def init_logging(facility, level=logging.INFO,
     elif os.uname()[0] == 'Darwin':
         syslog = logging.handlers.SysLogHandler('/var/run/syslog', facility=facility)
     else:
-        syslog = logging.handlers.SysLogHandler("/dev/log", facility)
+        syslog = logging.handlers.SysLogHandler("/dev/log", facility=facility)
     syslog.setFormatter(logging.Formatter(format))
     log.addHandler(syslog)
 
