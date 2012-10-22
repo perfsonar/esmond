@@ -170,14 +170,18 @@ class IfRef(models.Model):
     device = models.ForeignKey(Device, db_column="deviceid")
     ifIndex = models.IntegerField(db_column="ifindex")
     ifDescr = models.CharField(max_length=512, db_column="ifdescr")
-    ifAlias = models.CharField(max_length=512, db_column="ifalias")
+    ifAlias = models.CharField(max_length=512, db_column="ifalias", blank=True,
+            null=True)
     ipAddr = models.IPAddressField(blank=True, db_column="ipaddr", null=True)
-    ifSpeed = models.BigIntegerField(db_column="ifspeed")
-    ifHighSpeed = models.BigIntegerField(db_column="ifhighspeed")
-    ifMtu = models.IntegerField(db_column="ifmtu")
-    ifType = models.IntegerField(db_column="iftype")
-    ifOperStatus = models.CharField(max_length=1, db_column="ifoperstatus")
-    ifAdminStatus = models.CharField(max_length=1, db_column="ifadminstatus")
+    ifSpeed = models.BigIntegerField(db_column="ifspeed", blank=True, null=True)
+    ifHighSpeed = models.BigIntegerField(db_column="ifhighspeed", blank=True,
+            null=True)
+    ifMtu = models.IntegerField(db_column="ifmtu", blank=True, null=True)
+    ifType = models.IntegerField(db_column="iftype", blank=True, null=True)
+    ifOperStatus = models.CharField(max_length=1, db_column="ifoperstatus",
+            blank=True, null=True)
+    ifAdminStatus = models.CharField(max_length=1, db_column="ifadminstatus",
+            blank=True, null=True)
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
     ifPhysAddress = models.CharField(max_length=32, db_column="ifphysaddress",
