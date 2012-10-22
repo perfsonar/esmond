@@ -1,4 +1,5 @@
 import os
+import os.path
 import sys
 import ctypes
 import time
@@ -179,6 +180,13 @@ class ExceptionHandler(object):
         self.output_dir = output_dir
 
         self.e_val = None
+
+        if not os.path.isdir(self.output_dir):
+            try:
+                os.makedirs(self.output_dir)
+            except Exception, e:
+                print >>sys.stderr, "unable to create traceback directory: %s: %s" % (self.output_dir, str(e))
+                raise
 
     def __call__(self, *args):
         self.handle(*args)
