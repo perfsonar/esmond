@@ -1,0 +1,40 @@
+#!/bin/sh
+
+export VENV_ROOT=`pwd`
+export ESXSNMP_ROOT=${VENV_ROOT}/devel
+export ESXSNMP_CONF=${ESXSNMP_ROOT}/esxsnmp-devel.conf
+export DJANGO_SETTINGS_MODULE=esxsnmp.settings
+
+# create a dummy TSDB
+if [ ! -d ${ESXSNMP_ROOT}/tsdb-data ]; then
+    mkdir ${ESXSNMP_ROOT}/tsdb-data
+    touch ${ESXSNMP_ROOT}/tsdb-data/TSDB
+fi
+
+# create the virtualenv
+virtualenv --prompt="(esxsnmp)" .
+. bin/activate
+
+# XXX(jdugan) FreeBSD hack look for headers and libraries in /usr/local
+# ObRant: WTF is with distutils/setuputils/pip not offerring a way to handle this?!?
+# ObRantRant: OR maybe it's crappy behaviour on the part of pysqlite?  dunno
+if [ x`uname` = x"FreeBSD" ]; then
+    echo patching pysqlite to build under FreeBSD
+    pip install --no-install pysqlite
+    echo 'include_dirs=/usr/local/include' >> build/pysqlite/setup.cfg
+    echo 'library_dirs=/usr/local/lib' >> build/pysqlite/setup.cfg
+fi
+
+pip install -r requirements.txt
+
+cat <<EOF > esxsnmp.env
+export ESXSNMP_ROOT=${ESXSNMP_ROOT}
+export ESXSNMP_CONF=${ESXSNMP_CONF}
+export ESXSNMP_TESTING=1
+export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
+export VENV_ROOT=${VENV_ROOT}
+. ${VENV_ROOT}/bin/activate
+EOF
+
+echo environment variables and activation put in ${VENV_ROOT}/esxsnmp.env:
+cat ${VENV_ROOT}/esxsnmp.env

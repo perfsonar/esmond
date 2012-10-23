@@ -1,7 +1,22 @@
+import os
+import os.path
+from esxsnmp.config import get_config
+
 # Django settings for ed project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+TESTING = os.environ.get("ESXSNMP_TESTING", False)
+ESXSNMP_CONF = os.environ.get("ESXSNMP_CONF")
+ESXSNMP_ROOT = os.environ.get("ESXSNMP_ROOT")
+
+if not ESXSNMP_ROOT:
+    raise Error("ESXSNMP_ROOT not definied in environemnt")
+
+if not ESXSNMP_CONF:
+    ESXSNMP_CONF = os.path.join(ESXSNMP_ROOT, "esxsnmp.conf")
+
+ESXSNMP_SETTINGS = get_config(ESXSNMP_CONF)
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -9,12 +24,23 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'postgresql_psycopg2'           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-DATABASE_NAME = 'snmp'             # Or path to database file if using sqlite3.
-DATABASE_USER = ''             # Not used with sqlite3.
-DATABASE_PASSWORD = ''         # Not used with sqlite3.
-DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
+if TESTING:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME':  'esxsnmp.db',
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': ESXSNMP_SETTINGS.sql_db_engine,
+            'NAME': ESXSNMP_SETTINGS.sql_db_name,
+            'HOST': ESXSNMP_SETTINGS.sql_db_host,
+            'USER': ESXSNMP_SETTINGS.sql_db_user,
+            'PASSWORD': ESXSNMP_SETTINGS.sql_db_password,
+        }
+    }
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -36,6 +62,8 @@ SITE_ID = 1
 # to load the internationalization machinery.
 USE_I18N = True
 
+STATIC_URL = '/static/'
+
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
 MEDIA_ROOT = ''
@@ -45,28 +73,24 @@ MEDIA_ROOT = ''
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
 MEDIA_URL = ''
 
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/djangomedia/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '%!=ok&32r5%ztl*^zqkm5++j)3crj64rf$=v)1mb^2i*%6ob41'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.load_template_source',
-    'django.template.loaders.app_directories.load_template_source',
-#     'django.template.loaders.eggs.load_template_source',
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
 )
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-ROOT_URLCONF = 'esxdjango.urls'
+ROOT_URLCONF = 'esxsnmp.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -78,8 +102,8 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-#    'django.contrib.sites',
-    'esxd',
-    # Uncomment the next line to enable the admin:
-     'django.contrib.admin',
+    'django.contrib.staticfiles',
+    'esxsnmp.api',
+    'esxsnmp.admin',
+    'django.contrib.admin',
 )

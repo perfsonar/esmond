@@ -7,8 +7,10 @@ import sys
 import time
 import signal
 import errno
+import datetime
 import __main__
 
+from math import floor, ceil
 from subprocess import Popen, PIPE, STDOUT
 
 import cPickle as pickle
@@ -18,21 +20,20 @@ try:
 except ImportError:
     import simplejson as json
 
-import sqlalchemy
-
 import tsdb
 import tsdb.row
 from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
         TSDBVarDoesNotExistError, InvalidMetaData
-
-import esxsnmp.sql
 
 from esxsnmp.util import setproctitle, init_logging, get_logger, \
         remove_metachars, decode_alu_port
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError
-from esxsnmp.sql import IfRef, LSPOpStatus, ALUSAPRef
+
+from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
+
+from esxsnmp.mongo import MONGO_DB, RawData, BaseRateBin, AggregationBin, INVALID_VALUE
 
 try:
     import cmemcache as memcache
@@ -96,18 +97,23 @@ class PollResult(object):
             data=self.data,
             metadata=self.metadata))
 
+class PersistQueueEmpty:
+    pass
 
 class PollPersister(object):
     """A PollPersister implements a storage method for PollResults."""
     STATS_INTERVAL = 60
 
-    def __init__(self, config, qname):
+    def __init__(self, config, qname, persistq):
         self.log = get_logger("espersistd.%s" % qname)
         self.config = config
         self.qname = qname
         self.running = False
 
-        self.persistq = MemcachedPersistQueue(qname, config.espersistd_uri)
+        if persistq:
+            self.persistq = persistq
+        else:
+            self.persistq = MemcachedPersistQueue(qname, config.espersistd_uri)
 
         self.data_count = 0
         self.last_stats = time.time()
@@ -126,7 +132,11 @@ class PollPersister(object):
         signal.signal(signal.SIGTERM, self.stop)
 
         while self.running:
-            task = self.persistq.get()
+            try:
+                task = self.persistq.get()
+            except PersistQueueEmpty:
+                break
+
             if task:
                 self.store(task)
                 self.data_count += len(task.data)
@@ -188,19 +198,17 @@ class TSDBPollPersister(PollPersister):
 
     """
 
-    def __init__(self, config, qname):
-        PollPersister.__init__(self, config, qname)
+    def __init__(self, config, qname, persistq):
+        PollPersister.__init__(self, config, qname, persistq)
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
-
-        session = esxsnmp.sql.Session()
 
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
         self.oid_type_map = {}
 
-        oidsets = session.query(esxsnmp.sql.OIDSet)
+        oidsets = OIDSet.objects.all()
 
         for oidset in oidsets:
             self.oidsets[oidset.name] = oidset
@@ -211,16 +219,15 @@ class TSDBPollPersister(PollPersister):
                     d[k] = v
                 self.poller_args[oidset.name] = d
 
-            for oid in oidset.oids:
+            for oid in oidset.oids.all():
                 self.oids[oid.name] = oid
                 try:
                     self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
-                            oid.type.name)
+                            oid.oid_type.name)
                 except AttributeError:
                     self.log.warning(
                             "warning don't have a TSDBRow for %s in %s" %
-                            (oid.type.name, oidset.name))
-        session.close()
+                            (oid.oid_type.name, oidset.name))
 
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
@@ -335,7 +342,197 @@ class TSDBPollPersister(PollPersister):
             update_agg()
         except InvalidMetaData:
             self.log.error("bad metadata for %s" % var_name)
+            
 
+class MongoDBPollPersister(PollPersister):
+    """Given a ``PollResult`` write the data to a TSDB.
+
+    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
+    write to.
+
+    The ``data`` member of the PollResult must be a list of (name,value)
+    pairs.  The ``metadata`` member of PollResult must contain the following
+    keys::
+
+        ``tsdb_flags``
+            TSDB flags to be used
+
+    """
+
+    def __init__(self, config, qname, persistq):
+        PollPersister.__init__(self, config, qname, persistq)
+        
+        self.db = MONGO_DB(config, clear_on_test=True)
+
+        self.tsdb = tsdb.TSDB(self.config.tsdb_root)
+
+        self.oidsets = {}
+        self.poller_args = {}
+        self.oids = {}
+
+        oidsets = OIDSet.objects.all()
+
+        for oidset in oidsets:
+            self.oidsets[oidset.name] = oidset
+            d = {}
+            if oidset.poller_args:
+                for arg in oidset.poller_args.split():
+                    (k, v) = arg.split('=')
+                    d[k] = v
+                self.poller_args[oidset.name] = d
+
+            for oid in oidset.oids.all():
+                self.oids[oid.name] = oid
+    
+    def store(self, result):
+        oidset = self.oidsets[result.oidset_name]
+        set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
+        basename = os.path.join(result.device_name, set_name)
+        oid = self.oids[result.oid_name]
+        flags = result.metadata['tsdb_flags']
+
+        t0 = time.time()
+        nvar = 0
+
+        for var, val in result.data:
+            if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
+                val = float(val) * 100
+            nvar += 1
+
+            var_name = os.path.join(basename, var)
+            device_n,oidset_n,oid_n,path_n = var_name.split('/')
+            
+            #if path_n != 'fxp0.0':
+            #    continue
+            
+            raw_data = RawData(device_n, oidset_n, oid_n, path_n,
+                    result.timestamp, flags, val, oidset.frequency)
+            
+            self.db.set_raw_data(raw_data)
+
+            if oid.aggregate:
+                delta_v = self.aggregate_base_rate(raw_data)
+                uptime_name = os.path.join(basename, 'sysUpTime')
+                # XXX(mmg) how do we handle this uptime?
+                
+                # May want a condition on this, so build higher
+                # level aggregations elsewhere
+                
+                if delta_v:
+                    # We got a good delta back from base rate, so
+                    # build an aggregation with it
+                    raw_data.val = delta_v
+                    self.generate_aggregations(raw_data, oidset.aggregates)
+            else:
+                # XXX(mmg): put non-rate value handling here and also
+                # metadata updates for said.
+                pass
+
+        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
+            time.time() - t0, result))
+            
+    def aggregate_base_rate(self, data):
+
+        metadata = self.db.get_metadata(data)
+        last_update = metadata.ts_to_unixtime('last_update')
+
+        if data.min_last_update and data.min_last_update > last_update:
+            last_update = data.min_last_update
+        
+        min_ts = metadata.ts_to_unixtime('min_ts')
+        
+        if min_ts > last_update:
+            last_update = min_ts
+            metatdata.last_update = last_update
+            
+        # This mimics logic in the tsdb persister - skip any further 
+        # processing of the rate aggregate if this is the first value
+        
+        if data.val == metadata.last_val and \
+            data.ts == metadata.last_update:
+            return
+        
+        delta_t = data.ts_to_unixtime() - metadata.ts_to_unixtime('last_update')
+        delta_v = data.val - metadata.last_val
+        
+        prev_slot = (metadata.ts_to_unixtime('last_update') / data.freq) * data.freq
+        curr_slot = (data.ts_to_unixtime() / data.freq) * data.freq
+        
+        rate = float(delta_v) / float(delta_t)
+        max_rate = int(110e9)
+
+        if rate > max_rate:
+            self.log.error('max_rate_exceeded - %s - %s - %s' \
+                % (rate, metadata.last_val, data.val))
+            metadata.refresh_from_raw(data)
+            return
+            
+        assert delta_v >= 0
+        
+        prev_frac = int( floor(
+                delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
+                / float(delta_t)
+                ))
+
+        curr_frac = int( ceil(
+                    delta_v * (data.ts_to_unixtime() - curr_slot)
+                    / float(delta_t)
+                ))
+                
+        # XXX(mmg): include HEARTBEAT backfill logic here.
+        
+        prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
+                **data.get_path())
+        curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
+                **data.get_path())
+        
+        self.db.update_rate_bin(prev_bin)
+        self.db.update_rate_bin(curr_bin)
+        
+        # backfill logic from the tsdb.aggregator
+        # This has been modified from the orignial!
+        
+        if (curr_slot - prev_slot) > data.freq: # New condition - missing bins?
+            missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
+            if not missed_slots:
+                missed_slots = [curr_slot]
+            missed = delta_v - (curr_frac + prev_frac)
+            if missed > 0:
+                # Presume valid data (old logic)
+                missed_frac = missed / len(missed_slots)
+                missed_rem = missed % (missed_frac * len(missed_slots))
+                for slot in missed_slots:
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=missed_frac,
+                            **data.get_path())
+                    self.db.update_rate_bin(miss_bin)
+                
+                    for i in range(missed_rem):
+                        dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
+                            val=1, **data.get_path())
+            else:
+                # Presume invalid data (new logic)
+                for slot in missed_slots:
+                    # XXX(mmg): rectify using -9999 - this is a stopgap
+                    # to get some code pushed.
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=INVALID_VALUE,
+                            **data.get_path())
+                    self.db.update_rate_bin(miss_bin)
+        
+        
+        metadata.refresh_from_raw(data)
+        self.db.update_metadata(metadata)
+        
+        return delta_v
+        
+    def _agg_timestamp(self, data, freq):
+        return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
+        
+    def generate_aggregations(self, data, aggregate_freqs):
+        
+        for freq in aggregate_freqs:
+            self.db.update_aggregation(data, self._agg_timestamp(data, freq), freq)
+            
+        
 
 class HistoryTablePersister(PollPersister):
     """Provides common methods for table histories."""
@@ -373,24 +570,24 @@ class HistoryTablePersister(PollPersister):
                         break
 
                 if changed:
-                    old.end_time = 'NOW'
+                    old.end_time = datetime.datetime.now()
+                    old.save()
                     new_row = self._new_row_from_obj(new)
-                    self.db_session.add(new_row)
+                    new_row.save()
                     changes += 1
 
                 del self.new_data[key]
             # no entry in self.new_data: interface is gone, update db
             else:
-                old.end_time = 'NOW'
+                old.end_time = datetime.datetime.now()
+                old.save()
                 deletes += 1
 
         # anything left in self.new_data is something new
         for new in self.new_data:
             new_row = self._new_row_from_obj(self.new_data[new])
-            self.db_session.add(new_row)
+            new_row.save()
             adds += 1
-
-        self.db_session.commit()
 
         return (adds, changes, deletes)
 
@@ -399,41 +596,27 @@ class IfRefPollPersister(HistoryTablePersister):
     int_oids = ('ifSpeed', 'ifHighSpeed', 'ifMtu', 'ifType',
             'ifOperStatus', 'ifAdminStatus')
 
-    def __init__(self, config, qname):
-        HistoryTablePersister.__init__(self, config, qname)
-        self.db_session = esxsnmp.sql.Session()
-
     def store(self, result):
         t0 = time.time()
         self.data = result.data
 
-        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
-                esxsnmp.sql.Device.name == result.device_name).filter(
-                        esxsnmp.sql.Device.end_time > 'NOW').one()
-
-        self.old_data = self.db_session.query(IfRef).filter(
-            sqlalchemy.and_(
-                IfRef.deviceid == self.device.id, IfRef.end_time > 'NOW')
-        )
+        self.device = Device.objects.active().get(name=result.device_name)
+        self.old_data = IfRef.objects.active().filter(device=self.device)
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
-        self.key = 'ifdescr'
+        self.key = 'ifDescr'
 
         adds, changes, deletes = self.update_db()
 
-        self.db_session.commit()
         self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (
             nvar, adds, changes, deletes, time.time() - t0, result))
 
     def _new_row_from_obj(self, obj):
-        i = IfRef()
-        i.deviceid = self.device.id
-        i.begin_time = 'NOW'
-        i.end_time = 'Infinity'
-        for attr in obj.keys():
-            setattr(i, attr, obj[attr])
-        return i
+        obj['device'] = self.device
+        obj['begin_time'] = datetime.datetime.now()
+        obj['end_time'] = datetime.datetime.max
+        return IfRef(**obj)
 
     def _resolve_ifdescr(self, ifdescr, ifindex):
         return ifdescr
@@ -447,11 +630,11 @@ class IfRefPollPersister(HistoryTablePersister):
             ifIndex = int(ifIndex)
             ifDescr = self._resolve_ifdescr(val, ifIndex)
             ifIndex_map[ifIndex] = ifDescr
-            ifref_objs[ifDescr] = dict(ifdescr=ifDescr, ifindex=ifIndex)
+            ifref_objs[ifDescr] = dict(ifDescr=ifDescr, ifIndex=ifIndex)
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
-            ifref_objs[ifIndex_map[val]]['ipaddr'] = ipAddr
+            ifref_objs[ifIndex_map[val]]['ipAddr'] = ipAddr
 
         remaining_oids = self.data.keys()
         remaining_oids.remove('ifDescr')
@@ -468,7 +651,7 @@ class IfRefPollPersister(HistoryTablePersister):
                         val = None
                 foo, ifIndex = name.split('.')
                 ifIndex = int(ifIndex)
-                ifref_objs[ifIndex_map[ifIndex]][oid.lower()] = val
+                ifref_objs[ifIndex_map[ifIndex]][oid] = val
 
         return ifref_objs
 
@@ -492,22 +675,12 @@ class ALUIfRefPollPersister(IfRefPollPersister):
 class ALUSAPRefPersister(HistoryTablePersister):
     int_oids = ('sapIngressQosPolicyId', 'sapEgressQosPolicyId')
 
-    def __init__(self, config, qname):
-        HistoryTablePersister.__init__(self, config, qname)
-        self.db_session = esxsnmp.sql.Session()
-
     def store(self, result):
         self.data = result.data
         t0 = time.time()
 
-        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
-                esxsnmp.sql.Device.name == result.device_name).filter(
-                        esxsnmp.sql.Device.end_time > 'NOW').one()
-
-        self.old_data = self.db_session.query(ALUSAPRef).filter(
-            sqlalchemy.and_(ALUSAPRef.deviceid
-                == self.device.id, ALUSAPRef.end_time > 'NOW')
-        )
+        self.device = Device.objects.active().get(name=result.device_name)
+        self.old_data = ALUSAPRef.objects.active().filter(device=self.device)
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
@@ -519,14 +692,11 @@ class ALUSAPRefPersister(HistoryTablePersister):
             nvar, adds, changes, deletes, time.time() - t0, result))
 
     def _new_row_from_obj(self, obj):
-        r = ALUSAPRef()
-        r.deviceid = self.device.id
-        r.begin_time = 'NOW'
-        r.end_time = 'Infinity'
-        for attr in obj.keys():
-            setattr(r, attr, obj[attr])
+        obj['device'] = self.device
+        obj['begin_time'] = datetime.datetime.now()
+        obj['end_time'] = datetime.datetime.max
 
-        return r
+        return ALUSAPRef(**obj)
 
     def _build_objs(self):
         objs = {}
@@ -534,7 +704,7 @@ class ALUSAPRefPersister(HistoryTablePersister):
         for oid, entries in self.data.iteritems():
             for k, val in entries:
                 _, vpls, port, vlan  = k.split('.')
-                name = "%s-%s-%s" % (vlan, decode_alu_port(port), vlan)
+                name = "%s-%s-%s" % (vpls, decode_alu_port(port), vlan)
 
                 if oid in self.int_oids:
                     val = int(val)
@@ -544,27 +714,20 @@ class ALUSAPRefPersister(HistoryTablePersister):
                     objs[name]['name'] = name
 
                 o = objs[name]
-                o[oid.lower()] = val
+                o[oid] = val
 
         return objs
 
 class LSPOpStatusPersister(HistoryTablePersister):
     def __init__(self, config, qname):
         HistoryTablePersister.__init__(self, config, qname)
-        self.db_session = esxsnmp.sql.Session()
 
     def store(self, result):
         self.lsp_data = result.data
         t0 = time.time()
 
-        self.device = self.db_session.query(esxsnmp.sql.Device).filter(
-                esxsnmp.sql.Device.name == result.device_name).filter(
-                        esxsnmp.sql.Device.end_time > 'NOW').one()
-
-        self.old_data = self.db_session.query(LSPOpStatus).filter(
-            sqlalchemy.and_(LSPOpStatus.deviceid
-                == self.device.id, LSPOpStatus.end_time > 'NOW')
-        )
+        self.device = Device.objects.active().get(name=result.device_name)
+        self.old_data = LSPOpStatus.objects.active().filter(device=self.device)
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
@@ -576,26 +739,16 @@ class LSPOpStatusPersister(HistoryTablePersister):
             nvar, adds, changes, deletes, time.time() - t0, result))
 
     def _new_row_from_obj(self, obj):
-        r = LSPOpStatus()
-        r.deviceid = self.device.id
-        r.begin_time = 'NOW'
-        r.end_time = 'Infinity'
-        for attr in obj.keys():
-            setattr(r, attr, obj[attr])
+        obj['device'] = self.device
+        obj['begin_time'] = datetime.datetime.now()
+        obj['end_time'] = datetime.datetime.max
 
-        return r
-
-    oid_name_map = {
-            'mplsLspInfoState': 'state',
-            'mplsLspInfoFrom': 'srcaddr',
-            'mplsLspInfoTo': 'dstaddr',
-    }
+        return LSPOpStatus(**obj)
 
     def _build_objs(self):
         lsp_objs = {}
 
-        for oid, entries in self.lsp_data.iteritems():
-            k = self.oid_name_map[oid]
+        for k, entries in self.lsp_data.iteritems():
             for name, val in entries:
                 name = name.split('.')[-1].replace("'", "")
 
@@ -603,13 +756,12 @@ class LSPOpStatusPersister(HistoryTablePersister):
                     lsp_objs[name] = dict(name=name)
 
                 o = lsp_objs[name]
-                if oid == 'mplsLspInfoState':
+                if k == 'mplsLspInfoState':
                     o[k] = int(val)
                 else:
                     o[k] = val
 
         return lsp_objs
-
 
 class InfIfRefPollPersister(IfRefPollPersister):
     """Emulate a IfRef for an Infinera.
@@ -913,13 +1065,7 @@ def worker(name, config, opts):
 
     os.umask(0022)
 
-    try:
-        esxsnmp.sql.setup_db(config.db_uri)
-    except Exception, e:
-        self.log.error("Problem setting up database: %s" % e)
-        raise
-
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     (qclass, nworkers) = config.persist_queues[opts.qname]
@@ -929,7 +1075,7 @@ def worker(name, config, opts):
 
     setproctitle(name)
     klass = eval(qclass)
-    worker = klass(config, opts.qname)
+    worker = klass(config, opts.qname, persistq=None) # XXX(mmg): add persistq choice logic
 
     worker.run()
     # do_profile("worker.run()", globals(), locals())
@@ -944,7 +1090,13 @@ class PersistManager(object):
 
         self.processes = {}
 
-        init_logging(config.syslog_facility, level=config.syslog_priority,
+        if config.tsdb_root and not os.path.isdir(config.tsdb_root):
+            try:
+                tsdb.TSDB.create(config.tsdb_root)
+            except Exception, e:
+                print >>sys.stderr, "unable to create TSDB root: %s: %s" % (config.tsdb_root, str(e))
+
+        init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
         self.log = get_logger(name)
@@ -960,12 +1112,6 @@ class PersistManager(object):
                     log_stdout_stderr=config.syslog_facility)
 
         os.umask(0022)
-
-        try:
-            esxsnmp.sql.setup_db(config.db_uri)
-        except Exception, e:
-            self.log.error("Problem setting up database: %s" % e)
-            raise
 
         setproctitle(name)
         signal.signal(signal.SIGINT, self.stop)
@@ -1069,7 +1215,7 @@ def espersistd():
             worker(name, config, opts)
         except Exception, e:
             log.error("Problem with worker module: %s" % e, exc_info=True)
-            raise e
+            raise
             sys.exit(1)
     elif opts.role == 'stats':
         stats(name, config, opts)

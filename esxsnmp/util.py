@@ -1,4 +1,5 @@
 import os
+import os.path
 import sys
 import ctypes
 import time
@@ -117,7 +118,7 @@ def setproctitle(name):
     global proctitle
     proctitle = name
 
-def init_logging(facility, level=logging.INFO,
+def init_logging(name, facility, level=logging.INFO,
         format="%(name)s [%(process)d] %(message)s", debug=False):
 
     log = logging.getLogger()
@@ -125,9 +126,12 @@ def init_logging(facility, level=logging.INFO,
     # XXX(jdugan): /dev/log appears to be more costly at least on FreeBSD
     if os.uname()[0] == 'FreeBSD':
         syslog = logging.handlers.SysLogHandler(('localhost', 514), facility=facility)
+    elif os.uname()[0] == 'Darwin':
+        syslog = logging.handlers.SysLogHandler('/var/run/syslog', facility=facility)
     else:
-        syslog = logging.handlers.SysLogHandler("/dev/log", facility)
+        syslog = logging.handlers.SysLogHandler("/dev/log", facility=facility)
     syslog.setFormatter(logging.Formatter(format))
+    syslog.addFilter(logging.Filter(name=name))
     log.addHandler(syslog)
 
     if debug:
@@ -177,6 +181,13 @@ class ExceptionHandler(object):
         self.output_dir = output_dir
 
         self.e_val = None
+
+        if not os.path.isdir(self.output_dir):
+            try:
+                os.makedirs(self.output_dir)
+            except Exception, e:
+                print >>sys.stderr, "unable to create traceback directory: %s: %s" % (self.output_dir, str(e))
+                raise
 
     def __call__(self, *args):
         self.handle(*args)
@@ -377,3 +388,7 @@ def decode_alu_port(x):
     c = (x & int('00000000000111111000000000000000', 2)) >> 16
 
     return "%d_%d_%d" % (a,b,c)
+
+def datetime_to_unixtime(dt):
+    return int(time.mktime(dt.timetuple()))
+

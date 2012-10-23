@@ -18,10 +18,14 @@ PROGRAM=espolld
 # defaults, if not specified in local config
 [ "$PID_DIR" = "" ] && PID_DIR="/var/run/esxsnmp"
 [ "$ESXSNMP_USER" = "" ] && ESXSNMP_USER="esxsnmp"
-[ "$ESXSNMP_PATH" = "" ] && ESXSNMP_PATH="/opt/esxsnmp"
-[ "$CONFIG_FILE" = "" ] && CONFIG_FILE="${ESXSNMP_PATH}/esxsnmp.conf"
+[ "$ESXSNMP_ROOT" = "" ] && ESXSNMP_ROOT="/opt/esxsnmp"
+[ "$CONFIG_FILE" = "" ] && CONFIG_FILE="${ESXSNMP_ROOT}/esxsnmp.conf"
+[ "$DJANGO_SETTINGS_MODULE" = "" ] && DJANGO_SETTINGS_MODULE="esxsnmp.settings"
 
-[ -f $ESXSNMP_PATH/bin/$PROGRAM ] || exit -1
+export ESXSNMP_ROOT
+export DJANGO_SETTINGS_MODULE
+
+[ -f $ESXSNMP_ROOT/bin/$PROGRAM ] || exit -1
 [ -d "$PID_DIR" ] || exit -1
 
 RETVAL=0
@@ -32,7 +36,7 @@ start ()
    if [ $cnt = 0 ]
    then
       echo -n "Starting $PROGRAM:"
-      su -c "$ESXSNMP_PATH/bin/$PROGRAM -f $CONFIG_FILE -p $PID_DIR" $ESXSNMP_USER
+      su -c "$ESXSNMP_ROOT/bin/$PROGRAM -f $CONFIG_FILE -p $PID_DIR" $ESXSNMP_USER
       RETVAL=$?
       if [ $RETVAL = 0 ]
       then 

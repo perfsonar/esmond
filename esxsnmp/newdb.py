@@ -26,11 +26,12 @@ import logging
 
 import tsdb
 from tsdb.error import *
-import esxsnmp.sql
-from esxsnmp.sql import Device, OID, OIDSet, IfRef, ALUSAPRef
-from esxsnmp.util import get_logger, remove_metachars
+from esxsnmp.util import get_logger, remove_metachars, datetime_to_unixtime
 from esxsnmp.error import *
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
+
+from esxsnmp.api.models import Device, IfRef, ALUSAPRef
+import datetime
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
@@ -85,7 +86,6 @@ class PowerHandler(object):
     """A quick hack to support power monitoring demo."""
     def __init__(self):
         self.db = tsdb.TSDB(CONFIG.tsdb_root, mode="r")
-        self.session = esxsnmp.sql.Session()
 
         self.log = get_logger("newdb.power")
 
@@ -254,6 +254,22 @@ def get_time_range(args):
 
     return begin, end
 
+def get_time_range_django(args):
+    if args.has_key('begin'):
+        begin = datetime.datetime.fromtimestamp(int(args['begin']))
+    else:
+        begin = None
+
+    if args.has_key('end'):
+        end = datetime.datetime.fromtimestamp(int(args['end']))
+    else:
+        end = None
+
+    if not args.has_key('begin') and not args.has_key('end'):
+        begin = end = datetime.datetime.now()
+
+    return begin, end
+
 # XXX this should be reworked, can we do it with metadata alone?  probably
 # once TSDB uses SQLite for metadata
 device_oidset = {}
@@ -280,27 +296,21 @@ def get_traffic_oidset(device_name):
 
     return r
 
-
 def encode_device(dev, uri, children=[]):
-#    print dev.end_time
-    return dict(begin_time=dev.begin_time, end_time=dev.end_time,
-            name=dev.name, active=dev.active, children=children, uri=uri,
-            leaf=False)
+    d = dev.to_dict()
+    d['children'] = children
+    d['uri'] = uri
+    d['leaf'] =False
 
-def encode_ifref(ifref, uri, device, children=[]):
-    return dict(
-            begin_time=ifref.begin_time,
-            end_time=ifref.end_time,
-            ifIndex=ifref.ifindex,
-            ifDescr=ifref.ifdescr,
-            ifAlias=ifref.ifalias,
-            ifSpeed=ifref.ifspeed,
-            ifHighSpeed=ifref.ifhighspeed,
-            ipAddr=ifref.ipaddr,
-            uri=uri,
-            device_uri='%s/%s' % (SNMP_URI, device.name),
-            children=children,
-            leaf=False)
+    return d
+
+def encode_ifref(ifref, uri, children=[]):
+    d = ifref.to_dict()
+    d['uri'] = uri
+    d['device_uri'] = '%s/%s' % (SNMP_URI, ifref.device.name)
+    d['children'] = children
+    d['leaf'] = False
+    return d
 
 def make_children(uri_prefix, children, leaf=False):
     return [ dict(name=child, uri="%s/%s" % (uri_prefix, child), leaf=leaf) for child in
@@ -465,23 +475,19 @@ class BulkHandler:
 
 class ALUSAPRefHandler:
     def __init__(self):
-        self.session = esxsnmp.sql.Session()
-
         self.log = get_logger("newdb.alusapref")
 
     def GET(self):
-        limit = """
-            alusapref.end_time > 'NOW'
-            AND alusapref.begin_time < 'NOW'"""
-
+        print "SAPPY"
         saps = []
-        saprefs = self.session.query(ALUSAPRef).filter(limit)
+
+        args = parse_query_string()
+        begin, end = get_time_range_django(args)
+        saprefs = ALUSAPRef.objects.filter(end_time__gt=begin, begin_time__lt=end)
+
         for sap in saprefs:
-            saps.append(dict(name=sap.name,
-                device=sap.device.name,
-                desc=sap.sapdescription,
-                outpolicy=sap.sapingressqospolicyid,
-                inpolicy=sap.sapegressqospolicyid))
+            print sap
+            saps.append(sap.to_dict())
 
         return json.dumps(saps)
 
@@ -493,13 +499,7 @@ class SNMPHandler:
         else:
             self.agg_db = None
 
-        self.session = esxsnmp.sql.Session()
-
         self.log = get_logger("newdb")
-
-    def __del__(self):
-        if self.session:
-            self.session.close()
 
     def GET(self, uri=None, raw=False, args=None):
         # XXX hack because Apache performs a URL decode on PATH_INFO
@@ -531,9 +531,9 @@ class SNMPHandler:
 
         if not device_name:
             args = parse_query_string()
+            print args
             if args.has_key('interface_descr'):
-                descr_pattern = "%%%s%%" % args['interface_descr']
-                r = self.get_interfaces_by_descr(descr_pattern)
+                r = self.get_interfaces_by_descr(args['interface_descr'])
             else:
                 r = self.list_devices()
                 # XXX hack to support aggs.  ugh!
@@ -552,10 +552,13 @@ class SNMPHandler:
                     '/'.join(parts[6:]))
         else:
             try:
-                device = self.session.query(Device).filter_by(name=device_name)
-                device = device.order_by('end_time').all()[-1]
-            except (NoResultFound, IndexError):
-                print "ERR> NoResultFound"
+                device = Device.objects.get(name=device_name,
+                        end_time__gt=datetime.datetime.now())
+            except Device.DoesNotExist:
+                print "ERR> device %s does not exist" % device_name
+                return web.notfound()
+            except Device.MultipleObjectsReturned:
+                print "ERR> got more than one device %s" % device_name
                 return web.notfound()
 
             if not rest:
@@ -647,23 +650,23 @@ class SNMPHandler:
         
         """
 
-        active='t'
+        active=True
 
         args = parse_query_string()
-        begin, end = get_time_range(args)
+        begin, end = get_time_range_django(args)
 
-        if args.has_key('active'):
-            active = bool(args['active'])
+        active = bool(args.get('active', True))
 
-        limit = """
-            device.end_time > %(begin)s
-            AND device.begin_time < %(end)s
-            AND active = '%(active)s'""" % locals()
+        devices = Device.objects.filter(active=active)
 
-#        print ">>>",limit
-        devices = self.session.query(esxsnmp.sql.Device).filter(limit)
+        if end:
+            devices = devices.filter(begin_time__lt=end)
+        if begin:
+            devices = devices.filter(end_time__gt=begin)
+
         r = [dict(name=d.name, uri="%s/%s" % (SNMP_URI, d.name), leaf=False)
-                for d in devices]
+                for d in devices.all()]
+
         return dict(children=r)
 
     def get_device(self, device):
@@ -711,50 +714,23 @@ class SNMPHandler:
         Example:
 
         """
-        active='t'
 
-#        print ">>> XXQ", web.ctx.query, rest
         args = parse_query_string()
-        begin, end = get_time_range(args)
-        deviceid = device.id
+        begin, end = get_time_range_django(args)
 
-        limit = """
-            ifref.end_time > %(begin)s
-            AND ifref.begin_time < %(end)s
-            AND ifref.deviceid = %(deviceid)s""" % locals()
-
+        ifaces = IfRef.objects.filter(device=device)
+        ifaces = ifaces.filter(end_time__gt=begin, begin_time__lt=end)
         if not check_basic_auth():
-            limit += """
-            AND ifref.ifalias !~* ':hide:'"""
+            ifaces = ifaces.exclude(ifAlias__contains=':hide:')
 
-#        print ">>>",limit
-
-        ifaces = self.session.query(IfRef).filter(limit)
-        ifset = map(lambda x: x.ifdescr, ifaces)
+        ifset = map(lambda x: x.ifDescr, ifaces)
 
         if not rest:
-            speed = None
             def build_iface(iface):
+                uri = "%s/%s/interface/%s" % (SNMP_URI, device.name,
+                        remove_metachars(iface.ifDescr))
 
-                if not iface.ifhighspeed or iface.ifhighspeed == 0:
-                    speed = iface.ifspeed
-                else:
-                    speed = iface.ifhighspeed * int(1e6)
-                return dict(name=iface.ifdescr,
-                    uri="%s/%s/interface/%s" % (SNMP_URI, device.name,
-                        remove_metachars(iface.ifdescr)),
-                    descr=iface.ifalias,
-                    speed=speed, 
-                    begin_time=iface.begin_time,
-                    end_time=iface.end_time,
-                    ifIndex=iface.ifindex,
-                    ifDescr=iface.ifdescr,
-                    ifAlias=iface.ifalias,
-                    ifSpeed=iface.ifspeed,
-                    ifHighSpeed=iface.ifhighspeed,
-                    ipAddr=iface.ipaddr,
-                    device_uri='%s/%s' % (SNMP_URI, device.name),
-                    leaf=False)
+                return encode_ifref(iface, uri)
 
             l = map(build_iface, ifaces.all())
             return dict(children=l, leaf=False)
@@ -774,20 +750,26 @@ class SNMPHandler:
             ifref.end_time > %(begin)s
             AND ifref.begin_time < %(end)s""" % locals()
 
-        if not check_basic_auth():
-            limit += """
-            AND ifref.ifalias !~* ':hide:'"""
+        begin, end = get_time_range_django(args)
 
-        ifrefs = self.session.query(IfRef).filter(limit)
-        ifrefs = ifrefs.filter(IfRef.ifalias.like(descr_pattern))
+        ifrefs = IfRef.objects.filter(ifAlias__contains=descr_pattern)
+        ifrefs = ifrefs.filter(end_time__gt=begin, begin_time__lt=end)
+
+        if not check_basic_auth():
+            ifrefs = ifrefs.exclude(ifAlias__contains=':hide:')
+
+        print "Q=",ifrefs.query
+        print ifrefs.count()
+        
+
         children = ['in', 'out', 'error/in', 'error/out', 'discard/in',
                 'discard/out']
         l = []
         for ifref in ifrefs:
             uri = '%s/%s/interface/%s' % (SNMP_URI, ifref.device.name,
-                    ifref.ifdescr.replace('/','_'))
+                    ifref.ifDescr.replace('/','_'))
             kids = make_children(uri, children)
-            l.append(encode_ifref(ifref, uri, ifref.device, children=kids))
+            l.append(encode_ifref(ifref, uri, children=kids))
 
         return l
 
@@ -838,23 +820,23 @@ class SNMPHandler:
         iface = iface.replace(',/', ', ').replace('Gig/', 'Gig ')
         if not rest:
             t0 = time.time()
-            ifrefs = ifaces.filter_by(ifdescr=iface).order_by(esxsnmp.sql.IfRef.end_time)
+            ifrefs = ifaces.filter(ifDescr=iface).order_by("end_time")
 #            print ifrefs.all()
             if ifrefs.count() == 0:
                 iface = iface.replace('/', '_')
-                ifrefs = ifaces.filter_by(ifdescr=iface).order_by(esxsnmp.sql.IfRef.end_time)
+                ifrefs = ifaces.filter(ifDescr=iface).order_by("end_time")
                 print ">>hack>> trying %s, %s" % (iface, ifrefs)
             l = []
             t1 = time.time()
             print "t>> iface select %f" % (t1 - t0)
             t0 = t1
             for ifref in ifrefs:
-                if not check_basic_auth() and ':hide:' in ifref.ifalias:
+                if not check_basic_auth() and ':hide:' in ifref.ifAlias:
                     continue
                 uri = '%s/%s/interface/%s' % (SNMP_URI, device.name,
                         iface.replace('/','_'))
                 kids = make_children(uri, children, leaf=True)
-                l.append(encode_ifref(ifref, uri, device, children=kids))
+                l.append(encode_ifref(ifref, uri, children=kids))
 
             t1 = time.time()
             print "t>> iface process %f" % (t1 - t0)
@@ -1346,8 +1328,6 @@ def setup(inargs, config_file=None):
     except ConfigError, e:
         print e
         sys.exit(1)
-
-    esxsnmp.sql.setup_db(config.db_uri)
 
     # XXX(jdugan): is there a way to pass this into the web.py code so that each
     # handler has it?

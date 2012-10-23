@@ -1,33 +1,23 @@
 import os
 import signal
-import errno
 import sys
 import time
 import re
-import sets
-import random
 import socket
 import threading
 import Queue
 
-import sqlalchemy
 from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
-import rrdtool
 
 import tsdb
-import tsdb.row
-from tsdb.util import rrd_from_tsdb_var
-from tsdb.error import TSDBAggregateDoesNotExistError, TSDBVarDoesNotExistError
-
-import esxsnmp.sql
 
 from esxsnmp.util import setproctitle, init_logging, get_logger, \
         remove_metachars, decode_alu_port
 from esxsnmp.util import daemonize, setup_exc_handler
 from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.error import ConfigError, PollerError
-from esxsnmp.sql import IfRef
 from esxsnmp.persist import PollResult, PersistClient
+from esxsnmp.api.models import Device, IfRef, OIDSet
 
 
 class PollError(Exception):
@@ -358,14 +348,7 @@ class PollManager(object):
         self.reload_interval = 30
         self.penalty_interval = 300
 
-        try:
-            esxsnmp.sql.setup_db(self.config.db_uri)
-        except Exception, e:
-            self.log.error("Problem setting up database: %s" % e)
-            raise
-
-        self.devices = esxsnmp.sql.get_devices(
-                polling_tag=self.config.polling_tag)
+        self.devices = Device.objects.active_as_dict()
 
         self.persistq = Queue.Queue()
         self.snmp_poller = AsyncSNMPPoller(config=self.config,
@@ -420,9 +403,10 @@ class PollManager(object):
             self.log.error(str(e))
             return
 
+        print "SLEFLOG", self.log
         self.log.info("starting all pollers for %s" % device.name)
 
-        for oidset in device.oidsets:
+        for oidset in device.oidsets.all():
             self._start_poller(device, oidset)
 
     def _stop_device(self, device):
@@ -477,10 +461,10 @@ class PollManager(object):
 
         self.log.debug("reloading devices and oidsets")
 
-        new_devices = esxsnmp.sql.get_devices(
-                polling_tag=self.config.polling_tag)
-        new_device_set = sets.Set(new_devices.iterkeys())
-        old_device_set = sets.Set(self.devices.iterkeys())
+        new_devices = Device.objects.active_as_dict()
+
+        new_device_set = set(new_devices.iterkeys())
+        old_device_set = set(self.devices.iterkeys())
 
         for name in new_device_set.difference(old_device_set):
             self._start_device(new_devices[name])
@@ -497,15 +481,15 @@ class PollManager(object):
                 break
 
             old_oidset = {}
-            for oidset in old_device.oidsets:
+            for oidset in old_device.oidsets.all():
                 old_oidset[oidset.name] = oidset
 
             new_oidset = {}
-            for oidset in new_device.oidsets:
+            for oidset in new_device.oidsets.all():
                 new_oidset[oidset.name] = oidset
 
-            old_oidset_names = sets.Set(old_oidset.iterkeys())
-            new_oidset_names = sets.Set(new_oidset.iterkeys())
+            old_oidset_names = set(old_oidset.iterkeys())
+            new_oidset_names = set(new_oidset.iterkeys())
 
             for oidset_name in new_oidset_names.difference(old_oidset_names):
                 self._start_poller(new_device, new_oidset[oidset_name])
@@ -542,7 +526,7 @@ class Poller(object):
         self.oids = self.oidset.oids
         # in some pollers we poll oids beyond the ones which are used
         # for that poller, so we make a copy in poll_oids
-        self.poll_oids = [o.name for o in self.oids]
+        self.poll_oids = [o.name for o in self.oids.all()]
         self.running = True
         self.log = get_logger(self.name)
 
@@ -647,7 +631,7 @@ class CorrelatedPoller(Poller):
         ts = time.time()
         metadata = dict(tsdb_flags=tsdb.ROW_VALID)
 
-        for oid in self.oidset.oids:
+        for oid in self.oidset.oids.all():
             dataout = []
             # qualified names are returned unqualified
             if "::" in oid.name:
@@ -687,7 +671,7 @@ class UncorrelatedPoller(Poller):
 
     def finish(self, data):
         dataout = {}
-        for oid in self.oidset.oids:
+        for oid in self.oidset.oids.all():
             dataout[oid.name] = filter_data(oid.name, data)
 
         pr = PollResult(self.oidset.name, self.device.name, "",
@@ -771,7 +755,7 @@ class AsyncSNMPPoller(object):
         except KeyError:
             raise PollerError("no session defined for %s" % host)
 
-        oids = [o for o in oids]  # make a copy of the oids list
+        oids = [str(o) for o in oids]  # make a copy of the oids list
 
         oid = oids.pop(0)
         #print "oid >%s<" % (oid)
@@ -878,29 +862,26 @@ def espoll():
         print e
         sys.exit(1)
 
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging("espoll", config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     try:
-        esxsnmp.sql.setup_db(config.db_uri)
-    except Exception, e:
-        print >>sys.stderr, "Problem setting up database: " % e
-        raise
-
-    session = esxsnmp.sql.Session()
-
-    devices = session.query(esxsnmp.sql.Device)
-    device = devices.filter(esxsnmp.sql.Device.name == device_name).one()
-    if not device:
-        print >>sys.stderr, "unknown device: %s" % device_name
+        device = Device.objects.get(name=device_name)
+    except Device.DoesNotExist:
+        print >>sys.stderr, "error: unknown device: %s" % device_name
+        sys.exit(1)
+    except Device.MultipleObjectsReturned:
+        print >>sys.stderr, "error: multiple devices with that name: %s" % device_name
         sys.exit(1)
 
-    oidset = session.query(esxsnmp.sql.OIDSet)
-    oidset = oidset.filter(esxsnmp.sql.OIDSet.name == oidset_name).one()
-
-    if not oidset:
-        print >>sys.stderr, "unknown OIDSet: %s %s" % (device.name,
+    try:
+        oidset = OIDSet.objects.get(name=oidset_name)
+    except OIDSet.DoesNotExist:
+        print >>sys.stderr, "error: unknown OIDSet: %s %s" % (device.name,
                 oidset_name)
+        sys.exit(1)
+    except OIDSet.MultipleObjectsReturned:
+        print >>sys.stderr, "error: multiple OIDSets with that name: %s" % device_name
         sys.exit(1)
 
     snmp_poller = AsyncSNMPPoller(config=config)
@@ -945,7 +926,7 @@ def espolld():
 
     name = "espolld"
 
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
     log = get_logger(name)
 

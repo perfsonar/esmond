@@ -1,0 +1,1333 @@
+[
+    {
+        "pk": 2,
+        "model": "api.poller",
+        "fields": {
+            "name": "UncorrelatedPoller"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "api.poller",
+        "fields": {
+            "name": "CorrelatedPoller"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "sysUpTime",
+            "oid_type": 5
+        }
+    },
+    {
+        "pk": 13,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "jnxCosIfqQedBytes",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 14,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "jnxCosIfqTxedBytes",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 15,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "jnxCosIfqTailDropPkts",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 16,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "jnxCosIfqTotalRedDropPkts",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 6,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifDescr",
+            "oid_type": 3
+        }
+    },
+    {
+        "pk": 7,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifAlias",
+            "oid_type": 3
+        }
+    },
+    {
+        "pk": 8,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifSpeed",
+            "oid_type": 4
+        }
+    },
+    {
+        "pk": 9,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifHighSpeed",
+            "oid_type": 4
+        }
+    },
+    {
+        "pk": 10,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ipAdEntIfIndex",
+            "oid_type": 6
+        }
+    },
+    {
+        "pk": 12,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "cpmCPUTotal5min",
+            "oid_type": 4
+        }
+    },
+    {
+        "pk": 11,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "jnxFWCounterByteCount",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 2,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "ifInOctets",
+            "oid_type": 1
+        }
+    },
+    {
+        "pk": 3,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "ifOutOctets",
+            "oid_type": 1
+        }
+    },
+    {
+        "pk": 4,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "ifHCInOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 5,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "ifHCOutOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 17,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "ifInErrors",
+            "oid_type": 1
+        }
+    },
+    {
+        "pk": 18,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "ifOutErrors",
+            "oid_type": 1
+        }
+    },
+    {
+        "pk": 19,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "ifInDiscards",
+            "oid_type": 1
+        }
+    },
+    {
+        "pk": 20,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "ifOutDiscards",
+            "oid_type": 1
+        }
+    },
+    {
+        "pk": 21,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "gigeClientCtpPmRealRxOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 22,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "gigeClientCtpPmRealTxOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 23,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "gigeClientCtpPmRealCktId",
+            "oid_type": 3
+        }
+    },
+    {
+        "pk": 24,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "mplsLspInfoState",
+            "oid_type": 8
+        }
+    },
+    {
+        "pk": 25,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "mplsLspInfoTo",
+            "oid_type": 6
+        }
+    },
+    {
+        "pk": 26,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "mplsLspInfoFrom",
+            "oid_type": 6
+        }
+    },
+    {
+        "pk": 27,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifMtu",
+            "oid_type": 7
+        }
+    },
+    {
+        "pk": 28,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifType",
+            "oid_type": 9
+        }
+    },
+    {
+        "pk": 29,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifPhysAddress",
+            "oid_type": 10
+        }
+    },
+    {
+        "pk": 30,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifOperStatus",
+            "oid_type": 8
+        }
+    },
+    {
+        "pk": 31,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "ifAdminStatus",
+            "oid_type": 8
+        }
+    },
+    {
+        "pk": 34,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "tempHumidSensorTempValue",
+            "oid_type": 8
+        }
+    },
+    {
+        "pk": 35,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "tempHumidSensorHumidValue",
+            "oid_type": 8
+        }
+    },
+    {
+        "pk": 32,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "outletID",
+            "oid_type": 3
+        }
+    },
+    {
+        "pk": 36,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "tempHumidSensorName",
+            "oid_type": 3
+        }
+    },
+    {
+        "pk": 37,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "tempHumidSensorID",
+            "oid_type": 3
+        }
+    },
+    {
+        "pk": 33,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "outletLoadValue",
+            "oid_type": 4
+        }
+    },
+    {
+        "pk": 38,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsIngressQchipForwardedInProfOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 39,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsIngressQchipForwardedOutProfOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 40,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsEgressQchipForwardedInProfOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 41,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsEgressQchipForwardedOutProfOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 42,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "sapDescription",
+            "oid_type": 3
+        }
+    },
+    {
+        "pk": 43,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsIngressQchipDroppedHiPrioPackets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 44,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsIngressQchipDroppedHiPrioOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 45,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsIngressQchipDroppedLoPrioPackets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 46,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsIngressQchipDroppedLoPrioOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 47,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsIngressQchipForwardedInProfPackets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 48,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsIngressQchipForwardedOutProfPackets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 53,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsEgressQchipForwardedInProfPackets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 54,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsEgressQchipForwardedOutProfPackets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 49,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsEgressQchipDroppedInProfPackets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 50,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsEgressQchipDroppedInProfOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 51,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsEgressQchipDroppedOutProfPackets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 52,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": true,
+            "name": "sapBaseStatsEgressQchipDroppedOutProfOctets",
+            "oid_type": 2
+        }
+    },
+    {
+        "pk": 55,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "sapIngressQosPolicyId",
+            "oid_type": 11
+        }
+    },
+    {
+        "pk": 56,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "name": "sapEgressQosPolicyId",
+            "oid_type": 11
+        }
+    },
+    {
+        "pk": 1,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "Counter32"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "Counter64"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "DisplayString"
+        }
+    },
+    {
+        "pk": 4,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "Gauge32"
+        }
+    },
+    {
+        "pk": 5,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "TimeTicks"
+        }
+    },
+    {
+        "pk": 6,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "IpAddress"
+        }
+    },
+    {
+        "pk": 7,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "Integer32"
+        }
+    },
+    {
+        "pk": 8,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "INTEGER"
+        }
+    },
+    {
+        "pk": 9,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "IANAifType"
+        }
+    },
+    {
+        "pk": 10,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "PhysAddress"
+        }
+    },
+    {
+        "pk": 11,
+        "model": "api.oidtype",
+        "fields": {
+            "name": "Gauge32"
+        }
+    },
+    {
+        "pk": 5,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 300,
+            "name": "CiscoCPU",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=CiscoCPUCorrelator"
+        }
+    },
+    {
+        "pk": 4,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 60,
+            "name": "JnxFirewall",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=JnxFirewallCorrelator"
+        }
+    },
+    {
+        "pk": 6,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 30,
+            "name": "JnxCOS",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=JnxCOSCorrelator"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 30,
+            "name": "FastPoll",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 30,
+            "name": "FastPollHC",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
+        }
+    },
+    {
+        "pk": 7,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 300,
+            "name": "Errors",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 2,
+            "frequency": 60,
+            "name": "IfRefPoll",
+            "poller_args": null
+        }
+    },
+    {
+        "pk": 8,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 30,
+            "name": "InfFastPollHC",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=InfIfDescrCorrelator"
+        }
+    },
+    {
+        "pk": 9,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 2,
+            "frequency": 60,
+            "name": "InfIfRefPoll",
+            "poller_args": null
+        }
+    },
+    {
+        "pk": 10,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 2,
+            "frequency": 60,
+            "name": "LSPOpStatus",
+            "poller_args": null
+        }
+    },
+    {
+        "pk": 11,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 60,
+            "name": "SentryPoll",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=SentryCorrelator"
+        }
+    },
+    {
+        "pk": 13,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 2,
+            "frequency": 60,
+            "name": "ALUIfRefPoll",
+            "poller_args": ""
+        }
+    },
+    {
+        "pk": 12,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 30,
+            "name": "ALUFastPollHC",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUIfDescrCorrelator set_name=FastPollHC"
+        }
+    },
+    {
+        "pk": 14,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 300,
+            "name": "ALUErrors",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUIfDescrCorrelator aggregates=3600,86400 set_name=Errors"
+        }
+    },
+    {
+        "pk": 15,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 1,
+            "frequency": 11,
+            "name": "ALUSAPPoll",
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUSAPCorrelator aggregates=30,3600,86400"
+        }
+    },
+    {
+        "pk": 16,
+        "model": "api.oidset",
+        "fields": {
+            "pollerid": 2,
+            "frequency": 60,
+            "name": "ALUSAPRefPoll",
+            "poller_args": ""
+        }
+    },
+    {
+        "pk": 1,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 1,
+            "oid_set": 1
+        }
+    },
+    {
+        "pk": 2,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 2,
+            "oid_set": 1
+        }
+    },
+    {
+        "pk": 3,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 3,
+            "oid_set": 1
+        }
+    },
+    {
+        "pk": 4,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 1,
+            "oid_set": 2
+        }
+    },
+    {
+        "pk": 5,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 4,
+            "oid_set": 2
+        }
+    },
+    {
+        "pk": 6,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 5,
+            "oid_set": 2
+        }
+    },
+    {
+        "pk": 7,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 6,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 8,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 7,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 9,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 8,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 10,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 9,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 11,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 10,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 12,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 11,
+            "oid_set": 4
+        }
+    },
+    {
+        "pk": 13,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 12,
+            "oid_set": 5
+        }
+    },
+    {
+        "pk": 14,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 13,
+            "oid_set": 6
+        }
+    },
+    {
+        "pk": 15,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 14,
+            "oid_set": 6
+        }
+    },
+    {
+        "pk": 16,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 15,
+            "oid_set": 6
+        }
+    },
+    {
+        "pk": 17,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 16,
+            "oid_set": 6
+        }
+    },
+    {
+        "pk": 18,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 17,
+            "oid_set": 7
+        }
+    },
+    {
+        "pk": 19,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 18,
+            "oid_set": 7
+        }
+    },
+    {
+        "pk": 20,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 19,
+            "oid_set": 7
+        }
+    },
+    {
+        "pk": 21,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 20,
+            "oid_set": 7
+        }
+    },
+    {
+        "pk": 22,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 24,
+            "oid_set": 10
+        }
+    },
+    {
+        "pk": 23,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 25,
+            "oid_set": 10
+        }
+    },
+    {
+        "pk": 24,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 26,
+            "oid_set": 10
+        }
+    },
+    {
+        "pk": 25,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 27,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 26,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 28,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 27,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 29,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 28,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 30,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 29,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 31,
+            "oid_set": 3
+        }
+    },
+    {
+        "pk": 30,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 1,
+            "oid_set": 8
+        }
+    },
+    {
+        "pk": 31,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 21,
+            "oid_set": 8
+        }
+    },
+    {
+        "pk": 32,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 22,
+            "oid_set": 8
+        }
+    },
+    {
+        "pk": 33,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 6,
+            "oid_set": 9
+        }
+    },
+    {
+        "pk": 34,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 23,
+            "oid_set": 9
+        }
+    },
+    {
+        "pk": 35,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 33,
+            "oid_set": 11
+        }
+    },
+    {
+        "pk": 36,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 34,
+            "oid_set": 11
+        }
+    },
+    {
+        "pk": 37,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 35,
+            "oid_set": 11
+        }
+    },
+    {
+        "pk": 38,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 1,
+            "oid_set": 12
+        }
+    },
+    {
+        "pk": 39,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 4,
+            "oid_set": 12
+        }
+    },
+    {
+        "pk": 40,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 5,
+            "oid_set": 12
+        }
+    },
+    {
+        "pk": 41,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 6,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 43,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 8,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 44,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 9,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 45,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 10,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 46,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 27,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 47,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 28,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 48,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 29,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 49,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 30,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 50,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 31,
+            "oid_set": 13
+        }
+    },
+    {
+        "pk": 51,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 17,
+            "oid_set": 14
+        }
+    },
+    {
+        "pk": 52,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 18,
+            "oid_set": 14
+        }
+    },
+    {
+        "pk": 53,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 19,
+            "oid_set": 14
+        }
+    },
+    {
+        "pk": 54,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 20,
+            "oid_set": 14
+        }
+    },
+    {
+        "pk": 55,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 38,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 56,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 39,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 57,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 40,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 58,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 41,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 59,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 42,
+            "oid_set": 16
+        }
+    },
+    {
+        "pk": 61,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 43,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 62,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 44,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 63,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 45,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 64,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 46,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 65,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 47,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 66,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 48,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 67,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 49,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 68,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 50,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 69,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 51,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 70,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 52,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 71,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 53,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 72,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 54,
+            "oid_set": 15
+        }
+    },
+    {
+        "pk": 73,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 55,
+            "oid_set": 16
+        }
+    },
+    {
+        "pk": 74,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 56,
+            "oid_set": 16
+        }
+    }
+]
