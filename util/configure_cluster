@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+"""
+Configure a three-machine cluster to run a three-shard cluster with replica sets.
+"""
+
+import os
+
+import ConfigParser
+from optparse import OptionParser
+
+from esxsnmp.error import ConfigError
+
+def get_config_path():
+    if os.environ.has_key('ESXSNMP_CLUSTER_CONF'):
+        conf = os.environ['ESXSNMP_CLUSTER_CONF']
+    else:
+        conf = './esxsnmp.conf'
+
+    return conf
+    
+def get_config(config_file, opts=None):
+    if not os.path.exists(config_file):
+        raise ConfigError("config file not found: %s" % config_file)
+
+    try:
+        conf = ClusterConfig(config_file)
+    except ConfigParser.Error, e:
+        raise ConfigError("unable to parse config: %s" % e)
+
+    return conf
+    
+class ClusterConfig(object):
+    def __init__(self, file):
+        self.file = file
+        
+        self.mongo_data_dir_root = None
+        self.server_1_address = None
+        self.server_2_address = None
+        self.server_3_address = None
+        
+        self.read_config()
+        
+    def read_config(self):
+        defaults = {}
+        for v in ('ESXSNMP_ROOT', ):
+            defaults[v] = os.environ.get(v)
+        
+        cfg = ConfigParser.ConfigParser(defaults)
+        cfg.read(self.file)
+        config_items = map(lambda x: x[0], cfg.items("main"))
+        for opt in (
+                'mongo_data_dir_root',
+                'server_1_address',
+                'server_2_address',
+                'server_3_address',
+                ):
+            if opt in config_items:
+                setattr(self, opt, cfg.get("main", opt))
+
+def main():
+    usage = '%prog [options]'
+    desc = ' '.join(__doc__.split())
+    parser = OptionParser(usage=usage, description=desc)
+    options, args = parser.parse_args()
+    
+    # XXX(mmg): change to take an opt rather than env?
+    conf = get_config(get_config_path())
+    
+    pass
+
+
+if __name__ == '__main__':
+    main()
