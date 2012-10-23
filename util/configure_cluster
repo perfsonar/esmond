@@ -13,6 +13,8 @@ import ConfigParser
 
 from optparse import OptionParser
 
+import pymongo
+
 
 from esxsnmp.error import ConfigError
 
@@ -115,17 +117,24 @@ def do_start(server, config, option_args):
     dbpath = '%s/%s' % (config.mongo_data_dir_root, server.base)
     check_path(dbpath)
     
-    cmd = [
-        server.binary,
-        '--port', '%s' % server.port,
-        '--dbpath', dbpath,
-        '--logpath', '%s/mongodb.log' % dbpath,
-        '--logappend',
-        '--pidfilepath', '%s/mongodb.pid' % dbpath,
-        '--directoryperdb',
-        '--journal',
-        '--fork',
-    ]
+    cmd = []
+    
+    if server.__name__ != 'Mongos':
+        cmd = [
+            server.binary,
+            '--port', '%s' % server.port,
+            '--dbpath', dbpath,
+            '--logpath', '%s/mongodb.log' % dbpath,
+            '--logappend',
+            '--pidfilepath', '%s/mongodb.pid' % dbpath,
+            '--directoryperdb',
+            '--journal',
+            '--fork',
+        ]
+    else:
+        raise
+        cmd = [
+        ]
     
     cmd = cmd + option_args + server.args
     
@@ -136,7 +145,7 @@ def do_start(server, config, option_args):
 def start_clean(config):
     
     kill_all(config)
-    servers = [Primary, Secondary, Config]
+    servers = [Primary, Secondary, Arbiter, Config]
     
     for s in servers:
         server_root = '%s/%s' % (config.mongo_data_dir_root, s.base)
@@ -149,17 +158,78 @@ def start_clean(config):
     
     for s in servers:
         do_start(s, config, option_args)
+        
+def start_prepped_servers(config):
+    
+    cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
+    option_args = [
+        '--keyFile', '%s/keyfile' % cluster_config
+    ]
+    
+    for s in [Primary, Secondary, Arbiter, Config]:
+        do_start(s, config, option_args)
     
 def kill_all(config):
     print 'Executing kill all.'
-    for s in [Primary, Secondary, Config]:
+    for s in [Primary, Secondary, Arbiter, Config, Mongos]:
         pidfile = '%s/%s/mongodb.pid' % (config.mongo_data_dir_root, s.base)
         if os.path.exists(pidfile):
             fh = open(pidfile, 'r')
             pid = fh.read().strip()
             fh.close()
-            os.kill(int(pid),3)
+            try:
+                os.kill(int(pid),3)
+            except:
+                pass
             os.unlink(pidfile)
+            
+def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
+    try:
+        connection = pymongo.Connection(host=host, port=port)
+    except ConnectionFailure:
+        raise ConnectionException("Couldn't connect to DB "
+                        "at %s:%d" % (host, port))
+                        
+    db_conn = connection[db]
+                        
+    if user != '':
+        success = db_conn.authenticate(user, passwd)
+        if not success:
+            raise ConnectionException("Could not authenticate to "
+                                      "database as user '%s'" % (config.mongo_user))
+                        
+    return db_conn
+            
+def set_authentication(config):
+    print 'Setting up authentication.'
+    for s in [Primary, Secondary, Arbiter, Config]:
+        print '\t', s.__name__
+        admin = get_mongo_connection('admin', s.port)
+        admin.add_user(config.username, config.password)
+        admin.connection.close()
+    
+        if s.__name__ == 'Config':
+            continue
+    
+        esx = get_mongo_connection('esxsnmp', s.port)
+        esx.add_user(config.username, config.password)
+        esx.connection.close()
+        
+        local = get_mongo_connection('local', s.port)
+        local.add_user(config.username, config.password)
+        local.connection.close()
+        
+    print 'Setting keyfile'
+    cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
+    check_path(cluster_config)
+    key_path = cluster_config + '/keyfile'
+    fh = open(key_path, 'w')
+    fh.write(config.keyfile)
+    fh.flush()
+    fh.close()
+    os.chmod(key_path, 0700)
+    
+    
 
 def main():
     usage = '%prog [options]'
@@ -177,9 +247,17 @@ def main():
         
     start_clean(conf)
     
-    time.sleep(3)
+    time.sleep(1)
+
+    set_authentication(conf)
+    
+    time.sleep(1)
         
     kill_all(conf)
+    
+    time.sleep(1)
+    
+    start_prepped_servers(conf)
 
 
     
