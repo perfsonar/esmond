@@ -33,8 +33,6 @@ from esxsnmp.config import get_opt_parser, get_config, get_config_path
 from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 import datetime
 
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-
 import pprint
 
 #
@@ -1337,7 +1335,8 @@ def setup(inargs, config_file=None):
     # XXX(jdugan): ditto on this one, globals are icky
     global USER_DB
     USER_DB = UserDB()
-    USER_DB.read_htpassd(config.htpasswd_file)
+    if config.htpasswd_file:
+        USER_DB.read_htpassd(config.htpasswd_file)
 
 def esdb_wsgi(config_file):
     sys.stdout = sys.stderr
