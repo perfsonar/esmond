@@ -24,12 +24,12 @@ following::
    # copy the contents of the util/graphite directory into place
    $ cp -r $ESXSNMP_SRC/util/graphite/* .
    $ virtualenv .
+   $ source bin/activate  # or bin/activate.csh depending on your shell
    # create directories needed by Graphite
    $ mkdir -p storage/log/webapp conf
    # the next step avoids a weird dependency problem
    $ pip install hg+https://code.google.com/p/tsdb/
    $ pip install -r requirements.txt
-   $ source bin/activate  # or bin/activate.csh depending on your shell
    $ python manage.py syncdb
    $ python manage.py collectstatic
    $ $EDITOR esxsnmp_graphite/settings.py # set the NEEDS TO BE CHANGED items
@@ -42,7 +42,7 @@ Edit your apache config to include this::
    Allow from all
    </Directory>
    
-   WSGIScriptAlias / $GRAPHITE_ROOT/wsgi/esnet_graphite.wsgi
+   WSGIScriptAlias / $GRAPHITE_ROOT/wsgi/esxsnmp_graphite.wsgi
    WSGIPassAuthorization On
    
    <Directory $GRAPHITE_ROOT/wsgi/>
