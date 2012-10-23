@@ -45,6 +45,9 @@ class ClusterConfig(object):
         self.server_1_address = None
         self.server_2_address = None
         self.server_3_address = None
+        self.username = None
+        self.password = None
+        self.keyfile = None
         
         self.read_config()
         
@@ -61,6 +64,9 @@ class ClusterConfig(object):
                 'server_1_address',
                 'server_2_address',
                 'server_3_address',
+                'username',
+                'password',
+                'keyfile',
                 ):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
@@ -89,8 +95,8 @@ class Arbiter(object):
 class Config(object):
     binary = 'mongod'
     port = 27019
-    base = 'config'
-    args = []
+    base = 'configdb'
+    args = ['--configsvr']
     
 class Mongos(object):
     binary = 'mongos'
@@ -130,7 +136,7 @@ def do_start(server, config, option_args):
 def start_clean(config):
     
     kill_all(config)
-    servers = [Primary, Secondary]
+    servers = [Primary, Secondary, Config]
     
     for s in servers:
         server_root = '%s/%s' % (config.mongo_data_dir_root, s.base)
@@ -146,7 +152,7 @@ def start_clean(config):
     
 def kill_all(config):
     print 'Executing kill all.'
-    for s in [Primary, Secondary]:
+    for s in [Primary, Secondary, Config]:
         pidfile = '%s/%s/mongodb.pid' % (config.mongo_data_dir_root, s.base)
         if os.path.exists(pidfile):
             fh = open(pidfile, 'r')
