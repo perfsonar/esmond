@@ -20,6 +20,7 @@ src
 devel/tsdb-data
 devel/var
 devel/crashlog
+devel/cluster
 docs/_build
 .DS_Store
 *.swp
