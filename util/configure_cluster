@@ -17,8 +17,10 @@ from optparse import OptionParser
 
 import pymongo
 from pymongo.errors import ConnectionFailure, OperationFailure
+from bson.son import SON
 
 from esxsnmp.error import ConfigError
+from esxsnmp.mongo import MONGO_DB
 
 class ConnectionException(Exception):
     def __init__(self, value):
@@ -166,7 +168,18 @@ def do_start(server, config, option_args):
             '--fork',
         ]
     else:
-        raise
+        # compress server list in case we are running one node
+        s_args = {}
+        for s in config.server_addresses:
+            s_args['%s:%s' % (s, Config.port)] = 1
+        if len(s_args.keys()) == 2:
+            print 'Mongos needs to start with 1 or 3 config servers'
+            print 'Configured:', config.server_addresses
+            print 'Fix configuration and run --init again.'
+            sys.exit(-1)
+            
+        config_db_arg = ','.join(s_args.keys())
+        
         cmd = [
             server.binary,
             '--port', '%s' % server.port,
@@ -174,6 +187,7 @@ def do_start(server, config, option_args):
             '--logappend',
             '--pidfilepath', '%s/mongodb.pid' % dbpath,
             '--fork',
+            '--configdb', config_db_arg
         ]
     
     cmd = cmd + option_args + server.args
@@ -215,15 +229,13 @@ def start_prepped_servers(config, server):
     
     sets = config.set_members_by_host[server]
     
-    print sets
-    
     for s in [Primary, Secondary, Arbiter]:
-        #args = ['--replSet', '%s' % sets[s.base]]
-        args = ['--replSet', '%s' % 'set_1']
+        args = ['--replSet', '%s' % sets[s.base]]
         args = args + option_args
         do_start(s, config, args)
         
-    do_start(Config, config, option_args)
+    for s in [Config, Mongos]:        
+        do_start(s, config, option_args)
     
 def kill_all(config):
     print 'Executing kill all.'
@@ -338,6 +350,41 @@ def initialize_replica_set(config, r_set, set_members):
         except OperationFailure:
             print 'Waiting for set to come online...'
             time.sleep(2)
+            
+    print 'Adding replica set to shard server.'
+    
+    mongos = get_mongo_connection('admin', host=host, port=Mongos.port, 
+        user=config.username, passwd=config.password)
+        
+    shard_arg = '%s/%s,%s,%s' % (r_set,primary,secondary,arbiter)
+    
+    time.sleep(1)
+    mongos.command("addShard", shard_arg)
+    time.sleep(3)
+    
+    config = mongos.connection['config']
+    for s in config.shards.find():
+        print s
+        
+def enable_sharding(config):
+    print 'Using the following collections/keys:'
+    shard_keys = {
+        'raw_data': SON(MONGO_DB.raw_idx),
+        'metadata': SON(MONGO_DB.meta_idx),
+        'base_rates': SON(MONGO_DB.rate_idx),
+        'aggregations': SON(MONGO_DB.agg_idx),
+    }
+    pprint.pprint(shard_keys)
+    
+    mongos = get_mongo_connection('admin', host=config.server_1, port=Mongos.port, 
+        user=config.username, passwd=config.password)
+    
+    print mongos.command('enablesharding', 'esxsnmp') 
+    
+    for k,v in shard_keys.items():
+        if not len(v):
+            continue
+        print mongos.command('shardcollection', 'esxsnmp.%s' % k, key=v )
     
     
 def get_server_prompt(config):
@@ -401,6 +448,9 @@ def main():
     usage = '%prog [options]'
     desc = ' '.join(__doc__.split())
     parser = OptionParser(usage=usage, description=desc)
+    parser.add_option('-c', '--config', action="store_true", default=False,
+                      dest="config",
+                      help="View configuration object - mostly for debugging.")
     parser.add_option('-i', '--init', action="store_true", default=False,
                       dest="init",
                       help="Start servers from scratch and configure auth.")
@@ -410,10 +460,16 @@ def main():
     parser.add_option('-r', '--replica', action="store_true", default=False,
                         dest="replica_set",
                         help="Configure a replica set.")
+    parser.add_option('-s', '--sharding', action="store_true", default=False,
+                        dest="sharding",
+                        help="Configure sharding after replica sets configured.")
     options, args = parser.parse_args()
     
     # XXX(mmg): change to take an opt rather than env?
     conf = get_config(get_config_path())
+    
+    if options.config:
+        pprint.pprint(conf.__dict__)
     
     if options.kill:
         kill_all(conf)
@@ -437,6 +493,9 @@ def main():
         set_members = conf.replica_sets[r_set]
         initialize_replica_set(conf, r_set, set_members)
 
+    if options.sharding:
+        print 'Enabling sharding on cluster.'
+        enable_sharding(conf)
 
 
     pass
