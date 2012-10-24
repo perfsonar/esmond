@@ -7,6 +7,7 @@ Configure a three-machine cluster to run a three-shard cluster with replica sets
 import os
 import shutil
 import subprocess
+import sys
 import time
 
 import ConfigParser
@@ -44,12 +45,22 @@ class ClusterConfig(object):
         self.file = file
         
         self.mongo_data_dir_root = None
-        self.server_1_address = None
-        self.server_2_address = None
-        self.server_3_address = None
+        self.server_1 = None
+        self.server_2 = None
+        self.server_3 = None
         self.username = None
         self.password = None
         self.keyfile = None
+        
+        self.replica_sets = {
+            'set_1': {}, 'set_2': {}, 'set_3': {}
+        }
+        
+        self.set_members_by_host = {
+            'server_1': {}, 'server_2': {}, 'server_3': {}
+        }
+        
+        self.server_addresses = []
         
         self.read_config()
         
@@ -63,16 +74,32 @@ class ClusterConfig(object):
         config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in (
                 'mongo_data_dir_root',
-                'server_1_address',
-                'server_2_address',
-                'server_3_address',
+                'server_1',
+                'server_2',
+                'server_3',
                 'username',
                 'password',
                 'keyfile',
                 ):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
+                if opt.startswith('server_'):
+                    self.server_addresses.append(cfg.get("main", opt))
                 
+        for s in [
+            ('set_1', 'replica_set_1'),
+            ('set_2', 'replica_set_2'),
+            ('set_3', 'replica_set_3'),
+        ]:
+            items = map(lambda x: x[0], cfg.items(s[1]))
+            for i in items:
+                if i == 'esxsnmp_root':
+                    continue
+                self.replica_sets[s[0]][i] = getattr(self, '%s' % cfg.get(s[1], i))
+                self.set_members_by_host[cfg.get(s[1], i)][i] = s[0]
+                
+        
+                            
 # Server definitions
 
 class Primary(object):
@@ -229,38 +256,57 @@ def set_authentication(config):
     fh.close()
     os.chmod(key_path, 0700)
     
+def configure_replica_set(config, set, set_members):
+    pass
+    
     
 
 def main():
     usage = '%prog [options]'
     desc = ' '.join(__doc__.split())
     parser = OptionParser(usage=usage, description=desc)
-    parser.add_option('-c', '--config', action="store_true", default=False,
-                      dest="config",
-                      help="Start servers from scratch and configure associations.")
+    parser.add_option('-i', '--init', action="store_true", default=False,
+                      dest="init",
+                      help="Start servers from scratch and configure auth.")
+    parser.add_option('-k', '--kill', action="store_true", default=False,
+                        dest="kill",
+                        help="Kill all running servers.")
+    parser.add_option('-r', '--replica_set', action="store", default=False,
+                        dest="replica_set",
+                        help="Configure a replica set: set_1 | set_2 | set_3")
     options, args = parser.parse_args()
     
     # XXX(mmg): change to take an opt rather than env?
     conf = get_config(get_config_path())
     
-    check_path(conf.mongo_data_dir_root)
+    if options.kill:
+        kill_all(conf)
+    
+    if options.init:
+        print 'Initializing servers'
+        check_path(conf.mongo_data_dir_root)
+        start_clean(conf)
+        time.sleep(1)
+        set_authentication(conf)
+        time.sleep(1)
+        kill_all(conf)
+        time.sleep(1)
+        start_prepped_servers(conf)
+        sys.exit(0)
         
-    start_clean(conf)
-    
-    time.sleep(1)
-
-    set_authentication(conf)
-    
-    time.sleep(1)
-        
-    kill_all(conf)
-    
-    time.sleep(1)
-    
-    start_prepped_servers(conf)
+    if options.replica_set:
+        print 'Configuring replica set:', options.replica_set
+        allowed = ['set_1', 'set_2', 'set_3']
+        try:
+            allowed.index(options.replica_set)
+        except ValueError:
+            print 'The allowed arguments are', allowed
+            sys.exit(-1)
+        set_members = conf.replica_sets[options.replica_set]
+        configure_replica_set(conf, options.replica_set, set_members)
 
 
-    
+
     pass
 
 
