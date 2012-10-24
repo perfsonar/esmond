@@ -21,6 +21,7 @@ devel/tsdb-data
 devel/var
 devel/crashlog
 devel/cluster
+devel/mongodb-cluster.conf
 docs/_build
 .DS_Store
 *.swp
