@@ -299,15 +299,16 @@ class PersistThread(threading.Thread):
     RUN = 1
     REMOVE = 2
 
-    def __init__(self, config, persistq):
+    def __init__(self, name, config, persistq):
         threading.Thread.__init__(self)
 
         self.config = config
         self.persistq = persistq
+        self.name = name
 
         self.state = self.INIT
 
-        self.persister = PersistClient(config)
+        self.persister = PersistClient(name, config)
 
     def run(self):
         self.state = self.RUN
@@ -363,7 +364,7 @@ class PollManager(object):
         self.running = True
 
         self.threads = {}
-        t = PersistThread(self.config, self.persistq)
+        t = PersistThread("espolld.persist_client", self.config, self.persistq)
 
         self._start_thread('persist_thread', t)
 
@@ -403,7 +404,6 @@ class PollManager(object):
             self.log.error(str(e))
             return
 
-        print "SLEFLOG", self.log
         self.log.info("starting all pollers for %s" % device.name)
 
         for oidset in device.oidsets.all():
@@ -480,15 +480,16 @@ class PollManager(object):
                 self._restart_device(new_device)
                 break
 
-            old_oidset = {}
-            for oidset in old_device.oidsets.all():
-                old_oidset[oidset.name] = oidset
+            old_oidset = []
+            for poller in self.pollers.keys():
+                if poller.startswith(name):
+                    old_oidset.append(poller.split("_")[1])
 
             new_oidset = {}
             for oidset in new_device.oidsets.all():
                 new_oidset[oidset.name] = oidset
 
-            old_oidset_names = set(old_oidset.iterkeys())
+            old_oidset_names = set(old_oidset)
             new_oidset_names = set(new_oidset.iterkeys())
 
             for oidset_name in new_oidset_names.difference(old_oidset_names):

@@ -891,7 +891,7 @@ class MemcachedPersistQueue(PersistQueue):
 
 
 class PersistClient(object):
-    def __init__(self, config):
+    def __init__(self, name, config):
         self.config = config
         self.sinks = []
         self.log = get_logger("espersist.client")
@@ -903,7 +903,7 @@ class PersistClient(object):
 
         for uri in config.espoll_persist_uri:
             (kind, kind_uri) = uri.split(':', 1)
-            sink = eval('%s(config, "%s")' % (kind, kind_uri))
+            sink = eval('%s(name, config, "%s")' % (kind, kind_uri))
             self.sinks.append(sink)
 
     def put(self, result):
@@ -947,11 +947,11 @@ class MultiWorkerQueue(object):
 
 
 class MemcachedPersistHandler(object):
-    def __init__(self, config, uri):
+    def __init__(self, name, config, uri):
         self.queues = {}
         self.config = config
         self.uri = uri
-        self.log = get_logger("MemcachedPersistHandler")
+        self.log = get_logger(name)
 
         for qname in config.persist_queues:
             num_workers = self.config.persist_queues[qname][1]
