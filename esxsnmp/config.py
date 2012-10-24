@@ -133,7 +133,7 @@ class ESxSNMPConfig(object):
 
         self.persist_map = {}
         for key, val in cfg.items("persist_map"):
-            if key == 'esxsnmp_root':
+            if key == 'esxsnmp_root': # XXX(jdugan) this is probably cruft
                 continue
 
             self.persist_map[key] = val.replace(" ", "").split(",")
