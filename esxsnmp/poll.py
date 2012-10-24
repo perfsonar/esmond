@@ -3,7 +3,6 @@ import signal
 import sys
 import time
 import re
-import sets
 import socket
 import threading
 import Queue
@@ -404,9 +403,10 @@ class PollManager(object):
             self.log.error(str(e))
             return
 
+        print "SLEFLOG", self.log
         self.log.info("starting all pollers for %s" % device.name)
 
-        for oidset in device.oidsets:
+        for oidset in device.oidsets.all():
             self._start_poller(device, oidset)
 
     def _stop_device(self, device):
@@ -463,8 +463,8 @@ class PollManager(object):
 
         new_devices = Device.objects.active_as_dict()
 
-        new_device_set = sets.Set(new_devices.iterkeys())
-        old_device_set = sets.Set(self.devices.iterkeys())
+        new_device_set = set(new_devices.iterkeys())
+        old_device_set = set(self.devices.iterkeys())
 
         for name in new_device_set.difference(old_device_set):
             self._start_device(new_devices[name])
@@ -481,15 +481,15 @@ class PollManager(object):
                 break
 
             old_oidset = {}
-            for oidset in old_device.oidsets:
+            for oidset in old_device.oidsets.all():
                 old_oidset[oidset.name] = oidset
 
             new_oidset = {}
-            for oidset in new_device.oidsets:
+            for oidset in new_device.oidsets.all():
                 new_oidset[oidset.name] = oidset
 
-            old_oidset_names = sets.Set(old_oidset.iterkeys())
-            new_oidset_names = sets.Set(new_oidset.iterkeys())
+            old_oidset_names = set(old_oidset.iterkeys())
+            new_oidset_names = set(new_oidset.iterkeys())
 
             for oidset_name in new_oidset_names.difference(old_oidset_names):
                 self._start_poller(new_device, new_oidset[oidset_name])
@@ -526,7 +526,7 @@ class Poller(object):
         self.oids = self.oidset.oids
         # in some pollers we poll oids beyond the ones which are used
         # for that poller, so we make a copy in poll_oids
-        self.poll_oids = [o.name for o in self.oids]
+        self.poll_oids = [o.name for o in self.oids.all()]
         self.running = True
         self.log = get_logger(self.name)
 
@@ -631,7 +631,7 @@ class CorrelatedPoller(Poller):
         ts = time.time()
         metadata = dict(tsdb_flags=tsdb.ROW_VALID)
 
-        for oid in self.oidset.oids:
+        for oid in self.oidset.oids.all():
             dataout = []
             # qualified names are returned unqualified
             if "::" in oid.name:
@@ -671,7 +671,7 @@ class UncorrelatedPoller(Poller):
 
     def finish(self, data):
         dataout = {}
-        for oid in self.oidset.oids:
+        for oid in self.oidset.oids.all():
             dataout[oid.name] = filter_data(oid.name, data)
 
         pr = PollResult(self.oidset.name, self.device.name, "",
@@ -755,7 +755,7 @@ class AsyncSNMPPoller(object):
         except KeyError:
             raise PollerError("no session defined for %s" % host)
 
-        oids = [o for o in oids]  # make a copy of the oids list
+        oids = [str(o) for o in oids]  # make a copy of the oids list
 
         oid = oids.pop(0)
         #print "oid >%s<" % (oid)
@@ -862,7 +862,7 @@ def espoll():
         print e
         sys.exit(1)
 
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging("espoll", config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     try:
@@ -926,7 +926,7 @@ def espolld():
 
     name = "espolld"
 
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
     log = get_logger(name)
 

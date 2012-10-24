@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
 import os
-
-os.environ['PYTHON_EGG_CACHE'] = '/data/esxsnmp/egg-cache'
 import sys
-sys.path[0:0] = [
-  '/data/esxsnmp/esxsnmp/src/python',
-  '/data/esxsnmp/esxsnmp/eggs/nose-0.11.1-py2.5.egg',
-  '/data/esxsnmp/esxsnmp/eggs/mock-0.6.0-py2.5.egg',
-  '/data/esxsnmp/esxsnmp/eggs/SQLAlchemy-0.5.2-py2.5.egg',
-  '/data/esxsnmp/esxsnmp/parts/tsdb',
-  '/data/esxsnmp/esxsnmp/eggs/fs-0.1.0-py2.5.egg',
-  '/data/esxsnmp/esxsnmp/eggs/fpconst-0.7.2-py2.5.egg',
-  '/data/esxsnmp/esxsnmp/eggs/web.py-0.34-py2.5.egg',
-  '/data/esxsnmp/esxsnmp/eggs/simplejson-2.1.0-py2.5-freebsd-7.1-RELEASE-amd64.egg',
-  ]
+import site
+
+try:
+    ESXSNMP_ROOT = os.environ['ESXSNMP_ROOT']
+except:
+    ESXSNMP_ROOT = os.path.dirname(os.path.abspath(__file__)) + "/.."
+    os.environ['ESXSNMP_ROOT'] = ESXSNMP_ROOT
+
+if not os.environ.has_key('DJANGO_SETTINGS_MODULE'):
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'esxsnmp.settings'
+
+site.addsitedir('%s/venv/lib/python%d.%d/site-packages' %
+        (ESXSNMP_ROOT, sys.version_info[0], sys.version_info[1]))
 
 import esxsnmp.newdb
 
-application = esxsnmp.newdb.esdb_wsgi("/data/esxsnmp/etc/esxsnmp.conf")
+application = esxsnmp.newdb.esdb_wsgi("%s/esxsnmp.conf" % ESXSNMP_ROOT)

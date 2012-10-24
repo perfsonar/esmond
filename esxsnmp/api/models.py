@@ -40,7 +40,7 @@ class Device(models.Model):
     community = models.CharField(max_length = 128)
     active = models.BooleanField(default = True)
     devicetag = models.ManyToManyField(DeviceTag, through = "DeviceTagMap")
-    oidset = models.ManyToManyField("OIDSet", through = "DeviceOIDSetMap")
+    oidsets = models.ManyToManyField("OIDSet", through = "DeviceOIDSetMap")
 
     objects = DeviceManager()
 
@@ -110,7 +110,7 @@ class OIDSet(models.Model):
 
     name = models.CharField(max_length=256, help_text="Name for OIDSet.")
     frequency = models.IntegerField(help_text="Polling frequency in seconds.")
-    pollerid = models.ForeignKey(Poller,db_column="pollerid", 
+    poller = models.ForeignKey(Poller,db_column="pollerid", 
         help_text="Which poller to use for this OIDSet")
     poller_args = models.CharField(max_length=256, null=True, blank=True,
         help_text="Arguments for the Poller")
@@ -170,17 +170,22 @@ class IfRef(models.Model):
     device = models.ForeignKey(Device, db_column="deviceid")
     ifIndex = models.IntegerField(db_column="ifindex")
     ifDescr = models.CharField(max_length=512, db_column="ifdescr")
-    ifAlias = models.CharField(max_length=512, db_column="ifalias")
-    ipAddr = models.IPAddressField(blank=True, db_column="ipaddr")
-    ifSpeed = models.IntegerField(db_column="ifspeed")
-    ifHighSpeed = models.IntegerField(db_column="ifhighspeed")
-    ifMtu = models.IntegerField(db_column="ifmtu")
-    ifType = models.IntegerField(db_column="iftype")
-    ifOperStatus = models.CharField(max_length=1, db_column="ifoperstatus")
-    ifAdminStatus = models.CharField(max_length=1, db_column="ifadminstatus")
+    ifAlias = models.CharField(max_length=512, db_column="ifalias", blank=True,
+            null=True)
+    ipAddr = models.IPAddressField(blank=True, db_column="ipaddr", null=True)
+    ifSpeed = models.BigIntegerField(db_column="ifspeed", blank=True, null=True)
+    ifHighSpeed = models.BigIntegerField(db_column="ifhighspeed", blank=True,
+            null=True)
+    ifMtu = models.IntegerField(db_column="ifmtu", blank=True, null=True)
+    ifType = models.IntegerField(db_column="iftype", blank=True, null=True)
+    ifOperStatus = models.CharField(max_length=1, db_column="ifoperstatus",
+            blank=True, null=True)
+    ifAdminStatus = models.CharField(max_length=1, db_column="ifadminstatus",
+            blank=True, null=True)
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
-    ifPhysAddress = models.CharField(max_length=32, db_column="ifphysaddress")
+    ifPhysAddress = models.CharField(max_length=32, db_column="ifphysaddress",
+            blank=True, null=True)
 
     objects = IfRefManager()
 

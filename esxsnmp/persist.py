@@ -1065,7 +1065,7 @@ def worker(name, config, opts):
 
     os.umask(0022)
 
-    init_logging(config.syslog_facility, level=config.syslog_priority,
+    init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
     (qclass, nworkers) = config.persist_queues[opts.qname]
@@ -1090,7 +1090,13 @@ class PersistManager(object):
 
         self.processes = {}
 
-        init_logging(config.syslog_facility, level=config.syslog_priority,
+        if config.tsdb_root and not os.path.isdir(config.tsdb_root):
+            try:
+                tsdb.TSDB.create(config.tsdb_root)
+            except Exception, e:
+                print >>sys.stderr, "unable to create TSDB root: %s: %s" % (config.tsdb_root, str(e))
+
+        init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
 
         self.log = get_logger(name)
@@ -1209,7 +1215,7 @@ def espersistd():
             worker(name, config, opts)
         except Exception, e:
             log.error("Problem with worker module: %s" % e, exc_info=True)
-            raise e
+            raise
             sys.exit(1)
     elif opts.role == 'stats':
         stats(name, config, opts)
