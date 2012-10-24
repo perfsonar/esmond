@@ -5,6 +5,7 @@ Configure a three-machine cluster to run a three-shard cluster with replica sets
 """
 
 import os
+import pprint
 import shutil
 import subprocess
 import sys
@@ -15,9 +16,15 @@ import ConfigParser
 from optparse import OptionParser
 
 import pymongo
-
+from pymongo.errors import ConnectionFailure, OperationFailure
 
 from esxsnmp.error import ConfigError
+
+class ConnectionException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
 
 # Config parsing/etc.
 
@@ -208,8 +215,11 @@ def start_prepped_servers(config, server):
     
     sets = config.set_members_by_host[server]
     
+    print sets
+    
     for s in [Primary, Secondary, Arbiter]:
-        args = ['--replSet', '%s' % sets[s.base]]
+        #args = ['--replSet', '%s' % sets[s.base]]
+        args = ['--replSet', '%s' % 'set_1']
         args = args + option_args
         do_start(s, config, args)
         
@@ -248,7 +258,8 @@ def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
             
 def set_authentication(config):
     print 'Setting up authentication.'
-    for s in [Primary, Secondary, Arbiter, Config]:
+    #for s in [Primary, Secondary, Arbiter, Config]:
+    for s in [Primary, Config]:
         print '  *', s.__name__
         admin = get_mongo_connection('admin', s.port)
         admin.add_user(config.username, config.password)
@@ -275,8 +286,59 @@ def set_authentication(config):
     fh.close()
     os.chmod(key_path, 0700)
     
-def configure_replica_set(config, set, set_members):
-    pass
+def initialize_replica_set(config, r_set, set_members):
+    print 'Initializing replica set', r_set
+    primary = '%s:%s' % (set_members['primary'], Primary.port)
+    secondary = '%s:%s' % (set_members['secondary'], Secondary.port)
+    arbiter = '%s:%s' % (set_members['arbiter'], Arbiter.port)
+    
+    host, port = set_members['primary'], Primary.port
+    
+    set_config = {
+        "_id": "%s" % r_set,
+        "members" : [
+            {
+                "priority": 2,
+                "host": "%s" % primary,
+                "_id": 0
+            },
+            {
+                "priority": 1,
+                "host": "%s" % secondary,
+                "_id": 1
+            },
+            {
+                "host": "%s" % arbiter,
+                "_id": 2,
+                "arbiterOnly": True
+            }
+        ]
+    }
+    
+    print 'Config:', pprint.pprint(set_config)
+    
+    admin = get_mongo_connection('admin', host=host, port=port, 
+        user=config.username, passwd=config.password)
+        
+    admin.command("replSetInitiate", set_config )
+    while 1:
+        try:
+            ret = admin.command("replSetGetStatus")
+            ready = True
+            for i in ret['members']:
+                if i['stateStr'] == 'STARTUP2' or i['stateStr'] == 'UNKNOWN' \
+                    or i['stateStr'] == 'RECOVERING':
+                    ready = False
+            if ready:
+                print pprint.pprint(admin.command("replSetGetStatus"))
+                break
+            else:
+                print 'Waiting for set to come online...'
+                time.sleep(4)
+        except OperationFailure:
+            print 'Waiting for set to come online...'
+            time.sleep(2)
+    
     
 def get_server_prompt(config):
     prompt = """
@@ -299,12 +361,41 @@ def do_server_prompt(config):
     
     while selection not in retvals:
         try:
-            selection = int(get_prompt(config))
+            selection = int(get_server_prompt(config))
         except ValueError:
             pass
         
     return 'server_%s' % selection
+    
+def get_replicaset_prompt(config):
+    prompt = """
+    The --replica_set option needs to know which replica set you 
+    wish to configure.  This may be done from any machine in the 
+    cluster as long as all machines have successfully had --init 
+    run locally.  Please enter the number of the replica set you
+    wish to configure.  If you are setting this up on a single node 
+    (see note in example-mongodb-cluster.conf), just configure the
+    first replica set.
+    
+    These are the options:
+    [1] set_1
+    [2] set_2
+    [3] set_3
+    
+    """
+    return raw_input(prompt)
+    
+def do_replicaset_prompt(config):
+    retvals = [1, 2, 3]
+    selection = None
 
+    while selection not in retvals:
+        try:
+            selection = int(get_replicaset_prompt(config))
+        except ValueError:
+            pass
+
+    return 'set_%s' % selection
 
 def main():
     usage = '%prog [options]'
@@ -316,7 +407,7 @@ def main():
     parser.add_option('-k', '--kill', action="store_true", default=False,
                         dest="kill",
                         help="Kill all running servers.")
-    parser.add_option('-r', '--replica_set', action="store_true", default=False,
+    parser.add_option('-r', '--replica', action="store_true", default=False,
                         dest="replica_set",
                         help="Configure a replica set.")
     options, args = parser.parse_args()
@@ -341,15 +432,10 @@ def main():
         sys.exit(0)
         
     if options.replica_set:
-        print 'Configuring replica set:', options.replica_set
-        allowed = ['set_1', 'set_2', 'set_3']
-        try:
-            allowed.index(options.replica_set)
-        except ValueError:
-            print 'The allowed arguments are', allowed
-            sys.exit(-1)
-        set_members = conf.replica_sets[options.replica_set]
-        configure_replica_set(conf, options.replica_set, set_members)
+        print 'Configuring replica set.'
+        r_set = do_replicaset_prompt(conf)
+        set_members = conf.replica_sets[r_set]
+        initialize_replica_set(conf, r_set, set_members)
 
 
 
