@@ -178,9 +178,9 @@ class IfRef(models.Model):
             null=True)
     ifMtu = models.IntegerField(db_column="ifmtu", blank=True, null=True)
     ifType = models.IntegerField(db_column="iftype", blank=True, null=True)
-    ifOperStatus = models.CharField(max_length=1, db_column="ifoperstatus",
+    ifOperStatus = models.IntegerField(db_column="ifoperstatus",
             blank=True, null=True)
-    ifAdminStatus = models.CharField(max_length=1, db_column="ifadminstatus",
+    ifAdminStatus = models.IntegerField(db_column="ifadminstatus",
             blank=True, null=True)
     begin_time = models.DateTimeField(default=datetime.datetime.now)
     end_time = models.DateTimeField(default=datetime.datetime.max)
