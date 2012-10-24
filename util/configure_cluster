@@ -161,6 +161,12 @@ def do_start(server, config, option_args):
     else:
         raise
         cmd = [
+            server.binary,
+            '--port', '%s' % server.port,
+            '--logpath', '%s/mongodb.log' % dbpath,
+            '--logappend',
+            '--pidfilepath', '%s/mongodb.pid' % dbpath,
+            '--fork',
         ]
     
     cmd = cmd + option_args + server.args
@@ -172,29 +178,42 @@ def do_start(server, config, option_args):
 def start_clean(config):
     
     kill_all(config)
-    servers = [Primary, Secondary, Arbiter, Config]
+    servers = [Primary, Secondary, Arbiter, Config, Mongos]
     
     for s in servers:
         server_root = '%s/%s' % (config.mongo_data_dir_root, s.base)
         if os.path.exists(server_root):
             shutil.rmtree(server_root)
+            
+    cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
+    if os.path.exists(cluster_config):
+        shutil.rmtree(cluster_config)
     
     option_args = [
         '--bind_ip', '127.0.0.1', # only answer on localhost for config mode
     ]
     
     for s in servers:
+        if s.__name__ == 'Mongos':
+            continue
         do_start(s, config, option_args)
         
-def start_prepped_servers(config):
+def start_prepped_servers(config, server):
+    print 'Starting prepped servers.'
     
     cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
     option_args = [
         '--keyFile', '%s/keyfile' % cluster_config
     ]
     
-    for s in [Primary, Secondary, Arbiter, Config]:
-        do_start(s, config, option_args)
+    sets = config.set_members_by_host[server]
+    
+    for s in [Primary, Secondary, Arbiter]:
+        args = ['--replSet', '%s' % sets[s.base]]
+        args = args + option_args
+        do_start(s, config, args)
+        
+    do_start(Config, config, option_args)
     
 def kill_all(config):
     print 'Executing kill all.'
@@ -230,21 +249,21 @@ def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
 def set_authentication(config):
     print 'Setting up authentication.'
     for s in [Primary, Secondary, Arbiter, Config]:
-        print '\t', s.__name__
+        print '  *', s.__name__
         admin = get_mongo_connection('admin', s.port)
         admin.add_user(config.username, config.password)
         admin.connection.close()
     
         if s.__name__ == 'Config':
             continue
+            
+        local = get_mongo_connection('local', s.port)
+        local.add_user(config.username, config.password)
+        local.connection.close()
     
         esx = get_mongo_connection('esxsnmp', s.port)
         esx.add_user(config.username, config.password)
         esx.connection.close()
-        
-        local = get_mongo_connection('local', s.port)
-        local.add_user(config.username, config.password)
-        local.connection.close()
         
     print 'Setting keyfile'
     cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
@@ -259,7 +278,33 @@ def set_authentication(config):
 def configure_replica_set(config, set, set_members):
     pass
     
+def get_server_prompt(config):
+    prompt = """
+    The --init option needs to know what server you are currently on.
+    Please enter the number that corresponds to the server you are
+    initializing the servers on and hit enter.
     
+    These are the options configured in mongodb-cluster.conf:
+    [1] server_1 (%s)
+    [2] server_2 (%s)
+    [3] server_3 (%s)
+    
+    """ % (config.server_1, config.server_2, config.server_3)
+    
+    return raw_input(prompt)
+    
+def do_server_prompt(config):
+    retvals = [1, 2, 3]
+    selection = None
+    
+    while selection not in retvals:
+        try:
+            selection = int(get_prompt(config))
+        except ValueError:
+            pass
+        
+    return 'server_%s' % selection
+
 
 def main():
     usage = '%prog [options]'
@@ -271,9 +316,9 @@ def main():
     parser.add_option('-k', '--kill', action="store_true", default=False,
                         dest="kill",
                         help="Kill all running servers.")
-    parser.add_option('-r', '--replica_set', action="store", default=False,
+    parser.add_option('-r', '--replica_set', action="store_true", default=False,
                         dest="replica_set",
-                        help="Configure a replica set: set_1 | set_2 | set_3")
+                        help="Configure a replica set.")
     options, args = parser.parse_args()
     
     # XXX(mmg): change to take an opt rather than env?
@@ -291,7 +336,8 @@ def main():
         time.sleep(1)
         kill_all(conf)
         time.sleep(1)
-        start_prepped_servers(conf)
+        server = do_server_prompt(conf)
+        start_prepped_servers(conf, server)
         sys.exit(0)
         
     if options.replica_set:
