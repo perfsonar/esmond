@@ -1065,13 +1065,13 @@ def worker(name, config, opts):
 
     os.umask(0022)
 
-    init_logging(name, config.syslog_facility, level=config.syslog_priority,
-            debug=opts.debug)
-
     (qclass, nworkers) = config.persist_queues[opts.qname]
     if nworkers > 1:
         name += '_%s' % opts.number
         opts.qname += '_%s' % opts.number
+
+    init_logging("espersistd." + opts.qname, config.syslog_facility, level=config.syslog_priority,
+            debug=opts.debug)
 
     setproctitle(name)
     klass = eval(qclass)
@@ -1206,11 +1206,10 @@ def espersistd():
         try:
             PersistManager(name, config, opts).run()
         except Exception, e:
-            log.error("Problem with manager module: %s" % e)
+            log.error("Problem with manager module: %s" % e, ecv_info=True)
+            raise
             sys.exit(1)
     elif opts.role == 'worker':
-        worker(name, config, opts)
-        sys.exit(0)
         try:
             worker(name, config, opts)
         except Exception, e:
