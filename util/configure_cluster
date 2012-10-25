@@ -462,15 +462,15 @@ def main():
     parser.add_option('-c', '--config', action="store_true", default=False,
                         dest="config",
                         help="View configuration object - mostly for debugging.")
+    parser.add_option('-k', '--kill', action="store_true", default=False,
+                        dest="kill",
+                        help="Kill all running servers.")
     parser.add_option('-i', '--init', action="store_true", default=False,
                         dest="init",
                         help="Start servers from scratch and configure auth.") 
     parser.add_option('-m', '--mongos', action="store_true", default=False,
                         dest="mongos",
                         help="Start mongos on --init'ed servers.")
-    parser.add_option('-k', '--kill', action="store_true", default=False,
-                        dest="kill",
-                        help="Kill all running servers.")
     parser.add_option('-r', '--replica', action="store_true", default=False,
                         dest="replica_set",
                         help="Configure a replica set.")

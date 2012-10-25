@@ -44,7 +44,7 @@ class MONGO_DB(object):
         ('oid', ASCENDING),
     ]
     
-    raw_idx  = []
+    raw_idx  = [ ('ts', ASCENDING) ]
     meta_idx = path_idx
     rate_idx = path_idx + [ ('ts', ASCENDING) ]
     agg_idx  = path_idx + [ ('ts', ASCENDING) ]
