@@ -13,4 +13,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         for device in Device.objects.active():
             oidsets = [o.name for o in device.oidsets.all()]
-            print device.name + ": " + ", ".join(oidsets)
+            print device.name + ": " + " ".join(oidsets)

@@ -4,7 +4,7 @@ import datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from esxsnmp.api.models import Device
+from esxsnmp.api.models import Device, OIDSet, DeviceOIDSetMap
 
 class Command(BaseCommand):
     args = 'name community'
@@ -13,11 +13,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.options = options
 
-        if len(args) != 2:
-            print >>sys.stderr, "takes exactly 2 arguments: %s" % self.args
+        if len(args) < 2:
+            print >>sys.stderr, "takes at least 2 arguments: %s" % self.args
             return
 
-        name, community = args
+        name, community = args[:2]
 
         try:
             device = Device.objects.get(name=name)
@@ -33,3 +33,16 @@ class Command(BaseCommand):
 
         device.save()
 
+        oidsets = []
+        for oidset_name in args[2:]:
+            try:
+                oidset = OIDSet.objects.get(name=oidset_name)
+                oidsets.append(oidset)
+            except OIDSet.DoesNotExist:
+                print >>sys.stderr, "No such oidset: %s" % (oidset_name)
+                print >>sys.stderr, "Aborting. No OIDSets were added."
+                return
+
+        for oidset in oidsets:
+            print device, oidset
+            DeviceOIDSetMap(device=device, oid_set=oidset).save()
