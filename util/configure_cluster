@@ -388,6 +388,14 @@ def enable_sharding(config):
         'base_rates': SON(MONGO_DB.rate_idx),
         'aggregations': SON(MONGO_DB.agg_idx),
     }
+    
+    shard_keys = {
+        'raw_data': {'device': 1},
+        'metadata': {'device': 1},
+        'base_rates': {'device': 1},
+        'aggregations': {'device': 1},
+    }
+    
     pprint.pprint(shard_keys)
     
     print mongos.command('enablesharding', 'esxsnmp') 
