@@ -236,8 +236,15 @@ def start_prepped_servers(config, server):
         args = args + option_args
         do_start(s, config, args)
         
-    for s in [Config, Mongos]:        
+    for s in [Config]:        
         do_start(s, config, option_args)
+        
+def start_and_configure_monogs(config):
+    cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
+    option_args = [
+        '--keyFile', '%s/keyfile' % cluster_config
+    ]
+    do_start(Mongos, config, option_args)
     
 def kill_all(config):
     print 'Executing kill all.'
@@ -451,11 +458,14 @@ def main():
     desc = ' '.join(__doc__.split())
     parser = OptionParser(usage=usage, description=desc)
     parser.add_option('-c', '--config', action="store_true", default=False,
-                      dest="config",
-                      help="View configuration object - mostly for debugging.")
+                        dest="config",
+                        help="View configuration object - mostly for debugging.")
     parser.add_option('-i', '--init', action="store_true", default=False,
-                      dest="init",
-                      help="Start servers from scratch and configure auth.")
+                        dest="init",
+                        help="Start servers from scratch and configure auth.") 
+    parser.add_option('-m', '--mongos', action="store_true", default=False,
+                        dest="mongos",
+                        help="Start mongos on --init'ed servers.")
     parser.add_option('-k', '--kill', action="store_true", default=False,
                         dest="kill",
                         help="Kill all running servers.")
@@ -489,15 +499,22 @@ def main():
         start_prepped_servers(conf, server)
         sys.exit(0)
         
+    if options.mongos:
+        print 'Starting and connecting mongos'
+        start_and_configure_monogs(conf)
+        sys.exit(0)
+        
     if options.replica_set:
         print 'Configuring replica set.'
         r_set = do_replicaset_prompt(conf)
         set_members = conf.replica_sets[r_set]
         initialize_replica_set(conf, r_set, set_members)
+        sys.exit(0)
 
     if options.sharding:
         print 'Enabling sharding on cluster.'
         enable_sharding(conf)
+        sys.exit(0)
 
 
     pass
