@@ -105,6 +105,8 @@ class ClusterConfig(object):
                 if i == 'esxsnmp_root':
                     continue
                 self.replica_sets[s[0]][i] = getattr(self, '%s' % cfg.get(s[1], i))
+                # XXX(mmg): the following input should be sanitized 
+                # just in case someone does something dumb in the config file.
                 self.set_members_by_host[cfg.get(s[1], i)][i] = s[0]
                 
         
