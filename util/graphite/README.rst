@@ -42,7 +42,7 @@ Edit your apache config to include this::
    Allow from all
    </Directory>
    
-   WSGIScriptAlias / $GRAPHITE_ROOT/wsgi/esnet_graphite.wsgi
+   WSGIScriptAlias / $GRAPHITE_ROOT/wsgi/esxsnmp_graphite.wsgi
    WSGIPassAuthorization On
    
    <Directory $GRAPHITE_ROOT/wsgi/>
