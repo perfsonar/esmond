@@ -292,11 +292,7 @@ def set_authentication(config):
         local = get_mongo_connection('local', s.port)
         local.add_user(config.username, config.password)
         local.connection.close()
-    
-        esx = get_mongo_connection('esxsnmp', s.port)
-        esx.add_user(config.username, config.password)
-        esx.connection.close()
-        
+            
     print 'Setting keyfile'
     cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
     check_path(cluster_config)
@@ -376,6 +372,15 @@ def initialize_replica_set(config, r_set, set_members):
         print s
         
 def enable_sharding(config):
+
+    mongos = get_mongo_connection('admin', host=config.server_1, port=Mongos.port, 
+        user=config.username, passwd=config.password)
+        
+    esx = mongos.connection['esxsnmp']
+    
+    print 'Creating esxsnmp database and setting authentication.'
+    esx.add_user(config.username, config.password)
+    
     print 'Using the following collections/keys:'
     shard_keys = {
         'raw_data': SON(MONGO_DB.raw_idx),
@@ -384,9 +389,6 @@ def enable_sharding(config):
         'aggregations': SON(MONGO_DB.agg_idx),
     }
     pprint.pprint(shard_keys)
-    
-    mongos = get_mongo_connection('admin', host=config.server_1, port=Mongos.port, 
-        user=config.username, passwd=config.password)
     
     print mongos.command('enablesharding', 'esxsnmp') 
     
