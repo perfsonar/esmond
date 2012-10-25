@@ -18,6 +18,7 @@ setup(name='esxsnmp',
                 'esfetch = esxsnmp.fetch:esfetch',
                 'esdbd = esxsnmp.newdb:esdb_standalone',
                 'gen_ma_storefile = esxsnmp.perfsonar:gen_ma_storefile',
+                'esmanage = esxsnmp.manage:esmanage',
             ]
         }
     )
