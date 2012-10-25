@@ -46,6 +46,7 @@ class Device(models.Model):
 
     class Meta:
         db_table = "device"
+        ordering = ['name']
 
     def __unicode__(self):
         return self.name
@@ -73,6 +74,7 @@ class OIDType(models.Model):
     name = models.CharField(max_length=256)
     class Meta:
         db_table = "oidtype"
+        ordering = ["name"]
 
     def __unicode__(self):
         return self.name
@@ -84,6 +86,7 @@ class Poller(models.Model):
 
     class Meta:
         db_table = "poller"
+        ordering = ["name"]
 
     def __unicode__(self):
         return self.name
@@ -101,6 +104,7 @@ class OID(models.Model):
 
     class Meta:
         db_table = "oid"
+        ordering = ["name"]
 
     def __unicode__(self):
         return self.name
@@ -119,6 +123,7 @@ class OIDSet(models.Model):
 
     class Meta:
         db_table = "oidset"
+        ordering = ["name"]
 
     def __unicode__(self):
         return self.name
@@ -142,6 +147,7 @@ class OIDSetMember(models.Model):
 
     class Meta:
         db_table = "oidsetmember"
+        ordering = ["oid_set", "oid"]
 
 class DeviceOIDSetMap(models.Model):
     """Associate :py:class:`.OIDSet`s with :py:class:`.Device`s"""
@@ -151,6 +157,7 @@ class DeviceOIDSetMap(models.Model):
 
     class Meta:
         db_table = "deviceoidsetmap"
+        ordering = ["device", "oid_set"]
 
 class IfRefManager(models.Manager):
     def active(self):
@@ -191,6 +198,7 @@ class IfRef(models.Model):
 
     class Meta:
         db_table = "ifref"
+        ordering = ["device__name", "ifDescr"]
 
     def __unicode__(self):
         return "%s (%s) %s"%(self.ifDescr, self.ifIndex, self.ifAlias)
@@ -240,6 +248,7 @@ class ALUSAPRef(models.Model):
 
     class Meta:
         db_table = "alusapref"
+        ordering = ["device__name", "name"]
 
     def __unicode__(self):
         return "%s %s" % (self.device, self.name)
@@ -266,6 +275,7 @@ class LSPOpStatus(models.Model):
 
     class Meta:
         db_table = "lspopstatus"
+        ordering = ["device__name", "name"]
 
     def __unicode__(self):
         return "%s %s" % (self.device, self.name)
