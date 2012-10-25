@@ -13,9 +13,9 @@ except:
 if not os.environ.has_key('DJANGO_SETTINGS_MODULE'):
     os.environ['DJANGO_SETTINGS_MODULE'] = 'esxsnmp.settings'
 
-venv_path = '%s/lib/python%d.%d/site-packages' % (ESXSNMP_ROOT,
-            sys.version_info[0], sys.version_info[1])
-site.addsitedir(venv_path)
+pyver = "%d.%d" % (sys.version_info[0], sys.version_info[1])
+venv_dir = '%s/lib/python%s/site-packages' % (ESXSNMP_ROOT, pyver)
+site.addsitedir(venv_dir)
 
 import esxsnmp.newdb
 
