@@ -77,10 +77,10 @@ class MONGO_DB(object):
         self.aggs     = self.db[self.agg_coll]
         
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
-            self.raw_data.drop()
-            self.metadata.drop()
-            self.rates.drop()
-            self.aggs.drop()
+            self.raw_data.remove({})
+            self.metadata.remove({})
+            self.rates.remove({})
+            self.aggs.remove({})
             #self.connection.drop_database(self.database)
         
         # Indexes
