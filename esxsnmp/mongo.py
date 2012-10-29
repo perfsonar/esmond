@@ -84,9 +84,9 @@ class MONGO_DB(object):
             #self.connection.drop_database(self.database)
         
         # Indexes
-        self.metadata.ensure_index(self.meta_idx, unique=True)
-        self.rates.ensure_index(self.rate_idx, unique=True)
-        self.aggs.ensure_index(self.agg_idx, unique=True)
+        #self.metadata.ensure_index(self.meta_idx, unique=True)
+        #self.rates.ensure_index(self.rate_idx, unique=True)
+        #self.aggs.ensure_index(self.agg_idx, unique=True)
         
         if config.mongo_raw_expire:
             requiredVersion = tuple("2.2.0".split("."))

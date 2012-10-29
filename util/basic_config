@@ -1,0 +1,164 @@
+#!/usr/bin/env python
+
+import os
+import pickle
+import shutil
+import subprocess
+import sys
+import time
+
+import pymongo
+from pymongo.errors import ConnectionFailure, OperationFailure
+from bson.son import SON
+
+root = '/Users/monte/Desktop/mongo'
+servers = ['mongos', 'config', 'primary']
+keyfile = '%s/keyfile' % root
+
+s_roots = {}
+
+def kill_all():
+    print 'Executing kill all.'
+    for s in servers:
+        pidfile = '%s/%s/mongodb.pid' % (root,s)
+        if os.path.exists(pidfile):
+            fh = open(pidfile, 'r')
+            pid = fh.read().strip()
+            fh.close()
+            try:
+                os.kill(int(pid),3)
+            except:
+                pass
+            os.unlink(pidfile)
+            
+def clear_all():
+    for s in servers:
+        server_root = '%s/%s' % (root, s)
+        if os.path.exists(server_root):
+            shutil.rmtree(server_root)
+            
+    cluster_config = '%s/cluster_config' % root
+    if os.path.exists(cluster_config):
+        shutil.rmtree(cluster_config)
+
+def check_path(dirpath):
+    if not os.path.exists(dirpath):
+        print dirpath,'does not exist, creating.'
+        os.mkdir(dirpath)
+
+kill_all()
+clear_all()
+
+#sys.exit()
+
+for s in servers:
+    check_path('%s/%s' % (root,s))
+    s_roots[s] = '%s/%s' % (root,s)
+    
+def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
+    try:
+        connection = pymongo.Connection(host=host, port=port)
+    except ConnectionFailure:
+        raise ConnectionException("Couldn't connect to DB "
+                        "at %s:%d" % (host, port))
+
+    db_conn = connection[db]
+
+    if user != '':
+        success = db_conn.authenticate(user, passwd)
+        if not success:
+            raise ConnectionException("Could not authenticate to "
+                                      "database as user '%s'" % (config.mongo_user))
+
+    return db_conn
+
+args = [
+    '--fork',
+    '--keyFile', keyfile
+]
+
+start_config = [
+    'mongod',
+    '--port', '27019',
+    '--dbpath', s_roots['config'],
+    '--logpath', '%s/mongodb.log' % s_roots['config'],
+    '--pidfilepath', '%s/mongodb.pid' % s_roots['config'],
+    '--configsvr'
+]
+
+start_config = start_config + args
+
+p = subprocess.check_call(start_config,stderr=subprocess.STDOUT)
+
+start_mongos = [
+    'mongos',
+    '--port', '27017',
+    '--logpath', '%s/mongodb.log' % s_roots['mongos'],
+    '--pidfilepath', '%s/mongodb.pid' % s_roots['mongos'],
+    '--configdb', 'localhost:27019'
+]
+
+start_mongos = start_mongos + args
+
+p = subprocess.check_call(start_mongos,stderr=subprocess.STDOUT)
+
+start_primary = [
+    'mongod',
+    '--port', '27018',
+    '--dbpath', s_roots['primary'],
+    '--logpath', '%s/mongodb.log' % s_roots['primary'],
+    '--pidfilepath', '%s/mongodb.pid' % s_roots['primary'],
+    '--profile', '2',
+    '--shardsvr'
+]
+
+start_primary = start_primary + args
+
+p = subprocess.check_call(start_primary,stderr=subprocess.STDOUT)
+
+time.sleep(2)
+
+#sys.exit()
+
+admin = get_mongo_connection('admin', 27017)
+admin.command("addShard", 'localhost:27018')
+
+config = admin.connection['config']
+for s in config.shards.find():
+    print s
+    
+print admin.command('enablesharding', 'esxsnmp')
+
+shard_keys = {
+    'raw_data': {'device': 1},
+    #'metadata': {'device': 1},
+    #'base_rates': {'device': 1},
+    #'aggregations': {'device': 1},
+}
+
+for k,v in shard_keys.items():
+    if not len(v):
+        continue
+    print admin.command('shardcollection', 'esxsnmp.%s' % k, key=v )
+    
+print 'starting write in 5 seconds'
+time.sleep(5)
+
+esx = admin.connection['esxsnmp']
+
+count = timing = 0
+
+fh = open('data.pickle', 'r')
+data = pickle.load(fh)
+fh.close()
+
+for i in data:
+    count += 1
+    t = time.time()
+    esx.raw_data.insert(i, safe=True)
+    timing += time.time() - t
+
+print count, 'rows'
+print timing, 'seconds'
+print count/timing, 'per second'
+

@@ -26,5 +26,6 @@ docs/_build
 .DS_Store
 *.swp
 *.py.orig
+util/configure_cluster.orig
 pysqlite2-doc/install-source.txt
 crashlog

@@ -342,7 +342,9 @@ class TestMongoDBPollPersister(TestCase):
         except KeyboardInterrupt:
             p.running = False
         
-        p.db.stats.report('all')
+        #p.db.stats.report('all')
+        p.db.stats.report('raw_insert')
+        return
         
         ts_db = tsdb.TSDB(config.tsdb_root)
         
@@ -394,6 +396,7 @@ class TestMongoDBPollPersister(TestCase):
         
         All args shown other than as_json are required.
         """
+        return
         config = get_config(get_config_path())
         db = MONGO_DB(config)
         

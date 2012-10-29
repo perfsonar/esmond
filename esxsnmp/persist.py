@@ -240,7 +240,7 @@ class TSDBPollPersister(PollPersister):
 
         t0 = time.time()
         nvar = 0
-
+        
         for var, val in result.data:
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
                 val = float(val) * 100
@@ -393,7 +393,7 @@ class MongoDBPollPersister(PollPersister):
 
         t0 = time.time()
         nvar = 0
-
+        
         for var, val in result.data:
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
                 val = float(val) * 100
@@ -409,6 +409,7 @@ class MongoDBPollPersister(PollPersister):
                     result.timestamp, flags, val, oidset.frequency)
             
             self.db.set_raw_data(raw_data)
+            continue
 
             if oid.aggregate:
                 delta_v = self.aggregate_base_rate(raw_data)
