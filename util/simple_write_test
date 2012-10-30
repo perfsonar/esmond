@@ -64,7 +64,10 @@ def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
     return db_conn
         
 def load_test_data(root,name):
-    path = os.path.join(root, "../..", "test_data", name)
+    if not os.environ.has_key('ESXSNMP_ROOT'):
+        print 'ESXSNMP_ROOT not defined - can not load test data'
+        sys.exit()
+    path = os.path.join(os.environ['ESXSNMP_ROOT'], "../", "test_data", name)
     fh = open(path, 'r')
     data = pickle.load(fh)
     fh.close()
@@ -92,22 +95,30 @@ parser.add_option('-k', '--kill', action="store_true", default=False,
 parser.add_option('-n', '--nosafe', action="store_false", default=True,
                     dest="safe",
                     help="Toggle safe writes off.")
+parser.add_option('-d', '--data', action="store", default='',
+                    dest="data",
+                    help="Specify data directory base manually.")
 options, args = parser.parse_args()
 
 root = None
 
-if os.environ.has_key('ESXSNMP_ROOT'):
-    root = os.environ['ESXSNMP_ROOT'] + '/cluster_test'
-    check_path(root)
+if not options.data:
+    if os.environ.has_key('ESXSNMP_ROOT'):
+        root = os.environ['ESXSNMP_ROOT'] + '/cluster_test'
+        check_path(root)
+    else:
+        print 'ESXSNMP_ROOT env var not defined.'
+        sys.exit()
 else:
-    print 'ESXSNMP_ROOT env var not defined.'
-    sys.exit()
+    root = options.data + '/cluster_test'
+    print root
 
 servers = ['mongos', 'config', 'primary']
 keyfile = '%s/keyfile' % root
 
 kill_all(root)
 clear_all(root)
+check_path(root)
 
 if options.kill:
     sys.exit()
