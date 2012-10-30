@@ -6,18 +6,19 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
+
+from optparse import OptionParser
 
 import pymongo
 from pymongo.errors import ConnectionFailure, OperationFailure
 from bson.son import SON
 
-root = '/Users/monte/Desktop/mongo'
 servers = ['mongos', 'config', 'primary']
-keyfile = '%s/keyfile' % root
 
 s_roots = {}
 
-def kill_all():
+def kill_all(root):
     print 'Executing kill all.'
     for s in servers:
         pidfile = '%s/%s/mongodb.pid' % (root,s)
@@ -31,7 +32,7 @@ def kill_all():
                 pass
             os.unlink(pidfile)
             
-def clear_all():
+def clear_all(root):
     for s in servers:
         server_root = '%s/%s' % (root, s)
         if os.path.exists(server_root):
@@ -45,16 +46,7 @@ def check_path(dirpath):
     if not os.path.exists(dirpath):
         print dirpath,'does not exist, creating.'
         os.mkdir(dirpath)
-
-kill_all()
-clear_all()
-
-#sys.exit()
-
-for s in servers:
-    check_path('%s/%s' % (root,s))
-    s_roots[s] = '%s/%s' % (root,s)
-    
+        
 def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
     try:
         connection = pymongo.Connection(host=host, port=port)
@@ -71,63 +63,15 @@ def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
                                       "database as user '%s'" % (config.mongo_user))
 
     return db_conn
+        
+def load_test_data(root,name):
+    path = os.path.join(root, "../..", "test_data", name)
+    fh = open(path, 'r')
+    data = pickle.load(fh)
+    fh.close()
+    return data
 
-args = [
-    '--fork',
-    '--keyFile', keyfile
-]
-
-start_config = [
-    'mongod',
-    '--port', '27019',
-    '--dbpath', s_roots['config'],
-    '--logpath', '%s/mongodb.log' % s_roots['config'],
-    '--pidfilepath', '%s/mongodb.pid' % s_roots['config'],
-    '--configsvr'
-]
-
-start_config = start_config + args
-
-p = subprocess.check_call(start_config,stderr=subprocess.STDOUT)
-
-start_mongos = [
-    'mongos',
-    '--port', '27017',
-    '--logpath', '%s/mongodb.log' % s_roots['mongos'],
-    '--pidfilepath', '%s/mongodb.pid' % s_roots['mongos'],
-    '--configdb', 'localhost:27019'
-]
-
-start_mongos = start_mongos + args
-
-p = subprocess.check_call(start_mongos,stderr=subprocess.STDOUT)
-
-start_primary = [
-    'mongod',
-    '--port', '27018',
-    '--dbpath', s_roots['primary'],
-    '--logpath', '%s/mongodb.log' % s_roots['primary'],
-    '--pidfilepath', '%s/mongodb.pid' % s_roots['primary'],
-    '--profile', '2',
-    '--shardsvr'
-]
-
-start_primary = start_primary + args
-
-p = subprocess.check_call(start_primary,stderr=subprocess.STDOUT)
-
-time.sleep(2)
-
-#sys.exit()
-
-admin = get_mongo_connection('admin', 27017)
-admin.command("addShard", 'localhost:27018')
-
-config = admin.connection['config']
-for s in config.shards.find():
-    print s
-    
-print admin.command('enablesharding', 'esxsnmp')
+#####
 
 shard_keys = {
     'raw_data': {'device': 1},
@@ -136,21 +80,160 @@ shard_keys = {
     #'aggregations': {'device': 1},
 }
 
-for k,v in shard_keys.items():
-    if not len(v):
-        continue
-    print admin.command('shardcollection', 'esxsnmp.%s' % k, key=v )
+parser = OptionParser()
+parser.add_option('-s', '--single', action="store_true", default=False,
+                    dest="single",
+                    help="Spin up one vanilla mongo instance and test.")
+parser.add_option('-m', '--multi', action="store_true", default=False,
+                    dest="multi",
+                    help="Spin up simple shard instance and test.")
+parser.add_option('-k', '--kill', action="store_true", default=False,
+                    dest="kill",
+                    help="Kill and clean all.")
+options, args = parser.parse_args()
+
+root = None
+
+if os.environ.has_key('ESXSNMP_ROOT'):
+    root = os.environ['ESXSNMP_ROOT'] + '/cluster_test'
+    check_path(root)
+else:
+    print 'ESXSNMP_ROOT env var not defined.'
+    sys.exit()
+
+servers = ['mongos', 'config', 'primary']
+keyfile = '%s/keyfile' % root
+
+kill_all(root)
+clear_all(root)
+
+if options.kill:
+    sys.exit()
+
+for s in servers:
+    check_path('%s/%s' % (root,s))
+    s_roots[s] = '%s/%s' % (root,s)
+    
+if options.multi and options.single:
+    print 'Can only use --multi OR --single.'
+    sys.exit()
+    
+if options.multi:
+    cluster_config = '%s/cluster_config' % root
+    check_path(cluster_config)
+    keyfile = cluster_config + '/keyfile'
+    
+    fh = open(keyfile, 'w')
+    fh.write(str(uuid.uuid1()).replace('-', ''))
+    fh.close()
+    
+    os.chmod(keyfile, 0700)
+    
+    args = [
+        '--fork',
+        '--keyFile', keyfile
+    ]
+
+    start_config = [
+        'mongod',
+        '--port', '27019',
+        '--dbpath', s_roots['config'],
+        '--logpath', '%s/mongodb.log' % s_roots['config'],
+        '--pidfilepath', '%s/mongodb.pid' % s_roots['config'],
+        '--configsvr'
+    ]
+
+    start_config = start_config + args
+
+    p = subprocess.check_call(start_config,stderr=subprocess.STDOUT)
+
+    start_mongos = [
+        'mongos',
+        '--port', '27017',
+        '--logpath', '%s/mongodb.log' % s_roots['mongos'],
+        '--pidfilepath', '%s/mongodb.pid' % s_roots['mongos'],
+        '--configdb', 'localhost:27019'
+    ]
+
+    start_mongos = start_mongos + args
+
+    p = subprocess.check_call(start_mongos,stderr=subprocess.STDOUT)
+
+    start_primary = [
+        'mongod',
+        '--port', '27018',
+        '--dbpath', s_roots['primary'],
+        '--logpath', '%s/mongodb.log' % s_roots['primary'],
+        '--pidfilepath', '%s/mongodb.pid' % s_roots['primary'],
+        '--shardsvr'
+    ]
+
+    start_primary = start_primary + args
+
+    p = subprocess.check_call(start_primary,stderr=subprocess.STDOUT)
+
+    time.sleep(2)
+
+    #sys.exit()
+
+    admin = get_mongo_connection('admin', 27017)
+    admin.command("addShard", 'localhost:27018')
+
+    config = admin.connection['config']
+    for s in config.shards.find():
+        print s
+    
+    print admin.command('enablesharding', 'esxsnmp')
+    
+    shard_keys = {
+        'raw_data': {'device': 1},
+        #'metadata': {'device': 1},
+        #'base_rates': {'device': 1},
+        #'aggregations': {'device': 1},
+    }
+    
+    for k,v in shard_keys.items():
+        if not len(v):
+            continue
+        print admin.command('shardcollection', 'esxsnmp.%s' % k, key=v )
+        
+    esx = admin.connection['esxsnmp']
+        
+if options.single:
+    args = [
+        '--fork',
+    ]
+    
+    start_single = [
+        'mongod',
+        '--port', '27017',
+        '--dbpath', s_roots['primary'],
+        '--logpath', '%s/mongodb.log' % s_roots['primary'],
+        '--pidfilepath', '%s/mongodb.pid' % s_roots['primary'],
+    ]
+
+    start_single = start_single + args
+
+    p = subprocess.check_call(start_single,stderr=subprocess.STDOUT)
+    
+    esx = get_mongo_connection('esxsnmp', 27017)
+    
+    idx_keys = {
+        'raw_data': [('device', 1)],
+        #'metadata': {'device': 1},
+        #'base_rates': {'device': 1},
+        #'aggregations': {'device': 1},
+    }
+    
+    for k,v in idx_keys.items():
+        esx[k].ensure_index(v)
     
 print 'starting write in 5 seconds'
 time.sleep(5)
 
-esx = admin.connection['esxsnmp']
-
 count = timing = 0
 
-fh = open('data.pickle', 'r')
-data = pickle.load(fh)
-fh.close()
+data = load_test_data(root, 'write_test.pickle')
 
 for i in data:
     count += 1
