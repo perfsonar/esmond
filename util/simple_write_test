@@ -90,6 +90,9 @@ parser.add_option('-m', '--multi', action="store_true", default=False,
 parser.add_option('-k', '--kill', action="store_true", default=False,
                     dest="kill",
                     help="Kill and clean all.")
+parser.add_option('-n', '--nosafe', action="store_false", default=True,
+                    dest="safe",
+                    help="Toggle safe writes off.")
 options, args = parser.parse_args()
 
 root = None
@@ -235,10 +238,11 @@ count = timing = 0
 
 data = load_test_data(root, 'write_test.pickle')
 
+print options.safe
 for i in data:
     count += 1
     t = time.time()
-    esx.raw_data.insert(i, safe=True)
+    esx.raw_data.insert(i, safe=options.safe)
     timing += time.time() - t
 
 print count, 'rows'
