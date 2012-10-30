@@ -44,7 +44,6 @@ def clear_all(root):
 
 def check_path(dirpath):
     if not os.path.exists(dirpath):
-        print dirpath,'does not exist, creating.'
         os.mkdir(dirpath)
         
 def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
