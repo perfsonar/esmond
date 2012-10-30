@@ -120,6 +120,10 @@ for s in servers:
 if options.multi and options.single:
     print 'Can only use --multi OR --single.'
     sys.exit()
+
+if not options.multi and not options.single:
+    print 'Must specify --multi or --single'
+    sys.exit()
     
 if options.multi:
     cluster_config = '%s/cluster_config' % root
@@ -230,7 +234,7 @@ if options.single:
     
     for k,v in idx_keys.items():
         esx[k].ensure_index(v)
-    
+
 print 'starting write in 5 seconds'
 time.sleep(5)
 
@@ -238,7 +242,6 @@ count = timing = 0
 
 data = load_test_data(root, 'write_test.pickle')
 
-print options.safe
 for i in data:
     count += 1
     t = time.time()
