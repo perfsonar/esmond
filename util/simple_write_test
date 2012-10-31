@@ -242,6 +242,8 @@ if options.single:
 
     p = subprocess.check_call(start_single,stderr=subprocess.STDOUT)
     
+    time.sleep(2)
+    
     esx = get_mongo_connection('esxsnmp', 27017)
     
     idx_keys = {
