@@ -18,8 +18,8 @@ servers = ['mongos', 'config', 'primary']
 
 s_roots = {}
 
-def kill_all(root):
-    print 'Executing kill all.'
+def kill_all(root, quiet=False):
+    if not quiet: print 'Executing kill all.'
     for s in servers:
         pidfile = '%s/%s/mongodb.pid' % (root,s)
         if os.path.exists(pidfile):
@@ -27,10 +27,13 @@ def kill_all(root):
             pid = fh.read().strip()
             fh.close()
             try:
+                #if not quiet: print 'Killing', pid, 
                 os.kill(int(pid),3)
+                time.sleep(1)
+                kill_all(root,quiet=True)
             except:
-                pass
-            os.unlink(pidfile)
+                print pid, 'done'
+                os.unlink(pidfile)
             
 def clear_all(root):
     for s in servers:
