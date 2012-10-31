@@ -172,6 +172,8 @@ if options.multi:
     start_config = start_config + args
 
     p = subprocess.check_call(start_config,stderr=subprocess.STDOUT)
+    
+    time.sleep(3)
 
     start_mongos = [
         'mongos',
@@ -184,6 +186,8 @@ if options.multi:
     start_mongos = start_mongos + args
 
     p = subprocess.check_call(start_mongos,stderr=subprocess.STDOUT)
+    
+    time.sleep(3)
 
     start_primary = [
         'mongod',
