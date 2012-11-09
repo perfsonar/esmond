@@ -210,15 +210,20 @@ class ESxSNMPReader(object):
             return []
         print >>sys.stderr, "timing %f %s?%s" % (time.time() - t0, path, q)
 
-        def transform_data(data):
+        def transform_data(data, scalar=1):
             d = []
             for x in data:
                 if x[1]:
-                    d.append(x[1] * 8)
+                    d.append(x[1] * scalar)
                 else:
                     d.append(x[1])
             return d
-        data = transform_data(r['data'])
+#XXX This is not the appropriate place to determine bit/byte scaling but
+# it works in the short term. -David Mitchell
+        if 'all' in path or 'error' in path or 'discard' in path:
+            data = transform_data(r['data'])
+        else:
+            data = transform_data(r['data'], scalar=8)
         try:
             agg = int(r['agg'])
         except KeyError:
