@@ -303,6 +303,21 @@ class CiscoCPUCorrelator(PollCorrelator):
             n = 'CPU'
         return "/".join((oid.name, n))
 
+class EmersonLmsCorrelator(PollCorrelator):
+    """
+    The is for the Emerson LMS PDU aka 'Sparky'. The analog
+    channel table contains names which we want to use instead of
+    the indexes, which are quite long.
+    """
+    oids = ['analogChannelName']
+    def setup(self,data):
+        oid = self.oids[0]
+        self.xlate={}
+        for (var, val) in data:
+            if var.startswith(oid):
+                self.xlate[var[len(oid)+1:]] = '/'.join((oid,remove_metachars(val)))
+    def lookup(self, oid, var):
+        return self.xlate[var[len(str(oid))+1:]]
 
 class PersistThread(threading.Thread):
     INIT = 0
