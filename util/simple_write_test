@@ -157,7 +157,7 @@ if options.multi:
     
     args = [
         '--fork',
-        '--keyFile', keyfile
+        #'--keyFile', keyfile
     ]
 
     start_config = [
@@ -217,7 +217,7 @@ if options.multi:
     print admin.command('enablesharding', 'esxsnmp')
     
     shard_keys = {
-        'raw_data': {'device': 1},
+        'raw_data': {'_id': 1},
         #'metadata': {'device': 1},
         #'base_rates': {'device': 1},
         #'aggregations': {'device': 1},
@@ -229,6 +229,7 @@ if options.multi:
         print admin.command('shardcollection', 'esxsnmp.%s' % k, key=v )
         
     esx = admin.connection['esxsnmp']
+    #esx = get_mongo_connection('esx', 27018)
         
 if options.single:
     args = [
@@ -252,7 +253,7 @@ if options.single:
     esx = get_mongo_connection('esxsnmp', 27017)
     
     idx_keys = {
-        'raw_data': [('device', 1)],
+        'raw_data': [('_id', 1)],
         #'metadata': {'device': 1},
         #'base_rates': {'device': 1},
         #'aggregations': {'device': 1},
