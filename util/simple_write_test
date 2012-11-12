@@ -256,7 +256,7 @@ if options.single:
     esx = get_mongo_connection('esxsnmp', 27017)
     
     idx_keys = {
-        'raw_data': [('_id', 1)],
+        'raw_data': [('device', 1), ('path', 1), ('oid', 1)],
         #'metadata': {'device': 1},
         #'base_rates': {'device': 1},
         #'aggregations': {'device': 1},
