@@ -409,7 +409,7 @@ class MongoDBPollPersister(PollPersister):
                     result.timestamp, flags, val, oidset.frequency)
             
             self.db.set_raw_data(raw_data)
-            continue
+            #continue
 
             if oid.aggregate:
                 delta_v = self.aggregate_base_rate(raw_data)

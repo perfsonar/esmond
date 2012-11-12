@@ -342,8 +342,8 @@ class TestMongoDBPollPersister(TestCase):
         except KeyboardInterrupt:
             p.running = False
         
-        #p.db.stats.report('all')
-        p.db.stats.report('raw_insert')
+        p.db.stats.report('all')
+        #p.db.stats.report('raw_insert')
         return
         
         ts_db = tsdb.TSDB(config.tsdb_root)

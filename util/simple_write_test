@@ -107,6 +107,9 @@ parser.add_option('-n', '--nosafe', action="store_false", default=True,
 parser.add_option('-d', '--data', action="store", default='',
                     dest="data",
                     help="Specify data directory base manually.")
+parser.add_option('-w', '--nowrite', action="store_true", default=False,
+                    dest="nowrite",
+                    help="Just spin up, no writes done.")
 options, args = parser.parse_args()
 
 root = None
@@ -203,7 +206,7 @@ if options.multi:
     p = subprocess.check_call(start_primary,stderr=subprocess.STDOUT)
 
     print 'Waiting to connect.'
-    time.sleep(5)
+    time.sleep(3)
 
     #sys.exit()
 
@@ -217,10 +220,10 @@ if options.multi:
     print admin.command('enablesharding', 'esxsnmp')
     
     shard_keys = {
-        'raw_data': {'_id': 1},
-        #'metadata': {'device': 1},
-        #'base_rates': {'device': 1},
-        #'aggregations': {'device': 1},
+        'raw_data': {'device': 1, 'path': 1, 'oid': 1},
+        'metadata': {'device': 1, 'path': 1, 'oid': 1},
+        'base_rates': {'device': 1, 'path': 1, 'oid': 1},
+        'aggregations': {'device': 1, 'path': 1, 'oid': 1},
     }
     
     for k,v in shard_keys.items():
@@ -261,6 +264,10 @@ if options.single:
     
     for k,v in idx_keys.items():
         esx[k].ensure_index(v)
+
+if options.nowrite:
+    print 'not writing'
+    sys.exit()
 
 print 'starting write in 5 seconds'
 time.sleep(5)
