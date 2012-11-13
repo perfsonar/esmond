@@ -225,9 +225,13 @@ def start_prepped_servers(config, server):
     print 'Starting prepped servers.'
     
     cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
+    
     option_args = [
         '--keyFile', '%s/keyfile' % cluster_config
     ]
+    
+    if not config.username:
+        option_args = []
     
     sets = config.set_members_by_host[server]
     
@@ -244,6 +248,8 @@ def start_and_configure_monogs(config):
     option_args = [
         '--keyFile', '%s/keyfile' % cluster_config
     ]
+    if not config.username:
+        option_args = []
     do_start(Mongos, config, option_args)
     
 def kill_all(config):
@@ -283,15 +289,21 @@ def set_authentication(config):
     for s in [Primary, Config]:
         print '  *', s.__name__
         admin = get_mongo_connection('admin', s.port)
-        admin.add_user(config.username, config.password)
-        admin.connection.close()
+        if config.username != '':
+            admin.add_user(config.username, config.password)
+            admin.connection.close()
+        else:
+            print 'Not using auth'
     
         if s.__name__ == 'Config':
             continue
             
         local = get_mongo_connection('local', s.port)
-        local.add_user(config.username, config.password)
-        local.connection.close()
+        if config.username:
+            local.add_user(config.username, config.password)
+            local.connection.close()
+        else:
+            print 'Not using auth'
             
     print 'Setting keyfile'
     cluster_config = '%s/cluster_config' % config.mongo_data_dir_root
@@ -378,22 +390,20 @@ def enable_sharding(config):
         
     esx = mongos.connection['esxsnmp']
     
-    print 'Creating esxsnmp database and setting authentication.'
-    esx.add_user(config.username, config.password)
+    if config.username:
+        print 'Creating esxsnmp database and setting authentication.'
+        esx.add_user(config.username, config.password)
+    else:
+        print 'Not using auth'
     
     print 'Using the following collections/keys:'
-    shard_keys = {
-        'raw_data': SON(MONGO_DB.raw_idx),
-        'metadata': SON(MONGO_DB.meta_idx),
-        'base_rates': SON(MONGO_DB.rate_idx),
-        'aggregations': SON(MONGO_DB.agg_idx),
-    }
+    sk = [('device', 1), ('path', 1), ('oid', 1), ('ts', 1)]
     
     shard_keys = {
-        'raw_data': {'device': 1},
-        'metadata': {'device': 1},
-        'base_rates': {'device': 1},
-        'aggregations': {'device': 1},
+        'raw_data': SON(sk),
+        'metadata': SON(sk[0:-1]),
+        'base_rates': SON(sk),
+        'aggregations': SON(sk),
     }
     
     pprint.pprint(shard_keys)
