@@ -49,7 +49,7 @@ class MONGO_DB(object):
     rate_idx = path_idx + [ ('ts', ASCENDING) ]
     agg_idx  = path_idx + [ ('ts', ASCENDING) ]
     
-    insert_flags = { 'safe': True }
+    insert_flags = { 'safe': False }
     
     def __init__(self, config, clear_on_test=False):
         # Connection
@@ -84,9 +84,9 @@ class MONGO_DB(object):
             #self.connection.drop_database(self.database)
         
         # Indexes
-        #self.metadata.ensure_index(self.meta_idx, unique=True)
-        #self.rates.ensure_index(self.rate_idx, unique=True)
-        #self.aggs.ensure_index(self.agg_idx, unique=True)
+        self.metadata.ensure_index(self.meta_idx, unique=True)
+        self.rates.ensure_index(self.rate_idx, unique=True)
+        self.aggs.ensure_index(self.agg_idx, unique=True)
         
         if config.mongo_raw_expire:
             requiredVersion = tuple("2.2.0".split("."))
