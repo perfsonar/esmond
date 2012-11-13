@@ -11,6 +11,7 @@ import json
 import datetime
 import calendar
 import shutil
+import time
 
 from collections import namedtuple
 
@@ -314,7 +315,7 @@ class TestMongoDBPollPersister(TestCase):
         """make sure we have a clean router_a directory to start with."""
         router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
         if os.path.exists(router_a_path):
-            shutil.rmtree(router_a_path)
+            shutil.rmtree(router_a_path, ignore_errors=True)
     
     def test_persister(self):
         """This is a very basic smoke test for a MongoDB persister."""
@@ -344,7 +345,9 @@ class TestMongoDBPollPersister(TestCase):
         
         p.db.stats.report('all')
         #p.db.stats.report('raw_insert')
-        #return
+        return
+        
+        time.sleep(5)
         
         ts_db = tsdb.TSDB(config.tsdb_root)
         
