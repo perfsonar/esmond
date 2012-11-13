@@ -344,7 +344,7 @@ class TestMongoDBPollPersister(TestCase):
         
         p.db.stats.report('all')
         #p.db.stats.report('raw_insert')
-        return
+        #return
         
         ts_db = tsdb.TSDB(config.tsdb_root)
         
