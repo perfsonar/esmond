@@ -6,6 +6,7 @@ Configure a three-machine cluster to run a three-shard cluster with replica sets
 
 import os
 import pprint
+import resource
 import shutil
 import subprocess
 import sys
@@ -167,6 +168,7 @@ def do_start(server, config, option_args):
             '--pidfilepath', '%s/mongodb.pid' % dbpath,
             '--directoryperdb',
             '--journal',
+            '--syncdelay', '1',
             '--fork',
         ]
     else:
@@ -505,6 +507,20 @@ def main():
     
     if options.kill:
         kill_all(conf)
+        
+    if os.uname()[0] == 'Darwin':
+        print 'Setting limits for OS X'
+        resource.setrlimit(resource.RLIMIT_STACK, (1048576, 67104768))
+        resource.setrlimit(resource.RLIMIT_NOFILE, (10239, 9223372036854775807))
+    elif os.uname()[0] == 'Linux':
+        print 'Setting limits for Linux'
+        resource.setrlimit(resource.RLIMIT_STACK, (1048576, -1))
+        resource.setrlimit(resource.RLIMIT_NOFILE, (4096, 4096))
+    else:
+        print '%s unknown - not setting limits' % os.uname()[0]
+
+    print 'print RLIMIT_STACK', resource.getrlimit(resource.RLIMIT_STACK)
+    print 'print RLIMIT_NOFILE', resource.getrlimit(resource.RLIMIT_NOFILE)
     
     if options.init:
         print 'Initializing servers'

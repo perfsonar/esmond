@@ -2,6 +2,7 @@
 
 import os
 import pickle
+import resource
 import shutil
 import subprocess
 import sys
@@ -84,13 +85,6 @@ def load_test_data(root,name):
 
 #####
 
-shard_keys = {
-    'raw_data': {'device': 1},
-    #'metadata': {'device': 1},
-    #'base_rates': {'device': 1},
-    #'aggregations': {'device': 1},
-}
-
 parser = OptionParser()
 parser.add_option('-s', '--single', action="store_true", default=False,
                     dest="single",
@@ -110,6 +104,10 @@ parser.add_option('-d', '--data', action="store", default='',
 parser.add_option('-w', '--nowrite', action="store_true", default=False,
                     dest="nowrite",
                     help="Just spin up, no writes done.")
+parser.add_option('-l', '--loop', action="store", type='int', default=1,
+                    dest="loop",
+                    help="Number of times to loop over test data.")
+                    
 options, args = parser.parse_args()
 
 root = None
@@ -146,6 +144,22 @@ if options.multi and options.single:
 if not options.multi and not options.single:
     print 'Must specify --multi or --single'
     sys.exit()
+
+if os.uname()[0] == 'Darwin':
+    print 'Setting limits for OS X'
+    resource.setrlimit(resource.RLIMIT_STACK, (1048576, 67104768))
+    resource.setrlimit(resource.RLIMIT_NOFILE, (10239, 9223372036854775807))
+elif os.uname()[0] == 'Linux':
+    print 'Setting limits for Linux'
+    resource.setrlimit(resource.RLIMIT_STACK, (1048576, -1))
+    resource.setrlimit(resource.RLIMIT_NOFILE, (4096, 4096))
+else:
+    print '%s unknown - not setting limits' % os.uname()[0]
+
+print 'print RLIMIT_STACK', resource.getrlimit(resource.RLIMIT_STACK)
+print 'print RLIMIT_NOFILE', resource.getrlimit(resource.RLIMIT_NOFILE)
+
+sk = [('device', 1), ('path', 1), ('oid', 1), ('ts', 1)]
     
 if options.multi:
     cluster_config = '%s/cluster_config' % root
@@ -169,6 +183,8 @@ if options.multi:
         '--dbpath', s_roots['config'],
         '--logpath', '%s/mongodb.log' % s_roots['config'],
         '--pidfilepath', '%s/mongodb.pid' % s_roots['config'],
+        '--nojournal',
+        '--syncdelay', '1',
         '--configsvr'
     ]
 
@@ -198,6 +214,8 @@ if options.multi:
         '--dbpath', s_roots['primary'],
         '--logpath', '%s/mongodb.log' % s_roots['primary'],
         '--pidfilepath', '%s/mongodb.pid' % s_roots['primary'],
+        '--nojournal',
+        '--syncdelay', '1',
         '--shardsvr'
     ]
 
@@ -206,7 +224,7 @@ if options.multi:
     p = subprocess.check_call(start_primary,stderr=subprocess.STDOUT)
 
     print 'Waiting to connect.'
-    time.sleep(3)
+    time.sleep(5)
 
     #sys.exit()
 
@@ -220,10 +238,10 @@ if options.multi:
     print admin.command('enablesharding', 'esxsnmp')
     
     shard_keys = {
-        'raw_data': {'device': 1, 'path': 1, 'oid': 1},
-        'metadata': {'device': 1, 'path': 1, 'oid': 1},
-        'base_rates': {'device': 1, 'path': 1, 'oid': 1},
-        'aggregations': {'device': 1, 'path': 1, 'oid': 1},
+        'raw_data': SON(sk),
+        'metadata': SON(sk[0:-1]),
+        'base_rates': SON(sk),
+        'aggregations': SON(sk),
     }
     
     for k,v in shard_keys.items():
@@ -232,7 +250,6 @@ if options.multi:
         print admin.command('shardcollection', 'esxsnmp.%s' % k, key=v )
         
     esx = admin.connection['esxsnmp']
-    #esx = get_mongo_connection('esx', 27018)
         
 if options.single:
     args = [
@@ -245,6 +262,8 @@ if options.single:
         '--dbpath', s_roots['primary'],
         '--logpath', '%s/mongodb.log' % s_roots['primary'],
         '--pidfilepath', '%s/mongodb.pid' % s_roots['primary'],
+        '--nojournal',
+        '--syncdelay', '1'
     ]
 
     start_single = start_single + args
@@ -256,10 +275,10 @@ if options.single:
     esx = get_mongo_connection('esxsnmp', 27017)
     
     idx_keys = {
-        'raw_data': [('device', 1), ('path', 1), ('oid', 1)],
-        #'metadata': {'device': 1},
-        #'base_rates': {'device': 1},
-        #'aggregations': {'device': 1},
+        'raw_data': sk, # just by way of comparison
+        #'metadata': sk[0:-1],
+        #'base_rates': sk,
+        #'aggregations': sk,
     }
     
     for k,v in idx_keys.items():
@@ -276,11 +295,14 @@ count = timing = 0
 
 data = load_test_data(root, 'write_test.pickle')
 
-for i in data:
-    count += 1
-    t = time.time()
-    esx.raw_data.insert(i, safe=options.safe)
-    timing += time.time() - t
+for x in xrange(options.loop):
+    for i in data:
+        if i.has_key('_id'):
+            del i['_id']
+        count += 1
+        t = time.time()
+        esx.raw_data.insert(i, safe=options.safe)
+        timing += time.time() - t
 
 print count, 'rows'
 print timing, 'seconds'
