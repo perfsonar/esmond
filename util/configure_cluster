@@ -263,10 +263,13 @@ def kill_all(config):
             pid = fh.read().strip()
             fh.close()
             try:
+                #if not quiet: print 'Killing', pid, 
                 os.kill(int(pid),3)
+                time.sleep(1)
+                kill_all(root,quiet=True)
             except:
-                pass
-            os.unlink(pidfile)
+                print pid, 'done'
+                os.unlink(pidfile)
             
 def get_mongo_connection(db, port, host='localhost', user='', passwd=''):
     try:
