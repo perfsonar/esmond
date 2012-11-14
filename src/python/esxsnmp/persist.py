@@ -451,11 +451,18 @@ class IfRefPollPersister(HistoryTablePersister):
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
-            ifref_objs[ifIndex_map[val]]['ipaddr'] = ipAddr
+            for (a,b) in self.data['ipAdEntAddr']:
+                (foo,index) = a.split('.',1)
+                if index == ipAddr:
+                    ipAddr = b
+                    break
+            ifref_objs[ifIndex_map[val]]['ipAddr'] = ipAddr
+            
 
         remaining_oids = self.data.keys()
         remaining_oids.remove('ifDescr')
         remaining_oids.remove('ipAdEntIfIndex')
+        remaining_oids.remove('ipAdEntAddr')
 
         for oid in remaining_oids:
             for name, val in self.data[oid]:
