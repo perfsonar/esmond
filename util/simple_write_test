@@ -112,6 +112,9 @@ parser.add_option('-l', '--loop', action="store", type='int', default=1,
 parser.add_option('-p', '--profile', action="store_true", default=False,
                     dest="profile",
                     help="Enable profiling on primary.")
+parser.add_option('-a', '--auth', action="store_true", default=False,
+                    dest="auth",
+                    help="Enable keyFile on cluster for testing.")
                     
 options, args = parser.parse_args()
 
@@ -179,8 +182,10 @@ if options.multi:
     
     args = [
         '--fork',
-        #'--keyFile', keyfile
     ]
+    
+    if options.auth:
+        args = args + ['--keyFile', keyfile]
 
     start_config = [
         'mongod',
