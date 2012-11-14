@@ -402,13 +402,12 @@ def enable_sharding(config):
         print 'Not using auth'
     
     print 'Using the following collections/keys:'
-    sk = [('device', 1), ('path', 1), ('oid', 1), ('ts', 1)]
     
     shard_keys = {
-        'raw_data': SON(sk),
-        'metadata': SON(sk[0:-1]),
-        'base_rates': SON(sk),
-        'aggregations': SON(sk),
+        'raw_data': SON(MONGO_DB.path_idx),
+        'metadata': SON(MONGO_DB.meta_idx),
+        'base_rates': SON(MONGO_DB.rate_idx),
+        'aggregations': SON(MONGO_DB.agg_idx),
     }
     
     pprint.pprint(shard_keys)

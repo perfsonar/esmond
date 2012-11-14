@@ -15,6 +15,8 @@ import pymongo
 from pymongo.errors import ConnectionFailure, OperationFailure
 from bson.son import SON
 
+from esxsnmp.mongo import MONGO_DB
+
 servers = ['mongos', 'config', 'primary']
 
 s_roots = {}
@@ -107,6 +109,9 @@ parser.add_option('-w', '--nowrite', action="store_true", default=False,
 parser.add_option('-l', '--loop', action="store", type='int', default=1,
                     dest="loop",
                     help="Number of times to loop over test data.")
+parser.add_option('-p', '--profile', action="store_true", default=False,
+                    dest="profile",
+                    help="Enable profiling on primary.")
                     
 options, args = parser.parse_args()
 
@@ -214,10 +219,14 @@ if options.multi:
         '--dbpath', s_roots['primary'],
         '--logpath', '%s/mongodb.log' % s_roots['primary'],
         '--pidfilepath', '%s/mongodb.pid' % s_roots['primary'],
-        '--nojournal',
+        '--journal',
         '--syncdelay', '1',
         '--shardsvr'
     ]
+    
+    if options.profile:
+        start_primary = start_primary + \
+            ['--profile', '1']
 
     start_primary = start_primary + args
 
@@ -238,10 +247,10 @@ if options.multi:
     print admin.command('enablesharding', 'esxsnmp')
     
     shard_keys = {
-        'raw_data': SON(sk),
-        'metadata': SON(sk[0:-1]),
-        'base_rates': SON(sk),
-        'aggregations': SON(sk),
+        'raw_data': SON(MONGO_DB.path_idx),
+        'metadata': SON(MONGO_DB.meta_idx),
+        'base_rates': SON(MONGO_DB.rate_idx),
+        'aggregations': SON(MONGO_DB.agg_idx),
     }
     
     for k,v in shard_keys.items():
@@ -267,6 +276,10 @@ if options.single:
     ]
 
     start_single = start_single + args
+    
+    if options.profile:
+        start_single = start_single + \
+            ['--profile', '1']
 
     p = subprocess.check_call(start_single,stderr=subprocess.STDOUT)
     
@@ -275,10 +288,10 @@ if options.single:
     esx = get_mongo_connection('esxsnmp', 27017)
     
     idx_keys = {
-        'raw_data': sk, # just by way of comparison
-        #'metadata': sk[0:-1],
-        #'base_rates': sk,
-        #'aggregations': sk,
+        #'raw_data': MONGO_DB.path_idx,
+        'metadata': MONGO_DB.meta_idx,
+        'base_rates': MONGO_DB.rate_idx,
+        'aggregations': MONGO_DB.agg_idx,
     }
     
     for k,v in idx_keys.items():
