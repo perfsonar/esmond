@@ -51,11 +51,15 @@ class MONGO_DB(object):
     
     insert_flags = { 'safe': False }
     
-    def __init__(self, config, clear_on_test=False):
+    def __init__(self, config, clear_on_test=False, secondary_read=False):
         # Connection
+        _kw = {}
+        if secondary_read:
+            _kw['read_preference'] = rp.SECONDARY_PREFERRED
+        
         try:
             self.connection = pymongo.Connection(host=config.mongo_host, 
-                    port=config.mongo_port, read_preference=rp.SECONDARY_PREFERRED)
+                    port=config.mongo_port, **_kw)
         except ConnectionFailure:
             raise ConnectionException("Couldn't connect to DB "
                             "at %s:%d" % (config.mongo_host, config.mongo_port))
@@ -81,7 +85,6 @@ class MONGO_DB(object):
             self.metadata.remove({})
             self.rates.remove({})
             self.aggs.remove({})
-            #self.connection.drop_database(self.database)
         
         # Indexes
         self.metadata.ensure_index(self.meta_idx, unique=True)
