@@ -167,7 +167,7 @@ def do_start(server, config, option_args):
             '--logappend',
             '--pidfilepath', '%s/mongodb.pid' % dbpath,
             '--directoryperdb',
-            '--journal',
+            '--nojournal',
             '--syncdelay', '1',
             '--fork',
         ]
@@ -264,7 +264,7 @@ def kill_all(config):
             fh.close()
             try:
                 #if not quiet: print 'Killing', pid, 
-                os.kill(int(pid),3)
+                os.kill(int(pid),2)
                 time.sleep(1)
                 kill_all(root,quiet=True)
             except:
