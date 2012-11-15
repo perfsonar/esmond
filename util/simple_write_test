@@ -160,7 +160,7 @@ if os.uname()[0] == 'Darwin':
 elif os.uname()[0] == 'Linux':
     print 'Setting limits for Linux'
     resource.setrlimit(resource.RLIMIT_STACK, (1048576, -1))
-    resource.setrlimit(resource.RLIMIT_NOFILE, (4096, 4096))
+    resource.setrlimit(resource.RLIMIT_NOFILE, (4096, 64000))
 else:
     print '%s unknown - not setting limits' % os.uname()[0]
 
@@ -300,6 +300,7 @@ if options.single:
     }
     
     for k,v in idx_keys.items():
+        continue
         esx[k].ensure_index(v)
 
 if options.nowrite:
