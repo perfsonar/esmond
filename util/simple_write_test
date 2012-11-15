@@ -218,7 +218,7 @@ if options.multi:
     start_mongos = start_mongos + args
     
     if os.uname()[0] == 'Linux':
-        start_mongos = ['numactl', '--interleave=all'] + start_config
+        start_mongos = ['numactl', '--interleave=all'] + start_mongos
 
     p = subprocess.check_call(start_mongos,stderr=subprocess.STDOUT)
     
@@ -242,7 +242,7 @@ if options.multi:
     start_primary = start_primary + args
     
     if os.uname()[0] == 'Linux':
-        start_primary = ['numactl', '--interleave=all'] + start_config
+        start_primary = ['numactl', '--interleave=all'] + start_primary
 
     p = subprocess.check_call(start_primary,stderr=subprocess.STDOUT)
 
@@ -292,7 +292,7 @@ if options.single:
     start_single = start_single + args
     
     if os.uname()[0] == 'Linux':
-        start_single = ['numactl', '--interleave=all'] + start_config
+        start_single = ['numactl', '--interleave=all'] + start_single
     
     if options.profile:
         start_single = start_single + \
