@@ -209,7 +209,7 @@ class MONGO_DB(object):
                 self.aggs.update(
                     { '_id': ret['_id'] },
                     { '$set': { update_attr : raw_data.val} },
-                    new=True, upsert=False, **self.insert_flags
+                    upsert=False, **self.insert_flags
                 )
                 self.stats.aggregation_update((time.time() - t1))
         
