@@ -196,6 +196,9 @@ def do_start(server, config, option_args):
     
     cmd = cmd + option_args + server.args
     
+    if os.uname()[0] == 'Linux':
+        cmd = ['numactl', '--interleave=all'] + cmd
+    
     p = subprocess.check_call(cmd,stderr=subprocess.STDOUT)
     
     pass
