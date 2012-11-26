@@ -164,7 +164,7 @@ if os.uname()[0] == 'Darwin':
 elif os.uname()[0] == 'Linux':
     print 'Setting limits for Linux'
     resource.setrlimit(resource.RLIMIT_STACK, (1048576, -1))
-    resource.setrlimit(resource.RLIMIT_NOFILE, (4096, 64000))
+    resource.setrlimit(resource.RLIMIT_NOFILE, (4096, 10000))
 else:
     print '%s unknown - not setting limits' % os.uname()[0]
 
