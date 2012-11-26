@@ -115,6 +115,9 @@ parser.add_option('-p', '--profile', action="store_true", default=False,
 parser.add_option('-a', '--auth', action="store_true", default=False,
                     dest="auth",
                     help="Enable keyFile on cluster for testing.")
+parser.add_option('-o', '--writeonly', action="store_true", default=False,
+                    dest="writeonly",
+                    help="Only execute write, don't start/kill servers.")
                     
 options, args = parser.parse_args()
 
@@ -134,9 +137,10 @@ else:
 servers = ['mongos', 'config', 'primary']
 keyfile = '%s/keyfile' % root
 
-kill_all(root)
-clear_all(root)
-check_path(root)
+if options.multi or options.single:
+    kill_all(root)
+    clear_all(root)
+    check_path(root)
 
 if options.kill:
     sys.exit()
@@ -149,8 +153,8 @@ if options.multi and options.single:
     print 'Can only use --multi OR --single.'
     sys.exit()
 
-if not options.multi and not options.single:
-    print 'Must specify --multi or --single'
+if not options.multi and not options.single and not options.writeonly:
+    print 'Must specify --multi or --single or --writeonly'
     sys.exit()
 
 if os.uname()[0] == 'Darwin':
@@ -318,8 +322,11 @@ if options.single:
 if options.nowrite:
     print 'not writing'
     sys.exit()
+    
+if options.writeonly:
+    esx = get_mongo_connection('esxsnmp', 27017)
 
-print 'starting write in 5 seconds'
+print 'starting write in 5 seconds - safe mode: %s' % options.safe
 time.sleep(5)
 
 count = timing = 0
