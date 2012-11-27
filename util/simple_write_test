@@ -124,6 +124,9 @@ parser.add_option('-C', '--confighost', action="store", default='localhost',
 parser.add_option('-S', '--shardhost', action="store", default='localhost',
                     dest="shardhost",
                     help="Manually set shard hostname (default localhost).")
+parser.add_option('-A', '--auxonly', action="store_true", default=False,
+                    dest="auxonly",
+                    help="Just spin up a mongos/mongod (no config, sharding enabled).")
 
                     
 options, args = parser.parse_args()
@@ -214,7 +217,8 @@ if options.multi:
     if os.uname()[0] == 'Linux':
         start_config = ['numactl', '--interleave=all'] + start_config
 
-    p = subprocess.check_call(start_config,stderr=subprocess.STDOUT)
+    if not options.auxonly:
+        p = subprocess.check_call(start_config,stderr=subprocess.STDOUT)
     
     time.sleep(3)
 
@@ -268,20 +272,21 @@ if options.multi:
     config = admin.connection['config']
     for s in config.shards.find():
         print s
+        
+    if not options.auxonly:
+        print admin.command('enablesharding', 'esxsnmp')
     
-    print admin.command('enablesharding', 'esxsnmp')
+        shard_keys = {
+            'raw_data': SON(MONGO_DB.path_idx),
+            'metadata': SON(MONGO_DB.meta_idx),
+            'base_rates': SON(MONGO_DB.rate_idx),
+            'aggregations': SON(MONGO_DB.agg_idx),
+        }
     
-    shard_keys = {
-        'raw_data': SON(MONGO_DB.path_idx),
-        'metadata': SON(MONGO_DB.meta_idx),
-        'base_rates': SON(MONGO_DB.rate_idx),
-        'aggregations': SON(MONGO_DB.agg_idx),
-    }
-    
-    for k,v in shard_keys.items():
-        if not len(v):
-            continue
-        print admin.command('shardcollection', 'esxsnmp.%s' % k, key=v )
+        for k,v in shard_keys.items():
+            if not len(v):
+                continue
+            print admin.command('shardcollection', 'esxsnmp.%s' % k, key=v )
         
     esx = admin.connection['esxsnmp']
         
