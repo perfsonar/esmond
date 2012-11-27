@@ -118,6 +118,13 @@ parser.add_option('-a', '--auth', action="store_true", default=False,
 parser.add_option('-o', '--writeonly', action="store_true", default=False,
                     dest="writeonly",
                     help="Only execute write, don't start/kill servers.")
+parser.add_option('-C', '--confighost', action="store", default='localhost',
+                    dest="confighost",
+                    help="Manually set config server hostname (default localhost).")
+parser.add_option('-S', '--shardhost', action="store", default='localhost',
+                    dest="shardhost",
+                    help="Manually set shard hostname (default localhost).")
+
                     
 options, args = parser.parse_args()
 
@@ -216,7 +223,7 @@ if options.multi:
         '--port', '27017',
         '--logpath', '%s/mongodb.log' % s_roots['mongos'],
         '--pidfilepath', '%s/mongodb.pid' % s_roots['mongos'],
-        '--configdb', 'localhost:27019'
+        '--configdb', '%s:27019' % options.confighost
     ]
 
     start_mongos = start_mongos + args
@@ -256,7 +263,7 @@ if options.multi:
     #sys.exit()
 
     admin = get_mongo_connection('admin', 27017)
-    admin.command("addShard", 'localhost:27018')
+    admin.command("addShard", '%s:27018' % options.shardhost)
 
     config = admin.connection['config']
     for s in config.shards.find():
