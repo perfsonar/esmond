@@ -50,7 +50,7 @@ class MONGO_DB(object):
     rate_idx = path_idx + [ ('ts', ASCENDING) ]
     agg_idx  = path_idx + [ ('ts', ASCENDING) ]
     
-    insert_flags = { 'safe': False }
+    insert_flags = { 'safe': True }
     
     def __init__(self, config, clear_on_test=False, secondary_read=False):
         # Connection
