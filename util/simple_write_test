@@ -127,6 +127,9 @@ parser.add_option('-S', '--shardhost', action="store", default='localhost',
 parser.add_option('-A', '--auxonly', action="store_true", default=False,
                     dest="auxonly",
                     help="Just spin up a mongos/mongod (no config, sharding enabled).")
+parser.add_option('-P', '--prepend', action="store", default='',
+                    dest="prepend",
+                    help="Prepend a string to device in test data.")
 
                     
 options, args = parser.parse_args()
@@ -347,11 +350,16 @@ data = load_test_data(root, 'write_test.pickle')
 
 for x in xrange(options.loop):
     for i in data:
-        if i.has_key('_id'):
-            del i['_id']
+        ii = i.copy()
+        if ii.has_key('_id'):
+            del ii['_id']
+        if options.prepend:
+            ii['device'] = '%s-%s' % (options.prepend, ii['device'])
+        if options.loop > 1:
+            ii['device'] = '%s_%s' % (ii['device'], x)
         count += 1
         t = time.time()
-        esx.raw_data.insert(i, safe=options.safe)
+        esx.raw_data.insert(ii, safe=options.safe)
         timing += time.time() - t
 
 print count, 'rows'
