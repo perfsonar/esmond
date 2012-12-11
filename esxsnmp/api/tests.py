@@ -21,7 +21,7 @@ from django.conf import settings
 from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 
 from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
-     PersistQueueEmpty, TSDBPollPersister, MongoDBPollPersister
+     PersistQueueEmpty, TSDBPollPersister, MongoDBPollPersister, CassandraPollPersister
 from esxsnmp.config import get_config, get_config_path
 from esxsnmp.mongo import MONGO_DB, INVALID_VALUE
 
@@ -308,6 +308,24 @@ timeseries_test_data = """
     }
 ]
 """
+
+class TestCassandraPollPersister(TestCase):
+    fixtures = ['test_devices.json', 'oidsets.json']
+    
+    def setUp(self):
+        """make sure we have a clean router_a directory to start with."""
+        router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
+        if os.path.exists(router_a_path):
+            shutil.rmtree(router_a_path, ignore_errors=True)
+            
+    def test_persister(self):
+        config = get_config(get_config_path())
+        test_data = json.loads(timeseries_test_data)
+        q = TestPersistQueue(test_data)
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+
+
 class TestMongoDBPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
     

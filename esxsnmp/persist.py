@@ -34,6 +34,7 @@ from esxsnmp.error import ConfigError
 from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
 
 from esxsnmp.mongo import MONGO_DB, RawData, BaseRateBin, AggregationBin, INVALID_VALUE
+from esxsnmp.cassandra import CASSANDRA_DB, RawData, BaseRateBin, AggregationBin, INVALID_VALUE
 
 try:
     import cmemcache as memcache
@@ -530,6 +531,196 @@ class MongoDBPollPersister(PollPersister):
         
     def generate_aggregations(self, data, aggregate_freqs):
         
+        for freq in aggregate_freqs:
+            self.db.update_aggregation(data, self._agg_timestamp(data, freq), freq)
+            
+            
+class CassandraPollPersister(PollPersister):
+    """Given a ``PollResult`` write the data to a TSDB.
+
+    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
+    write to.
+
+    The ``data`` member of the PollResult must be a list of (name,value)
+    pairs.  The ``metadata`` member of PollResult must contain the following
+    keys::
+
+        ``tsdb_flags``
+            TSDB flags to be used
+
+    """
+
+    def __init__(self, config, qname, persistq):
+        PollPersister.__init__(self, config, qname, persistq)
+
+        self.db = CASSANDRA_DB(config, clear_on_test=True)
+
+        self.tsdb = tsdb.TSDB(self.config.tsdb_root)
+
+        self.oidsets = {}
+        self.poller_args = {}
+        self.oids = {}
+
+        oidsets = OIDSet.objects.all()
+
+        for oidset in oidsets:
+            self.oidsets[oidset.name] = oidset
+            d = {}
+            if oidset.poller_args:
+                for arg in oidset.poller_args.split():
+                    (k, v) = arg.split('=')
+                    d[k] = v
+                self.poller_args[oidset.name] = d
+
+            for oid in oidset.oids.all():
+                self.oids[oid.name] = oid
+
+    def store(self, result):
+        oidset = self.oidsets[result.oidset_name]
+        set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
+        basename = os.path.join(result.device_name, set_name)
+        oid = self.oids[result.oid_name]
+        flags = result.metadata['tsdb_flags']
+
+        t0 = time.time()
+        nvar = 0
+
+        for var, val in result.data:
+            if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
+                val = float(val) * 100
+            nvar += 1
+
+            var_name = os.path.join(basename, var)
+            device_n,oidset_n,oid_n,path_n = var_name.split('/')
+
+            #if path_n != 'fxp0.0':
+            #    continue
+
+            raw_data = RawData(device_n, oidset_n, oid_n, path_n,
+                    result.timestamp, flags, val, oidset.frequency)
+
+            self.db.set_raw_data(raw_data)
+            #continue
+
+            if oid.aggregate:
+                delta_v = self.aggregate_base_rate(raw_data)
+                uptime_name = os.path.join(basename, 'sysUpTime')
+                # XXX(mmg) how do we handle this uptime?
+                
+                # May want a condition on this, so build higher
+                # level aggregations elsewhere
+
+                if delta_v:
+                    # We got a good delta back from base rate, so
+                    # build an aggregation with it
+                    raw_data.val = delta_v
+                    self.generate_aggregations(raw_data, oidset.aggregates)
+            else:
+                # XXX(mmg): put non-rate value handling here and also
+                # metadata updates for said.
+                pass
+
+        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
+            time.time() - t0, result))
+
+    def aggregate_base_rate(self, data):
+
+        metadata = self.db.get_metadata(data)
+        last_update = metadata.ts_to_unixtime('last_update')
+
+        if data.min_last_update and data.min_last_update > last_update:
+            last_update = data.min_last_update
+
+        min_ts = metadata.ts_to_unixtime('min_ts')
+
+        if min_ts > last_update:
+            last_update = min_ts
+            metatdata.last_update = last_update
+
+        # This mimics logic in the tsdb persister - skip any further 
+        # processing of the rate aggregate if this is the first value
+
+        if data.val == metadata.last_val and \
+            data.ts == metadata.last_update:
+            return
+
+        delta_t = data.ts_to_unixtime() - metadata.ts_to_unixtime('last_update')
+        delta_v = data.val - metadata.last_val
+
+        prev_slot = (metadata.ts_to_unixtime('last_update') / data.freq) * data.freq
+        curr_slot = (data.ts_to_unixtime() / data.freq) * data.freq
+
+        rate = float(delta_v) / float(delta_t)
+        max_rate = int(110e9)
+
+        if rate > max_rate:
+            self.log.error('max_rate_exceeded - %s - %s - %s' \
+                % (rate, metadata.last_val, data.val))
+            metadata.refresh_from_raw(data)
+            return
+
+        assert delta_v >= 0
+
+        prev_frac = int( floor(
+                delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
+                / float(delta_t)
+                ))
+
+        curr_frac = int( ceil(
+                    delta_v * (data.ts_to_unixtime() - curr_slot)
+                    / float(delta_t)
+                ))
+
+        # XXX(mmg): include HEARTBEAT backfill logic here.
+
+        prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
+                **data.get_path())
+        curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
+                **data.get_path())
+
+        self.db.update_rate_bin(prev_bin)
+        self.db.update_rate_bin(curr_bin)
+
+        # backfill logic from the tsdb.aggregator
+        # This has been modified from the orignial!
+
+        if (curr_slot - prev_slot) > data.freq: # New condition - missing bins?
+            missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
+            if not missed_slots:
+                missed_slots = [curr_slot]
+            missed = delta_v - (curr_frac + prev_frac)
+            if missed > 0:
+                # Presume valid data (old logic)
+                missed_frac = missed / len(missed_slots)
+                missed_rem = missed % (missed_frac * len(missed_slots))
+                for slot in missed_slots:
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=missed_frac,
+                            **data.get_path())
+                    self.db.update_rate_bin(miss_bin)
+
+                    for i in range(missed_rem):
+                        dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
+                            val=1, **data.get_path())
+            else:
+                # Presume invalid data (new logic)
+                for slot in missed_slots:
+                    # XXX(mmg): rectify using -9999 - this is a stopgap
+                    # to get some code pushed.
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=INVALID_VALUE,
+                            **data.get_path())
+                    self.db.update_rate_bin(miss_bin)
+
+
+        metadata.refresh_from_raw(data)
+        self.db.update_metadata(metadata)
+
+        return delta_v
+
+    def _agg_timestamp(self, data, freq):
+        return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
+
+    def generate_aggregations(self, data, aggregate_freqs):
+
         for freq in aggregate_freqs:
             self.db.update_aggregation(data, self._agg_timestamp(data, freq), freq)
             
