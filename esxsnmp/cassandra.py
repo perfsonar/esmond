@@ -12,12 +12,11 @@ import pprint
 import sys
 import time
 # Third party
-import pymongo
-from pymongo import ASCENDING, DESCENDING
-from pymongo.connection import Connection
-from pymongo.errors import ConnectionFailure
-from pymongo.read_preferences import ReadPreference as rp
-from bson.son import SON
+from pycassa.pool import ConnectionPool, AllServersUnavailable
+from pycassa.columnfamily import ColumnFamily
+from pycassa.system_manager import *
+
+from thrift.transport.TTransport import TTransportException
 
 INVALID_VALUE = -9999
 
@@ -33,45 +32,67 @@ class ConnectionException(CassandraException):
         
 class CASSANDRA_DB(object):
     
-    database = 'esxsnmp'
-    raw_coll = 'raw_data'
-    meta_coll = 'metadata'
-    rate_coll = 'base_rates'
-    agg_coll = 'aggregations'
+    keyspace = 'esxsnmp'
+    raw_cf = 'raw_data'
+    meta_cf = 'metadata'
+    rate_cf = 'base_rates'
+    agg_cf = 'aggregations'
     
     def __init__(self, config, clear_on_test=False):
-        # Connection
+        # Connect with SystemManager, do a schema check and setup if need be
         try:
-            pass
-            # thrift.transport.TTransport.TTransportException: Could not connect to localhost:9160
-
-        except:
-            raise ConnectionException("Couldn't connect to DB "
-                            "at %s:%d" % (config.mongo_host, config.mongo_port))
-                                      
-        # Column Families
-        #self.raw_data = self.db[self.raw_coll]
-        #self.metadata = self.db[self.meta_coll]
-        #self.rates    = self.db[self.rate_coll]
-        #self.aggs     = self.db[self.agg_coll]
+            sysman = SystemManager('%s:%s' % \
+                (config.cassandra_host, config.cassandra_port))                              
+        except TTransportException, e:
+            raise ConnectionException("System Manager can't connect to Cassandra "
+                "at %s:%d - %s" % (config.cassandra_host, config.cassandra_port, e))
         
+        # Blow everything away if we're testing
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
-            #self.raw_data.remove({})
-            #self.metadata.remove({})
-            #self.rates.remove({})
-            #self.aggs.remove({})
-            pass
+            if self.keyspace in sysman.list_keyspaces():
+                sysman.drop_keyspace(self.keyspace)
+        # Create keyspace
+        if not self.keyspace in sysman.list_keyspaces():
+            sysman.create_keyspace(self.keyspace, SIMPLE_STRATEGY, 
+                {'replication_factor': '1'})
+        # Create column families
+        # Raw Data CF
+        if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.raw_cf):
+            sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
+                    comparator_type=LONG_TYPE, 
+                    default_validation_class=LONG_TYPE,
+                    #default_validation_class=COUNTER_COLUMN_TYPE,
+                    key_validation_class=UTF8_TYPE)
+                    
+        sysman.close()
         
-        if config.mongo_raw_expire:
-            pass
+        # Now, set up the ConnectionPool
+        try:
+            self.pool = ConnectionPool(self.keyspace, 
+                        ['%s:%s' % (config.cassandra_host, config.cassandra_port)])
+        except AllServersUnavailable, e:
+            raise ConnectionException("Couldn't connect to Cassandra "
+                    "at %s:%d - %s" % (config.cassandra_host, config.cassandra_port, e))
+        
+        # Column Families
+        self.raw_data = ColumnFamily(self.pool, self.raw_cf)
+        #self.metadata = ColumnFamily(self.pool, self.meta_cf)
+        #self.rates    = ColumnFamily(self.pool, self.rate_cf)
+        #self.aggs     = ColumnFamily(self.pool, self.agg_cf)
         
         # Timing
-        self.stats = DatabaseMetrics()
+        self.stats = DatabaseMetrics(no_profile=False)
+        
+        self.raw_expire = config.cassandra_raw_expire
         
         
     def set_raw_data(self, raw_data):
+        if self.raw_expire:
+            # set up time to live expiry time here.
+            pass
         t = time.time()
-        
+        self.raw_data.insert(raw_data.get_key(), 
+            {raw_data.ts_to_unixtime(): raw_data.val})
         self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
@@ -278,38 +299,55 @@ class DatabaseMetrics(object):
     ]
     _all_metrics = _individual_metrics + ['total', 'all']
     
-    def __init__(self):
+    def __init__(self, no_profile=False):
+        self.no_profile = no_profile
+        
+        if self.no_profile: return
+        
         for im in self._individual_metrics:
             setattr(self, '%s_time' % im, 0)
             setattr(self, '%s_count' % im, 0)
+            
         
         
     def _increment(self, m, t):
+        if self.no_profile: return
         setattr(self, '%s_time' % m, getattr(self, '%s_time' % m) + t)
         setattr(self, '%s_count' % m, getattr(self, '%s_count' % m) + 1)
 
     def raw_insert(self, t):
+        if self.no_profile: return
         self._increment('raw_insert', t)
 
     def meta_fetch(self, t):
+        if self.no_profile: return
         self._increment('meta_fetch', t)
 
     def meta_update(self, t):
+        if self.no_profile: return
         self._increment('meta_update', t)
 
     def baserate_update(self, t):
+        if self.no_profile: return
         self._increment('baserate_update', t)
 
     def aggregation_total(self, t):
+        if self.no_profile: return
         self._increment('aggregation_total', t)
 
     def aggregation_find(self, t):
+        if self.no_profile: return
         self._increment('aggregation_find', t)
 
     def aggregation_update(self, t):
+        if self.no_profile: return
         self._increment('aggregation_update', t)
         
     def report(self, metric='all'):
+        
+        if self.no_profile:
+            print 'Not profiling'
+            return
         
         if metric not in self._all_metrics:
             print 'bad metric' # XXX(mmg): log this
@@ -355,6 +393,7 @@ class DatabaseMetrics(object):
 class DataContainerBase(object):
     
     _doc_properties = []
+    _key_delimiter = ':'
     
     def __init__(self, device, oidset, oid, path, _id):
         self.device = device
@@ -382,6 +421,15 @@ class DataContainerBase(object):
             doc[p] = getattr(self, '%s' % p)
         
         return doc
+        
+    def get_key(self):
+        return '%s%s%s%s%s%s%s%s%s' % (
+            self.device, self._key_delimiter,
+            self.path, self._key_delimiter,
+            self.oid, self._key_delimiter,
+            self.freq, self._key_delimiter,
+            self.ts.year
+        )
         
     def get_path(self):
         p = {}
