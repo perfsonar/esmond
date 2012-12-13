@@ -61,7 +61,16 @@ class CASSANDRA_DB(object):
             sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
-                    #default_validation_class=COUNTER_COLUMN_TYPE,
+                    key_validation_class=UTF8_TYPE)
+        if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.rate_cf):
+            sysman.create_column_family(self.keyspace, self.rate_cf, super=False, 
+                    comparator_type=LONG_TYPE, 
+                    default_validation_class=COUNTER_COLUMN_TYPE,
+                    key_validation_class=UTF8_TYPE)
+        if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.agg_cf):
+            sysman.create_column_family(self.keyspace, self.agg_cf, super=True, 
+                    comparator_type=LONG_TYPE, 
+                    default_validation_class=COUNTER_COLUMN_TYPE,
                     key_validation_class=UTF8_TYPE)
                     
         sysman.close()
@@ -74,16 +83,18 @@ class CASSANDRA_DB(object):
             raise ConnectionException("Couldn't connect to Cassandra "
                     "at %s:%d - %s" % (config.cassandra_host, config.cassandra_port, e))
         
-        # Column Families
+        # Column family connections
         self.raw_data = ColumnFamily(self.pool, self.raw_cf)
         #self.metadata = ColumnFamily(self.pool, self.meta_cf)
-        #self.rates    = ColumnFamily(self.pool, self.rate_cf)
-        #self.aggs     = ColumnFamily(self.pool, self.agg_cf)
+        self.rates    = ColumnFamily(self.pool, self.rate_cf)
+        self.aggs     = ColumnFamily(self.pool, self.agg_cf)
         
         # Timing
         self.stats = DatabaseMetrics(no_profile=False)
         
+        # Class members
         self.raw_expire = config.cassandra_raw_expire
+        self.metadata_cache = {}
         
         
     def set_raw_data(self, raw_data):
@@ -96,56 +107,58 @@ class CASSANDRA_DB(object):
         self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
-        pass
+        # Do this in memory for now
+        self.metadata_cache[meta_d.get_meta_key()] = meta_d.get_document()
         
     def get_metadata(self, raw_data):
         t = time.time()
 
         meta_d = None
         
-        if not meta_d:
+        if not self.metadata_cache.has_key(raw_data.get_meta_key()):
             # Seeing first row - intialize with vals
             meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
                 min_ts=raw_data.ts, freq=raw_data.freq, **raw_data.get_path())
+            self.set_metadata(meta_d)
         else:
-            meta_d = Metadata(**meta_d)
+            meta_d = Metadata(**self.metadata_cache[raw_data.get_meta_key()])
         
-        self.stats.meta_fetch((time.time() - t))
+        #self.stats.meta_fetch((time.time() - t))
         return meta_d
         
     def update_metadata(self, metadata):
+        """
+        """
         t = time.time()
-        
-        self.stats.meta_update((time.time() - t))
+        for i in ['last_val', 'min_ts', 'last_update']:
+            self.metadata_cache[metadata.get_meta_key()][i] = getattr(metadata, i)
+        #self.stats.meta_update((time.time() - t))
         
     def update_rate_bin(self, ratebin):
         t = time.time()
-        
+        self.rates.insert(ratebin.get_key(),
+            {ratebin.ts_to_unixtime(): ratebin.val})
         self.stats.baserate_update((time.time() - t))
         
         
     def update_aggregation(self, raw_data, agg_ts, freq):
         t = time.time()
         
-        # old find and modify
-        if not ret:
-            # There's not an existing document - insert a new one.
-            agg = AggregationBin(
-                ts=agg_ts, freq=freq, val=raw_data.val, base_freq=raw_data.freq, count=1,
-                min=raw_data.val, max=raw_data.val, **raw_data.get_path()
-            )
-        else:
-            # Do we need to update min or max in the aggregation?
-            #update_attr = None
-            #if raw_data.val > ret['max'] or raw_data.val < ret['min']:
-            #    update_attr = 'max' if raw_data.val > ret['max'] else 'min'    
-            
-            if update_attr:
-                t1 = time.time()
-
-                self.stats.aggregation_update((time.time() - t1))
+        agg = AggregationBin(
+            ts=agg_ts, freq=freq, val=raw_data.val, base_freq=raw_data.freq, count=1,
+            min=raw_data.val, max=raw_data.val, **raw_data.get_path()
+        )
         
-        self.stats.aggregation_total((time.time() - t))
+        self.aggs.insert(agg.get_key(), 
+            {agg.ts_to_unixtime(): {'val': agg.val, 'count': 1}})
+        
+        
+        # XXX(mmg): deal with the min/max later.  May just implement it
+        # by a scan of the base rate data, or do a 'hybrid' update
+        # ie: if the values are not there when queried, then look up
+        # and update the aggs.
+        
+        self.stats.aggregation_update((time.time() - t))
         
     def query_baserate_timerange(self, device=None, path=None, oid=None, 
                 ts_min=None, ts_max=None, as_json=False):
@@ -361,10 +374,11 @@ class DatabaseMetrics(object):
             action = action.title()
             time = getattr(self, '%s_time' % metric)
             count = getattr(self, '%s_count' % metric)
-            s = '%s %s %s data in %.3f (%.3f per sec)' \
-                % (action, count, datatype, time, (count/time))
-            if metric.find('total') > -1:
-                s += ' (informational - not in total)'
+            if time: # stop /0 errors
+                s = '%s %s %s data in %.3f (%.3f per sec)' \
+                    % (action, count, datatype, time, (count/time))
+                if metric.find('total') > -1:
+                    s += ' (informational - not in total)'
         elif metric == 'total':
             for k,v in self.__dict__.items():
                 if k.find('total') > -1:
@@ -376,8 +390,9 @@ class DatabaseMetrics(object):
                     time += v
                 else:
                     pass
-            s = 'Total: %s db transactions in %.3f (%.3f per sec)' \
-                % (count, time, (count/time))
+            if time:
+                s = 'Total: %s db transactions in %.3f (%.3f per sec)' \
+                    % (count, time, (count/time))
         elif metric == 'all':
             for m in self._all_metrics:
                 if m == 'all':
@@ -423,12 +438,24 @@ class DataContainerBase(object):
         return doc
         
     def get_key(self):
+        # Get the cassandra row key for an object
         return '%s%s%s%s%s%s%s%s%s' % (
             self.device, self._key_delimiter,
             self.path, self._key_delimiter,
             self.oid, self._key_delimiter,
             self.freq, self._key_delimiter,
             self.ts.year
+        )
+        
+    def get_meta_key(self):
+        # Get a "metadata row key" - metadata don't have timestamps
+        # but some other objects need access to this to look up
+        # entires in the metadata_cache.
+        return '%s%s%s%s%s%s%s' % (
+            self.device, self._key_delimiter,
+            self.path, self._key_delimiter,
+            self.oid, self._key_delimiter,
+            self.freq
         )
         
     def get_path(self):

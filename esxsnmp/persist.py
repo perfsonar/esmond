@@ -610,7 +610,7 @@ class CassandraPollPersister(PollPersister):
                 # May want a condition on this, so build higher
                 # level aggregations elsewhere
 
-                if delta_v:
+                if delta_v != None: # a value of zero is ok
                     # We got a good delta back from base rate, so
                     # build an aggregation with it
                     raw_data.val = delta_v

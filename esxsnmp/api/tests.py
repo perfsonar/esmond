@@ -322,20 +322,21 @@ class TestCassandraPollPersister(TestCase):
         """This is a very basic smoke test for a cassandra persister."""
         config = get_config(get_config_path())
         test_data = json.loads(timeseries_test_data)
+        return
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
-        p.db.stats.report('raw_insert')
+        p.db.stats.report('all')
         
     def test_persister_long(self):
         """Make sure the tsdb and cassandra data match"""
         config = get_config(get_config_path())
-
+        
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
-        p.db.stats.report('raw_insert')
+        p.db.stats.report('all')
 
 class TestMongoDBPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
