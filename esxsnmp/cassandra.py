@@ -11,6 +11,7 @@ import os
 import pprint
 import sys
 import time
+from collections import OrderedDict
 # Third party
 from pycassa.pool import ConnectionPool, AllServersUnavailable
 from pycassa.columnfamily import ColumnFamily
@@ -37,6 +38,8 @@ class CASSANDRA_DB(object):
     meta_cf = 'metadata'
     rate_cf = 'base_rates'
     agg_cf = 'aggregations'
+    
+    _queue_size = 2000
     
     def __init__(self, config, clear_on_test=False):
         # Connect with SystemManager, do a schema check and setup if need be
@@ -84,10 +87,10 @@ class CASSANDRA_DB(object):
                     "at %s:%d - %s" % (config.cassandra_host, config.cassandra_port, e))
         
         # Column family connections
-        self.raw_data = ColumnFamily(self.pool, self.raw_cf)
+        self.raw_data = ColumnFamily(self.pool, self.raw_cf).batch(self._queue_size)
         #self.metadata = ColumnFamily(self.pool, self.meta_cf)
-        self.rates    = ColumnFamily(self.pool, self.rate_cf)
-        self.aggs     = ColumnFamily(self.pool, self.agg_cf)
+        self.rates    = ColumnFamily(self.pool, self.rate_cf).batch(self._queue_size)
+        self.aggs     = ColumnFamily(self.pool, self.agg_cf).batch(self._queue_size)
         
         # Timing
         self.stats = DatabaseMetrics(no_profile=False)
@@ -96,6 +99,10 @@ class CASSANDRA_DB(object):
         self.raw_expire = config.cassandra_raw_expire
         self.metadata_cache = {}
         
+    def flush(self):
+        self.raw_data.send()
+        self.rates.send()
+        self.aggs.send()
         
     def set_raw_data(self, raw_data):
         if self.raw_expire:
@@ -142,6 +149,7 @@ class CASSANDRA_DB(object):
         
         
     def update_aggregation(self, raw_data, agg_ts, freq):
+        
         t = time.time()
         
         agg = AggregationBin(
@@ -150,8 +158,7 @@ class CASSANDRA_DB(object):
         )
         
         self.aggs.insert(agg.get_key(), 
-            {agg.ts_to_unixtime(): {'val': agg.val, 'count': 1}})
-        
+            {agg.ts_to_unixtime(): {'val': agg.val, str(agg.base_freq): 1}})
         
         # XXX(mmg): deal with the min/max later.  May just implement it
         # by a scan of the base rate data, or do a 'hybrid' update
@@ -160,19 +167,37 @@ class CASSANDRA_DB(object):
         
         self.stats.aggregation_update((time.time() - t))
         
-    def query_baserate_timerange(self, device=None, path=None, oid=None, 
-                ts_min=None, ts_max=None, as_json=False):
+    def _get_row_keys(self, device, path, oid, freq, ts_min, ts_max):
+        full_path = '%s:%s:%s:%s' % (device,path,oid,freq)
         
-        ret = [] # query stuff
+        year_start = datetime.datetime.utcfromtimestamp(ts_min).year
+        year_finish = datetime.datetime.utcfromtimestamp(ts_max).year
+        
+        key_range = []
+        
+        if year_start != year_finish:
+            for i in range(year_start, year_finish+1):
+                key_range.append('%s:%s' % (full_path,i))
+        else:
+            key_range.append('%s:%s' % (full_path, year_start))
+            
+        return key_range
+        
+    def query_baserate_timerange(self, device=None, path=None, oid=None, 
+                freq=None, ts_min=None, ts_max=None, as_json=False):
+        
+        ret = self.rates._column_family.multiget(
+                self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
+                column_start=ts_min, column_finish=ts_max)
         
         # Just return the results and format elsewhere.
         results = []
         
-        for r in ret:
-            results.append(r)
+        for k,v in ret.items():
+            for kk,vv in v.items():
+                results.append({'ts': kk, 'val': vv})
             
         if as_json: # format results for query interface
-            freq = None
             # Get the frequency from the metatdata if the result set is empty
             if not results:
                 pass
@@ -183,13 +208,26 @@ class CASSANDRA_DB(object):
     def query_aggregation_timerange(self, device=None, path=None, oid=None, 
                 ts_min=None, ts_max=None, freq=None, cf=None, as_json=False):
                 
-        ret = []
+        ret = self.aggs._column_family.multiget(
+                self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
+                column_start=ts_min, column_finish=ts_max)
 
         # Just return the results and format elsewhere.
         results = []
         
-        for r in ret:
-            results.append(r)
+        for k,v in ret.items():
+            for kk,vv in v.items():
+                ts = kk
+                val = None
+                base_freq = None
+                count = None
+                for kkk in vv.keys():
+                    if kkk == 'val':
+                        val = vv[kkk]
+                    else:
+                        base_freq = kkk
+                        count = vv[kkk]
+            results.append({'ts': ts, 'val': val, 'base_freq': int(base_freq), 'count': count})
         
         if as_json: # format results for query interface
             return FormattedOutput.aggregate_rate(ts_min, ts_max, results, freq,
@@ -197,23 +235,21 @@ class CASSANDRA_DB(object):
         else:
             return results
             
-    def query_raw_data(self, device=None, path=None, oid=None, 
+    def query_raw_data(self, device=None, path=None, oid=None, freq=None,
                 ts_min=None, ts_max=None, as_json=False):
                 
-        ret = []
+        ret = self.raw_data._column_family.multiget(
+                self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
+                column_start=ts_min, column_finish=ts_max)
 
         # Just return the results and format elsewhere.
         results = []
 
-        for r in ret:
-            results.append(r)
+        for k,v in ret.items():
+            for kk,vv in v.items():
+                results.append({'ts': kk, 'val': vv})
             
         if as_json: # format results for query interface
-            freq = None
-            # Get the frequency from the metatdata if the result set is empty
-            if not results:
-                #freq = m_lookup['freq']
-                pass
             return FormattedOutput.raw_data(ts_min, ts_max, results, freq)
         else:
             return results
@@ -240,7 +276,7 @@ class FormattedOutput(object):
             ('begin_time', ts_min)
         ]
         
-        fmt = SON(fmt)
+        fmt = OrderedDict(fmt)
         
         for r in results:
             fmt['data'].append(
@@ -262,7 +298,7 @@ class FormattedOutput(object):
             ('begin_time', ts_min)
         ]
     
-        fmt = SON(fmt)
+        fmt = OrderedDict(fmt)
         
         for r in results:
             ro = AggregationBin(**r)
@@ -285,7 +321,7 @@ class FormattedOutput(object):
             ('begin_time', ts_min)
         ]
         
-        fmt = SON(fmt)
+        fmt = OrderedDict(fmt)
         
         for r in results:
             fmt['data'].append(

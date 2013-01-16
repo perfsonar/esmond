@@ -24,6 +24,8 @@ from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
      PersistQueueEmpty, TSDBPollPersister, MongoDBPollPersister, CassandraPollPersister
 from esxsnmp.config import get_config, get_config_path
 from esxsnmp.mongo import MONGO_DB, INVALID_VALUE
+from esxsnmp.cassandra import CASSANDRA_DB, INVALID_VALUE
+from pycassa.columnfamily import ColumnFamily
 
 try:
     import tsdb
@@ -331,12 +333,145 @@ class TestCassandraPollPersister(TestCase):
     def test_persister_long(self):
         """Make sure the tsdb and cassandra data match"""
         config = get_config(get_config_path())
-        
+        #return
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
+        p.db.flush()
         p.db.stats.report('all')
+        
+        return # twitting this out for now
+        
+        test_data = load_test_data("router_a_ifhcin_long.json")
+        q = TestPersistQueue(test_data)
+        p = TSDBPollPersister(config, "test", persistq=q)
+        p.run()
+        
+        path_levels = []
+        
+        router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
+        for (path, dirs, files) in os.walk(router_a_path):
+            if dirs[0] == 'TSDBAggregates':
+                break
+            path_levels.append(dirs)
+            
+        oidsets = path_levels[0]
+        oids    = path_levels[1]
+        paths   = path_levels[2]
+        
+        full_paths = {}
+        
+        for oidset in oidsets:
+            for oid in oids:
+                for path in paths:
+                    full_path = 'router_a/%s/%s/%s/TSDBAggregates/30'  % \
+                        (oidset, oid, path)
+                    if not full_paths.has_key(full_path):
+                        full_paths[full_path] = 1
+                        
+        ts_db = tsdb.TSDB(config.tsdb_root)
+        db = CASSANDRA_DB(config)
+        
+        rates = ColumnFamily(db.pool, db.rate_cf)
+        
+        count_bad = 0
+        tsdb_aggs = 0
+                        
+        for p in full_paths.keys():
+            v = ts_db.get_var(p)
+            device,oidset,oid,path,tmp1,tmp2 = p.split('/')
+            for d in v.select():
+                tsdb_aggs += 1
+                key = '%s:%s:%s:%s:%s'  % \
+                    (device,path,oid,tmp2,
+                    datetime.datetime.utcfromtimestamp(d.timestamp).year)
+
+                val = rates.get(key, [d.timestamp])[d.timestamp]
+                
+                if d.flags != ROW_VALID:
+                    assert val == INVALID_VALUE
+                else:
+                    assert val == d.delta
+                    
+    def test_range_baserate_query(self):
+        """
+        Presumed using test data loaded in previous test method.
+
+        Shows the three query methods that return json formatted data.
+
+        All args shown other than as_json are required.
+        """
+        config = get_config(get_config_path())
+        db = CASSANDRA_DB(config)
+
+        start_time = 1343956800
+        end_time = 1343957400
+        expected_results = 21
+
+        ret = db.query_baserate_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            freq=30,
+            ts_min=start_time,
+            ts_max=end_time
+        )
+
+        assert len(ret) == expected_results
+
+        ret = db.query_baserate_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            freq=30,
+            ts_min=start_time,
+            ts_max=end_time,
+            as_json=True
+        )
+        
+        ret = json.loads(ret)
+
+        assert len(ret['data']) == expected_results
+        assert ret['begin_time'] == start_time
+        assert ret['end_time'] == end_time
+
+        ret = db.query_aggregation_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            ts_min=start_time - 3600,
+            ts_max=end_time,
+            freq=3600, # required!
+            cf='average',  # min | max | average - also required!
+            as_json=True
+        )
+        
+        print ret
+
+        ret = json.loads(ret)
+
+        assert ret['agg'] == 3600
+        assert ret['data'][0][1] == 17
+
+        # If using this with mongo_raw_expire set in the configuration
+        # it will fail if the expiry time is set to less than the dates
+        # of the test data.
+
+        ret = db.query_raw_data(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            freq=30,
+            ts_min=start_time,
+            ts_max=end_time,
+            as_json=True
+        )
+
+        ret = json.loads(ret)
+
+        assert len(ret['data']) == expected_results - 1
+                        
 
 class TestMongoDBPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
@@ -359,6 +494,10 @@ class TestMongoDBPollPersister(TestCase):
     def test_persister_long(self):
         """Make sure the tsdb and mongo data match"""
         config = get_config(get_config_path())
+        config.mongo_host = 'localhost'
+        config.mongo_port = 27017
+        config.mongo_user = config.mongo_pass = ''
+        config.mongo_raw_expire = None
         return # XXX(mmg): twitting this out for the time being.
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
@@ -429,8 +568,12 @@ class TestMongoDBPollPersister(TestCase):
         
         All args shown other than as_json are required.
         """
-        return
+        
         config = get_config(get_config_path())
+        config.mongo_host = 'localhost'
+        config.mongo_port = 27017
+        config.mongo_user = config.mongo_pass = ''
+        config.mongo_raw_expire = None
         db = MONGO_DB(config)
         
         start_time = 1343956800
@@ -469,10 +612,10 @@ class TestMongoDBPollPersister(TestCase):
             ts_min=start_time - 3600,
             ts_max=end_time,
             freq=3600, # required!
-            cf='min',  # min | max | average - also required!
+            cf='average',  # min | max | average - also required!
             as_json=True
         )
-        
+        print ret
         ret = json.loads(ret)
         
         assert ret['agg'] == 3600
