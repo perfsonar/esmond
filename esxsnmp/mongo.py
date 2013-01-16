@@ -370,6 +370,7 @@ class FormattedOutput(object):
         fmt = SON(fmt)
         
         for r in results:
+            print r
             ro = AggregationBin(**r)
             fmt['data'].append(
                 [

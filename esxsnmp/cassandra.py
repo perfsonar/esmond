@@ -207,27 +207,59 @@ class CASSANDRA_DB(object):
             
     def query_aggregation_timerange(self, device=None, path=None, oid=None, 
                 ts_min=None, ts_max=None, freq=None, cf=None, as_json=False):
-                
-        ret = self.aggs._column_family.multiget(
-                self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
-                column_start=ts_min, column_finish=ts_max)
-
-        # Just return the results and format elsewhere.
-        results = []
         
-        for k,v in ret.items():
-            for kk,vv in v.items():
-                ts = kk
-                val = None
-                base_freq = None
-                count = None
-                for kkk in vv.keys():
-                    if kkk == 'val':
-                        val = vv[kkk]
+        if cf == 'average':
+            ret = self.aggs._column_family.multiget(
+                    self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
+                    column_start=ts_min, column_finish=ts_max)
+
+            # Just return the results and format elsewhere.
+            results = []
+        
+            for k,v in ret.items():
+                for kk,vv in v.items():
+                    ts = kk
+                    val = None
+                    base_freq = None
+                    count = None
+                    for kkk in vv.keys():
+                        if kkk == 'val':
+                            val = vv[kkk]
+                        else:
+                            base_freq = kkk
+                            count = vv[kkk]
+                results.append(
+                    {'ts': ts, 'val': val, 'base_freq': int(base_freq), 'count': count}
+                )
+        else:
+            # Look for the min or max in the base rates
+            ret = self.rates._column_family.multiget(
+                    self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
+                    column_start=ts_min, column_finish=ts_max)
+            
+            results = []
+            ts_min = ts_max = minimum = maximum = None
+            
+            for k,v in ret.items():
+                for kk,vv in v.items():
+                    if not ts_min and not ts_max and not minimum and not maximum:
+                        ts_min = kk
+                        ts_max = kk
+                        minimum = vv
+                        maximum = vv
                     else:
-                        base_freq = kkk
-                        count = vv[kkk]
-            results.append({'ts': ts, 'val': val, 'base_freq': int(base_freq), 'count': count})
+                        if vv < minimum:
+                            ts_min = kk
+                            minimum = vv
+                        if vv > maximum:
+                            ts_max = kk
+                            maximum = vv
+                            
+            if cf == 'min':
+                results.append({'ts': ts_min, 'min': minimum})
+            else:
+                results.append({'ts': ts_max, 'max': maximum})
+                            
         
         if as_json: # format results for query interface
             return FormattedOutput.aggregate_rate(ts_min, ts_max, results, freq,

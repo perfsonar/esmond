@@ -333,7 +333,7 @@ class TestCassandraPollPersister(TestCase):
     def test_persister_long(self):
         """Make sure the tsdb and cassandra data match"""
         config = get_config(get_config_path())
-        #return
+        return
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
@@ -453,6 +453,42 @@ class TestCassandraPollPersister(TestCase):
 
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 17
+        
+        ret = db.query_aggregation_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            ts_min=start_time,
+            ts_max=end_time,
+            freq=30, # required!
+            cf='min',  # min | max | average - also required!
+            as_json=True
+        )
+        
+        print ret
+        
+        ret = json.loads(ret)
+        
+        assert ret['agg'] == 30
+        assert ret['data'][0][1] == 45
+        
+        ret = db.query_aggregation_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            ts_min=start_time,
+            ts_max=end_time,
+            freq=30, # required!
+            cf='max',  # min | max | average - also required!
+            as_json=True
+        )
+        
+        print ret
+        
+        ret = json.loads(ret)
+        
+        assert ret['agg'] == 30
+        assert ret['data'][0][1] == 1218
 
         # If using this with mongo_raw_expire set in the configuration
         # it will fail if the expiry time is set to less than the dates
@@ -612,7 +648,7 @@ class TestMongoDBPollPersister(TestCase):
             ts_min=start_time - 3600,
             ts_max=end_time,
             freq=3600, # required!
-            cf='average',  # min | max | average - also required!
+            cf='min',  # min | max | average - also required!
             as_json=True
         )
         print ret
