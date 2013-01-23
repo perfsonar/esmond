@@ -14,7 +14,7 @@ import time
 from collections import OrderedDict
 # Third party
 from pycassa.pool import ConnectionPool, AllServersUnavailable
-from pycassa.columnfamily import ColumnFamily
+from pycassa.columnfamily import ColumnFamily, NotFoundException
 from pycassa.system_manager import *
 
 from thrift.transport.TTransport import TTransportException
@@ -98,6 +98,7 @@ class CASSANDRA_DB(object):
         self.raw_data = ColumnFamily(self.pool, self.raw_cf).batch(self._queue_size)
         self.rates    = ColumnFamily(self.pool, self.rate_cf).batch(self._queue_size)
         self.aggs     = ColumnFamily(self.pool, self.agg_cf).batch(self._queue_size)
+        self.stat_agg = ColumnFamily(self.pool, self.stat_cf).batch(self._queue_size)
         
         # Timing
         self.stats = DatabaseMetrics(no_profile=False)
@@ -170,11 +171,42 @@ class CASSANDRA_DB(object):
         self.stats.aggregation_update((time.time() - t))
         
     def update_stat_aggregation(self, raw_data, agg_ts, freq):
+        
+        agg = AggregationBin(
+            ts=agg_ts, freq=freq, val=raw_data.val, base_freq=raw_data.freq, count=1,
+            min=raw_data.val, max=raw_data.val, **raw_data.get_path()
+        )
+        
         t = time.time()
+        
+        ret = None
+        
+        try:
+            ret = self.stat_agg._column_family.get(agg.get_key(), 
+                        super_column=agg.ts_to_unixtime())
+        except NotFoundException:
+            pass
         
         self.stats.stat_fetch((time.time() - t))
         
         t = time.time()
+        
+        if not ret:
+            self.stat_agg.insert(agg.get_key(),
+                {agg.ts_to_unixtime(): {'min': agg.val, 'max': agg.val}})
+            self.stat_agg.send()
+        elif agg.val > ret['max']:
+            #print agg.get_key(), 'max'
+            self.stat_agg.insert(agg.get_key(),
+                {agg.ts_to_unixtime(): {'max': agg.val}})
+            self.stat_agg.send()
+        elif agg.val < ret['min']:
+            #print agg.get_key(), 'min'
+            self.stat_agg.insert(agg.get_key(),
+                {agg.ts_to_unixtime(): {'min': agg.val}})
+            self.stat_agg.send()
+        else:
+            pass
         
         self.stats.stat_update((time.time() - t))
         
@@ -218,7 +250,7 @@ class CASSANDRA_DB(object):
             
     def query_aggregation_timerange(self, device=None, path=None, oid=None, 
                 ts_min=None, ts_max=None, freq=None, cf=None, as_json=False):
-        
+        # Test key: router_a:fxp0.0:ifHCInOctets:30:2012
         if cf == 'average':
             ret = self.aggs._column_family.multiget(
                     self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
@@ -242,35 +274,22 @@ class CASSANDRA_DB(object):
                 results.append(
                     {'ts': ts, 'val': val, 'base_freq': int(base_freq), 'count': count}
                 )
-        else:
+        elif cf == 'min' or cf == 'max':
             # Look for the min or max in the base rates
-            ret = self.rates._column_family.multiget(
+            ret = self.stat_agg._column_family.multiget(
                     self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
                     column_start=ts_min, column_finish=ts_max)
             
             results = []
-            ts_min = ts_max = minimum = maximum = None
             
             for k,v in ret.items():
                 for kk,vv in v.items():
-                    if not ts_min and not ts_max and not minimum and not maximum:
-                        ts_min = kk
-                        ts_max = kk
-                        minimum = vv
-                        maximum = vv
-                    else:
-                        if vv < minimum:
-                            ts_min = kk
-                            minimum = vv
-                        if vv > maximum:
-                            ts_max = kk
-                            maximum = vv
+                    ts = kk
                             
-            if cf == 'min':
-                results.append({'ts': ts_min, 'min': minimum})
-            else:
-                results.append({'ts': ts_max, 'max': maximum})
-                            
+                if cf == 'min':
+                    results.append({'ts': ts, 'min': vv['min']})
+                else:
+                    results.append({'ts': ts, 'max': vv['max']})
         
         if as_json: # format results for query interface
             return FormattedOutput.aggregate_rate(ts_min, ts_max, results, freq,

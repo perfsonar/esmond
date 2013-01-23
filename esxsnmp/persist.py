@@ -713,7 +713,7 @@ class CassandraPollPersister(PollPersister):
 
         metadata.refresh_from_raw(data)
         self.db.update_metadata(metadata)
-
+        
         return delta_v
 
     def _agg_timestamp(self, data, freq):
