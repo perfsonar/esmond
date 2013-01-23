@@ -172,6 +172,12 @@ class CASSANDRA_DB(object):
     def update_stat_aggregation(self, raw_data, agg_ts, freq):
         t = time.time()
         
+        self.stats.stat_fetch((time.time() - t))
+        
+        t = time.time()
+        
+        self.stats.stat_update((time.time() - t))
+        
     def _get_row_keys(self, device, path, oid, freq, ts_min, ts_max):
         full_path = '%s:%s:%s:%s' % (device,path,oid,freq)
         
@@ -376,10 +382,10 @@ class DatabaseMetrics(object):
     
     _individual_metrics = [
         'raw_insert', 
-        'meta_fetch', 
-        'meta_update', 
         'baserate_update',
-        'aggregation_update'
+        'aggregation_update',
+        'stat_fetch', 
+        'stat_update',
     ]
     _all_metrics = _individual_metrics + ['total', 'all']
     
@@ -391,8 +397,6 @@ class DatabaseMetrics(object):
         for im in self._individual_metrics:
             setattr(self, '%s_time' % im, 0)
             setattr(self, '%s_count' % im, 0)
-            
-        
         
     def _increment(self, m, t):
         if self.no_profile: return
@@ -403,14 +407,6 @@ class DatabaseMetrics(object):
         if self.no_profile: return
         self._increment('raw_insert', t)
 
-    def meta_fetch(self, t):
-        if self.no_profile: return
-        self._increment('meta_fetch', t)
-
-    def meta_update(self, t):
-        if self.no_profile: return
-        self._increment('meta_update', t)
-
     def baserate_update(self, t):
         if self.no_profile: return
         self._increment('baserate_update', t)
@@ -418,6 +414,14 @@ class DatabaseMetrics(object):
     def aggregation_update(self, t):
         if self.no_profile: return
         self._increment('aggregation_update', t)
+        
+    def stat_fetch(self, t):
+        if self.no_profile: return
+        self._increment('stat_fetch', t)
+
+    def stat_update(self, t):
+        if self.no_profile: return
+        self._increment('stat_update', t)
         
     def report(self, metric='all'):
         
