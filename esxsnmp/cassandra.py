@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Mongo DB interface calls and data encapsulation objects.
+Cassandra DB interface calls and data encapsulation objects.
 """
 # Standard
 import calendar
@@ -35,9 +35,9 @@ class CASSANDRA_DB(object):
     
     keyspace = 'esxsnmp'
     raw_cf = 'raw_data'
-    meta_cf = 'metadata'
     rate_cf = 'base_rates'
-    agg_cf = 'aggregations'
+    agg_cf = 'rate_aggregations'
+    stat_cf = 'stat_aggregations'
     
     _queue_size = 2000
     
@@ -65,15 +65,23 @@ class CASSANDRA_DB(object):
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
                     key_validation_class=UTF8_TYPE)
+        # Base Rate CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.rate_cf):
             sysman.create_column_family(self.keyspace, self.rate_cf, super=False, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
                     key_validation_class=UTF8_TYPE)
+        # Rate aggregation CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.agg_cf):
             sysman.create_column_family(self.keyspace, self.agg_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
+                    key_validation_class=UTF8_TYPE)
+        # Stat aggregation CF
+        if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.stat_cf):
+            sysman.create_column_family(self.keyspace, self.stat_cf, super=True, 
+                    comparator_type=LONG_TYPE, 
+                    default_validation_class=LONG_TYPE,
                     key_validation_class=UTF8_TYPE)
                     
         sysman.close()
@@ -88,7 +96,6 @@ class CASSANDRA_DB(object):
         
         # Column family connections
         self.raw_data = ColumnFamily(self.pool, self.raw_cf).batch(self._queue_size)
-        #self.metadata = ColumnFamily(self.pool, self.meta_cf)
         self.rates    = ColumnFamily(self.pool, self.rate_cf).batch(self._queue_size)
         self.aggs     = ColumnFamily(self.pool, self.agg_cf).batch(self._queue_size)
         
@@ -148,7 +155,7 @@ class CASSANDRA_DB(object):
         self.stats.baserate_update((time.time() - t))
         
         
-    def update_aggregation(self, raw_data, agg_ts, freq):
+    def update_rate_aggregation(self, raw_data, agg_ts, freq):
         
         t = time.time()
         
@@ -160,12 +167,10 @@ class CASSANDRA_DB(object):
         self.aggs.insert(agg.get_key(), 
             {agg.ts_to_unixtime(): {'val': agg.val, str(agg.base_freq): 1}})
         
-        # XXX(mmg): deal with the min/max later.  May just implement it
-        # by a scan of the base rate data, or do a 'hybrid' update
-        # ie: if the values are not there when queried, then look up
-        # and update the aggs.
-        
         self.stats.aggregation_update((time.time() - t))
+        
+    def update_stat_aggregation(self, raw_data, agg_ts, freq):
+        t = time.time()
         
     def _get_row_keys(self, device, path, oid, freq, ts_min, ts_max):
         full_path = '%s:%s:%s:%s' % (device,path,oid,freq)
@@ -374,8 +379,6 @@ class DatabaseMetrics(object):
         'meta_fetch', 
         'meta_update', 
         'baserate_update',
-        'aggregation_total',
-        'aggregation_find',
         'aggregation_update'
     ]
     _all_metrics = _individual_metrics + ['total', 'all']
@@ -411,14 +414,6 @@ class DatabaseMetrics(object):
     def baserate_update(self, t):
         if self.no_profile: return
         self._increment('baserate_update', t)
-
-    def aggregation_total(self, t):
-        if self.no_profile: return
-        self._increment('aggregation_total', t)
-
-    def aggregation_find(self, t):
-        if self.no_profile: return
-        self._increment('aggregation_find', t)
 
     def aggregation_update(self, t):
         if self.no_profile: return
@@ -468,7 +463,7 @@ class DatabaseMetrics(object):
                 else:
                     self.report(m)
                     
-        print s # XXX(mmg): log this
+        if len(s): print s # XXX(mmg): log this
 
 
 # Data encapsulation objects

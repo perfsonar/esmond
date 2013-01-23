@@ -722,7 +722,8 @@ class CassandraPollPersister(PollPersister):
     def generate_aggregations(self, data, aggregate_freqs):
 
         for freq in aggregate_freqs:
-            self.db.update_aggregation(data, self._agg_timestamp(data, freq), freq)
+            self.db.update_rate_aggregation(data, self._agg_timestamp(data, freq), freq)
+            self.db.update_stat_aggregation(data, self._agg_timestamp(data, freq), freq)
             
         
 

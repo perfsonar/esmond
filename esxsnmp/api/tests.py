@@ -333,7 +333,7 @@ class TestCassandraPollPersister(TestCase):
     def test_persister_long(self):
         """Make sure the tsdb and cassandra data match"""
         config = get_config(get_config_path())
-        return
+        
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
@@ -341,7 +341,7 @@ class TestCassandraPollPersister(TestCase):
         p.db.flush()
         p.db.stats.report('all')
         
-        return # twitting this out for now
+        #return # twitting this out for now
         
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
