@@ -111,6 +111,7 @@ class CASSANDRA_DB(object):
         self.raw_data.send()
         self.rates.send()
         self.aggs.send()
+        self.stat_agg.send()
         
     def set_raw_data(self, raw_data):
         if self.raw_expire:
