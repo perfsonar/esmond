@@ -85,6 +85,11 @@ class CASSANDRA_DB(object):
                     
         sysman.close()
         
+        if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
+            print 'Waiting for schema to propigate...'
+            time.sleep(10)
+            print 'Done'
+        
         # Now, set up the ConnectionPool
         try:
             self.pool = ConnectionPool(self.keyspace, server_list=config.cassandra_servers)
