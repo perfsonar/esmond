@@ -16,7 +16,7 @@ import pymongo
 from pymongo import ASCENDING, DESCENDING
 from pymongo.connection import Connection
 from pymongo.errors import ConnectionFailure
-from pymongo.read_preferences import ReadPreference as rp
+#from pymongo.read_preferences import ReadPreference as rp
 from bson.son import SON
 
 INVALID_VALUE = -9999
@@ -56,7 +56,8 @@ class MONGO_DB(object):
         # Connection
         _kw = {}
         if secondary_read:
-            _kw['read_preference'] = rp.SECONDARY_PREFERRED
+            #_kw['read_preference'] = rp.SECONDARY_PREFERRED
+            pass
         
         try:
             self.connection = pymongo.Connection(host=config.mongo_host, 
