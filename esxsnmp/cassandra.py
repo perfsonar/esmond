@@ -44,8 +44,7 @@ class CASSANDRA_DB(object):
     def __init__(self, config, clear_on_test=False):
         # Connect with SystemManager, do a schema check and setup if need be
         try:
-            sysman = SystemManager('%s:%s' % \
-                (config.cassandra_host, config.cassandra_port))                              
+            sysman = SystemManager(config.cassandra_servers[0])                              
         except TTransportException, e:
             raise ConnectionException("System Manager can't connect to Cassandra "
                 "at %s:%d - %s" % (config.cassandra_host, config.cassandra_port, e))
@@ -88,11 +87,10 @@ class CASSANDRA_DB(object):
         
         # Now, set up the ConnectionPool
         try:
-            self.pool = ConnectionPool(self.keyspace, 
-                        ['%s:%s' % (config.cassandra_host, config.cassandra_port)])
+            self.pool = ConnectionPool(self.keyspace, server_list=config.cassandra_servers)
         except AllServersUnavailable, e:
-            raise ConnectionException("Couldn't connect to Cassandra "
-                    "at %s:%d - %s" % (config.cassandra_host, config.cassandra_port, e))
+            raise ConnectionException("Couldn't connect to any Cassandra "
+                    "at %s - %s" % (config.cassandra_servers, e))
         
         # Column family connections
         self.raw_data = ColumnFamily(self.pool, self.raw_cf).batch(self._queue_size)

@@ -45,9 +45,8 @@ class ESxSNMPConfig(object):
         self.file = file
 
         self.agg_tsdb_root = None
-        self.cassandra_host = None
         self.cassandra_pass = None
-        self.cassandra_port = None
+        self.cassandra_servers = []
         self.cassandra_user = None
         self.cassandra_raw_expire = None
         self.error_email_from = None
@@ -95,9 +94,8 @@ class ESxSNMPConfig(object):
         config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in (
                 'agg_tsdb_root',
-                'cassandra_host',
                 'cassandra_pass',
-                'cassandra_port',
+                'cassandra_servers',
                 'cassandra_user',
                 'cassandra_raw_expire',
                 'db_uri',
@@ -158,10 +156,10 @@ class ESxSNMPConfig(object):
 
         if self.mibs:
             self.mibs = map(str.strip, self.mibs.split(','))
-        if self.cassandra_port:
-            self.cassandra_port = int(self.cassandra_port)
         if self.cassandra_raw_expire:
             self.cassandra_raw_expire = int(self.cassandra_raw_expire)
+        if self.cassandra_servers:
+            self.cassandra_servers = map(str.strip, self.cassandra_servers.split(','))
         if self.poll_timeout:
             self.poll_timeout = int(self.poll_timeout)
         if self.poll_retries:
