@@ -47,7 +47,7 @@ class CASSANDRA_DB(object):
             sysman = SystemManager(config.cassandra_servers[0])                              
         except TTransportException, e:
             raise ConnectionException("System Manager can't connect to Cassandra "
-                "at %s:%d - %s" % (config.cassandra_host, config.cassandra_port, e))
+                "at %s - %s" % (config.cassandra_servers[0], e))
         
         # Blow everything away if we're testing
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
