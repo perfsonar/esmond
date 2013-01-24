@@ -93,7 +93,8 @@ class CASSANDRA_DB(object):
         
         # Now, set up the ConnectionPool
         try:
-            self.pool = ConnectionPool(self.keyspace, server_list=config.cassandra_servers)
+            self.pool = ConnectionPool(self.keyspace, 
+                server_list=config.cassandra_servers, timeout=1)
         except AllServersUnavailable, e:
             raise ConnectionException("Couldn't connect to any Cassandra "
                     "at %s - %s" % (config.cassandra_servers, e))
