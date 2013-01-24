@@ -560,6 +560,9 @@ class CassandraPollPersister(PollPersister):
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
+        
+        self.total_values  = 0
+        self.total_skipped = 0
 
         oidsets = OIDSet.objects.all()
 
@@ -580,7 +583,9 @@ class CassandraPollPersister(PollPersister):
         set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
         basename = os.path.join(result.device_name, set_name)
         oid = self.oids[result.oid_name]
-        flags = result.metadata['tsdb_flags']
+        # XXX(mmg) - test data has no metadata attr - commenting out
+        #flags = result.metadata['tsdb_flags']
+        flags = None
 
         t0 = time.time()
         nvar = 0
@@ -589,12 +594,17 @@ class CassandraPollPersister(PollPersister):
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
                 val = float(val) * 100
             nvar += 1
-
+            
             var_name = os.path.join(basename, var)
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
 
             #if path_n != 'fxp0.0':
             #    continue
+            self.total_values += 1
+            if val is None:
+                # XXX(mmg) - not sure how to handle None values ATM
+                self.total_skipped += 1
+                continue
 
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, flags, val, oidset.frequency)
