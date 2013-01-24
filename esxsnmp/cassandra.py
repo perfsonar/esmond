@@ -39,7 +39,7 @@ class CASSANDRA_DB(object):
     agg_cf = 'rate_aggregations'
     stat_cf = 'stat_aggregations'
     
-    _queue_size = 1000
+    _queue_size = 200
     
     def __init__(self, config, clear_on_test=False):
         # Connect with SystemManager, do a schema check and setup if need be
