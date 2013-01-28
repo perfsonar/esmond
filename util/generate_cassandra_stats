@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+"""
+Generates secondary aggregation statistics from esxsnmp data base rates.
+"""
+import calendar
+import datetime
+import json
+import os
+import sys
+
+from esxsnmp.config import get_config, get_config_path
+from esxsnmp.cassandra import CASSANDRA_DB, INVALID_VALUE, RawData
+
+from pycassa.columnfamily import NotFoundException
+
+def _get_rollup_freqs(oid):
+    # XXX(mmg): going to need to be able to get my hands on the aggregation
+    # values for the base rate and rollups.
+    return [300, 1800, 7200, 86400]
+    
+def _agg_timestamp(data, freq):
+    return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
+
+config = get_config(get_config_path())
+
+db = CASSANDRA_DB(config, clear_on_test=config.db_clear_on_testing)
+
+keys = []
+
+for k in db.rates._column_family.get_range(column_count=0,filter_empty=False):
+    keys.append(k[0])
+
+keys.sort()
+
+for key in keys:
+    print key
+    device,path,oid,base_freq,year = key.split(':')
+    for freq in _get_rollup_freqs(oid):
+    # XXX: need the frequencies for the rollup right here.
+        agg_key = '%s:%s:%s:%s:%s' % (device,path,oid,freq,year)
+        try:
+            ret = db.stat_agg._column_family.get(agg_key)
+        except NotFoundException:
+            print 'no key', agg_key, 'found in stat aggregations'
+            for c in db.rates._column_family.xget(key):
+                data = RawData(device, None, oid, path, c[0], None, c[1], base_freq)
+                db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
+        pass
+    
+
+db.stats.report('all')
+        
