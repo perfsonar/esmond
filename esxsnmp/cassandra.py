@@ -106,7 +106,10 @@ class CASSANDRA_DB(object):
         self.stat_agg = ColumnFamily(self.pool, self.stat_cf).batch(self._queue_size)
         
         # Timing
-        self.stats = DatabaseMetrics(no_profile=False)
+        profiling_off = True
+        if config.db_profile_on_testing and os.environ.get("ESXSNMP_TESTING", False):
+            profiling_off = False
+        self.stats = DatabaseMetrics(no_profile=profiling_off)
         
         # Class members
         self.raw_expire = config.cassandra_raw_expire

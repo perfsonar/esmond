@@ -49,6 +49,8 @@ class ESxSNMPConfig(object):
         self.cassandra_servers = []
         self.cassandra_user = None
         self.cassandra_raw_expire = None
+        self.db_clear_on_testing = None
+        self.db_profile_on_testing = None
         self.error_email_from = None
         self.error_email_subject = None
         self.error_email_to = None
@@ -98,6 +100,8 @@ class ESxSNMPConfig(object):
                 'cassandra_servers',
                 'cassandra_user',
                 'cassandra_raw_expire',
+                'db_clear_on_testing',
+                'db_profile_on_testing',
                 'db_uri',
                 'error_email_from',
                 'error_email_subject',
@@ -129,6 +133,10 @@ class ESxSNMPConfig(object):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
 
+        for key, val in cfg.items('main'):
+            if key == 'db_clear_on_testing' or key == 'db_profile_on_testing':
+                setattr(self, key, cfg.getboolean('main', key))
+        
         self.persist_map = {}
         for key, val in cfg.items("persist_map"):
             if key == 'esxsnmp_root': # XXX(jdugan) this is probably cruft

@@ -553,7 +553,7 @@ class CassandraPollPersister(PollPersister):
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
 
-        self.db = CASSANDRA_DB(config, clear_on_test=True)
+        self.db = CASSANDRA_DB(config, clear_on_test=config.db_clear_on_testing)
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
