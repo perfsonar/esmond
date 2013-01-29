@@ -55,14 +55,10 @@ for key in keys:
             # generate the rollups at the approprite frequency.
             #
             # This operation is idempotent because there is only one min/max.
-            count = 0
             for c in db.rates._column_family.xget(key):
                 # XXX(mmg): SKIP INVALID VALUES
                 data = RawData(device, None, oid, path, c[0], None, c[1], base_freq)
                 db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
-                count += 1
-                if count >= 10:
-                    break
         # Compare the "main" base rate key agianst its associated rollups
         # to determine the lowest rollup frequency.  This will be used to 
         # determine a "starting point" to generate ongoing stat rollups.
