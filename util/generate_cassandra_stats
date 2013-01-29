@@ -27,26 +27,72 @@ config = get_config(get_config_path())
 db = CASSANDRA_DB(config, clear_on_test=config.db_clear_on_testing)
 
 keys = []
+agg_freqs = {}
 
 for k in db.rates._column_family.get_range(column_count=0,filter_empty=False):
     keys.append(k[0])
 
 keys.sort()
 
+# XXX: put in a lockfile mechanism so multiple instances don't run.
+
 for key in keys:
-    print key
-    device,path,oid,base_freq,year = key.split(':')
+    print 'processing', key
+    device,path,oid,base_freq,year = key.split(RawData._key_delimiter)
     for freq in _get_rollup_freqs(oid):
     # XXX: need the frequencies for the rollup right here.
         agg_key = '%s:%s:%s:%s:%s' % (device,path,oid,freq,year)
         try:
+            # See if there is a corresponding aggregation row for the 
+            # base rate rows.  The exception should trigger when
+            # the script is first run/initialized, if a new device/path
+            # is added, or if a new rollup frequency has been added to 
+            # an oid.
             ret = db.stat_agg._column_family.get(agg_key)
         except NotFoundException:
             print 'no key', agg_key, 'found in stat aggregations'
+            # This will go through an entire row/year's worth of data and
+            # generate the rollups at the approprite frequency.
+            #
+            # This operation is idempotent because there is only one min/max.
+            count = 0
             for c in db.rates._column_family.xget(key):
+                # XXX(mmg): SKIP INVALID VALUES
                 data = RawData(device, None, oid, path, c[0], None, c[1], base_freq)
                 db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
+                count += 1
+                if count >= 10:
+                    break
+        # Compare the "main" base rate key agianst its associated rollups
+        # to determine the lowest rollup frequency.  This will be used to 
+        # determine a "starting point" to generate ongoing stat rollups.
+        if not agg_freqs.has_key(key):
+            agg_freqs[key] = int(freq)
+        else:
+            if agg_freqs[key] > int(freq):
+                agg_freqs[key] = int(base_freq)
         pass
+    
+    print 'updating aggs for', key
+    # Get the timestamp of the last finest grained aggregate written - it will
+    # be before the last base rate actually processed due to the rounding.  There
+    # will be a small overlap with the previous base rates processed, but doesn't
+    # matter since updating the min/max is idempotent.
+    agg_key = '%s:%s:%s:%s:%s' % (device,path,oid,agg_freqs[key],year)
+    ret = db.stat_agg._column_family.get(agg_key, column_count=1, column_reversed=True)
+    starting_ts = ret.keys()[0]
+    # Read all the values from the base rate row starting with that timestamp,
+    # and generate a list of data objects from the results.
+    ret = db.rates._column_family.xget(key, column_start=starting_ts)
+    value_objects = []
+    for r in ret:
+        data = RawData(device, None, oid, path, r[0], None, r[1], base_freq)
+        value_objects.append(data)
+    # Iterate over the rollup freqencies and then iterate through list of data
+    # objects to do the appropriate updates.
+    for freq in _get_rollup_freqs(oid):
+        for vo in value_objects:
+            db.update_stat_aggregation(vo, _agg_timestamp(vo, freq), freq)
     
 
 db.stats.report('all')
