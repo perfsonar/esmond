@@ -711,6 +711,7 @@ class CassandraPollPersister(PollPersister):
                     for i in range(missed_rem):
                         dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
                             val=1, **data.get_path())
+                        self.update_rate_bin(dist_bin)
             else:
                 # Presume invalid data (new logic)
                 for slot in missed_slots:
