@@ -56,7 +56,8 @@ for key in keys:
             #
             # This operation is idempotent because there is only one min/max.
             for c in db.rates._column_family.xget(key):
-                # XXX(mmg): SKIP INVALID VALUES
+                if c[1] == INVALID_VALUE:
+                    continue
                 data = RawData(device, None, oid, path, c[0], None, c[1], base_freq)
                 db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
         # Compare the "main" base rate key agianst its associated rollups
@@ -82,6 +83,8 @@ for key in keys:
     ret = db.rates._column_family.xget(key, column_start=starting_ts)
     value_objects = []
     for r in ret:
+        if r[1] == INVALID_VALUE:
+            continue
         data = RawData(device, None, oid, path, r[0], None, r[1], base_freq)
         value_objects.append(data)
     # Iterate over the rollup freqencies and then iterate through list of data
