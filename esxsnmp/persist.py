@@ -598,11 +598,11 @@ class CassandraPollPersister(PollPersister):
             var_name = os.path.join(basename, var)
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
 
-            #if path_n != 'fxp0.0':
-            #    continue
             self.total_values += 1
             if val is None:
-                # XXX(mmg) - not sure how to handle None values ATM
+                raw_data = RawData(device_n, oidset_n, oid_n, path_n,
+                        result.timestamp, flags, INVALID_VALUE, oidset.frequency)
+                self.db.set_raw_data(raw_data)
                 self.total_skipped += 1
                 continue
 
