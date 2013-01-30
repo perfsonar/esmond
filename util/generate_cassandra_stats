@@ -8,6 +8,7 @@ import datetime
 import json
 import os
 import sys
+import time
 
 from esxsnmp.config import get_config, get_config_path
 from esxsnmp.cassandra import CASSANDRA_DB, INVALID_VALUE, RawData
@@ -21,6 +22,8 @@ def _get_rollup_freqs(oid):
     
 def _agg_timestamp(data, freq):
     return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
+    
+RATE_TAIL_DELAY = 180 # seconds previous to time.time()
 
 config = get_config(get_config_path())
 
@@ -55,7 +58,8 @@ for key in keys:
             # generate the rollups at the approprite frequency.
             #
             # This operation is idempotent because there is only one min/max.
-            for c in db.rates._column_family.xget(key):
+            for c in db.rates._column_family.xget(key, 
+                        column_finish=int(time.time()) - RATE_TAIL_DELAY):
                 if c[1] == INVALID_VALUE:
                     continue
                 data = RawData(device, None, oid, path, c[0], None, c[1], base_freq)
@@ -80,7 +84,8 @@ for key in keys:
     starting_ts = ret.keys()[0]
     # Read all the values from the base rate row starting with that timestamp,
     # and generate a list of data objects from the results.
-    ret = db.rates._column_family.xget(key, column_start=starting_ts)
+    ret = db.rates._column_family.xget(key, column_start=starting_ts,
+                column_finish=int(time.time()) - RATE_TAIL_DELAY)
     value_objects = []
     for r in ret:
         if r[1] == INVALID_VALUE:
