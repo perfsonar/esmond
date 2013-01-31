@@ -14,7 +14,7 @@ from optparse import OptionParser
 
 from esxsnmp.api.tests import TestPersistQueue
 from esxsnmp.config import get_config, get_config_path
-from esxsnmp.persist import CassandraPollPersister
+from esxsnmp.persist import CassandraPollPersister, TSDBPollPersister
 from esxsnmp.cassandra import CASSANDRA_DB, INVALID_VALUE
 from pycassa.columnfamily import ColumnFamily
 
@@ -59,4 +59,7 @@ p.db.flush()
 print p.total_values, 'total values', p.total_skipped, 'skipped'
 p.db.stats.report('all')
 
-
+#test_data = json.loads(open(file_path).read())
+#q = TestPersistQueue(test_data)
+#p = TSDBPollPersister(config, "test", persistq=q)
+#p.run()
