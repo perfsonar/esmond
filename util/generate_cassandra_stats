@@ -27,7 +27,7 @@ RATE_TAIL_DELAY = 180 # seconds previous to time.time()
 
 config = get_config(get_config_path())
 
-db = CASSANDRA_DB(config, clear_on_test=config.db_clear_on_testing)
+db = CASSANDRA_DB(config, clear_on_test=False)
 
 keys = []
 agg_freqs = {}
@@ -43,8 +43,13 @@ for key in keys:
     print 'processing', key
     device,path,oid,base_freq,year = key.split(RawData._key_delimiter)
     for freq in _get_rollup_freqs(oid):
-    # XXX: need the frequencies for the rollup right here.
-        agg_key = '%s:%s:%s:%s:%s' % (device,path,oid,freq,year)
+    # XXX: need the frequencies for the rollup the "right way" here.
+        agg_key = '%s%s%s%s%s%s%s%s%s' % \
+            (device, RawData._key_delimiter,
+            path, RawData._key_delimiter,
+            oid, RawData._key_delimiter,
+            freq, RawData._key_delimiter,
+            year)
         try:
             # See if there is a corresponding aggregation row for the 
             # base rate rows.  The exception should trigger when
@@ -79,7 +84,12 @@ for key in keys:
     # be before the last base rate actually processed due to the rounding.  There
     # will be a small overlap with the previous base rates processed, but doesn't
     # matter since updating the min/max is idempotent.
-    agg_key = '%s:%s:%s:%s:%s' % (device,path,oid,agg_freqs[key],year)
+    agg_key = '%s%s%s%s%s%s%s%s%s' % \
+        (device, RawData._key_delimiter,
+        path, RawData._key_delimiter,
+        oid, RawData._key_delimiter,
+        agg_freqs[key], RawData._key_delimiter,
+        year)
     ret = db.stat_agg._column_family.get(agg_key, column_count=1, column_reversed=True)
     starting_ts = ret.keys()[0]
     # Read all the values from the base rate row starting with that timestamp,
