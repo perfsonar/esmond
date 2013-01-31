@@ -115,6 +115,9 @@ class CASSANDRA_DB(object):
         self.raw_expire = config.cassandra_raw_expire
         self.metadata_cache = {}
         
+        # Initialize metadata cache in cases of a restart.
+        self._initialize_metadata()
+        
     def flush(self):
         self.raw_data.send()
         self.rates.send()
@@ -157,6 +160,47 @@ class CASSANDRA_DB(object):
         for i in ['last_val', 'min_ts', 'last_update']:
             self.metadata_cache[metadata.get_meta_key()][i] = getattr(metadata, i)
         #self.stats.meta_update((time.time() - t))
+        
+    def _initialize_metadata(self):
+        """
+        Rebuild in-memory metadata from raw data in the case of a restart.
+        """
+        keys = {}
+
+        # Build a dict of the years for a given device/path/oid/frequency. Will need
+        # that do figure out which year/row to query for a given set.
+        for k in self.raw_data._column_family.get_range(column_count=0,filter_empty=False):
+            device,path,oid,freq,year = k[0].split(RawData._key_delimiter)
+            base_key = RawData._key_delimiter.join([device,path,oid,freq])
+            if not keys.has_key(base_key):
+                keys[base_key] = []
+            keys[base_key].append(int(year))
+            pass
+        
+        # Generate a row key for the latest year for a given device/path/oid/freq
+        for k,v in keys.items():
+            year = 0
+            for y in keys[k]:
+                if y > year: 
+                    year = y
+            row_key = '%s%s%s' % (k, RawData._key_delimiter, year)
+            device,path,oid,freq = k.split(RawData._key_delimiter)
+            # Walk backwards from the end of the row until we find a valid value.
+            # Should be the "last" value but...
+            c_count = 1
+            while 1:
+                ret = self.raw_data._column_family.get(row_key, column_count=c_count, 
+                                column_reversed=True)
+                last_ts = ret.keys()[-1]
+                val = ret[last_ts]
+                if val != INVALID_VALUE:
+                    # Initialize the same way as get_metadata() does.
+                    meta_d = Metadata(last_update=last_ts, last_val=val, min_ts=last_ts, 
+                        freq=freq, device=device, path=path, oid=oid)
+                    self.set_metadata(meta_d)
+                    break
+                c_count += 1
+        pass
         
     def update_rate_bin(self, ratebin):
         t = time.time()
