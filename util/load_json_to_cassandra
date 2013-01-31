@@ -45,6 +45,13 @@ print 'Loaded:', test_data[0]['device_name'], test_data[0]['oidset_name'], 'etc.
 
 config = get_config(get_config_path())
 
+if not config.db_clear_on_testing and os.environ.get("ESXSNMP_TESTING", False):
+    print """
+    The db_clear_on_testing config value is set to False.  Be aware that loading 
+    the same data multiple times in this mode will generate incorrect base
+    rate values.
+    """
+
 q = TestPersistQueue(test_data)
 p = CassandraPollPersister(config, "test", persistq=q)
 p.run()

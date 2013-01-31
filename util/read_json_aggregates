@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+
+"""
+Read json formatted agg files for cassandra QA.
+"""
+import calendar
+import datetime
+import json
+import os
+import os.path
+import sys
+import time
+
+from optparse import OptionParser
+
+from esxsnmp.config import get_config, get_config_path
+from esxsnmp.cassandra import CASSANDRA_DB, INVALID_VALUE, RawData
+
+from pycassa.columnfamily import NotFoundException
+
+usage = '%prog -f FILE'
+desc = ' '.join(__doc__.split())
+parser = OptionParser(usage=usage, description=desc)
+parser.add_option('-f', '--infile', dest='filename', metavar='FILE', default="",
+                  help='Read FILE containing esxsnmp json data.')
+options, args = parser.parse_args()
+
+if not options.filename:
+    parser.error('A filename is required')
+
+file_path = os.path.normpath(options.filename)
+
+if not os.path.exists(file_path):
+    print file_path, 'does not exist - exiting.'
+    sys.exit()
+    
+config = get_config(get_config_path())
+
+# Force this to false because it makes no sense and causes
+# confusion when testing.
+config.db_clear_on_testing = False
+
+db = CASSANDRA_DB(config, clear_on_test=config.db_clear_on_testing)
+    
+test_data = json.loads(open(file_path).read())
+
+print 'Loaded:', test_data[0]['device_name'], test_data[0]['oidset_name'], 'etc...'
+
+for row in test_data:
+    device = row['device_name']
+    oid = row['oid_name']
+    timestamp = row['timestamp']
+    year = datetime.datetime.utcfromtimestamp(timestamp).year
+    freq = 30
+    for d in row['data']:
+        path = d[0].replace(oid + '/', '')
+        val = d[1]
+        key = '%s:%s:%s:%s:%s' % (device,path,oid,freq,year)
+        #print key, timestamp
+        try:
+            ret = db.rates._column_family.get(key)
+        except NotFoundException:
+            #print 'no corresponding row for', key
+            continue
+        try:
+            ret = db.rates._column_family.get(key, columns=[timestamp])
+        except NotFoundException:
+            print 'no base rate value found for timestamp', timestamp
+            continue
+            
+        print 'json:', val, 'cass:', ret[timestamp],
+        if val > 0: 
+            print 'cass/json', ret[timestamp]/val 
+        else:
+            print
+        if val == ret[timestamp] and val > 0:
+            print val
+            raise
+        
