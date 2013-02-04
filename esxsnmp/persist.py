@@ -1279,7 +1279,7 @@ def worker(name, config, opts):
 
     setproctitle(name)
     klass = eval(qclass)
-    worker = klass(config, opts.qname, persistq=None) # XXX(mmg): add persistq choice logic
+    worker = klass(config, opts.qname, persistq=None)
 
     worker.run()
     # do_profile("worker.run()", globals(), locals())
