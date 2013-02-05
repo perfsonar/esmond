@@ -607,7 +607,6 @@ class CassandraPollPersister(PollPersister):
             if oid.aggregate:
                 delta_v = self.aggregate_base_rate(raw_data)
                 uptime_name = os.path.join(basename, 'sysUpTime')
-                # XXX(mmg) how do we handle this uptime?
                 
                 # May want a condition on this, so build higher
                 # level aggregations elsewhere
@@ -618,8 +617,6 @@ class CassandraPollPersister(PollPersister):
                     raw_data.val = delta_v
                     self.generate_aggregations(raw_data, oidset.aggregates)
             else:
-                # XXX(mmg): put non-rate value handling here and also
-                # metadata updates for said.
                 pass
 
         self.log.debug("stored %d vars in %f seconds: %s" % (nvar,

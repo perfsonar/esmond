@@ -56,7 +56,6 @@ q = TestPersistQueue(test_data)
 p = CassandraPollPersister(config, "test", persistq=q)
 p.run()
 p.db.flush()
-print p.total_values, 'total values', p.total_skipped, 'skipped'
 p.db.stats.report('all')
 
 #test_data = json.loads(open(file_path).read())
