@@ -293,7 +293,7 @@ class CASSANDRA_DB(object):
         
         for k,v in ret.items():
             for kk,vv in v.items():
-                results.append({'ts': kk, 'val': vv})
+                results.append({'ts': kk, 'val': vv['val'], 'flag': vv['flag']})
             
         if as_json: # format results for query interface
             # Get the frequency from the metatdata if the result set is empty
@@ -399,7 +399,7 @@ class FormattedOutput(object):
             fmt['data'].append(
                 [
                     FormattedOutput._from_datetime(r['ts']), 
-                    None if r['val'] == INVALID_VALUE else float(r['val'])
+                    None if r['flag'] == 0 else float(r['val'])
                 ]
             )
         

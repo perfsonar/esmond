@@ -406,7 +406,7 @@ class TestCassandraPollPersister(TestCase):
         """
         config = get_config(get_config_path())
         db = CASSANDRA_DB(config)
-        return
+        
         start_time = 1343956800
         end_time = 1343957400
         expected_results = 21
