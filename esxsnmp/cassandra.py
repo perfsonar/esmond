@@ -364,8 +364,8 @@ class CASSANDRA_DB(object):
 
         for k,v in ret.items():
             for kk,vv in v.items():
-                results.append({'ts': kk, 'val': vv})
-            
+                results.append({'ts': kk, 'val': vv['val'], 'flag': vv['flag']})
+        
         if as_json: # format results for query interface
             return FormattedOutput.raw_data(ts_min, ts_max, results, freq)
         else:
@@ -444,7 +444,7 @@ class FormattedOutput(object):
             fmt['data'].append(
                 [
                     FormattedOutput._from_datetime(r['ts']), 
-                    float(r['val'])
+                    None if r['flag'] == 0 else float(r['val'])
                 ]
             )
         
