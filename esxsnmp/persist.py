@@ -560,9 +560,6 @@ class CassandraPollPersister(PollPersister):
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
-        
-        self.total_values  = 0
-        self.total_skipped = 0
 
         oidsets = OIDSet.objects.all()
 
@@ -583,10 +580,7 @@ class CassandraPollPersister(PollPersister):
         set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
         basename = os.path.join(result.device_name, set_name)
         oid = self.oids[result.oid_name]
-        # XXX(mmg) - test data has no metadata attr - commenting out
-        #flags = result.metadata['tsdb_flags']
-        flags = None
-
+        
         t0 = time.time()
         nvar = 0
 
@@ -598,16 +592,14 @@ class CassandraPollPersister(PollPersister):
             var_name = os.path.join(basename, var)
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
 
-            self.total_values += 1
             if val is None:
                 raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                        result.timestamp, flags, INVALID_VALUE, oidset.frequency)
+                        result.timestamp, flag=0, val=0, freq=oidset.frequency)
                 self.db.set_raw_data(raw_data)
-                self.total_skipped += 1
                 continue
 
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                    result.timestamp, flags, val, oidset.frequency)
+                    result.timestamp, flag=1, val=val, freq=oidset.frequency)
 
             self.db.set_raw_data(raw_data)
             #continue

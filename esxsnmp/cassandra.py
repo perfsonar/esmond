@@ -60,7 +60,7 @@ class CASSANDRA_DB(object):
         # Create column families
         # Raw Data CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.raw_cf):
-            sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
+            sysman.create_column_family(self.keyspace, self.raw_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
                     key_validation_class=UTF8_TYPE)
@@ -130,7 +130,8 @@ class CASSANDRA_DB(object):
             pass
         t = time.time()
         self.raw_data.insert(raw_data.get_key(), 
-            {raw_data.ts_to_unixtime(): raw_data.val})
+            #{raw_data.ts_to_unixtime(): raw_data.val})
+            {raw_data.ts_to_unixtime(): {'val': raw_data.val, 'flag': raw_data.flag}})
         self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
@@ -623,11 +624,11 @@ class RawData(DataContainerBase):
     _doc_properties = ['ts']
     
     def __init__(self, device=None, oidset=None, oid=None, path=None,
-            ts=None, flags=None, val=None, freq=None, _id=None):
+            ts=None, flag=1, val=None, freq=None, _id=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self._ts = None
         self.ts = ts
-        self.flags = flags
+        self.flag = flag
         self.val = val
         self.freq = freq
         
