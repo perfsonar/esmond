@@ -706,8 +706,8 @@ class CassandraPollPersister(PollPersister):
                 for slot in missed_slots:
                     # XXX(mmg): rectify using -9999 - this is a stopgap
                     # to get some code pushed.
-                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=INVALID_VALUE,
-                            **data.get_path())
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=0,
+                            flag=0, **data.get_path())
                     self.db.update_rate_bin(miss_bin)
 
 

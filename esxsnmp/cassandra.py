@@ -66,7 +66,7 @@ class CASSANDRA_DB(object):
                     key_validation_class=UTF8_TYPE)
         # Base Rate CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.rate_cf):
-            sysman.create_column_family(self.keyspace, self.rate_cf, super=False, 
+            sysman.create_column_family(self.keyspace, self.rate_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
                     key_validation_class=UTF8_TYPE)
@@ -206,7 +206,8 @@ class CASSANDRA_DB(object):
     def update_rate_bin(self, ratebin):
         t = time.time()
         self.rates.insert(ratebin.get_key(),
-            {ratebin.ts_to_unixtime(): ratebin.val})
+            #{ratebin.ts_to_unixtime(): ratebin.val})
+            {ratebin.ts_to_unixtime(): {'val': ratebin.val, 'flag': ratebin.flag}})
         self.stats.baserate_update((time.time() - t))
         
         
@@ -690,12 +691,13 @@ class BaseRateBin(DataContainerBase):
     _doc_properties = ['ts']
     
     def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None, 
-            ts=None, freq=None, val=None):
+            ts=None, freq=None, val=None, flag=1):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self._ts = None
         self.ts = ts
         self.freq = freq
         self.val = val
+        self.flag = flag
 
     @property
     def ts(self):
