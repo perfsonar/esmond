@@ -673,13 +673,25 @@ class CassandraPollPersister(PollPersister):
         # This re-implements old "hearbeat" logic.  If the current time
         # delta is greater than HEARTBEAT_FREQ_MULTIPLIER (3?), write
         # zero-value non-valid bins in the gap.  These MAY be updated
-        # later with valid values or backfill.
+        # later with valid values or backfill.  Then update only
+        # the current bin, update metadata with current slot info
+        # and return the delta.
         
         if delta_t > data.freq * HEARTBEAT_FREQ_MULTIPLIER:
             for slot in range(prev_slot, curr_slot, data.freq):
                 bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, is_valid=0,
                     **data.get_path())
                 self.db.update_rate_bin(bad_bin)
+            # Update only current bin and return.
+            curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
+                **data.get_path())
+            self.db.update_rate_bin(curr_bin)
+            
+            metadata.refresh_from_raw(data)
+            self.db.update_metadata(metadata)
+
+            return delta_v
+            
                 
         # Now, write the new valid data between the bins it needs 
 
