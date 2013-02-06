@@ -453,7 +453,7 @@ class TestCassandraPollPersister(TestCase):
         )
         
         ret = json.loads(ret)
-
+        
         assert len(ret['data']) == expected_results - 1
 
         ret = db.query_aggregation_timerange(

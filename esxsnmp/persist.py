@@ -593,13 +593,13 @@ class CassandraPollPersister(PollPersister):
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
 
             if val is None:
-                raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                        result.timestamp, is_valid=0, val=0, freq=oidset.frequency)
-                self.db.set_raw_data(raw_data)
+                # XXX(mmg)
+                # This won't (shouldn't?) happen with real data - if it does, 
+                # log it and skip.
                 continue
 
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                    result.timestamp, is_valid=1, val=val, freq=oidset.frequency)
+                    result.timestamp, val=val, freq=oidset.frequency)
 
             self.db.set_raw_data(raw_data)
             #continue

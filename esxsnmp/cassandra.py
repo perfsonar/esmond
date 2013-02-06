@@ -60,7 +60,7 @@ class CASSANDRA_DB(object):
         # Create column families
         # Raw Data CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.raw_cf):
-            sysman.create_column_family(self.keyspace, self.raw_cf, super=True, 
+            sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
                     key_validation_class=UTF8_TYPE)
@@ -130,8 +130,7 @@ class CASSANDRA_DB(object):
             pass
         t = time.time()
         self.raw_data.insert(raw_data.get_key(), 
-            #{raw_data.ts_to_unixtime(): raw_data.val})
-            {raw_data.ts_to_unixtime(): {'val': raw_data.val, 'is_valid': raw_data.is_valid}})
+            {raw_data.ts_to_unixtime(): raw_data.val})
         self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
@@ -364,7 +363,7 @@ class CASSANDRA_DB(object):
 
         for k,v in ret.items():
             for kk,vv in v.items():
-                results.append({'ts': kk, 'val': vv['val'], 'is_valid': vv['is_valid']})
+                results.append({'ts': kk, 'val': vv})
         
         if as_json: # format results for query interface
             return FormattedOutput.raw_data(ts_min, ts_max, results, freq)
@@ -444,7 +443,7 @@ class FormattedOutput(object):
             fmt['data'].append(
                 [
                     FormattedOutput._from_datetime(r['ts']), 
-                    None if r['is_valid'] == 0 else float(r['val'])
+                    float(r['val'])
                 ]
             )
         
@@ -625,11 +624,10 @@ class RawData(DataContainerBase):
     _doc_properties = ['ts']
     
     def __init__(self, device=None, oidset=None, oid=None, path=None,
-            ts=None, is_valid=1, val=None, freq=None, _id=None):
+            ts=None, val=None, freq=None, _id=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self._ts = None
         self.ts = ts
-        self.is_valid = is_valid
         self.val = val
         self.freq = freq
         
