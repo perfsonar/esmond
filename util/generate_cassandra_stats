@@ -65,9 +65,12 @@ for key in keys:
             # This operation is idempotent because there is only one min/max.
             for c in db.rates._column_family.xget(key, 
                         column_finish=int(time.time()) - RATE_TAIL_DELAY):
-                if c[1] == INVALID_VALUE:
+                ts = c[0]
+                is_valid = c[1]['is_valid']
+                val = c[1]['val']
+                if is_valid == 0:
                     continue
-                data = RawData(device, None, oid, path, c[0], None, c[1], base_freq)
+                data = RawData(device, None, oid, path, ts, val, base_freq)
                 db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
         # Compare the "main" base rate key agianst its associated rollups
         # to determine the lowest rollup frequency.  This will be used to 
@@ -98,10 +101,14 @@ for key in keys:
                 column_finish=int(time.time()) - RATE_TAIL_DELAY)
     value_objects = []
     for r in ret:
-        if r[1] == INVALID_VALUE:
+        ts = r[0]
+        is_valid = r[1]['is_valid']
+        val = r[1]['val']
+        if is_valid == 0:
             continue
-        data = RawData(device, None, oid, path, r[0], None, r[1], base_freq)
+        data = RawData(device, None, oid, path, ts, val, base_freq)
         value_objects.append(data)
+    
     # Iterate over the rollup freqencies and then iterate through list of data
     # objects to do the appropriate updates.
     for freq in _get_rollup_freqs(oid):
