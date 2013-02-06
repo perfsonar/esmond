@@ -51,6 +51,7 @@ class CASSANDRA_DB(object):
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
             if self.keyspace in sysman.list_keyspaces():
                 sysman.drop_keyspace(self.keyspace)
+                time.sleep(3)
         # Create keyspace
         if not self.keyspace in sysman.list_keyspaces():
             sysman.create_keyspace(self.keyspace, SIMPLE_STRATEGY, 
@@ -121,6 +122,9 @@ class CASSANDRA_DB(object):
         self.rates.send()
         self.aggs.send()
         self.stat_agg.send()
+        
+    def close(self):
+        self.pool.dispose()
         
     def set_raw_data(self, raw_data):
         if self.raw_expire:

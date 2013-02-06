@@ -5,17 +5,25 @@ Load json files of esxsnmp data into cassandra in a fashion similar to test fram
 
 Should be run from directory containing the esxsnmp.db testing metadata file.
 """
+import datetime
 import json
 import os
 import os.path
+import shutil
 import sys
+import time
 
 from optparse import OptionParser
+
+from django.conf import settings
+
+import tsdb
+from tsdb.row import ROW_VALID
 
 from esxsnmp.api.tests import TestPersistQueue
 from esxsnmp.config import get_config, get_config_path
 from esxsnmp.persist import CassandraPollPersister, TSDBPollPersister
-from esxsnmp.cassandra import CASSANDRA_DB
+from esxsnmp.cassandra import CASSANDRA_DB, RawData
 from pycassa.columnfamily import ColumnFamily
 
 usage = '%prog -f FILE'
@@ -23,6 +31,8 @@ desc = ' '.join(__doc__.split())
 parser = OptionParser(usage=usage, description=desc)
 parser.add_option('-f', '--infile', dest='filename', metavar='FILE', default="",
                   help='Read FILE containing esxsnmp json data.')
+parser.add_option("-t", "--test", action="store_true", dest="test", default=False,
+                  help="Execute tsdb comparison test after loading.")
 options, args = parser.parse_args()
 
 if not options.filename:
@@ -56,9 +66,83 @@ q = TestPersistQueue(test_data)
 p = CassandraPollPersister(config, "test", persistq=q)
 p.run()
 p.db.flush()
+p.db.close()
 p.db.stats.report('all')
 
-#test_data = json.loads(open(file_path).read())
-#q = TestPersistQueue(test_data)
-#p = TSDBPollPersister(config, "test", persistq=q)
-#p.run()
+if options.test:
+    print 'Executing tsdb test.'
+    
+    test_data = json.loads(open(file_path).read())
+    
+    router = test_data[0]['device_name']
+    
+    tsdb_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", router)
+
+    if os.path.exists(tsdb_path):
+        shutil.rmtree(tsdb_path, ignore_errors=True)
+        pass
+
+    print 'Starting tsdb load'
+    t = time.time()
+    q = TestPersistQueue(test_data)
+    p = TSDBPollPersister(config, "test", persistq=q)
+    p.run()
+    print 'Done in', time.time() - t, 'seconds'
+
+    # Execute one-to-one test of values written to TSDB and the
+    # associated values written to Cassandra.
+
+    path_levels = []
+
+    for (path, dirs, files) in os.walk(tsdb_path):
+        if dirs[0] == 'TSDBAggregates':
+            break
+        path_levels.append(dirs)
+    
+    oidsets = path_levels[0]
+    oids    = path_levels[1]
+    paths   = path_levels[2]
+
+    full_paths = {}
+    
+    for oidset in oidsets:
+        for oid in oids:
+            for path in paths:
+                full_path = '%s/%s/%s/%s/TSDBAggregates/30'  % \
+                    (router, oidset, oid, path)
+                if not full_paths.has_key(full_path):
+                    full_paths[full_path] = 1
+                
+    ts_db = tsdb.TSDB(config.tsdb_root)
+    db = CASSANDRA_DB(config)
+
+    rates = ColumnFamily(db.pool, db.rate_cf)
+
+    count_bad = 0
+    tsdb_aggs = 0
+
+    print 'Starting tsdb one to one scan'
+    time.sleep(5)
+    t = time.time()
+
+    for p in full_paths.keys():
+        print '* Checking', p
+        v = ts_db.get_var(p)
+        device,oidset,oid,path,tmp1,tmp2 = p.split('/')
+        for d in v.select():
+            tsdb_aggs += 1
+            key = '%s%s%s%s%s%s%s%s%s'  % \
+                (device, RawData._key_delimiter,
+                path, RawData._key_delimiter,
+                oid, RawData._key_delimiter,
+                tmp2, RawData._key_delimiter,
+                datetime.datetime.utcfromtimestamp(d.timestamp).year)
+            val = rates.get(key, [d.timestamp])[d.timestamp]
+            if d.flags != ROW_VALID:
+                assert val['is_valid'] == 0
+            else:
+                assert val['val'] == d.delta
+                assert val['is_valid'] > 0
+
+    print 'Done in', time.time() - t, 'seconds'
+    db.close()

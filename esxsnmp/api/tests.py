@@ -327,6 +327,7 @@ class TestCassandraPollPersister(TestCase):
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
+        p.db.close()
         p.db.stats.report('all')
         
     def test_persister_long(self):
@@ -341,6 +342,7 @@ class TestCassandraPollPersister(TestCase):
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
         p.db.flush()
+        p.db.close()
         p.db.stats.report('all')
         
         test_data = load_test_data("router_a_ifhcin_long.json")
