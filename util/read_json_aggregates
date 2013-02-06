@@ -14,7 +14,7 @@ import time
 from optparse import OptionParser
 
 from esxsnmp.config import get_config, get_config_path
-from esxsnmp.cassandra import CASSANDRA_DB, INVALID_VALUE, RawData
+from esxsnmp.cassandra import CASSANDRA_DB, RawData
 
 from pycassa.columnfamily import NotFoundException
 
@@ -55,25 +55,31 @@ for row in test_data:
     for d in row['data']:
         path = d[0].replace(oid + '/', '')
         val = d[1]
-        key = '%s:%s:%s:%s:%s' % (device,path,oid,freq,year)
-        #print key, timestamp
+        key = '%s%s%s%s%s%s%s%s%s' % \
+            (device, RawData._key_delimiter,
+            path, RawData._key_delimiter,
+            oid, RawData._key_delimiter,
+            freq, RawData._key_delimiter,
+            year)
+        
         try:
             ret = db.rates._column_family.get(key)
         except NotFoundException:
-            #print 'no corresponding row for', key
+            print 'no corresponding row for', key
             continue
         try:
             ret = db.rates._column_family.get(key, columns=[timestamp])
         except NotFoundException:
             print 'no base rate value found for timestamp', timestamp
             continue
-            
-        print 'json:', val, 'cass:', ret[timestamp],
+        cass_value = ret[timestamp]['val']
+        is_valid = ret[timestamp]['is_valid']
+        print 'json:', val, 'cass:', cass_value,
         if val > 0: 
-            print 'cass/json', ret[timestamp]/val 
+            print 'cass/json', cass_value/val 
         else:
             print
-        if val == ret[timestamp] and val > 0:
+        if val == cass_value and val > 0:
             print val
             raise
         
