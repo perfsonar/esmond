@@ -185,21 +185,16 @@ class CASSANDRA_DB(object):
                     year = y
             row_key = '%s%s%s' % (k, RawData._key_delimiter, year)
             device,path,oid,freq = k.split(RawData._key_delimiter)
-            # Walk backwards from the end of the row until we find a valid value.
-            # Should be the "last" value but...
-            c_count = 1
-            while 1:
-                ret = self.raw_data._column_family.get(row_key, column_count=c_count, 
-                                column_reversed=True)
-                last_ts = ret.keys()[-1]
-                val = ret[last_ts]
-                if val != INVALID_VALUE:
-                    # Initialize the same way as get_metadata() does.
-                    meta_d = Metadata(last_update=last_ts, last_val=val, min_ts=last_ts, 
-                        freq=freq, device=device, path=path, oid=oid)
-                    self.set_metadata(meta_d)
-                    break
-                c_count += 1
+
+            ret = self.raw_data._column_family.get(row_key, column_count=1, 
+                            column_reversed=True)
+            last_ts = ret.keys()[-1]
+            val = ret[last_ts]
+            # Initialize the same way as get_metadata() does.
+            meta_d = Metadata(last_update=last_ts, last_val=val, min_ts=last_ts, 
+                freq=freq, device=device, path=path, oid=oid)
+            self.set_metadata(meta_d)
+
         pass
         
     def update_rate_bin(self, ratebin):
