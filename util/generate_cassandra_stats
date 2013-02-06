@@ -11,7 +11,7 @@ import sys
 import time
 
 from esxsnmp.config import get_config, get_config_path
-from esxsnmp.cassandra import CASSANDRA_DB, INVALID_VALUE, RawData
+from esxsnmp.cassandra import CASSANDRA_DB, RawData
 
 from pycassa.columnfamily import NotFoundException
 

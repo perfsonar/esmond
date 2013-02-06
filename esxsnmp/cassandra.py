@@ -19,8 +19,6 @@ from pycassa.system_manager import *
 
 from thrift.transport.TTransport import TTransportException
 
-INVALID_VALUE = -9999
-
 class CassandraException(Exception):
     """Common base"""
     pass

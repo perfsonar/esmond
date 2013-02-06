@@ -15,7 +15,7 @@ from optparse import OptionParser
 from esxsnmp.api.tests import TestPersistQueue
 from esxsnmp.config import get_config, get_config_path
 from esxsnmp.persist import CassandraPollPersister, TSDBPollPersister
-from esxsnmp.cassandra import CASSANDRA_DB, INVALID_VALUE
+from esxsnmp.cassandra import CASSANDRA_DB
 from pycassa.columnfamily import ColumnFamily
 
 usage = '%prog -f FILE'
