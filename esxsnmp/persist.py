@@ -594,12 +594,12 @@ class CassandraPollPersister(PollPersister):
 
             if val is None:
                 raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                        result.timestamp, flag=0, val=0, freq=oidset.frequency)
+                        result.timestamp, is_valid=0, val=0, freq=oidset.frequency)
                 self.db.set_raw_data(raw_data)
                 continue
 
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                    result.timestamp, flag=1, val=val, freq=oidset.frequency)
+                    result.timestamp, is_valid=1, val=val, freq=oidset.frequency)
 
             self.db.set_raw_data(raw_data)
             #continue
@@ -707,7 +707,7 @@ class CassandraPollPersister(PollPersister):
                     # XXX(mmg): rectify using -9999 - this is a stopgap
                     # to get some code pushed.
                     miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=0,
-                            flag=0, **data.get_path())
+                            is_valid=0, **data.get_path())
                     self.db.update_rate_bin(miss_bin)
 
 

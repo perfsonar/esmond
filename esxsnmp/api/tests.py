@@ -391,10 +391,10 @@ class TestCassandraPollPersister(TestCase):
                 val = rates.get(key, [d.timestamp])[d.timestamp]
                 
                 if d.flags != ROW_VALID:
-                    assert val['flag'] == 0
+                    assert val['is_valid'] == 0
                 else:
                     assert val['val'] == d.delta
-                    assert val['flag'] > 0
+                    assert val['is_valid'] > 0
                     
     def test_range_baserate_query(self):
         """

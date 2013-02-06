@@ -131,7 +131,7 @@ class CASSANDRA_DB(object):
         t = time.time()
         self.raw_data.insert(raw_data.get_key(), 
             #{raw_data.ts_to_unixtime(): raw_data.val})
-            {raw_data.ts_to_unixtime(): {'val': raw_data.val, 'flag': raw_data.flag}})
+            {raw_data.ts_to_unixtime(): {'val': raw_data.val, 'is_valid': raw_data.is_valid}})
         self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
@@ -207,7 +207,7 @@ class CASSANDRA_DB(object):
         t = time.time()
         self.rates.insert(ratebin.get_key(),
             #{ratebin.ts_to_unixtime(): ratebin.val})
-            {ratebin.ts_to_unixtime(): {'val': ratebin.val, 'flag': ratebin.flag}})
+            {ratebin.ts_to_unixtime(): {'val': ratebin.val, 'is_valid': ratebin.is_valid}})
         self.stats.baserate_update((time.time() - t))
         
         
@@ -293,7 +293,7 @@ class CASSANDRA_DB(object):
         
         for k,v in ret.items():
             for kk,vv in v.items():
-                results.append({'ts': kk, 'val': vv['val'], 'flag': vv['flag']})
+                results.append({'ts': kk, 'val': vv['val'], 'is_valid': vv['is_valid']})
             
         if as_json: # format results for query interface
             # Get the frequency from the metatdata if the result set is empty
@@ -364,7 +364,7 @@ class CASSANDRA_DB(object):
 
         for k,v in ret.items():
             for kk,vv in v.items():
-                results.append({'ts': kk, 'val': vv['val'], 'flag': vv['flag']})
+                results.append({'ts': kk, 'val': vv['val'], 'is_valid': vv['is_valid']})
         
         if as_json: # format results for query interface
             return FormattedOutput.raw_data(ts_min, ts_max, results, freq)
@@ -399,7 +399,7 @@ class FormattedOutput(object):
             fmt['data'].append(
                 [
                     FormattedOutput._from_datetime(r['ts']), 
-                    None if r['flag'] == 0 else float(r['val'])
+                    None if r['is_valid'] == 0 else float(r['val'])
                 ]
             )
         
@@ -444,7 +444,7 @@ class FormattedOutput(object):
             fmt['data'].append(
                 [
                     FormattedOutput._from_datetime(r['ts']), 
-                    None if r['flag'] == 0 else float(r['val'])
+                    None if r['is_valid'] == 0 else float(r['val'])
                 ]
             )
         
@@ -625,11 +625,11 @@ class RawData(DataContainerBase):
     _doc_properties = ['ts']
     
     def __init__(self, device=None, oidset=None, oid=None, path=None,
-            ts=None, flag=1, val=None, freq=None, _id=None):
+            ts=None, is_valid=1, val=None, freq=None, _id=None):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self._ts = None
         self.ts = ts
-        self.flag = flag
+        self.is_valid = is_valid
         self.val = val
         self.freq = freq
         
@@ -691,13 +691,13 @@ class BaseRateBin(DataContainerBase):
     _doc_properties = ['ts']
     
     def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None, 
-            ts=None, freq=None, val=None, flag=1):
+            ts=None, freq=None, val=None, is_valid=1):
         DataContainerBase.__init__(self, device, oidset, oid, path, _id)
         self._ts = None
         self.ts = ts
         self.freq = freq
         self.val = val
-        self.flag = flag
+        self.is_valid = is_valid
 
     @property
     def ts(self):
