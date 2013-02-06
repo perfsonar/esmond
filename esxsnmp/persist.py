@@ -45,7 +45,7 @@ except ImportError:
         raise Exception('no memcache library found')
 
 PERSIST_SLEEP_TIME = 1
-
+HEARTBEAT_FREQ_MULTIPLIER = 3
 
 class PollResult(object):
     """PollResult contains the results of a polling run.
@@ -670,7 +670,18 @@ class CassandraPollPersister(PollPersister):
                     / float(delta_t)
                 ))
 
-        # XXX(mmg): include HEARTBEAT backfill logic here.
+        # This re-implements old "hearbeat" logic.  If the current time
+        # delta is greater than HEARTBEAT_FREQ_MULTIPLIER (3?), write
+        # zero-value non-valid bins in the gap.  These MAY be updated
+        # later with valid values or backfill.
+        
+        if delta_t > data.freq * HEARTBEAT_FREQ_MULTIPLIER:
+            for slot in range(prev_slot, curr_slot, data.freq):
+                bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, is_valid=0,
+                    **data.get_path())
+                self.db.update_rate_bin(bad_bin)
+                
+        # Now, write the new valid data between the bins it needs 
 
         prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
                 **data.get_path())
