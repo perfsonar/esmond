@@ -115,6 +115,6 @@ for key in keys:
         for vo in value_objects:
             db.update_stat_aggregation(vo, _agg_timestamp(vo, freq), freq)
     
-
+db.close()
 db.stats.report('all')
         
