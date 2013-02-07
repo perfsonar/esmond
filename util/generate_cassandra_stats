@@ -2,6 +2,13 @@
 
 """
 Generates secondary aggregation statistics from esxsnmp data base rates.
+
+When run with no arguments, it will update min/max/etc 'statistics' from 
+the base rates with a slight delay on the end so the base rates can catch 
+up.  
+
+If run with the optional --start and --end arguments, it will only update 
+over the custom time range.
 """
 import calendar
 import datetime
@@ -10,6 +17,8 @@ import json
 import os
 import sys
 import time
+
+from optparse import OptionParser
 
 from django.conf import settings
 
@@ -40,10 +49,42 @@ def _get_rollup_freqs(oid):
 def _agg_timestamp(data, freq):
     return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
 
-
 # Check to see if another insgtance is running.
 if not program_lock(os.path.join(settings.ESXSNMP_ROOT, 'statgen.lock')):
     sys.exit()
+    
+usage = '%prog | -v | --start | --end'
+desc = ' '.join(__doc__.split())
+parser = OptionParser(usage=usage, description=desc)
+parser.add_option('-s', '--start', dest='start', type='int', metavar='START_TS',
+                  default=-1,
+                  help="Starting unix timestamp if generating over a custom time range.")
+parser.add_option('-e', '--end', dest='end', type='int', metavar='END_TS',
+                  default=-1,
+                  help="Ending unix timestamp if generating over a custom time range.")
+parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                  help="Print output when running.")
+
+options, args = parser.parse_args()
+
+# Sanity check the optional timestamp arguments.
+using_custom_range = False
+ts_arg_count = 0
+if options.start > -1 : ts_arg_count += 1
+if options.end > -1 : ts_arg_count += 1
+
+if ts_arg_count:
+    if ts_arg_count == 1:
+        print 'Please specify both --start and --end flags.'
+        sys.exit(-1)
+    elif ts_arg_count == 2:
+        if options.start > options.end:
+            print 'The --start flag must have a smaller timestamp than the --end flag ',
+            print '(--start=%s and --end=%s given).' % (options.start, options.end)
+            sys.exit(-1)
+        else:
+            print 'Using custom time range.'
+            using_custom_range = True
 
 config = get_config(get_config_path())
 
@@ -59,10 +100,18 @@ for k in db.rates._column_family.get_range(column_count=0,filter_empty=False):
 keys.sort()
 
 for key in keys:
-    print 'processing', key
+    if options.verbose:
+        print 'Processing:', key
     device,path,oid,base_freq,year = key.split(RawData._key_delimiter)
-    for freq in _get_rollup_freqs(oid):
     # XXX: need the frequencies for the rollup the "right way" here.
+    for freq in _get_rollup_freqs(oid):
+    # This first loop will generate an entire row of statistics rollups
+    # if a given row of base rates do not have a corresponding row of 
+    # stat rollups.  This should happen on initial execution or the 
+    # addition of new devices/frequencies.
+    #
+    # Otherwise, it will just generate a dict of row keys and frequencies
+    # for the more usual "incremental updates."
         agg_key = '%s%s%s%s%s%s%s%s%s' % \
             (device, RawData._key_delimiter,
             path, RawData._key_delimiter,
@@ -77,20 +126,23 @@ for key in keys:
             # an oid.
             ret = db.stat_agg._column_family.get(agg_key)
         except NotFoundException:
-            print 'no key', agg_key, 'found in stat aggregations'
             # This will go through an entire row/year's worth of data and
-            # generate the rollups at the approprite frequency.
+            # generate the rollups at the approprite frequency. Will be
+            # skipped if the user has defined a custom range on the command line.
             #
             # This operation is idempotent because there is only one min/max.
-            for c in db.rates._column_family.xget(key, 
-                        column_finish=int(time.time()) - RATE_TAIL_DELAY):
-                ts = c[0]
-                is_valid = c[1]['is_valid']
-                val = c[1]['val']
-                if is_valid == 0:
-                    continue
-                data = RawData(device, None, oid, path, ts, val, base_freq)
-                #db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
+            if not using_custom_range:
+                if options.verbose:
+                    print 'No key', agg_key, 'found in stat aggregations.'
+                for c in db.rates._column_family.xget(key, 
+                            column_finish=int(time.time()) - RATE_TAIL_DELAY):
+                    ts = c[0]
+                    is_valid = c[1]['is_valid']
+                    val = c[1]['val']
+                    if is_valid == 0:
+                        continue
+                    data = RawData(device, None, oid, path, ts, val, base_freq)
+                    db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
         # Compare the "main" base rate key agianst its associated rollups
         # to determine the lowest rollup frequency.  This will be used to 
         # determine a "starting point" to generate ongoing stat rollups.
@@ -100,23 +152,32 @@ for key in keys:
             if agg_freqs[key] > int(freq):
                 agg_freqs[key] = int(freq)
         pass
-    print 'updating aggs for', key
+    if options.verbose:
+        print 'updating aggs for', key
     # Get the timestamp of the last finest grained aggregate written - it will
     # be before the last base rate actually processed due to the rounding.  There
     # will be a small overlap with the previous base rates processed, but doesn't
     # matter since updating the min/max is idempotent.
+    #
+    # This behavior can be overridden on the commandline with a custom range.
     agg_key = '%s%s%s%s%s%s%s%s%s' % \
         (device, RawData._key_delimiter,
         path, RawData._key_delimiter,
         oid, RawData._key_delimiter,
         agg_freqs[key], RawData._key_delimiter,
         year)
-    ret = db.stat_agg._column_family.get(agg_key, column_count=1, column_reversed=True)
-    starting_ts = ret.keys()[0]
+    if not using_custom_range:
+        ret = db.stat_agg._column_family.get(agg_key, column_count=1, 
+                    column_reversed=True)
+        starting_ts = ret.keys()[0]
+        ending_ts = int(time.time()) - RATE_TAIL_DELAY
+    else:
+        starting_ts = options.start
+        ending_ts = options.end
     # Read all the values from the base rate row starting with that timestamp,
     # and generate a list of data objects from the results.
     ret = db.rates._column_family.xget(key, column_start=starting_ts,
-                column_finish=int(time.time()) - RATE_TAIL_DELAY)
+                column_finish=ending_ts)
     value_objects = []
     for r in ret:
         ts = r[0]
