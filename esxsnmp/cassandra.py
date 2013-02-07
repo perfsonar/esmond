@@ -111,7 +111,10 @@ class CASSANDRA_DB(object):
         self.stats = DatabaseMetrics(no_profile=profiling_off)
         
         # Class members
+        self.raw_opts = {}
         self.raw_expire = config.cassandra_raw_expire
+        if self.raw_expire:
+            self.raw_opts['ttl'] = int(self.raw_expire)
         self.metadata_cache = {}
         
         # Initialize metadata cache in cases of a restart.
@@ -132,7 +135,7 @@ class CASSANDRA_DB(object):
             pass
         t = time.time()
         self.raw_data.insert(raw_data.get_key(), 
-            {raw_data.ts_to_unixtime(): raw_data.val})
+            {raw_data.ts_to_unixtime(): raw_data.val}, **self.raw_opts)
         self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
