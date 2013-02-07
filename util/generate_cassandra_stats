@@ -5,15 +5,32 @@ Generates secondary aggregation statistics from esxsnmp data base rates.
 """
 import calendar
 import datetime
+import fcntl
 import json
 import os
 import sys
 import time
 
+from django.conf import settings
+
 from esxsnmp.config import get_config, get_config_path
 from esxsnmp.cassandra import CASSANDRA_DB, RawData
 
 from pycassa.columnfamily import NotFoundException
+
+# This sets the seconds previous to time.time() to stop
+# reading base rates since the most recent ones are probably
+# incomplete.
+RATE_TAIL_DELAY = 180
+
+def program_lock(lockfile):
+    fd = os.open(lockfile, os.O_CREAT | os.O_TRUNC | os.O_WRONLY)
+    try:
+        fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        return False
+
+    return True
 
 def _get_rollup_freqs(oid):
     # XXX(mmg): going to need to be able to get my hands on the aggregation
@@ -22,8 +39,11 @@ def _get_rollup_freqs(oid):
     
 def _agg_timestamp(data, freq):
     return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
-    
-RATE_TAIL_DELAY = 180 # seconds previous to time.time()
+
+
+# Check to see if another insgtance is running.
+if not program_lock(os.path.join(settings.ESXSNMP_ROOT, 'statgen.lock')):
+    sys.exit()
 
 config = get_config(get_config_path())
 
@@ -32,12 +52,11 @@ db = CASSANDRA_DB(config, clear_on_test=False)
 keys = []
 agg_freqs = {}
 
+# Get a list of all the keys currently in the base rate column family.
 for k in db.rates._column_family.get_range(column_count=0,filter_empty=False):
     keys.append(k[0])
 
 keys.sort()
-
-# XXX: put in a lockfile mechanism so multiple instances don't run.
 
 for key in keys:
     print 'processing', key
@@ -71,7 +90,7 @@ for key in keys:
                 if is_valid == 0:
                     continue
                 data = RawData(device, None, oid, path, ts, val, base_freq)
-                db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
+                #db.update_stat_aggregation(data, _agg_timestamp(data, freq), freq)
         # Compare the "main" base rate key agianst its associated rollups
         # to determine the lowest rollup frequency.  This will be used to 
         # determine a "starting point" to generate ongoing stat rollups.
@@ -79,9 +98,8 @@ for key in keys:
             agg_freqs[key] = int(freq)
         else:
             if agg_freqs[key] > int(freq):
-                agg_freqs[key] = int(base_freq)
+                agg_freqs[key] = int(freq)
         pass
-    
     print 'updating aggs for', key
     # Get the timestamp of the last finest grained aggregate written - it will
     # be before the last base rate actually processed due to the rounding.  There

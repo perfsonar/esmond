@@ -23,6 +23,7 @@ devel/crashlog
 devel/cluster
 devel/cluster_test
 devel/mongodb-cluster.conf
+devel/statgen.lock
 docs/_build
 .DS_Store
 *.swp
