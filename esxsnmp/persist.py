@@ -690,7 +690,7 @@ class CassandraPollPersister(PollPersister):
             metadata.refresh_from_raw(data)
             self.db.update_metadata(metadata)
 
-            return delta_v
+            return
             
                 
         # Now, write the new valid data between the bins it needs 
