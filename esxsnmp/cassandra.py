@@ -19,6 +19,8 @@ from pycassa.system_manager import *
 
 from thrift.transport.TTransport import TTransportException
 
+SEEK_BACK_THRESHOLD = 2592000 # 30 days
+
 class CassandraException(Exception):
     """Common base"""
     pass
@@ -118,7 +120,8 @@ class CASSANDRA_DB(object):
         self.metadata_cache = {}
         
         # Initialize metadata cache in cases of a restart.
-        self._initialize_metadata()
+        # Disabled for now.
+        # self._initialize_metadata()
         
     def flush(self):
         self.raw_data.send()
@@ -149,8 +152,33 @@ class CASSANDRA_DB(object):
         
         if not self.metadata_cache.has_key(raw_data.get_meta_key()):
             # Seeing first row - intialize with vals
-            meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
-                min_ts=raw_data.ts, freq=raw_data.freq, **raw_data.get_path())
+            
+            # Didn't find a value in the metadata cache.  First look
+            # back through the raw data for SEEK_BACK_THRESHOLD seconds
+            # to see if we can find the last processed value.
+            ts_max = raw_data.ts_to_unixtime() - 1 # -1 to look at older vals
+            ts_min = ts_max - SEEK_BACK_THRESHOLD
+            ret = self.raw_data._column_family.multiget(
+                    self._get_row_keys(raw_data.device,raw_data.path,raw_data.oid,
+                            raw_data.freq,ts_min,ts_max),
+                    # Note: ts_max and ts_min appear to be reversed here - 
+                    # that's because this is a reversed range query.
+                    column_start=ts_max, column_finish=ts_min,
+                    column_count=1, column_reversed=True)
+                    
+            if ret:
+                # A previous value was found in the raw data, so we can
+                # seed/return that.
+                key = ret.keys()[0]
+                ts = ret[key].keys()[0]
+                val = ret[key][ts]
+                meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
+                    freq=raw_data.freq, **raw_data.get_path())
+            else:
+                # No previous value was found (or at least not one in the defined
+                # time range) so seed/return the current value.
+                meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
+                    min_ts=raw_data.ts, freq=raw_data.freq, **raw_data.get_path())
             self.set_metadata(meta_d)
         else:
             meta_d = Metadata(**self.metadata_cache[raw_data.get_meta_key()])
@@ -169,6 +197,8 @@ class CASSANDRA_DB(object):
     def _initialize_metadata(self):
         """
         Rebuild in-memory metadata from raw data in the case of a restart.
+        
+        Currently not used, leaving for reference.
         """
         keys = {}
 
