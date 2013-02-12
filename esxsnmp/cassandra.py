@@ -107,10 +107,10 @@ class CASSANDRA_DB(object):
         self.stat_agg = ColumnFamily(self.pool, self.stat_cf).batch(self._queue_size)
         
         # Timing
-        profiling_off = True
+        self.profiling = False
         if config.db_profile_on_testing and os.environ.get("ESXSNMP_TESTING", False):
-            profiling_off = False
-        self.stats = DatabaseMetrics(no_profile=profiling_off)
+            self.profiling = True
+        self.stats = DatabaseMetrics(profiling=self.profiling)
         
         # Class members
         self.raw_opts = {}
@@ -133,13 +133,11 @@ class CASSANDRA_DB(object):
         self.pool.dispose()
         
     def set_raw_data(self, raw_data):
-        if self.raw_expire:
-            # set up time to live expiry time here.
-            pass
         t = time.time()
         self.raw_data.insert(raw_data.get_key(), 
             {raw_data.ts_to_unixtime(): raw_data.val}, **self.raw_opts)
-        self.stats.raw_insert(time.time() - t)
+        
+        if self.profiling: self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
         # Do this in memory for now
@@ -164,6 +162,8 @@ class CASSANDRA_DB(object):
                     column_start=ts_max, column_finish=ts_min,
                     column_count=1, column_reversed=True)
                     
+            if self.profiling: self.stats.meta_fetch((time.time() - t))
+                    
             if ret:
                 # A previous value was found in the raw data, so we can
                 # seed/return that.
@@ -181,7 +181,6 @@ class CASSANDRA_DB(object):
         else:
             meta_d = Metadata(**self.metadata_cache[raw_data.get_meta_key()])
         
-        #self.stats.meta_fetch((time.time() - t))
         return meta_d
         
     def update_metadata(self, metadata):
@@ -232,11 +231,11 @@ class CASSANDRA_DB(object):
         
     def update_rate_bin(self, ratebin):
         t = time.time()
-        self.rates.insert(ratebin.get_key(),
-            #{ratebin.ts_to_unixtime(): ratebin.val})
-            {ratebin.ts_to_unixtime(): {'val': ratebin.val, 'is_valid': ratebin.is_valid}})
-        self.stats.baserate_update((time.time() - t))
         
+        self.rates.insert(ratebin.get_key(),
+            {ratebin.ts_to_unixtime(): {'val': ratebin.val, 'is_valid': ratebin.is_valid}})
+        
+        if self.profiling: self.stats.baserate_update((time.time() - t))
         
     def update_rate_aggregation(self, raw_data, agg_ts, freq):
         
@@ -250,7 +249,7 @@ class CASSANDRA_DB(object):
         self.aggs.insert(agg.get_key(), 
             {agg.ts_to_unixtime(): {'val': agg.val, str(agg.base_freq): 1}})
         
-        self.stats.aggregation_update((time.time() - t))
+        if self.profiling: self.stats.aggregation_update((time.time() - t))
         
     def update_stat_aggregation(self, raw_data, agg_ts, freq):
         
@@ -269,7 +268,7 @@ class CASSANDRA_DB(object):
         except NotFoundException:
             pass
         
-        self.stats.stat_fetch((time.time() - t))
+        if self.profiling: self.stats.stat_fetch((time.time() - t))
         
         t = time.time()
         
@@ -290,7 +289,7 @@ class CASSANDRA_DB(object):
         else:
             pass
         
-        self.stats.stat_update((time.time() - t))
+        if self.profiling: self.stats.stat_update((time.time() - t))
         
     def _get_row_keys(self, device, path, oid, freq, ts_min, ts_max):
         full_path = '%s:%s:%s:%s' % (device,path,oid,freq)
@@ -497,48 +496,48 @@ class DatabaseMetrics(object):
         'raw_insert', 
         'baserate_update',
         'aggregation_update',
+        'meta_fetch',
         'stat_fetch', 
         'stat_update',
     ]
     _all_metrics = _individual_metrics + ['total', 'all']
     
-    def __init__(self, no_profile=False):
-        self.no_profile = no_profile
+    def __init__(self, profiling=False):
         
-        if self.no_profile: return
+        self.profiling = profiling
+        
+        if not self.profiling:
+            return
         
         for im in self._individual_metrics:
             setattr(self, '%s_time' % im, 0)
             setattr(self, '%s_count' % im, 0)
         
     def _increment(self, m, t):
-        if self.no_profile: return
         setattr(self, '%s_time' % m, getattr(self, '%s_time' % m) + t)
         setattr(self, '%s_count' % m, getattr(self, '%s_count' % m) + 1)
 
     def raw_insert(self, t):
-        if self.no_profile: return
         self._increment('raw_insert', t)
 
     def baserate_update(self, t):
-        if self.no_profile: return
         self._increment('baserate_update', t)
 
     def aggregation_update(self, t):
-        if self.no_profile: return
         self._increment('aggregation_update', t)
         
+    def meta_fetch(self, t):
+        self._increment('meta_fetch', t)
+        
     def stat_fetch(self, t):
-        if self.no_profile: return
         self._increment('stat_fetch', t)
 
     def stat_update(self, t):
-        if self.no_profile: return
         self._increment('stat_update', t)
         
     def report(self, metric='all'):
         
-        if self.no_profile:
+        if not self.profiling:
             print 'Not profiling'
             return
         
