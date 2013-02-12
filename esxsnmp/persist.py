@@ -34,7 +34,8 @@ from esxsnmp.error import ConfigError
 from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
 
 from esxsnmp.mongo import MONGO_DB, RawData, BaseRateBin, AggregationBin, INVALID_VALUE
-from esxsnmp.cassandra import CASSANDRA_DB, RawData, BaseRateBin, AggregationBin
+from esxsnmp.cassandra import CASSANDRA_DB, RawData, BaseRateBin, AggregationBin, \
+        SEEK_BACK_THRESHOLD
 
 try:
     import cmemcache as memcache
@@ -676,12 +677,14 @@ class CassandraPollPersister(PollPersister):
         # later with valid values or backfill.  Then update only
         # the current bin, update metadata with current slot info
         # and return the delta.
-        
         if delta_t > data.freq * HEARTBEAT_FREQ_MULTIPLIER:
-            for slot in range(prev_slot, curr_slot, data.freq):
-                bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, is_valid=0,
-                    **data.get_path())
-                self.db.update_rate_bin(bad_bin)
+            if delta_t < SEEK_BACK_THRESHOLD:
+                # Only execute the invalid value backfill if delta_t is
+                # less than 30 days.
+                for slot in range(prev_slot, curr_slot, data.freq):
+                    bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, 
+                        is_valid=0, **data.get_path())
+                    self.db.update_rate_bin(bad_bin)
             # Update only current bin and return.
             curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
                 **data.get_path())
