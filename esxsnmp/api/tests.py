@@ -430,6 +430,7 @@ class TestCassandraPollPersister(TestCase):
             freq=30,
             ts_min=start_time,
             ts_max=end_time,
+            cf='average', # average | delta - optional
             as_json=True
         )
         

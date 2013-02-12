@@ -151,8 +151,6 @@ class CASSANDRA_DB(object):
         meta_d = None
         
         if not self.metadata_cache.has_key(raw_data.get_meta_key()):
-            # Seeing first row - intialize with vals
-            
             # Didn't find a value in the metadata cache.  First look
             # back through the raw data for SEEK_BACK_THRESHOLD seconds
             # to see if we can find the last processed value.
@@ -311,18 +309,26 @@ class CASSANDRA_DB(object):
         return key_range
         
     def query_baserate_timerange(self, device=None, path=None, oid=None, 
-                freq=None, ts_min=None, ts_max=None, as_json=False):
+                freq=None, ts_min=None, ts_max=None, cf='average', as_json=False):
         
         ret = self.rates._column_family.multiget(
                 self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
+                
+        if cf not in ['average', 'delta']:
+            # XXX(mmg): log this as an error
+            print cf, 'not a valid option, defaulting to average'
+            cf = 'average'
+                
+        value_divisors = { 'average': int(freq), 'delta': 1}
         
         # Just return the results and format elsewhere.
         results = []
         
         for k,v in ret.items():
             for kk,vv in v.items():
-                results.append({'ts': kk, 'val': vv['val'], 'is_valid': vv['is_valid']})
+                results.append({'ts': kk, 'val': float(vv['val']) / value_divisors[cf], 
+                                        'is_valid': vv['is_valid']})
             
         if as_json: # format results for query interface
             # Get the frequency from the metatdata if the result set is empty
@@ -334,7 +340,12 @@ class CASSANDRA_DB(object):
             
     def query_aggregation_timerange(self, device=None, path=None, oid=None, 
                 ts_min=None, ts_max=None, freq=None, cf=None, as_json=False):
-        # Test key: router_a:fxp0.0:ifHCInOctets:30:2012
+                
+        if cf not in ['average', 'min', 'max']:
+            # XXX(mmg): log this as an error
+            print cf, 'not a valid option, defaulting to average'
+            cf = 'average'
+        
         if cf == 'average':
             ret = self.aggs._column_family.multiget(
                     self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
@@ -359,7 +370,6 @@ class CASSANDRA_DB(object):
                     {'ts': ts, 'val': val, 'base_freq': int(base_freq), 'count': count}
                 )
         elif cf == 'min' or cf == 'max':
-            # Look for the min or max in the base rates
             ret = self.stat_agg._column_family.multiget(
                     self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
                     column_start=ts_min, column_finish=ts_max)
