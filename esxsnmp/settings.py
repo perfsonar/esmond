@@ -24,23 +24,15 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-if TESTING:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME':  'esxsnmp.db',
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': ESXSNMP_SETTINGS.sql_db_engine,
+        'NAME': ESXSNMP_SETTINGS.sql_db_name,
+        'HOST': ESXSNMP_SETTINGS.sql_db_host,
+        'USER': ESXSNMP_SETTINGS.sql_db_user,
+        'PASSWORD': ESXSNMP_SETTINGS.sql_db_password,
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': ESXSNMP_SETTINGS.sql_db_engine,
-            'NAME': ESXSNMP_SETTINGS.sql_db_name,
-            'HOST': ESXSNMP_SETTINGS.sql_db_host,
-            'USER': ESXSNMP_SETTINGS.sql_db_user,
-            'PASSWORD': ESXSNMP_SETTINGS.sql_db_password,
-        }
-    }
+}
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
