@@ -44,9 +44,10 @@ class CASSANDRA_DB(object):
     
     _queue_size = 200
     
-    def __init__(self, config, clear_on_test=False):
+    def __init__(self, config, logger=None, clear_on_test=False):
         
-        self.log = get_logger("CASSANDRA_DB")
+        # XXX(mmg): do this the right way!
+        self.log = logger
         
         # Connect with SystemManager, do a schema check and setup if need be
         try:
@@ -108,7 +109,7 @@ class CASSANDRA_DB(object):
             raise ConnectionException("Couldn't connect to any Cassandra "
                     "at %s - %s" % (config.cassandra_servers, e))
                     
-        self.log.debug('Connected')
+        if self.log: self.log.debug('Connected')
         
         # Column family connections
         self.raw_data = ColumnFamily(self.pool, self.raw_cf).batch(self._queue_size)
@@ -182,14 +183,14 @@ class CASSANDRA_DB(object):
                 val = ret[key][ts]
                 meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
                     freq=raw_data.freq, **raw_data.get_path())
-                self.log.debug('Metadata lookup from raw_data for: %s' %\
+                if self.log: self.log.debug('Metadata lookup from raw_data for: %s' %\
                         (meta_d.get_document()))
             else:
                 # No previous value was found (or at least not one in the defined
                 # time range) so seed/return the current value.
                 meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
                     min_ts=raw_data.ts, freq=raw_data.freq, **raw_data.get_path())
-                self.log.debug('Initializing metadata for: %s' %\
+                if self.log: self.log.debug('Initializing metadata for: %s' %\
                         (meta_d.get_document()))
             self.set_metadata(meta_d)
         else:
