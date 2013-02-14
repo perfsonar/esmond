@@ -664,7 +664,11 @@ class CassandraPollPersister(PollPersister):
             metadata.refresh_from_raw(data)
             return
 
-        assert delta_v >= 0
+        if delta_v < 0:
+            self.log.error('delta_v < 0: %s vals: %s - %s' % \
+                (delta_v,data.val,metadata.last_val))
+            metadata.refresh_from_raw(data)
+            return
 
         prev_frac = int( floor(
                 delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
