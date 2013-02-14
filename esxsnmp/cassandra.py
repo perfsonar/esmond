@@ -107,6 +107,8 @@ class CASSANDRA_DB(object):
         except AllServersUnavailable, e:
             raise ConnectionException("Couldn't connect to any Cassandra "
                     "at %s - %s" % (config.cassandra_servers, e))
+                    
+        self.log.debug('Connected')
         
         # Column family connections
         self.raw_data = ColumnFamily(self.pool, self.raw_cf).batch(self._queue_size)
