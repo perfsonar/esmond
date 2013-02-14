@@ -599,16 +599,13 @@ class CassandraPollPersister(PollPersister):
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
 
             if val is None:
-                # XXX(mmg)
-                # This won't (shouldn't?) happen with real data - if it does, 
-                # log it and skip.
+                self.log.error('Got a None value for %s' %s (var_name,))
                 continue
 
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, val=val, freq=oidset.frequency)
 
             self.db.set_raw_data(raw_data)
-            #continue
 
             if oid.aggregate:
                 delta_v = self.aggregate_base_rate(raw_data)
@@ -681,7 +678,7 @@ class CassandraPollPersister(PollPersister):
                 ))
 
         # This re-implements old "hearbeat" logic.  If the current time
-        # delta is greater than HEARTBEAT_FREQ_MULTIPLIER (3?), write
+        # delta is greater than HEARTBEAT_FREQ_MULTIPLIER (3), write
         # zero-value non-valid bins in the gap.  These MAY be updated
         # later with valid values or backfill.  Then update only
         # the current bin, update metadata with current slot info

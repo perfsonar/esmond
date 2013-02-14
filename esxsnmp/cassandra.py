@@ -12,6 +12,9 @@ import pprint
 import sys
 import time
 from collections import OrderedDict
+
+from esxsnmp.util import get_logger
+
 # Third party
 from pycassa.pool import ConnectionPool, AllServersUnavailable
 from pycassa.columnfamily import ColumnFamily, NotFoundException
@@ -42,6 +45,9 @@ class CASSANDRA_DB(object):
     _queue_size = 200
     
     def __init__(self, config, clear_on_test=False):
+        
+        self.log = get_logger("CASSANDRA_DB")
+        
         # Connect with SystemManager, do a schema check and setup if need be
         try:
             sysman = SystemManager(config.cassandra_servers[0])                              
@@ -88,8 +94,10 @@ class CASSANDRA_DB(object):
         
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
             if len(config.cassandra_servers) > 1:
+                self.log.debug("Waiting for schema to propogate...")
                 print 'Waiting for schema to propogate...'
                 time.sleep(10)
+                self.log.debug("Done")
                 print 'Done'
         
         # Now, set up the ConnectionPool
@@ -172,11 +180,15 @@ class CASSANDRA_DB(object):
                 val = ret[key][ts]
                 meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
                     freq=raw_data.freq, **raw_data.get_path())
+                self.log.debug('Metadata lookup from raw_data for: %s' %\
+                        (meta_d.get_document()))
             else:
                 # No previous value was found (or at least not one in the defined
                 # time range) so seed/return the current value.
                 meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
                     min_ts=raw_data.ts, freq=raw_data.freq, **raw_data.get_path())
+                self.log.debug('Initializing metadata for: %s' %\
+                        (meta_d.get_document()))
             self.set_metadata(meta_d)
         else:
             meta_d = Metadata(**self.metadata_cache[raw_data.get_meta_key()])
