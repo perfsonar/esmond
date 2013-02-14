@@ -253,6 +253,8 @@ class CASSANDRA_DB(object):
         
     def update_stat_aggregation(self, raw_data, agg_ts, freq):
         
+        updated = False
+        
         agg = AggregationBin(
             ts=agg_ts, freq=freq, val=raw_data.val, base_freq=raw_data.freq, count=1,
             min=raw_data.val, max=raw_data.val, **raw_data.get_path()
@@ -275,21 +277,21 @@ class CASSANDRA_DB(object):
         if not ret:
             self.stat_agg.insert(agg.get_key(),
                 {agg.ts_to_unixtime(): {'min': agg.val, 'max': agg.val}})
-            self.stat_agg.send()
+            updated = True
         elif agg.val > ret['max']:
-            #print agg.get_key(), 'max'
             self.stat_agg.insert(agg.get_key(),
                 {agg.ts_to_unixtime(): {'max': agg.val}})
-            self.stat_agg.send()
+            updated = True
         elif agg.val < ret['min']:
-            #print agg.get_key(), 'min'
             self.stat_agg.insert(agg.get_key(),
                 {agg.ts_to_unixtime(): {'min': agg.val}})
-            self.stat_agg.send()
+            updated = True
         else:
             pass
         
         if self.profiling: self.stats.stat_update((time.time() - t))
+        
+        return updated
         
     def _get_row_keys(self, device, path, oid, freq, ts_min, ts_max):
         full_path = '%s:%s:%s:%s' % (device,path,oid,freq)

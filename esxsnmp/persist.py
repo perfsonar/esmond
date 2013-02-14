@@ -754,10 +754,17 @@ class CassandraPollPersister(PollPersister):
         return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
 
     def generate_aggregations(self, data, aggregate_freqs):
+        
+        stat_updated = False
 
         for freq in aggregate_freqs:
             self.db.update_rate_aggregation(data, self._agg_timestamp(data, freq), freq)
-            self.db.update_stat_aggregation(data, self._agg_timestamp(data, freq), freq)
+            updated = self.db.update_stat_aggregation(data, 
+                                        self._agg_timestamp(data, freq), freq)
+            if updated: stat_updated = True
+                                
+        if stat_updated:
+            self.db.stat_agg.send()
             
         
 
