@@ -44,10 +44,12 @@ class CASSANDRA_DB(object):
     
     _queue_size = 200
     
-    def __init__(self, config, logger=None, clear_on_test=False):
+    def __init__(self, config, qname=None, clear_on_test=False):
         
         # XXX(mmg): do this the right way!
-        self.log = logger
+        self.log = None
+        if qname:
+            self.log = get_logger("espersistd.%s" % qname)
         
         # Connect with SystemManager, do a schema check and setup if need be
         try:
