@@ -7,6 +7,7 @@ Cassandra DB interface calls and data encapsulation objects.
 import calendar
 import datetime
 import json
+import logging
 import os
 import pprint
 import sys
@@ -16,6 +17,7 @@ from collections import OrderedDict
 from esxsnmp.util import get_logger
 
 # Third party
+from pycassa import PycassaLogger
 from pycassa.pool import ConnectionPool, AllServersUnavailable
 from pycassa.columnfamily import ColumnFamily, NotFoundException
 from pycassa.system_manager import *
@@ -49,7 +51,12 @@ class CASSANDRA_DB(object):
         if qname:
             self.log = get_logger("espersistd.%s.cass" % qname)
         else:
-            self.log = get_logger("cassandra_db")
+            self.log = logging.getLogger('cassandra_db')
+            self.log.setLevel(logging.DEBUG)
+            format = logging.Formatter('%(name)s [%(levelname)s] %(message)s')
+            handle = logging.StreamHandler()
+            handle.setFormatter(format)
+            self.log.addHandler(handle)
         
         # Connect with SystemManager, do a schema check and setup if need be
         try:
