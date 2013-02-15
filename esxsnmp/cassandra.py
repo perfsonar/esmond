@@ -58,50 +58,60 @@ class CASSANDRA_DB(object):
         
         # Blow everything away if we're testing
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
+            if self.log: self.log.info('Dropping keyspace %s' % self.keyspace)
             if self.keyspace in sysman.list_keyspaces():
                 sysman.drop_keyspace(self.keyspace)
                 time.sleep(3)
         # Create keyspace
         if not self.keyspace in sysman.list_keyspaces():
+            if self.log: self.log.info('Creating keyspace %s' % self.keyspace)
             sysman.create_keyspace(self.keyspace, SIMPLE_STRATEGY, 
                 {'replication_factor': '1'})
         # Create column families
+        if self.log: self.log.info('Checking/creating column families')
         # Raw Data CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.raw_cf):
             sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
                     key_validation_class=UTF8_TYPE)
+            if self.log: self.log.info('Created CF: %s' % self.raw_cf)
         # Base Rate CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.rate_cf):
             sysman.create_column_family(self.keyspace, self.rate_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
                     key_validation_class=UTF8_TYPE)
+            if self.log: self.log.info('Created CF: %s' % self.rate_cf)
         # Rate aggregation CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.agg_cf):
             sysman.create_column_family(self.keyspace, self.agg_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
                     key_validation_class=UTF8_TYPE)
+            if self.log: self.log.info('Created CF: %s' % self.agg_cf)
         # Stat aggregation CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.stat_cf):
             sysman.create_column_family(self.keyspace, self.stat_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
                     key_validation_class=UTF8_TYPE)
+            if self.log: self.log.info('Created CF: %s' % self.stat_cf)
                     
         sysman.close()
         
+        if self.log: self.log.info('Schema check done')
+        
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
             if len(config.cassandra_servers) > 1:
-                self.log.debug("Waiting for schema to propogate...")
+                if self.log: self.log.info("Waiting for schema to propogate...")
                 print 'Waiting for schema to propogate...'
                 time.sleep(10)
-                self.log.debug("Done")
+                if self.log: self.log.info("Done")
                 print 'Done'
         # Now, set up the ConnectionPool
         try:
+            if self.log: self.log.debug('Opening ConnectionPool')
             self.pool = ConnectionPool(self.keyspace, 
                 server_list=config.cassandra_servers, timeout=1)
         except AllServersUnavailable, e:
@@ -183,14 +193,14 @@ class CASSANDRA_DB(object):
                 meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
                     freq=raw_data.freq, **raw_data.get_path())
                 if self.log: self.log.debug('Metadata lookup from raw_data for: %s' %\
-                        (meta_d.get_document()))
+                        (meta_d.get_meta_key()))
             else:
                 # No previous value was found (or at least not one in the defined
                 # time range) so seed/return the current value.
                 meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
                     min_ts=raw_data.ts, freq=raw_data.freq, **raw_data.get_path())
                 if self.log: self.log.debug('Initializing metadata for: %s' %\
-                        (meta_d.get_document()))
+                        (meta_d.get_meta_key()))
             self.set_metadata(meta_d)
         else:
             meta_d = Metadata(**self.metadata_cache[raw_data.get_meta_key()])
