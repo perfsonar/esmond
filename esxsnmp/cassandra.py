@@ -91,7 +91,6 @@ class CASSANDRA_DB(object):
                 print 'Waiting for schema to propogate...'
                 time.sleep(10)
                 print 'Done'
-        
         # Now, set up the ConnectionPool
         try:
             self.pool = ConnectionPool(self.keyspace, 
