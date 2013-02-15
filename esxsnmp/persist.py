@@ -553,7 +553,6 @@ class CassandraPollPersister(PollPersister):
 
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
-
         self.log.debug("connecting to cassandra")
         self.db = CASSANDRA_DB(config, clear_on_test=config.db_clear_on_testing)
         self.log.debug("connected to cassandra")
@@ -593,9 +592,9 @@ class CassandraPollPersister(PollPersister):
             nvar += 1
             
             var_name = os.path.join(basename, var)
+            # XXX(mmg/jugan): this is a bad hack to get testing going.
             if var_name.endswith("sysUpTime"):
                 continue
-
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
 
             if val is None:
