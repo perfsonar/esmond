@@ -397,6 +397,8 @@ class TestCassandraPollPersister(TestCase):
                     assert val['val'] == d.delta
                     assert val['is_valid'] > 0
                     
+        db.close()
+                    
     def test_range_baserate_query(self):
         """
         Presumed using test data loaded in previous test method.

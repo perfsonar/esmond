@@ -48,6 +48,7 @@ class CASSANDRA_DB(object):
     
     def __init__(self, config, qname=None, clear_on_test=False):
         
+        # Configure logging
         if qname:
             self.log = get_logger("espersistd.%s.cass_db" % qname)
         else:
@@ -61,11 +62,11 @@ class CASSANDRA_DB(object):
         # Add pycassa logging to existing logger - thanks for not using the 
         # standard logging numeric macros pycassa!  :(
         levels = {10: 'debug', 20: 'info', 30: 'warn', 40: 'error', 50: 'critial'}
-        clog = PycassaLogger()
-        clog.set_logger_name('%s.pycassa' % self.log.name)
+        plog = PycassaLogger()
+        plog.set_logger_name('%s.pycassa' % self.log.name)
         # clog.set_logger_level(levels[self.log.getEffectiveLevel()])
         # Debug is way to noisy, just set to info....
-        clog.set_logger_level('info')
+        plog.set_logger_level('info')
 
         # Connect with SystemManager, do a schema check and setup if need be
         try:
@@ -127,6 +128,7 @@ class CASSANDRA_DB(object):
                 time.sleep(10)
                 self.log.info("Done")
                 print 'Done'
+        
         # Now, set up the ConnectionPool
         try:
             self.log.debug('Opening ConnectionPool')
@@ -136,7 +138,7 @@ class CASSANDRA_DB(object):
             raise ConnectionException("Couldn't connect to any Cassandra "
                     "at %s - %s" % (config.cassandra_servers, e))
                     
-        self.log.debug('Connected')
+        self.log.info('Connected to %s' % config.cassandra_servers)
         
         # Column family connections
         self.raw_data = ColumnFamily(self.pool, self.raw_cf).batch(self._queue_size)
@@ -162,12 +164,14 @@ class CASSANDRA_DB(object):
         # self._initialize_metadata()
         
     def flush(self):
+        self.log.debug('Flush called')
         self.raw_data.send()
         self.rates.send()
         self.aggs.send()
         self.stat_agg.send()
         
     def close(self):
+        self.log.debug('Close/dispose called')
         self.pool.dispose()
         
     def set_raw_data(self, raw_data):
