@@ -49,7 +49,7 @@ class CASSANDRA_DB(object):
     def __init__(self, config, qname=None, clear_on_test=False):
         
         if qname:
-            self.log = get_logger("espersistd.%s.cass" % qname)
+            self.log = get_logger("espersistd.%s.cass_db" % qname)
         else:
             self.log = logging.getLogger('cassandra_db')
             self.log.setLevel(logging.DEBUG)
