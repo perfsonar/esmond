@@ -553,7 +553,6 @@ class CassandraPollPersister(PollPersister):
 
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
-        
         self.log.debug("connecting to cassandra")
         # XXX(mmg): set logging up the right way
         self.db = CASSANDRA_DB(config, logger=self.log, 

@@ -100,7 +100,6 @@ class CASSANDRA_DB(object):
                 time.sleep(10)
                 self.log.debug("Done")
                 print 'Done'
-        
         # Now, set up the ConnectionPool
         try:
             self.pool = ConnectionPool(self.keyspace, 
