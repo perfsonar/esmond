@@ -39,7 +39,7 @@ class CASSANDRA_DB(object):
     agg_cf = 'rate_aggregations'
     stat_cf = 'stat_aggregations'
     
-    _queue_size = 2000
+    _queue_size = 200
     
     def __init__(self, config, clear_on_test=False):
         # Connect with SystemManager, do a schema check and setup if need be
@@ -91,7 +91,6 @@ class CASSANDRA_DB(object):
                 print 'Waiting for schema to propogate...'
                 time.sleep(10)
                 print 'Done'
-        
         # Now, set up the ConnectionPool
         try:
             self.pool = ConnectionPool(self.keyspace, 

@@ -554,7 +554,9 @@ class CassandraPollPersister(PollPersister):
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
 
+        self.log.debug("connecting to cassandra")
         self.db = CASSANDRA_DB(config, clear_on_test=config.db_clear_on_testing)
+        self.log.debug("connected to cassandra")
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
@@ -591,6 +593,9 @@ class CassandraPollPersister(PollPersister):
             nvar += 1
             
             var_name = os.path.join(basename, var)
+            if var_name.endswith("sysUpTime"):
+                continue
+
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
 
             if val is None:
@@ -726,7 +731,7 @@ class CassandraPollPersister(PollPersister):
                     for i in range(missed_rem):
                         dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
                             val=1, **data.get_path())
-                        self.update_rate_bin(dist_bin)
+                        self.db.update_rate_bin(dist_bin)
             else:
                 # Presume invalid data (new logic) and fill gap/slots
                 # with invalid values.
@@ -748,7 +753,7 @@ class CassandraPollPersister(PollPersister):
 
         for freq in aggregate_freqs:
             self.db.update_rate_aggregation(data, self._agg_timestamp(data, freq), freq)
-            #self.db.update_stat_aggregation(data, self._agg_timestamp(data, freq), freq)
+            self.db.update_stat_aggregation(data, self._agg_timestamp(data, freq), freq)
             
         
 
