@@ -58,6 +58,15 @@ class CASSANDRA_DB(object):
             handle.setFormatter(format)
             self.log.addHandler(handle)
         
+        # Add pycassa logging to existing logger - thanks for not using the 
+        # standard logging numeric macros pycassa!  :(
+        levels = {10: 'debug', 20: 'info', 30: 'warn', 40: 'error', 50: 'critial'}
+        clog = PycassaLogger()
+        clog.set_logger_name('%s.pycassa' % self.log.name)
+        # clog.set_logger_level(levels[self.log.getEffectiveLevel()])
+        # Debug is way to noisy, just set to info....
+        clog.set_logger_level('info')
+
         # Connect with SystemManager, do a schema check and setup if need be
         try:
             sysman = SystemManager(config.cassandra_servers[0])                              
