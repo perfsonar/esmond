@@ -442,10 +442,6 @@ class TestCassandraPollPersister(TestCase):
         assert ret['begin_time'] == start_time
         assert ret['end_time'] == end_time
         
-        # If using this with mongo_raw_expire set in the configuration
-        # it will fail if the expiry time is set to less than the dates
-        # of the test data.
-
         ret = db.query_raw_data(
             device='router_a',
             path='fxp0.0',
