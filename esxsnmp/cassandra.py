@@ -130,10 +130,21 @@ class CASSANDRA_DB(object):
                 print 'Done'
         
         # Now, set up the ConnectionPool
+        
+        _creds = {}
+        if config.cassandra_user and config.cassandra_pass:
+            _creds['username'] = config.cassandra_user
+            _creds['password'] = config.cassandra_pass
+            self.log.debug('Connecting with username: %s' % (config.cassandra_user,))
+        
         try:
             self.log.debug('Opening ConnectionPool')
             self.pool = ConnectionPool(self.keyspace, 
-                server_list=config.cassandra_servers, timeout=1)
+                server_list=config.cassandra_servers, 
+                pool_size=10,
+                max_overflow=5,
+                timeout=1,
+                credentials=_creds)
         except AllServersUnavailable, e:
             raise ConnectionException("Couldn't connect to any Cassandra "
                     "at %s - %s" % (config.cassandra_servers, e))
