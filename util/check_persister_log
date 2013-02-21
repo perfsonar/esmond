@@ -27,15 +27,13 @@ if not os.path.exists(file_path):
   sys.exit()
   
 fh = open(file_path, 'r')
-data = fh.readlines()
-fh.close()
 
 # Check logs for delta_v errors 
 # (see: persist.py line 473-ish/if delta_v < 0: condition)
 
 delta_errs = {}
 
-for line in data:
+for line in fh.readlines():
     if line.find('delta_v') > -1 and line.find('path:') > -1:
         delta_err_path = line.split('path:')[1].strip()
         if not delta_errs.has_key(delta_err_path):
@@ -51,3 +49,9 @@ if len(d_paths):
     for k in d_paths:
         print '%s => %s' % (k, delta_errs[k])
     print '==='
+
+# Rewind for next test
+fh.seek(0)
+
+# Done
+fh.close()
