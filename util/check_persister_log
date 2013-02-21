@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+"""
+Check espersist logs for various errors.
+"""
+
+import os
+import os.path
+import sys
+
+from optparse import OptionParser
+
+usage = '%prog -f FILE'
+desc = ' '.join(__doc__.split())
+parser = OptionParser(usage=usage, description=desc)
+parser.add_option('-f', '--infile', dest='filename', metavar='FILE', default="",
+                  help='Read espersist log FILE.')
+options, args = parser.parse_args()
+                  
+if not options.filename:
+  parser.error('A filename is required')
+
+file_path = os.path.normpath(options.filename)
+
+if not os.path.exists(file_path):
+  print file_path, 'does not exist - exiting.'
+  sys.exit()
+  
+fh = open(file_path, 'r')
+data = fh.readlines()
+fh.close()
+
+# Check logs for delta_v errors 
+# (see: persist.py line 473-ish/if delta_v < 0: condition)
+
+delta_errs = {}
+
+for line in data:
+    if line.find('delta_v') > -1 and line.find('path:') > -1:
+        delta_err_path = line.split('path:')[1].strip()
+        if not delta_errs.has_key(delta_err_path):
+            delta_errs[delta_err_path] = 0
+        delta_errs[delta_err_path] += 1
+        
+d_paths = delta_errs.keys()
+
+if len(d_paths):
+    print '=== Showing delta_v < 0 errors'
+    d_paths.sort()
+
+    for k in d_paths:
+        print '%s => %s' % (k, delta_errs[k])
+    print '==='
