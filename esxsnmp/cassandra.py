@@ -143,6 +143,7 @@ class CASSANDRA_DB(object):
                 server_list=config.cassandra_servers, 
                 pool_size=10,
                 max_overflow=5,
+                max_retries=10,
                 timeout=10,
                 credentials=_creds)
         except AllServersUnavailable, e:
