@@ -144,7 +144,7 @@ class CASSANDRA_DB(object):
                 pool_size=10,
                 max_overflow=5,
                 max_retries=10,
-                timeout=10,
+                timeout=30,
                 credentials=_creds)
         except AllServersUnavailable, e:
             raise ConnectionException("Couldn't connect to any Cassandra "
