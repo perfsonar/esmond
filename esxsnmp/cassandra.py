@@ -47,6 +47,9 @@ class CASSANDRA_DB(object):
     _queue_size = 200
     
     def __init__(self, config, qname=None, clear_on_test=False):
+        """
+        Class contains all the relevent cassandra logic.  
+        """
         
         # Configure logging
         if qname:

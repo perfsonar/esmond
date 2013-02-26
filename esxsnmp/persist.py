@@ -346,10 +346,7 @@ class TSDBPollPersister(PollPersister):
             
 
 class CassandraPollPersister(PollPersister):
-    """Given a ``PollResult`` write the data to a TSDB.
-
-    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
-    write to.
+    """Given a ``PollResult`` write the data to a Cassandra backend.
 
     The ``data`` member of the PollResult must be a list of (name,value)
     pairs.  The ``metadata`` member of PollResult must contain the following
@@ -362,6 +359,9 @@ class CassandraPollPersister(PollPersister):
 
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
+        # The clear on testing arg - set in the config file if the
+        # testing env var is set will result in the target keyspace
+        # and all of its data being deleted and rebuilt.
         self.log.debug("connecting to cassandra")
         self.db = CASSANDRA_DB(config, qname=qname, 
                                 clear_on_test=config.db_clear_on_testing)
@@ -407,25 +407,27 @@ class CassandraPollPersister(PollPersister):
                 continue
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
 
+            # This shouldn't happen.
             if val is None:
                 self.log.error('Got a None value for %s' %s (var_name,))
                 continue
+                
+            # Create data encapsulation object (defined in cassandra.py 
+            # module) and store the raw input.
 
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
                     result.timestamp, val=val, freq=oidset.frequency)
 
             self.db.set_raw_data(raw_data)
 
+            # Generate aggregations if apropos.
             if oid.aggregate:
                 delta_v = self.aggregate_base_rate(raw_data)
                 uptime_name = os.path.join(basename, 'sysUpTime')
                 
-                # May want a condition on this, so build higher
-                # level aggregations elsewhere
-
                 if delta_v != None: # a value of zero is ok
-                    # We got a good delta back from base rate, so
-                    # build an aggregation with it
+                    # We got a good delta back - generate rollups.
+                    # Just swap the delta into the raw data object.
                     raw_data.val = delta_v
                     self.generate_aggregations(raw_data, oidset.aggregates)
             else:
@@ -435,6 +437,18 @@ class CassandraPollPersister(PollPersister):
             time.time() - t0, result))
 
     def aggregate_base_rate(self, data):
+        """
+        Given incoming data that is meant for aggregation, generate and 
+        store the base rate deltas, update the metadata cache, and if a valid 
+        delta (delta_v) is generated, return to calling code to generate
+        higher-level rollup aggregations.
+        
+        The data arg passed in is a RawData encapsulation object as
+        defined in the cassandra.py module.  
+        
+        All of this logic is copied/adapted from the TSDB aggregator.py
+        module.
+        """
 
         metadata = self.db.get_metadata(data)
         last_update = metadata.ts_to_unixtime('last_update')
@@ -455,6 +469,9 @@ class CassandraPollPersister(PollPersister):
             data.ts == metadata.last_update:
             return
 
+        # We've retrieved valid previous vals/ts from metadata, so calculate
+        # the value and time delta, and the fractional slots that the data
+        # will (usually) be split between.
         delta_t = data.ts_to_unixtime() - metadata.ts_to_unixtime('last_update')
         delta_v = data.val - metadata.last_val
 
@@ -464,6 +481,10 @@ class CassandraPollPersister(PollPersister):
         rate = float(delta_v) / float(delta_t)
         max_rate = int(110e9)
 
+        # Reality check the current rate and make sure the delta is
+        # equal to or greater than zero.  Log errors but still update
+        # the metadata cache with the most recently seen raw value/ts 
+        # then stop processing.
         if rate > max_rate:
             self.log.error('max_rate_exceeded - %s - %s - %s' \
                 % (rate, metadata.last_val, data.val))
@@ -475,6 +496,9 @@ class CassandraPollPersister(PollPersister):
                 (delta_v,data.val,metadata.last_val,metadata.get_meta_key()))
             metadata.refresh_from_raw(data)
             return
+            
+        # Things look good so generate the fractional deltas to distribute
+        # between the bins.
 
         prev_frac = int( floor(
                 delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
@@ -500,7 +524,7 @@ class CassandraPollPersister(PollPersister):
                     bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, 
                         is_valid=0, **data.get_path())
                     self.db.update_rate_bin(bad_bin)
-            # Update only current bin and return.
+            # Update only the "current" bin and return.
             curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
                 **data.get_path())
             self.db.update_rate_bin(curr_bin)
@@ -511,7 +535,7 @@ class CassandraPollPersister(PollPersister):
             return
             
                 
-        # Now, write the new valid data between the bins it needs 
+        # Now, write the new valid data between the appropriate bins.
 
         prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
                 **data.get_path())
@@ -521,8 +545,12 @@ class CassandraPollPersister(PollPersister):
         self.db.update_rate_bin(prev_bin)
         self.db.update_rate_bin(curr_bin)
 
-        # backfill logic from the tsdb.aggregator
-        # This has been modified from the orignial!
+        # Original backfill logic from the tsdb.aggregator
+        # This has been slightly modified from the orignial.
+        
+        # The backfill code is invoked if there is a gap in the data (ie: 
+        # the slot times are greater than the frequency), but not so big so
+        # as to require the 'heartbeat' code to be invoked.
 
         if (curr_slot - prev_slot) > data.freq: # New condition - missing bins?
             missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
@@ -550,17 +578,41 @@ class CassandraPollPersister(PollPersister):
                             is_valid=0, **data.get_path())
                     self.db.update_rate_bin(miss_bin)
 
-
+        # Gotten to the final success condition, so update the metadata
+        # cache with values from the current data input and return the 
+        # valid delta to the calling code.
         metadata.refresh_from_raw(data)
         self.db.update_metadata(metadata)
         
         return delta_v
 
     def _agg_timestamp(self, data, freq):
+        """
+        Utility method to generate the 'compressed' timestamp for an higher-level 
+        aggregation bin.  
+        
+        The data arg is a data encapsulation object.
+        
+        The freq arg is the frequency of the desired aggregation to be written 
+        to (ie: 5 mins, hourly, etc) in seconds.
+        """
         return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
 
     def generate_aggregations(self, data, aggregate_freqs):
+        """
+        Given a data encapsulation object that has been updated with the 
+        current delta, iterate through the frequencies in oidset.aggregates
+        and generate the appropriate higher level aggregations.
         
+        The 'rate aggregations' are the summed deltas and the associated 
+        counts.  The 'stat aggregations' are the min/max values.  These 
+        are being writtent to two different column families due to schema
+        constraints.
+        
+        Since the stat aggregations are read from/not just written to, 
+        track if a new value has been generated (min/max will only be updated
+        periodically), and if so, explicitly flush the stat_agg batch.
+        """
         stat_updated = False
 
         for freq in aggregate_freqs:
