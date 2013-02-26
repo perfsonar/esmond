@@ -94,15 +94,6 @@ def process_devices(opts, devs):
             data = old_fetch_data(oidset, dev.name, iface,  opts.begin,
                     opts.end)
 
-def main(args):
-    if not args or args[0] == 'small':
-        devs = small_dev_set
-    elif args[0] == 'list':
-        devs = [args[1]]
-    else:
-        print "unknown test set: %s" % args
-        sys.exit()
-
 def main(argv=sys.argv):
     """Parse options, output config"""
     global OPTS
@@ -146,8 +137,5 @@ def main(argv=sys.argv):
 
     return process_devices(opts, args)
 
-if __name__ == "__main__":
-    sys.exit(main())
-
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())
