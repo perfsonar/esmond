@@ -94,7 +94,7 @@ class CASSANDRA_DB(object):
                 time.sleep(3)
         # Create keyspace
         
-        _schema_modified = False
+        _schema_modified = False # Track if schema components are created.
         
         if not self.keyspace in sysman.list_keyspaces():
             _schema_modified = True
@@ -102,6 +102,8 @@ class CASSANDRA_DB(object):
             sysman.create_keyspace(self.keyspace, SIMPLE_STRATEGY, 
                 {'replication_factor': '1'})
         # Create column families if they don't already exist.
+        # If a new column family is added, make sure to set 
+        # _schema_modified = True so it will be propigated.
         self.log.info('Checking/creating column families')
         # Raw Data CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.raw_cf):
@@ -294,50 +296,14 @@ class CASSANDRA_DB(object):
         
     def update_metadata(self, metadata):
         """
+        Update the metadata cache with a recently updated value.  Called by the
+        persister.
         """
         t = time.time()
         for i in ['last_val', 'min_ts', 'last_update']:
             self.metadata_cache[metadata.get_meta_key()][i] = getattr(metadata, i)
         #self.stats.meta_update((time.time() - t))
-        
-    def _initialize_metadata(self):
-        """
-        Rebuild in-memory metadata from raw data in the case of a restart.
-        
-        Currently not used, leaving for reference.
-        """
-        keys = {}
-
-        # Build a dict of the years for a given device/path/oid/frequency. Will need
-        # that do figure out which year/row to query for a given set.
-        for k in self.raw_data._column_family.get_range(column_count=0,filter_empty=False):
-            device,path,oid,freq,year = k[0].split(RawData._key_delimiter)
-            base_key = RawData._key_delimiter.join([device,path,oid,freq])
-            if not keys.has_key(base_key):
-                keys[base_key] = []
-            keys[base_key].append(int(year))
-            pass
-        
-        # Generate a row key for the latest year for a given device/path/oid/freq
-        for k,v in keys.items():
-            year = 0
-            for y in keys[k]:
-                if y > year: 
-                    year = y
-            row_key = '%s%s%s' % (k, RawData._key_delimiter, year)
-            device,path,oid,freq = k.split(RawData._key_delimiter)
-
-            ret = self.raw_data._column_family.get(row_key, column_count=1, 
-                            column_reversed=True)
-            last_ts = ret.keys()[-1]
-            val = ret[last_ts]
-            # Initialize the same way as get_metadata() does.
-            meta_d = Metadata(last_update=last_ts, last_val=val, min_ts=last_ts, 
-                freq=freq, device=device, path=path, oid=oid)
-            self.set_metadata(meta_d)
-
-        pass
-        
+    
     def update_rate_bin(self, ratebin):
         t = time.time()
         
