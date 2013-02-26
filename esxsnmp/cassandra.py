@@ -442,11 +442,12 @@ class CASSANDRA_DB(object):
         ret = self.rates._column_family.multiget(
                 self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
-                
+        
         if cf not in ['average', 'delta']:
             self.log.error('Not a valid option: %s - defaulting to average' % cf)
             cf = 'average'
-                
+        
+        # Divisors to return either the average or a delta.        
         value_divisors = { 'average': int(freq), 'delta': 1}
         
         # Just return the results and format elsewhere.
@@ -458,19 +459,22 @@ class CASSANDRA_DB(object):
                                         'is_valid': vv['is_valid']})
             
         if as_json: # format results for query interface
-            # Get the frequency from the metatdata if the result set is empty
-            if not results:
-                pass
             return FormattedOutput.base_rate(ts_min, ts_max, results, freq)
         else:
             return results
             
     def query_aggregation_timerange(self, device=None, path=None, oid=None, 
                 ts_min=None, ts_max=None, freq=None, cf=None, as_json=False):
+        """
+        Query interface method to retrieve the aggregation rollups - could
+        be average/min/max.  Different column families will be queried 
+        depending on what value "cf" is set to.  Could return the values 
+        programmatically, but generally returns formatted json from 
+        the FormattedOutput module.
+        """
                 
         if cf not in ['average', 'min', 'max']:
-            # XXX(mmg): log this as an error
-            print cf, 'not a valid option, defaulting to average'
+            self.log.error('Not a valid option: %s - defaulting to average' % cf)
             cf = 'average'
         
         if cf == 'average':
@@ -520,7 +524,11 @@ class CASSANDRA_DB(object):
             
     def query_raw_data(self, device=None, path=None, oid=None, freq=None,
                 ts_min=None, ts_max=None, as_json=False):
-                
+        """
+        Query interface to query the raw data.  Could return the values 
+        programmatically, but generally returns formatted json from 
+        the FormattedOutput module.
+        """        
         ret = self.raw_data._column_family.multiget(
                 self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
@@ -541,9 +549,17 @@ class CASSANDRA_DB(object):
         pass
 
 class FormattedOutput(object):
+    """
+    Class of static methods to handle formatting lists of dicts returned
+    by the query methods in the CASSANDRA_DB class to the JSON to be 
+    returned to the REST interface.
+    """
     
     @staticmethod
     def _from_datetime(d):
+        """
+        Utility method to convert a datetime object to a unix timestamp.
+        """
         if type(d) != type(datetime.datetime.now()):
             return d
         else:
@@ -551,6 +567,10 @@ class FormattedOutput(object):
     
     @staticmethod
     def base_rate(ts_min, ts_max, results, freq=None):
+        """
+        Generate and populate the JSON wrapper to return the 
+        base rates to the query interface.
+        """
         fmt = [
             ('agg', freq if freq else results[0]['freq']),
             ('end_time', ts_max),
@@ -564,7 +584,8 @@ class FormattedOutput(object):
         for r in results:
             fmt['data'].append(
                 [
-                    FormattedOutput._from_datetime(r['ts']), 
+                    FormattedOutput._from_datetime(r['ts']),
+                    # Set to non if is_valid is 0.
                     None if r['is_valid'] == 0 else float(r['val'])
                 ]
             )
@@ -573,6 +594,10 @@ class FormattedOutput(object):
         
     @staticmethod
     def aggregate_rate(ts_min, ts_max, results, freq, cf):
+        """
+        Generate and populate the JSON wrapper to return the 
+        rollups to the query interface.
+        """
         fmt = [
             ('agg', freq),
             ('end_time', ts_max),
@@ -588,6 +613,7 @@ class FormattedOutput(object):
             fmt['data'].append(
                 [
                     ro.ts_to_unixtime(),
+                    # Get the min/max/avg attr frmo Bin object as necessary.
                     getattr(ro, cf)
                 ]
             )
@@ -596,6 +622,10 @@ class FormattedOutput(object):
         
     @staticmethod
     def raw_data(ts_min, ts_max, results, freq=None):
+        """
+        Generate and populate the JSON wrapper to return the 
+        raw data to the query interface.
+        """
         fmt = [
             ('agg', freq if freq else results[0]['freq']),
             ('end_time', ts_max),
@@ -619,7 +649,13 @@ class FormattedOutput(object):
 # Stats/timing code for connection class
 
 class DatabaseMetrics(object):
+    """
+    Code to handle calculating timing statistics for discrete database
+    calls in the CASSANDRA_DB module.  Generally only used in development 
+    to produce statistics when pushing runs of test data through it.
+    """
     
+    # List of attributes to generate/method names.
     _individual_metrics = [
         'raw_insert', 
         'baserate_update',
@@ -637,13 +673,20 @@ class DatabaseMetrics(object):
         if not self.profiling:
             return
         
+        # Populate attrs from list.
         for im in self._individual_metrics:
             setattr(self, '%s_time' % im, 0)
             setattr(self, '%s_count' % im, 0)
         
     def _increment(self, m, t):
+        """
+        Actual logic called by named wrapper methods.  Increments
+        the time sums and counts for the various db calls.
+        """
         setattr(self, '%s_time' % m, getattr(self, '%s_time' % m) + t)
         setattr(self, '%s_count' % m, getattr(self, '%s_count' % m) + 1)
+        
+    # These are all wrapper methods that call _increment()
 
     def raw_insert(self, t):
         self._increment('raw_insert', t)
@@ -664,13 +707,17 @@ class DatabaseMetrics(object):
         self._increment('stat_update', t)
         
     def report(self, metric='all'):
+        """
+        Called at the end of a test harness or other loading dev script.  
+        Outputs the various data to the console.
+        """
         
         if not self.profiling:
             print 'Not profiling'
             return
         
         if metric not in self._all_metrics:
-            print 'bad metric' # XXX(mmg): log this
+            print 'bad metric'
             return
             
         s = ''
@@ -707,12 +754,18 @@ class DatabaseMetrics(object):
                 else:
                     self.report(m)
                     
-        if len(s): print s # XXX(mmg): log this
+        if len(s): print s
 
 
-# Data encapsulation objects
+# Data encapsulation objects - these objects wrap the various data
+# in an object and provide utility methods and properties to convert 
+# timestampes, calculate averages, etc.
         
 class DataContainerBase(object):
+    """
+    Base class for the other encapsulation objects.  Mostly provides 
+    utility methods for subclasses.
+    """
     
     _doc_properties = []
     _key_delimiter = ':'
@@ -725,14 +778,18 @@ class DataContainerBase(object):
         self._id = _id
         
     def _handle_date(self,d):
-        # don't reconvert if we are instantiating from 
-        # returned mongo document
+        """
+        Return a datetime object given a unix timestamp.
+        """
         if type(d) == type(datetime.datetime.now()):
             return d
         else:
             return datetime.datetime.utcfromtimestamp(d)
 
     def get_document(self):
+        """
+        Return a dictionary of the attrs/props in the object.
+        """
         doc = {}
         for k,v in self.__dict__.items():
             if k.startswith('_'):
@@ -745,7 +802,13 @@ class DataContainerBase(object):
         return doc
         
     def get_key(self):
-        # Get the cassandra row key for an object
+        """
+        Return a cassandra row key based on the contents of the object.
+        
+        Format:
+        
+        router:interface:oid:frequency:year
+        """
         return '%s%s%s%s%s%s%s%s%s' % (
             self.device, self._key_delimiter,
             self.path, self._key_delimiter,
@@ -755,9 +818,10 @@ class DataContainerBase(object):
         )
         
     def get_meta_key(self):
-        # Get a "metadata row key" - metadata don't have timestamps
-        # but some other objects need access to this to look up
-        # entires in the metadata_cache.
+        """
+        Get a "metadata row key" - metadata don't have timestamps/years.
+        Other objects use this to look up entires in the metadata_cache.
+        """
         return '%s%s%s%s%s%s%s' % (
             self.device, self._key_delimiter,
             self.path, self._key_delimiter,
@@ -766,6 +830,9 @@ class DataContainerBase(object):
         )
         
     def get_path(self):
+        """
+        Return a dict of the key attributes.
+        """
         p = {}
         for k,v in self.__dict__.items():
             if k not in ['device', 'oidset', 'oid', 'path']:
@@ -774,10 +841,18 @@ class DataContainerBase(object):
         return p
         
     def get_path_tuple(self):
+        """
+        Return a tuple of the key attributes.
+        """
         p = self.get_path()
         return (p['device'], p['oidset'], p['oid'], p['path'])
         
     def ts_to_unixtime(self, t='ts'):
+        """
+        Return an internally represented datetime value as a unix timestamp. 
+        Defaults to returning 'ts' property, but can be given an arg to grab
+        a different property/attribute like Metadata.last_update.
+        """
         ts = getattr(self, t)
         return calendar.timegm(ts.utctimetuple())
         
@@ -816,6 +891,9 @@ class RawData(DataContainerBase):
     
         
 class Metadata(DataContainerBase):
+    """
+    Container for metadata information.
+    """
     
     _doc_properties = ['min_ts', 'last_update']
     
@@ -845,6 +923,12 @@ class Metadata(DataContainerBase):
         self._last_update = self._handle_date(value)
         
     def refresh_from_raw(self, data):
+        """
+        Update the internal state of a metadata object from a raw data
+        object.  This is called by the persister when calculating 
+        base rate deltas to refresh cache with current values after a 
+        successful delta is generated.
+        """
         if self.min_ts > data.ts:
             self.min_ts = data.ts
         self.last_update = data.ts
@@ -852,6 +936,9 @@ class Metadata(DataContainerBase):
         
 
 class BaseRateBin(DataContainerBase):
+    """
+    Container for base rates.  Has 'avg' property to return the averages.
+    """
     
     _doc_properties = ['ts']
     
@@ -878,6 +965,9 @@ class BaseRateBin(DataContainerBase):
     
 
 class AggregationBin(BaseRateBin):
+    """
+    Container for aggregation rollups.  Also has 'avg' property to generage averages.
+    """
     
     def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None,
             ts=None, freq=None, val=None, base_freq=None, count=None, 

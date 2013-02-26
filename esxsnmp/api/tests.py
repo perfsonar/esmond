@@ -472,11 +472,6 @@ class TestCassandraPollPersister(TestCase):
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 17
         
-        # The following tests are commented out because the min/max
-        # aggregations are not currently being calculated inline.
-        
-        return
-        
         ret = db.query_aggregation_timerange(
             device='router_a',
             path='fxp0.0',
@@ -487,9 +482,9 @@ class TestCassandraPollPersister(TestCase):
             cf='min',  # min | max | average - also required!
             as_json=True
         )
-        print ret
+        
         ret = json.loads(ret)
-        print ret
+        
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 0
         
@@ -508,6 +503,8 @@ class TestCassandraPollPersister(TestCase):
         
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 7500
+        
+        db.close()
 
 
 if tsdb:
