@@ -48,10 +48,18 @@ class CASSANDRA_DB(object):
     
     def __init__(self, config, qname=None, clear_on_test=False):
         """
-        Class contains all the relevent cassandra logic.  
+        Class contains all the relevent cassandra logic.  This includes:
+        
+        * schema creation,
+        * connection information/pooling, 
+        * generating the metadata cache of last val/ts information,
+        * store data/update the rate/aggregaion bins,
+        * and execute queries to return data to the REST interface.
         """
         
-        # Configure logging
+        # Configure logging - if a qname has been passed in, hook
+        # into the persister logger, if not, toss together some fast
+        # console output for devel/testing.
         if qname:
             self.log = get_logger("espersistd.%s.cass_db" % qname)
         else:
@@ -62,37 +70,42 @@ class CASSANDRA_DB(object):
             handle.setFormatter(format)
             self.log.addHandler(handle)
         
-        # Add pycassa logging to existing logger - thanks for not using the 
-        # standard logging numeric macros pycassa!  :(
-        levels = {10: 'debug', 20: 'info', 30: 'warn', 40: 'error', 50: 'critial'}
+        # Add pycassa driver logging to existing logger.
         plog = PycassaLogger()
         plog.set_logger_name('%s.pycassa' % self.log.name)
-        # clog.set_logger_level(levels[self.log.getEffectiveLevel()])
-        # Debug is way to noisy, just set to info....
+        # Debug level is far too noisy, so just hardcode the pycassa 
+        # logger to info level.
         plog.set_logger_level('info')
 
-        # Connect with SystemManager, do a schema check and setup if need be
+        # Connect to cassandra with SystemManager, do a schema check 
+        # and set up schema components if need be.
         try:
             sysman = SystemManager(config.cassandra_servers[0])                              
         except TTransportException, e:
             raise ConnectionException("System Manager can't connect to Cassandra "
                 "at %s - %s" % (config.cassandra_servers[0], e))
         
-        # Blow everything away if we're testing
+        # Blow everything away if we're testing - be aware of this and use
+        # with care.
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
             self.log.info('Dropping keyspace %s' % self.keyspace)
             if self.keyspace in sysman.list_keyspaces():
                 sysman.drop_keyspace(self.keyspace)
                 time.sleep(3)
         # Create keyspace
+        
+        _schema_modified = False
+        
         if not self.keyspace in sysman.list_keyspaces():
+            _schema_modified = True
             self.log.info('Creating keyspace %s' % self.keyspace)
             sysman.create_keyspace(self.keyspace, SIMPLE_STRATEGY, 
                 {'replication_factor': '1'})
-        # Create column families
+        # Create column families if they don't already exist.
         self.log.info('Checking/creating column families')
         # Raw Data CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.raw_cf):
+            _schema_modified = True
             sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
@@ -100,6 +113,7 @@ class CASSANDRA_DB(object):
             self.log.info('Created CF: %s' % self.raw_cf)
         # Base Rate CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.rate_cf):
+            _schema_modified = True
             sysman.create_column_family(self.keyspace, self.rate_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
@@ -107,6 +121,7 @@ class CASSANDRA_DB(object):
             self.log.info('Created CF: %s' % self.rate_cf)
         # Rate aggregation CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.agg_cf):
+            _schema_modified = True
             sysman.create_column_family(self.keyspace, self.agg_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
@@ -114,6 +129,7 @@ class CASSANDRA_DB(object):
             self.log.info('Created CF: %s' % self.agg_cf)
         # Stat aggregation CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.stat_cf):
+            _schema_modified = True
             sysman.create_column_family(self.keyspace, self.stat_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
@@ -124,16 +140,16 @@ class CASSANDRA_DB(object):
         
         self.log.info('Schema check done')
         
-        if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
-            if len(config.cassandra_servers) > 1:
-                self.log.info("Waiting for schema to propogate...")
-                print 'Waiting for schema to propogate...'
-                time.sleep(10)
-                self.log.info("Done")
-                print 'Done'
-        
+        # If we just cleared the keyspace/data and there is more than
+        # one server, pause to let schema propigate to the cluster machines.
+        if _schema_modified == True:
+            self.log.info("Waiting for schema to propigate...")
+            time.sleep(10)
+            self.log.info("Done")
+                
         # Now, set up the ConnectionPool
         
+        # Read auth information from config file and set up if need be.
         _creds = {}
         if config.cassandra_user and config.cassandra_pass:
             _creds['username'] = config.cassandra_user
@@ -155,30 +171,36 @@ class CASSANDRA_DB(object):
                     
         self.log.info('Connected to %s' % config.cassandra_servers)
         
-        # Column family connections
+        # Define column family connections for the code to use.
         self.raw_data = ColumnFamily(self.pool, self.raw_cf).batch(self._queue_size)
         self.rates    = ColumnFamily(self.pool, self.rate_cf).batch(self._queue_size)
         self.aggs     = ColumnFamily(self.pool, self.agg_cf).batch(self._queue_size)
         self.stat_agg = ColumnFamily(self.pool, self.stat_cf).batch(self._queue_size)
         
-        # Timing
+        # Timing - this turns the database call profiling code on and off.
+        # This is not really meant to be used in production and generally 
+        # just spits out statistics at the end of a run of test data.  Mostly
+        # useful for timing specific database calls to aid in development.
         self.profiling = False
         if config.db_profile_on_testing and os.environ.get("ESXSNMP_TESTING", False):
             self.profiling = True
         self.stats = DatabaseMetrics(profiling=self.profiling)
         
         # Class members
+        # Set up expiration args for raw data if set in the config file.
         self.raw_opts = {}
         self.raw_expire = config.cassandra_raw_expire
         if self.raw_expire:
             self.raw_opts['ttl'] = int(self.raw_expire)
+        # Just the dict for the metadata cache.
         self.metadata_cache = {}
         
-        # Initialize metadata cache in cases of a restart.
-        # Disabled for now.
-        # self._initialize_metadata()
-        
     def flush(self):
+        """
+        Calling this will explicity flush all the batches to the 
+        server.  Generally only used in testing/dev scripts and not
+        in production when the batches will be self-flushing.
+        """
         self.log.debug('Flush called')
         self.raw_data.send()
         self.rates.send()
@@ -186,10 +208,21 @@ class CASSANDRA_DB(object):
         self.stat_agg.send()
         
     def close(self):
+        """
+        Explicitly close the connection pool.
+        """
         self.log.debug('Close/dispose called')
         self.pool.dispose()
         
     def set_raw_data(self, raw_data):
+        """
+        Called by the persister.  Writes the raw incoming data to the appropriate
+        column family.  The optional TTL option is passed in self.raw_opts and 
+        is set up in the constructor.
+        
+        The raw_data arg passes in is an instance of the RawData class defined
+        in this module.
+        """
         t = time.time()
         self.raw_data.insert(raw_data.get_key(), 
             {raw_data.ts_to_unixtime(): raw_data.val}, **self.raw_opts)
@@ -197,10 +230,25 @@ class CASSANDRA_DB(object):
         if self.profiling: self.stats.raw_insert(time.time() - t)
         
     def set_metadata(self, meta_d):
-        # Do this in memory for now
+        """
+        Just does a simple write to the dict being used as metadata.
+        """
         self.metadata_cache[meta_d.get_meta_key()] = meta_d.get_document()
         
     def get_metadata(self, raw_data):
+        """
+        Called by the persister to get the metadata - last value and timestamp -
+        for a given measurement.  If a given value is not found (as in when the 
+        program is initially started for example) it will look in the raw data
+        as far back as SEEK_BACK_THRESHOLD to find the previous value.  If found,
+        This is seeded to the cache and returned.  If not, this is presumed to be
+        new, and the cache is seeded with the value that is passed in.
+        
+        The raw_data arg passes in is an instance of the RawData class defined
+        in this module.
+        
+        The return value is a Metadata object, also defined in this module.
+        """
         t = time.time()
 
         meta_d = None
