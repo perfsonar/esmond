@@ -226,6 +226,7 @@ class CASSANDRA_DB(object):
         in this module.
         """
         t = time.time()
+        # Standard column family update.
         self.raw_data.insert(raw_data.get_key(), 
             {raw_data.ts_to_unixtime(): raw_data.val}, **self.raw_opts)
         
@@ -298,6 +299,8 @@ class CASSANDRA_DB(object):
         """
         Update the metadata cache with a recently updated value.  Called by the
         persister.
+        
+        The metadata arg is a Metadata object defined in this module.
         """
         t = time.time()
         for i in ['last_val', 'min_ts', 'last_update']:
@@ -305,14 +308,27 @@ class CASSANDRA_DB(object):
         #self.stats.meta_update((time.time() - t))
     
     def update_rate_bin(self, ratebin):
-        t = time.time()
+        """
+        Called by the persister.  This updates a base rate bin in the base 
+        rate column family.  
         
+        The ratebin arg is a BaseRateBin object defined in this module.
+        """
+        
+        t = time.time()
+        # A super column insert.  Both val and is_valid are counter types.
         self.rates.insert(ratebin.get_key(),
             {ratebin.ts_to_unixtime(): {'val': ratebin.val, 'is_valid': ratebin.is_valid}})
         
         if self.profiling: self.stats.baserate_update((time.time() - t))
         
     def update_rate_aggregation(self, raw_data, agg_ts, freq):
+        """
+        Called by the persister to update the rate aggregation rollups.
+        
+        The args are a RawData object, the "compressed" aggregation timestamp
+        and the frequency of the rollups in seconds.
+        """
         
         t = time.time()
         
@@ -321,15 +337,31 @@ class CASSANDRA_DB(object):
             min=raw_data.val, max=raw_data.val, **raw_data.get_path()
         )
         
+        # Super column update.  The base rate frequency is stored as the column
+        # name key that is not 'val' - this will be used by the query interface
+        # to generate the averages.  Both values are counter types.
         self.aggs.insert(agg.get_key(), 
             {agg.ts_to_unixtime(): {'val': agg.val, str(agg.base_freq): 1}})
         
         if self.profiling: self.stats.aggregation_update((time.time() - t))
         
     def update_stat_aggregation(self, raw_data, agg_ts, freq):
+        """
+        Called by the persister to update the stat aggregations (ie: min/max).
+        
+        Unlike the other update code, this has to read from the appropriate bin 
+        to see if the min or max needs to be updated.  The update is done if 
+        need be, and the updated boolean is set to true and returned to the
+        calling code to flush the batch if need be.  Done that way to flush 
+        more than one batch update rather than doing it each time.
+        
+        The args are a RawData object, the "compressed" aggregation timestamp
+        and the frequency of the rollups in seconds.
+        """
         
         updated = False
         
+        # Create the AggBin object.
         agg = AggregationBin(
             ts=agg_ts, freq=freq, val=raw_data.val, base_freq=raw_data.freq, count=1,
             min=raw_data.val, max=raw_data.val, **raw_data.get_path()
@@ -340,9 +372,11 @@ class CASSANDRA_DB(object):
         ret = None
         
         try:
+            # Retrieve the appropriate stat aggregation.
             ret = self.stat_agg._column_family.get(agg.get_key(), 
                         super_column=agg.ts_to_unixtime())
         except NotFoundException:
+            # Nothing will be found if the rollup bin does not yet exist.
             pass
         
         if self.profiling: self.stats.stat_fetch((time.time() - t))
@@ -350,14 +384,17 @@ class CASSANDRA_DB(object):
         t = time.time()
         
         if not ret:
+            # Bin does not exist, so initialize min and max with the same val.
             self.stat_agg.insert(agg.get_key(),
                 {agg.ts_to_unixtime(): {'min': agg.val, 'max': agg.val}})
             updated = True
         elif agg.val > ret['max']:
+            # Update max.
             self.stat_agg.insert(agg.get_key(),
                 {agg.ts_to_unixtime(): {'max': agg.val}})
             updated = True
         elif agg.val < ret['min']:
+            # Update min.
             self.stat_agg.insert(agg.get_key(),
                 {agg.ts_to_unixtime(): {'min': agg.val}})
             updated = True
@@ -369,6 +406,17 @@ class CASSANDRA_DB(object):
         return updated
         
     def _get_row_keys(self, device, path, oid, freq, ts_min, ts_max):
+        """
+        Utility function used by the query interface.
+        
+        Row keys are of the following form:
+        
+        router:interface:oid:frequency:year
+        
+        Given these values and the starting/stopping timestamp, return a
+        list of row keys (ie: more than one if the query spans years) to
+        be used as the first argument to a multiget cassandra query.
+        """
         full_path = '%s:%s:%s:%s' % (device,path,oid,freq)
         
         year_start = datetime.datetime.utcfromtimestamp(ts_min).year
@@ -386,14 +434,17 @@ class CASSANDRA_DB(object):
         
     def query_baserate_timerange(self, device=None, path=None, oid=None, 
                 freq=None, ts_min=None, ts_max=None, cf='average', as_json=False):
-        
+        """
+        Query interface method to retrieve the base rates (generally average 
+        but could be delta as well).  Could return the values programmatically,
+        but generally returns formatted json from the FormattedOutput module.
+        """
         ret = self.rates._column_family.multiget(
                 self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
                 
         if cf not in ['average', 'delta']:
-            # XXX(mmg): log this as an error
-            print cf, 'not a valid option, defaulting to average'
+            self.log.error('Not a valid option: %s - defaulting to average' % cf)
             cf = 'average'
                 
         value_divisors = { 'average': int(freq), 'delta': 1}
