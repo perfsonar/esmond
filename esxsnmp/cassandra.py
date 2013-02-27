@@ -101,6 +101,7 @@ class CASSANDRA_DB(object):
             self.log.info('Creating keyspace %s' % self.keyspace)
             sysman.create_keyspace(self.keyspace, SIMPLE_STRATEGY, 
                 {'replication_factor': '1'})
+            time.sleep(3)
         # Create column families if they don't already exist.
         # If a new column family is added, make sure to set 
         # _schema_modified = True so it will be propigated.
@@ -145,7 +146,7 @@ class CASSANDRA_DB(object):
         # If we just cleared the keyspace/data and there is more than
         # one server, pause to let schema propigate to the cluster machines.
         if _schema_modified == True:
-            self.log.info("Waiting for schema to propigate...")
+            self.log.info("Waiting for schema to propagate...")
             time.sleep(10)
             self.log.info("Done")
                 
@@ -459,7 +460,8 @@ class CASSANDRA_DB(object):
                                         'is_valid': vv['is_valid']})
             
         if as_json: # format results for query interface
-            return FormattedOutput.base_rate(ts_min, ts_max, results, freq)
+            return FormattedOutput.base_rate(ts_min, ts_max, results, freq,
+                    cf.replace('average', 'avg'))
         else:
             return results
             
@@ -566,7 +568,7 @@ class FormattedOutput(object):
             return calendar.timegm(d.utctimetuple())
     
     @staticmethod
-    def base_rate(ts_min, ts_max, results, freq=None):
+    def base_rate(ts_min, ts_max, results, freq, cf):
         """
         Generate and populate the JSON wrapper to return the 
         base rates to the query interface.
@@ -575,7 +577,7 @@ class FormattedOutput(object):
             ('agg', freq if freq else results[0]['freq']),
             ('end_time', ts_max),
             ('data', []),
-            ('cf', 'average'),
+            ('cf', cf),
             ('begin_time', ts_min)
         ]
         

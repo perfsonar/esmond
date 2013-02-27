@@ -11,6 +11,8 @@ import optparse
 import requests
 
 from esxsnmp.api.models import *
+from esxsnmp.cassandra import CASSANDRA_DB
+from esxsnmp.config import get_config, get_config_path
 
 VERSION = "0"
 
@@ -23,7 +25,7 @@ small_dev_set = ['lbl-mr2', 'anl-mr2']
 class DataBundle(object):
     """bundle together data for comparison"""
     def __init__(self, oid, frequency, device, interface, direction, begin, end, data):
-        self.oidset = oid
+        self.oid = oid
         self.frequency = frequency
         self.device = device
         self.interface = interface
@@ -53,12 +55,23 @@ def old_iface_list(dev):
 
     return ifaces
 
-def compare_data(bundle):
-    print bundle.device, bundle.interface, bundle.direction, len(bundle.data['data'])
-    # XXX lookup cassandra data here
-    #print bundle.data['data']
+def compare_data(bundle, db):
+    print bundle.device, bundle.interface, bundle.oid, bundle.frequency
+    #bundle.direction, len(bundle.data['data'])
+    ret = db.query_baserate_timerange(
+        device=bundle.device,
+        path=bundle.interface,
+        oid=bundle.oid,
+        freq=bundle.frequency,
+        ts_min=bundle.begin,
+        ts_max=bundle.end,
+        cf='delta',
+        as_json=True
+    )
+    
+    print ret
 
-def old_fetch_data(oidset, dev, iface, begin, end):
+def old_fetch_data(oidset, dev, iface, begin, end, db):
     params = dict(begin=begin, end=end)
     for d in ("in", "out"):
         url = "%s/%s/interface/%s/%s" % (OLD_REST_API, dev, iface, d)
@@ -76,9 +89,9 @@ def old_fetch_data(oidset, dev, iface, begin, end):
 
         bundle = DataBundle(oid, oidset.frequency, dev, iface, d,
                 begin, end, data)
-        compare_data(bundle)
+        compare_data(bundle, db)
 
-def process_devices(opts, devs):
+def process_devices(opts, devs, db):
     for d in devs:
         try:
             dev = Device.objects.get(name=d)
@@ -92,7 +105,7 @@ def process_devices(opts, devs):
 
         for iface in ifaces:
             data = old_fetch_data(oidset, dev.name, iface,  opts.begin,
-                    opts.end)
+                    opts.end, db)
 
 def main(argv=sys.argv):
     """Parse options, output config"""
@@ -134,8 +147,11 @@ def main(argv=sys.argv):
     if opts.Debug:
         import pdb
         pdb.set_trace()
+        
+    config = get_config(get_config_path())
+    db = CASSANDRA_DB(config)
 
-    return process_devices(opts, args)
+    return process_devices(opts, args, db)
 
 if __name__ == '__main__':
     sys.exit(main())
