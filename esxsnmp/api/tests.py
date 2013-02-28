@@ -11,6 +11,7 @@ import json
 import datetime
 import calendar
 import shutil
+import time
 
 from collections import namedtuple
 
@@ -20,9 +21,10 @@ from django.conf import settings
 from esxsnmp.api.models import Device, IfRef, ALUSAPRef
 
 from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
-     PersistQueueEmpty, TSDBPollPersister, MongoDBPollPersister
+     PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister
 from esxsnmp.config import get_config, get_config_path
-from esxsnmp.mongo import MONGO_DB, INVALID_VALUE
+from esxsnmp.cassandra import CASSANDRA_DB
+from pycassa.columnfamily import ColumnFamily
 
 try:
     import tsdb
@@ -307,114 +309,144 @@ timeseries_test_data = """
     }
 ]
 """
-class TestMongoDBPollPersister(TestCase):
+
+class TestCassandraPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
     
     def setUp(self):
         """make sure we have a clean router_a directory to start with."""
         router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
         if os.path.exists(router_a_path):
-            shutil.rmtree(router_a_path)
-    
+            shutil.rmtree(router_a_path, ignore_errors=True)
+            
     def test_persister(self):
-        """This is a very basic smoke test for a MongoDB persister."""
+        """This is a very basic smoke test for a cassandra persister."""
         config = get_config(get_config_path())
-        return # XXX(mmg): twitting this out for the time being.
         test_data = json.loads(timeseries_test_data)
+        return
         q = TestPersistQueue(test_data)
-        p = MongoDBPollPersister(config, "test", persistq=q)
+        p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
+        p.db.close()
+        p.db.stats.report('all')
         
     def test_persister_long(self):
-        """Make sure the tsdb and mongo data match"""
+        """Make sure the tsdb and cassandra data match"""
         config = get_config(get_config_path())
+        test_data = load_test_data("router_a_ifhcin_long.json")
+        
+        config.db_clear_on_testing = True
+        config.db_profile_on_testing = True
+        
+        q = TestPersistQueue(test_data)
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+        p.db.flush()
+        p.db.close()
+        p.db.stats.report('all')
         
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = TSDBPollPersister(config, "test", persistq=q)
         p.run()
         
-        test_data = load_test_data("router_a_ifhcin_long.json")
-        q = TestPersistQueue(test_data)
-        p = MongoDBPollPersister(config, "test", persistq=q)
-        try:
-            p.run()
-        except KeyboardInterrupt:
-            p.running = False
+        path_levels = []
         
-        p.db.stats.report('all')
+        router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
+        for (path, dirs, files) in os.walk(router_a_path):
+            if dirs[0] == 'TSDBAggregates':
+                break
+            path_levels.append(dirs)
+            
+        oidsets = path_levels[0]
+        oids    = path_levels[1]
+        paths   = path_levels[2]
         
+        full_paths = {}
+        
+        for oidset in oidsets:
+            for oid in oids:
+                for path in paths:
+                    full_path = 'router_a/%s/%s/%s/TSDBAggregates/30'  % \
+                        (oidset, oid, path)
+                    if not full_paths.has_key(full_path):
+                        full_paths[full_path] = 1
+                        
         ts_db = tsdb.TSDB(config.tsdb_root)
+        db = CASSANDRA_DB(config)
         
-        db = MONGO_DB(config)
+        rates = ColumnFamily(db.pool, db.rate_cf)
         
-        paths = {}
         count_bad = 0
         tsdb_aggs = 0
-        
-        for row in db.rates.find():
-            path = '%s/%s/%s/%s/TSDBAggregates/30' \
-                % (row['device'], row['oidset'], row['oid'], row['path'])
-            if not paths.has_key(path):
-                paths[path] = 1
-                
-        for p in paths.keys():
+                        
+        for p in full_paths.keys():
             v = ts_db.get_var(p)
             device,oidset,oid,path,tmp1,tmp2 = p.split('/')
             for d in v.select():
                 tsdb_aggs += 1
-                ret = db.rates.find_one(
-                    {
-                        'device': device,
-                        'oidset': oidset,
-                        'oid': oid,
-                        'path': path,
-                        'ts': datetime.datetime.utcfromtimestamp(d.timestamp)
-                    }
-                )
-                
-                if not ret:
-                    print 'missing value', d
-                    count_bad += 1
-                    continue
+                key = '%s:%s:%s:%s:%s'  % \
+                    (device,path,oid,tmp2,
+                    datetime.datetime.utcfromtimestamp(d.timestamp).year)
 
+                val = rates.get(key, [d.timestamp])[d.timestamp]
+                
                 if d.flags != ROW_VALID:
-                    assert ret['val'] == INVALID_VALUE
+                    assert val['is_valid'] == 0
                 else:
-                    assert ret['val'] == d.delta
-         
-        assert count_bad == 0       
-        assert db.rates.count() == tsdb_aggs
-        
+                    assert val['val'] == d.delta
+                    assert val['is_valid'] > 0
+                    
+        db.close()
+                    
     def test_range_baserate_query(self):
         """
         Presumed using test data loaded in previous test method.
-        
+
         Shows the three query methods that return json formatted data.
-        
+
         All args shown other than as_json are required.
         """
         config = get_config(get_config_path())
-        db = MONGO_DB(config)
+        db = CASSANDRA_DB(config)
         
         start_time = 1343956800
         end_time = 1343957400
         expected_results = 21
-        
+
         ret = db.query_baserate_timerange(
             device='router_a',
             path='fxp0.0',
             oid='ifHCInOctets',
+            freq=30,
             ts_min=start_time,
             ts_max=end_time
         )
-        
+
         assert len(ret) == expected_results
-        
+
         ret = db.query_baserate_timerange(
             device='router_a',
             path='fxp0.0',
             oid='ifHCInOctets',
+            freq=30,
+            ts_min=start_time,
+            ts_max=end_time,
+            cf='average', # average | delta - optional
+            as_json=True
+        )
+        
+        ret = json.loads(ret)
+
+        assert len(ret['data']) == expected_results
+        assert ret['begin_time'] == start_time
+        assert ret['end_time'] == end_time
+        
+        ret = db.query_raw_data(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            freq=30,
             ts_min=start_time,
             ts_max=end_time,
             as_json=True
@@ -422,9 +454,23 @@ class TestMongoDBPollPersister(TestCase):
         
         ret = json.loads(ret)
         
-        assert len(ret['data']) == expected_results
-        assert ret['begin_time'] == start_time
-        assert ret['end_time'] == end_time
+        assert len(ret['data']) == expected_results - 1
+
+        ret = db.query_aggregation_timerange(
+            device='router_a',
+            path='fxp0.0',
+            oid='ifHCInOctets',
+            ts_min=start_time - 3600,
+            ts_max=end_time,
+            freq=3600, # required!
+            cf='average',  # min | max | average - also required!
+            as_json=True
+        )
+
+        ret = json.loads(ret)
+
+        assert ret['agg'] == 3600
+        assert ret['data'][0][1] == 17
         
         ret = db.query_aggregation_timerange(
             device='router_a',
@@ -440,24 +486,26 @@ class TestMongoDBPollPersister(TestCase):
         ret = json.loads(ret)
         
         assert ret['agg'] == 3600
-        assert ret['data'][0][1] == 60
+        assert ret['data'][0][1] == 0
         
-        # If using this with mongo_raw_expire set in the configuration
-        # it will fail if the expiry time is set to less than the dates
-        # of the test data.
-        
-        ret = db.query_raw_data(
+        ret = db.query_aggregation_timerange(
             device='router_a',
             path='fxp0.0',
             oid='ifHCInOctets',
-            ts_min=start_time,
+            ts_min=start_time - 3600,
             ts_max=end_time,
+            freq=3600, # required!
+            cf='max',  # min | max | average - also required!
             as_json=True
         )
         
         ret = json.loads(ret)
         
-        assert len(ret['data']) == expected_results - 1
+        assert ret['agg'] == 3600
+        assert ret['data'][0][1] == 7500
+        
+        db.close()
+
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):

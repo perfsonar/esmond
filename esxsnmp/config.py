@@ -45,6 +45,12 @@ class ESxSNMPConfig(object):
         self.file = file
 
         self.agg_tsdb_root = None
+        self.cassandra_pass = None
+        self.cassandra_servers = []
+        self.cassandra_user = None
+        self.cassandra_raw_expire = None
+        self.db_clear_on_testing = None
+        self.db_profile_on_testing = None
         self.error_email_from = None
         self.error_email_subject = None
         self.error_email_to = None
@@ -54,11 +60,6 @@ class ESxSNMPConfig(object):
         self.htpasswd_file = None
         self.mib_dirs = []
         self.mibs = []
-        self.mongo_host = None
-        self.mongo_pass = None
-        self.mongo_port = None
-        self.mongo_user = None
-        self.mongo_raw_expire = None
         self.pid_dir = None
         self.poll_retries = 5
         self.poll_timeout = 2
@@ -95,6 +96,12 @@ class ESxSNMPConfig(object):
         config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in (
                 'agg_tsdb_root',
+                'cassandra_pass',
+                'cassandra_servers',
+                'cassandra_user',
+                'cassandra_raw_expire',
+                'db_clear_on_testing',
+                'db_profile_on_testing',
                 'db_uri',
                 'error_email_from',
                 'error_email_subject',
@@ -105,11 +112,6 @@ class ESxSNMPConfig(object):
                 'htpasswd_file',
                 'mib_dirs',
                 'mibs',
-                'mongo_host',
-                'mongo_pass',
-                'mongo_port',
-                'mongo_user',
-                'mongo_raw_expire',
                 'pid_dir',
                 'poll_retries',
                 'poll_timeout',
@@ -131,9 +133,13 @@ class ESxSNMPConfig(object):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
 
+        for key, val in cfg.items('main'):
+            if key == 'db_clear_on_testing' or key == 'db_profile_on_testing':
+                setattr(self, key, cfg.getboolean('main', key))
+        
         self.persist_map = {}
         for key, val in cfg.items("persist_map"):
-            if key == 'esxsnmp_root':
+            if key == 'esxsnmp_root': # XXX(jdugan) this is probably cruft
                 continue
 
             self.persist_map[key] = val.replace(" ", "").split(",")
@@ -158,10 +164,10 @@ class ESxSNMPConfig(object):
 
         if self.mibs:
             self.mibs = map(str.strip, self.mibs.split(','))
-        if self.mongo_port:
-            self.mongo_port = int(self.mongo_port)
-        if self.mongo_raw_expire:
-            self.mongo_raw_expire = int(self.mongo_raw_expire)
+        if self.cassandra_raw_expire:
+            self.cassandra_raw_expire = int(self.cassandra_raw_expire)
+        if self.cassandra_servers:
+            self.cassandra_servers = map(str.strip, self.cassandra_servers.split(','))
         if self.poll_timeout:
             self.poll_timeout = int(self.poll_timeout)
         if self.poll_retries:

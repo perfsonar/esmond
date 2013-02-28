@@ -8,6 +8,7 @@ import calendar
 import datetime
 import json
 import os
+import pprint
 import sys
 import time
 # Third party
@@ -15,7 +16,7 @@ import pymongo
 from pymongo import ASCENDING, DESCENDING
 from pymongo.connection import Connection
 from pymongo.errors import ConnectionFailure
-from pymongo.read_preferences import ReadPreference as rp
+#from pymongo.read_preferences import ReadPreference as rp
 from bson.son import SON
 
 INVALID_VALUE = -9999
@@ -51,11 +52,16 @@ class MONGO_DB(object):
     
     insert_flags = { 'safe': True }
     
-    def __init__(self, config, clear_on_test=False):
+    def __init__(self, config, clear_on_test=False, secondary_read=False):
         # Connection
+        _kw = {}
+        if secondary_read:
+            #_kw['read_preference'] = rp.SECONDARY_PREFERRED
+            pass
+        
         try:
             self.connection = pymongo.Connection(host=config.mongo_host, 
-                    port=config.mongo_port, read_preference=rp.SECONDARY_PREFERRED)
+                    port=config.mongo_port, **_kw)
         except ConnectionFailure:
             raise ConnectionException("Couldn't connect to DB "
                             "at %s:%d" % (config.mongo_host, config.mongo_port))
@@ -77,11 +83,10 @@ class MONGO_DB(object):
         self.aggs     = self.db[self.agg_coll]
         
         if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
-            self.raw_data.drop()
-            self.metadata.drop()
-            self.rates.drop()
-            self.aggs.drop()
-            #self.connection.drop_database(self.database)
+            self.raw_data.remove({})
+            self.metadata.remove({})
+            self.rates.remove({})
+            self.aggs.remove({})
         
         # Indexes
         self.metadata.ensure_index(self.meta_idx, unique=True)
@@ -205,7 +210,7 @@ class MONGO_DB(object):
                 self.aggs.update(
                     { '_id': ret['_id'] },
                     { '$set': { update_attr : raw_data.val} },
-                    new=True, upsert=False, **self.insert_flags
+                    upsert=False, **self.insert_flags
                 )
                 self.stats.aggregation_update((time.time() - t1))
         
@@ -366,6 +371,7 @@ class FormattedOutput(object):
         fmt = SON(fmt)
         
         for r in results:
+            print r
             ro = AggregationBin(**r)
             fmt['data'].append(
                 [

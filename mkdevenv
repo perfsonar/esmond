@@ -3,6 +3,7 @@
 export VENV_ROOT=`pwd`
 export ESXSNMP_ROOT=${VENV_ROOT}/devel
 export ESXSNMP_CONF=${ESXSNMP_ROOT}/esxsnmp-devel.conf
+export ESXSNMP_CLUSTER_CONF=${ESXSNMP_ROOT}/mongodb-cluster.conf
 export DJANGO_SETTINGS_MODULE=esxsnmp.settings
 
 # create a dummy TSDB
@@ -30,6 +31,7 @@ pip install -r requirements.txt
 cat <<EOF > esxsnmp.env
 export ESXSNMP_ROOT=${ESXSNMP_ROOT}
 export ESXSNMP_CONF=${ESXSNMP_CONF}
+export ESXSNMP_CLUSTER_CONF=${ESXSNMP_CLUSTER_CONF}
 export ESXSNMP_TESTING=1
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
 export VENV_ROOT=${VENV_ROOT}

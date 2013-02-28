@@ -598,7 +598,7 @@
         "pk": 5,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 300,
             "name": "CiscoCPU",
             "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=CiscoCPUCorrelator"
@@ -608,7 +608,7 @@
         "pk": 4,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 60,
             "name": "JnxFirewall",
             "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=JnxFirewallCorrelator"
@@ -618,7 +618,7 @@
         "pk": 6,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 30,
             "name": "JnxCOS",
             "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=JnxCOSCorrelator"
@@ -628,7 +628,7 @@
         "pk": 1,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 30,
             "name": "FastPoll",
             "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
@@ -638,7 +638,7 @@
         "pk": 2,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 30,
             "name": "FastPollHC",
             "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
@@ -648,7 +648,7 @@
         "pk": 7,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 300,
             "name": "Errors",
             "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
@@ -658,7 +658,7 @@
         "pk": 3,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 2,
+            "poller": 2,
             "frequency": 60,
             "name": "IfRefPoll",
             "poller_args": null
@@ -668,7 +668,7 @@
         "pk": 8,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 30,
             "name": "InfFastPollHC",
             "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=InfIfDescrCorrelator"
@@ -678,7 +678,7 @@
         "pk": 9,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 2,
+            "poller": 2,
             "frequency": 60,
             "name": "InfIfRefPoll",
             "poller_args": null
@@ -688,7 +688,7 @@
         "pk": 10,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 2,
+            "poller": 2,
             "frequency": 60,
             "name": "LSPOpStatus",
             "poller_args": null
@@ -698,7 +698,7 @@
         "pk": 11,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 60,
             "name": "SentryPoll",
             "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=SentryCorrelator"
@@ -708,7 +708,7 @@
         "pk": 13,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 2,
+            "poller": 2,
             "frequency": 60,
             "name": "ALUIfRefPoll",
             "poller_args": ""
@@ -718,7 +718,7 @@
         "pk": 12,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 30,
             "name": "ALUFastPollHC",
             "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUIfDescrCorrelator set_name=FastPollHC"
@@ -728,7 +728,7 @@
         "pk": 14,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 300,
             "name": "ALUErrors",
             "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUIfDescrCorrelator aggregates=3600,86400 set_name=Errors"
@@ -738,7 +738,7 @@
         "pk": 15,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 1,
+            "poller": 1,
             "frequency": 11,
             "name": "ALUSAPPoll",
             "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUSAPCorrelator aggregates=30,3600,86400"
@@ -748,7 +748,7 @@
         "pk": 16,
         "model": "api.oidset",
         "fields": {
-            "pollerid": 2,
+            "poller": 2,
             "frequency": 60,
             "name": "ALUSAPRefPoll",
             "poller_args": ""

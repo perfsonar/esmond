@@ -9,7 +9,7 @@ setup(name='esxsnmp',
         author_email='jdugan@es.net',
         url='http://code.google.com/p/esxsnmp/',
         packages=['esxsnmp', 'esxsnmp.api', 'esxsnmp.admin'],
-        install_requires=['tsdb', 'Django==1.4.1', 'django-tastypie', 'web.py', 'simplejson', 'python-memcached', 'pymongo', 'pysqlite', 'mongoctl'],
+        install_requires=['tsdb', 'Django==1.4.1', 'django-tastypie', 'web.py', 'simplejson', 'python-memcached', 'pymongo', 'pycassa', 'mongoctl'],
         entry_points = {
             'console_scripts': [
                 'espolld = esxsnmp.poll:espolld',
@@ -18,6 +18,7 @@ setup(name='esxsnmp',
                 'esfetch = esxsnmp.fetch:esfetch',
                 'esdbd = esxsnmp.newdb:esdb_standalone',
                 'gen_ma_storefile = esxsnmp.perfsonar:gen_ma_storefile',
+                'esmanage = esxsnmp.manage:esmanage',
             ]
         }
     )

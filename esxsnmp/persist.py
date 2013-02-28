@@ -33,7 +33,8 @@ from esxsnmp.error import ConfigError
 
 from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
 
-from esxsnmp.mongo import MONGO_DB, RawData, BaseRateBin, AggregationBin, INVALID_VALUE
+from esxsnmp.cassandra import CASSANDRA_DB, RawData, BaseRateBin, AggregationBin, \
+        SEEK_BACK_THRESHOLD
 
 try:
     import cmemcache as memcache
@@ -44,7 +45,7 @@ except ImportError:
         raise Exception('no memcache library found')
 
 PERSIST_SLEEP_TIME = 1
-
+HEARTBEAT_FREQ_MULTIPLIER = 3
 
 class PollResult(object):
     """PollResult contains the results of a polling run.
@@ -240,7 +241,7 @@ class TSDBPollPersister(PollPersister):
 
         t0 = time.time()
         nvar = 0
-
+        
         for var, val in result.data:
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
                 val = float(val) * 100
@@ -344,11 +345,8 @@ class TSDBPollPersister(PollPersister):
             self.log.error("bad metadata for %s" % var_name)
             
 
-class MongoDBPollPersister(PollPersister):
-    """Given a ``PollResult`` write the data to a TSDB.
-
-    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
-    write to.
+class CassandraPollPersister(PollPersister):
+    """Given a ``PollResult`` write the data to a Cassandra backend.
 
     The ``data`` member of the PollResult must be a list of (name,value)
     pairs.  The ``metadata`` member of PollResult must contain the following
@@ -361,8 +359,13 @@ class MongoDBPollPersister(PollPersister):
 
     def __init__(self, config, qname, persistq):
         PollPersister.__init__(self, config, qname, persistq)
-        
-        self.db = MONGO_DB(config, clear_on_test=True)
+        # The clear on testing arg - set in the config file if the
+        # testing env var is set will result in the target keyspace
+        # and all of its data being deleted and rebuilt.
+        self.log.debug("connecting to cassandra")
+        self.db = CASSANDRA_DB(config, qname=qname, 
+                                clear_on_test=config.db_clear_on_testing)
+        self.log.debug("connected to cassandra")
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
@@ -383,14 +386,13 @@ class MongoDBPollPersister(PollPersister):
 
             for oid in oidset.oids.all():
                 self.oids[oid.name] = oid
-    
+
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
         set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
         basename = os.path.join(result.device_name, set_name)
         oid = self.oids[result.oid_name]
-        flags = result.metadata['tsdb_flags']
-
+        
         t0 = time.time()
         nvar = 0
 
@@ -398,77 +400,107 @@ class MongoDBPollPersister(PollPersister):
             if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
                 val = float(val) * 100
             nvar += 1
-
+            
             var_name = os.path.join(basename, var)
+            # XXX(mmg/jugan): this is a bad hack to get testing going.
+            if var_name.endswith("sysUpTime"):
+                continue
             device_n,oidset_n,oid_n,path_n = var_name.split('/')
-            
-            #if path_n != 'fxp0.0':
-            #    continue
-            
+
+            # This shouldn't happen.
+            if val is None:
+                self.log.error('Got a None value for %s' %s (var_name,))
+                continue
+                
+            # Create data encapsulation object (defined in cassandra.py 
+            # module) and store the raw input.
+
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                    result.timestamp, flags, val, oidset.frequency)
-            
+                    result.timestamp, val=val, freq=oidset.frequency)
+
             self.db.set_raw_data(raw_data)
 
+            # Generate aggregations if apropos.
             if oid.aggregate:
                 delta_v = self.aggregate_base_rate(raw_data)
                 uptime_name = os.path.join(basename, 'sysUpTime')
-                # XXX(mmg) how do we handle this uptime?
                 
-                # May want a condition on this, so build higher
-                # level aggregations elsewhere
-                
-                if delta_v:
-                    # We got a good delta back from base rate, so
-                    # build an aggregation with it
+                if delta_v != None: # a value of zero is ok
+                    # We got a good delta back - generate rollups.
+                    # Just swap the delta into the raw data object.
                     raw_data.val = delta_v
                     self.generate_aggregations(raw_data, oidset.aggregates)
             else:
-                # XXX(mmg): put non-rate value handling here and also
-                # metadata updates for said.
                 pass
 
         self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
             time.time() - t0, result))
-            
+
     def aggregate_base_rate(self, data):
+        """
+        Given incoming data that is meant for aggregation, generate and 
+        store the base rate deltas, update the metadata cache, and if a valid 
+        delta (delta_v) is generated, return to calling code to generate
+        higher-level rollup aggregations.
+        
+        The data arg passed in is a RawData encapsulation object as
+        defined in the cassandra.py module.  
+        
+        All of this logic is copied/adapted from the TSDB aggregator.py
+        module.
+        """
 
         metadata = self.db.get_metadata(data)
         last_update = metadata.ts_to_unixtime('last_update')
 
         if data.min_last_update and data.min_last_update > last_update:
             last_update = data.min_last_update
-        
+
         min_ts = metadata.ts_to_unixtime('min_ts')
-        
+
         if min_ts > last_update:
             last_update = min_ts
             metatdata.last_update = last_update
-            
+
         # This mimics logic in the tsdb persister - skip any further 
         # processing of the rate aggregate if this is the first value
-        
+
         if data.val == metadata.last_val and \
             data.ts == metadata.last_update:
             return
-        
+
+        # We've retrieved valid previous vals/ts from metadata, so calculate
+        # the value and time delta, and the fractional slots that the data
+        # will (usually) be split between.
         delta_t = data.ts_to_unixtime() - metadata.ts_to_unixtime('last_update')
         delta_v = data.val - metadata.last_val
-        
+
         prev_slot = (metadata.ts_to_unixtime('last_update') / data.freq) * data.freq
         curr_slot = (data.ts_to_unixtime() / data.freq) * data.freq
-        
+
         rate = float(delta_v) / float(delta_t)
+        # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
         max_rate = int(110e9)
 
+        # Reality check the current rate and make sure the delta is
+        # equal to or greater than zero.  Log errors but still update
+        # the metadata cache with the most recently seen raw value/ts 
+        # then stop processing.
         if rate > max_rate:
             self.log.error('max_rate_exceeded - %s - %s - %s' \
                 % (rate, metadata.last_val, data.val))
             metadata.refresh_from_raw(data)
             return
+
+        if delta_v < 0:
+            self.log.error('delta_v < 0: %s vals: %s - %s path: %s' % \
+                (delta_v,data.val,metadata.last_val,metadata.get_meta_key()))
+            metadata.refresh_from_raw(data)
+            return
             
-        assert delta_v >= 0
-        
+        # Things look good so generate the fractional deltas to distribute
+        # between the bins.
+
         prev_frac = int( floor(
                 delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
                 / float(delta_t)
@@ -478,20 +510,49 @@ class MongoDBPollPersister(PollPersister):
                     delta_v * (data.ts_to_unixtime() - curr_slot)
                     / float(delta_t)
                 ))
+
+        # This re-implements old "hearbeat" logic.  If the current time
+        # delta is greater than HEARTBEAT_FREQ_MULTIPLIER (3), write
+        # zero-value non-valid bins in the gap.  These MAY be updated
+        # later with valid values or backfill.  Then update only
+        # the current bin, update metadata with current slot info
+        # and return the delta.
+        if delta_t > data.freq * HEARTBEAT_FREQ_MULTIPLIER:
+            if delta_t < SEEK_BACK_THRESHOLD:
+                # Only execute the invalid value backfill if delta_t is
+                # less than 30 days.
+                for slot in range(prev_slot, curr_slot, data.freq):
+                    bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, 
+                        is_valid=0, **data.get_path())
+                    self.db.update_rate_bin(bad_bin)
+            # Update only the "current" bin and return.
+            curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
+                **data.get_path())
+            self.db.update_rate_bin(curr_bin)
+            
+            metadata.refresh_from_raw(data)
+            self.db.update_metadata(metadata)
+
+            return
+            
                 
-        # XXX(mmg): include HEARTBEAT backfill logic here.
-        
+        # Now, write the new valid data between the appropriate bins.
+
         prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
                 **data.get_path())
         curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
                 **data.get_path())
-        
+
         self.db.update_rate_bin(prev_bin)
         self.db.update_rate_bin(curr_bin)
+
+        # Original backfill logic from the tsdb.aggregator
+        # This has been slightly modified from the orignial.
         
-        # backfill logic from the tsdb.aggregator
-        # This has been modified from the orignial!
-        
+        # The backfill code is invoked if there is a gap in the data (ie: 
+        # the slot times are greater than the frequency), but not so big so
+        # as to require the 'heartbeat' code to be invoked.
+
         if (curr_slot - prev_slot) > data.freq: # New condition - missing bins?
             missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
             if not missed_slots:
@@ -505,32 +566,64 @@ class MongoDBPollPersister(PollPersister):
                     miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=missed_frac,
                             **data.get_path())
                     self.db.update_rate_bin(miss_bin)
-                
+
                     for i in range(missed_rem):
                         dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
                             val=1, **data.get_path())
+                        self.db.update_rate_bin(dist_bin)
             else:
-                # Presume invalid data (new logic)
+                # Presume invalid data (new logic) and fill gap/slots
+                # with invalid values.
                 for slot in missed_slots:
-                    # XXX(mmg): rectify using -9999 - this is a stopgap
-                    # to get some code pushed.
-                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=INVALID_VALUE,
-                            **data.get_path())
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=0,
+                            is_valid=0, **data.get_path())
                     self.db.update_rate_bin(miss_bin)
-        
-        
+
+        # Gotten to the final success condition, so update the metadata
+        # cache with values from the current data input and return the 
+        # valid delta to the calling code.
         metadata.refresh_from_raw(data)
         self.db.update_metadata(metadata)
         
         return delta_v
-        
+
     def _agg_timestamp(self, data, freq):
+        """
+        Utility method to generate the 'compressed' timestamp for an higher-level 
+        aggregation bin.  
+        
+        The data arg is a data encapsulation object.
+        
+        The freq arg is the frequency of the desired aggregation to be written 
+        to (ie: 5 mins, hourly, etc) in seconds.
+        """
         return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
-        
+
     def generate_aggregations(self, data, aggregate_freqs):
+        """
+        Given a data encapsulation object that has been updated with the 
+        current delta, iterate through the frequencies in oidset.aggregates
+        and generate the appropriate higher level aggregations.
         
+        The 'rate aggregations' are the summed deltas and the associated 
+        counts.  The 'stat aggregations' are the min/max values.  These 
+        are being writtent to two different column families due to schema
+        constraints.
+        
+        Since the stat aggregations are read from/not just written to, 
+        track if a new value has been generated (min/max will only be updated
+        periodically), and if so, explicitly flush the stat_agg batch.
+        """
+        stat_updated = False
+
         for freq in aggregate_freqs:
-            self.db.update_aggregation(data, self._agg_timestamp(data, freq), freq)
+            self.db.update_rate_aggregation(data, self._agg_timestamp(data, freq), freq)
+            updated = self.db.update_stat_aggregation(data, 
+                                        self._agg_timestamp(data, freq), freq)
+            if updated: stat_updated = True
+                                
+        if stat_updated:
+            self.db.stat_agg.send()
             
         
 
@@ -891,7 +984,7 @@ class MemcachedPersistQueue(PersistQueue):
 
 
 class PersistClient(object):
-    def __init__(self, config):
+    def __init__(self, name, config):
         self.config = config
         self.sinks = []
         self.log = get_logger("espersist.client")
@@ -903,7 +996,7 @@ class PersistClient(object):
 
         for uri in config.espoll_persist_uri:
             (kind, kind_uri) = uri.split(':', 1)
-            sink = eval('%s(config, "%s")' % (kind, kind_uri))
+            sink = eval('%s(name, config, "%s")' % (kind, kind_uri))
             self.sinks.append(sink)
 
     def put(self, result):
@@ -947,11 +1040,11 @@ class MultiWorkerQueue(object):
 
 
 class MemcachedPersistHandler(object):
-    def __init__(self, config, uri):
+    def __init__(self, name, config, uri):
         self.queues = {}
         self.config = config
         self.uri = uri
-        self.log = get_logger("MemcachedPersistHandler")
+        self.log = get_logger(name)
 
         for qname in config.persist_queues:
             num_workers = self.config.persist_queues[qname][1]
@@ -1065,17 +1158,17 @@ def worker(name, config, opts):
 
     os.umask(0022)
 
-    init_logging(name, config.syslog_facility, level=config.syslog_priority,
-            debug=opts.debug)
-
     (qclass, nworkers) = config.persist_queues[opts.qname]
     if nworkers > 1:
         name += '_%s' % opts.number
         opts.qname += '_%s' % opts.number
 
+    init_logging("espersistd." + opts.qname, config.syslog_facility, level=config.syslog_priority,
+            debug=opts.debug)
+
     setproctitle(name)
     klass = eval(qclass)
-    worker = klass(config, opts.qname, persistq=None) # XXX(mmg): add persistq choice logic
+    worker = klass(config, opts.qname, persistq=None)
 
     worker.run()
     # do_profile("worker.run()", globals(), locals())
@@ -1206,11 +1299,10 @@ def espersistd():
         try:
             PersistManager(name, config, opts).run()
         except Exception, e:
-            log.error("Problem with manager module: %s" % e)
+            log.error("Problem with manager module: %s" % e, ecv_info=True)
+            raise
             sys.exit(1)
     elif opts.role == 'worker':
-        worker(name, config, opts)
-        sys.exit(0)
         try:
             worker(name, config, opts)
         except Exception, e:
