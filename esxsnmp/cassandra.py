@@ -2,6 +2,45 @@
 # encoding: utf-8
 """
 Cassandra DB interface calls and data encapsulation objects.
+
+Esxsnmp schema in json-like notation:
+
+// regular col family
+"raw_data" : {
+    "router_a:xe-0_2_0:ifHCInOctets:30:2012" : {
+        "1343955624" : "16150333739148" // both long values.
+    }
+}
+
+// supercolumn
+"base_rates" : {
+    "router_a:xe-0_2_0:ifHCInOctets:30:2012" : {
+        "1343955600" : {     // long column name.
+            "val": "123",    // string key, counter type value.
+            "is_valid" : "2" // zero or positive non-zero.
+        }
+    }
+}
+
+// supercolumn
+"rate_aggregations" : {
+    "router_a:ge-9_0_5.0:ifHCInOctets:3600:2012" : {
+        "1343955600" : {   // long column name.
+            "val": "1234", // string key, counter type.
+            "30": "38"     // key of the 'non-val' column is freq of the base rate.
+        }                  // the value of said is the count used in the average.
+    }
+}
+
+// supercolumn
+"stat_aggregations" : {
+    "router_a:ge-9_0_0.44:ifHCInOctets:86400:2012" : {
+        "1343955600" : { // long column name.
+            "min": "0",  // string keys, long types.
+            "max": "484140" 
+        }
+    }
+}
 """
 # Standard
 import calendar
