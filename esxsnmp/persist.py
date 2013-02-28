@@ -479,6 +479,7 @@ class CassandraPollPersister(PollPersister):
         curr_slot = (data.ts_to_unixtime() / data.freq) * data.freq
 
         rate = float(delta_v) / float(delta_t)
+        # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
         max_rate = int(110e9)
 
         # Reality check the current rate and make sure the delta is
