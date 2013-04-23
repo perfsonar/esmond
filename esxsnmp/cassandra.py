@@ -8,7 +8,8 @@ Esxsnmp schema in json-like notation:
 // regular col family
 "raw_data" : {
     "router_a:xe-0_2_0:ifHCInOctets:30:2012" : {
-        "1343955624" : "16150333739148" // both long values.
+        "1343955624" :   // long column name
+        "16150333739148" // UTF-8 containing JSON for values.
     }
 }
 
@@ -150,7 +151,7 @@ class CASSANDRA_DB(object):
             _schema_modified = True
             sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
                     comparator_type=LONG_TYPE, 
-                    default_validation_class=LONG_TYPE,
+                    default_validation_class=UTF8_TYPE,
                     key_validation_class=UTF8_TYPE)
             self.log.info('Created CF: %s' % self.raw_cf)
         # Base Rate CF
@@ -268,7 +269,7 @@ class CASSANDRA_DB(object):
         t = time.time()
         # Standard column family update.
         self.raw_data.insert(raw_data.get_key(), 
-            {raw_data.ts_to_unixtime(): raw_data.val}, **self.raw_opts)
+            {raw_data.ts_to_unixtime(): json.dumps(raw_data.val)}, **self.raw_opts)
         
         if self.profiling: self.stats.raw_insert(time.time() - t)
         
@@ -317,7 +318,7 @@ class CASSANDRA_DB(object):
                 # seed/return that.
                 key = ret.keys()[0]
                 ts = ret[key].keys()[0]
-                val = ret[key][ts]
+                val = json.loads(ret[key][ts])
                 meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
                     freq=raw_data.freq, **raw_data.get_path())
                 self.log.debug('Metadata lookup from raw_data for: %s' %\
@@ -579,7 +580,10 @@ class CASSANDRA_DB(object):
 
         for k,v in ret.items():
             for kk,vv in v.items():
-                results.append({'ts': kk, 'val': vv})
+                # XXX(jdugan): perhaps we don't want to deserialize this?
+                #              should the advertised behavior be that we return
+                #              a JSON string?
+                results.append({'ts': kk, 'val': json.loads(vv)})
         
         if as_json: # format results for query interface
             return FormattedOutput.raw_data(ts_min, ts_max, results, freq)
