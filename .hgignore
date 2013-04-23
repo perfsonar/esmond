@@ -20,6 +20,8 @@ src
 devel/tsdb-data
 devel/var
 devel/crashlog
+devel/dsc-cassandra*
+devel/cassandra
 devel/cluster
 devel/cluster_test
 devel/mongodb-cluster.conf
