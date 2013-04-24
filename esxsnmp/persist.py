@@ -319,6 +319,7 @@ class TSDBPollPersister(PollPersister):
             #self.log.warning("unable to get uptime for %s" % var_name)
             uptime = None
 
+        # XXX(jdugan): revisit min_last_update
         min_last_update = timestamp - oidset.frequency * 40
 
         def log_bad(ancestor, agg, rate, prev, curr):
@@ -416,7 +417,7 @@ class CassandraPollPersister(PollPersister):
             # module) and store the raw input.
 
             raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                    result.timestamp, val=val, freq=oidset.frequency)
+                    result.timestamp * 1000, val=val, freq=oidset.frequency_ms)
 
             self.db.set_raw_data(raw_data)
 
@@ -451,12 +452,12 @@ class CassandraPollPersister(PollPersister):
         """
 
         metadata = self.db.get_metadata(data)
-        last_update = metadata.ts_to_unixtime('last_update')
+        last_update = metadata.ts_to_jstime('last_update')
 
         if data.min_last_update and data.min_last_update > last_update:
             last_update = data.min_last_update
 
-        min_ts = metadata.ts_to_unixtime('min_ts')
+        min_ts = metadata.ts_to_jstime('min_ts')
 
         if min_ts > last_update:
             last_update = min_ts
@@ -472,11 +473,11 @@ class CassandraPollPersister(PollPersister):
         # We've retrieved valid previous vals/ts from metadata, so calculate
         # the value and time delta, and the fractional slots that the data
         # will (usually) be split between.
-        delta_t = data.ts_to_unixtime() - metadata.ts_to_unixtime('last_update')
+        delta_t = data.ts_to_jstime() - metadata.ts_to_jstime('last_update')
         delta_v = data.val - metadata.last_val
 
-        prev_slot = (metadata.ts_to_unixtime('last_update') / data.freq) * data.freq
-        curr_slot = (data.ts_to_unixtime() / data.freq) * data.freq
+        prev_slot = (metadata.ts_to_jstime('last_update') / data.freq) * data.freq
+        curr_slot = (data.ts_to_jstime() / data.freq) * data.freq
 
         rate = float(delta_v) / float(delta_t)
         # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
@@ -502,12 +503,12 @@ class CassandraPollPersister(PollPersister):
         # between the bins.
 
         prev_frac = int( floor(
-                delta_v * (prev_slot + data.freq - metadata.ts_to_unixtime('last_update'))
+                delta_v * (prev_slot + data.freq - metadata.ts_to_jstime('last_update'))
                 / float(delta_t)
                 ))
 
         curr_frac = int( ceil(
-                    delta_v * (data.ts_to_unixtime() - curr_slot)
+                    delta_v * (data.ts_to_jstime() - curr_slot)
                     / float(delta_t)
                 ))
 

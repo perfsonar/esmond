@@ -139,6 +139,11 @@ class OIDSet(models.Model):
                     break
         return aggs
 
+    @property
+    def frequency_ms(self):
+        return self.frequency * 1000
+
+
 class OIDSetMember(models.Model):
     """Associate :py:class:`.OID`s with :py:class:`.OIDSets`"""
 

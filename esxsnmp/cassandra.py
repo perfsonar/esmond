@@ -269,7 +269,7 @@ class CASSANDRA_DB(object):
         t = time.time()
         # Standard column family update.
         self.raw_data.insert(raw_data.get_key(), 
-            {raw_data.ts_to_unixtime(): json.dumps(raw_data.val)}, **self.raw_opts)
+            {raw_data.ts_to_jstime(): json.dumps(raw_data.val)}, **self.raw_opts)
         
         if self.profiling: self.stats.raw_insert(time.time() - t)
         
@@ -301,7 +301,7 @@ class CASSANDRA_DB(object):
             # Didn't find a value in the metadata cache.  First look
             # back through the raw data for SEEK_BACK_THRESHOLD seconds
             # to see if we can find the last processed value.
-            ts_max = raw_data.ts_to_unixtime() - 1 # -1 to look at older vals
+            ts_max = raw_data.ts_to_jstime() - 1000 # -1000ms to look at older vals
             ts_min = ts_max - SEEK_BACK_THRESHOLD
             ret = self.raw_data._column_family.multiget(
                     self._get_row_keys(raw_data.device,raw_data.path,raw_data.oid,
@@ -359,7 +359,7 @@ class CASSANDRA_DB(object):
         t = time.time()
         # A super column insert.  Both val and is_valid are counter types.
         self.rates.insert(ratebin.get_key(),
-            {ratebin.ts_to_unixtime(): {'val': ratebin.val, 'is_valid': ratebin.is_valid}})
+            {ratebin.ts_to_jstime(): {'val': ratebin.val, 'is_valid': ratebin.is_valid}})
         
         if self.profiling: self.stats.baserate_update((time.time() - t))
         
@@ -382,7 +382,7 @@ class CASSANDRA_DB(object):
         # name key that is not 'val' - this will be used by the query interface
         # to generate the averages.  Both values are counter types.
         self.aggs.insert(agg.get_key(), 
-            {agg.ts_to_unixtime(): {'val': agg.val, str(agg.base_freq): 1}})
+            {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): 1}})
         
         if self.profiling: self.stats.aggregation_update((time.time() - t))
         
@@ -415,7 +415,7 @@ class CASSANDRA_DB(object):
         try:
             # Retrieve the appropriate stat aggregation.
             ret = self.stat_agg._column_family.get(agg.get_key(), 
-                        super_column=agg.ts_to_unixtime())
+                        super_column=agg.ts_to_jstime())
         except NotFoundException:
             # Nothing will be found if the rollup bin does not yet exist.
             pass
@@ -427,17 +427,17 @@ class CASSANDRA_DB(object):
         if not ret:
             # Bin does not exist, so initialize min and max with the same val.
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_unixtime(): {'min': agg.val, 'max': agg.val}})
+                {agg.ts_to_jstime(): {'min': agg.val, 'max': agg.val}})
             updated = True
         elif agg.val > ret['max']:
             # Update max.
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_unixtime(): {'max': agg.val}})
+                {agg.ts_to_jstime(): {'max': agg.val}})
             updated = True
         elif agg.val < ret['min']:
             # Update min.
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_unixtime(): {'min': agg.val}})
+                {agg.ts_to_jstime(): {'min': agg.val}})
             updated = True
         else:
             pass
@@ -459,9 +459,9 @@ class CASSANDRA_DB(object):
         be used as the first argument to a multiget cassandra query.
         """
         full_path = '%s:%s:%s:%s' % (device,path,oid,freq)
-        
-        year_start = datetime.datetime.utcfromtimestamp(ts_min).year
-        year_finish = datetime.datetime.utcfromtimestamp(ts_max).year
+       
+        year_start = datetime.datetime.utcfromtimestamp(float(ts_min)/1000.0).year
+        year_finish = datetime.datetime.utcfromtimestamp(float(ts_max)/1000.0).year
         
         key_range = []
         
@@ -603,12 +603,12 @@ class FormattedOutput(object):
     @staticmethod
     def _from_datetime(d):
         """
-        Utility method to convert a datetime object to a unix timestamp.
+        Utility method to convert a datetime object to a JavaScript timestamp.
         """
-        if type(d) != type(datetime.datetime.now()):
+        if type(d) != datetime.datetime:
             return d
         else:
-            return calendar.timegm(d.utctimetuple())
+            return calendar.timegm(d.utctimetuple()) * 1000
     
     @staticmethod
     def base_rate(ts_min, ts_max, results, freq, cf):
@@ -657,7 +657,7 @@ class FormattedOutput(object):
             ro = AggregationBin(**r)
             fmt['data'].append(
                 [
-                    ro.ts_to_unixtime(),
+                    ro.ts_to_jstime(),
                     # Get the min/max/avg attr frmo Bin object as necessary.
                     getattr(ro, cf)
                 ]
@@ -824,12 +824,13 @@ class DataContainerBase(object):
         
     def _handle_date(self,d):
         """
-        Return a datetime object given a unix timestamp.
+        Return a datetime object given a JavaScript timestamp.
         """
-        if type(d) == type(datetime.datetime.now()):
+
+        if type(d) == datetime.datetime:
             return d
         else:
-            return datetime.datetime.utcfromtimestamp(d)
+            return datetime.datetime.utcfromtimestamp(float(d)/1000.0)
 
     def get_document(self):
         """
@@ -892,11 +893,21 @@ class DataContainerBase(object):
         p = self.get_path()
         return (p['device'], p['oidset'], p['oid'], p['path'])
         
+    def ts_to_jstime(self, t='ts'):
+        """
+        Return an internally represented datetime value as a JavaScript
+        timestamp which is milliseconds since the epoch (Unix timestamp * 1000).
+        Defaults to returning 'ts' property, but can be given an arg to grab a
+        different property/attribute like Metadata.last_update.
+        """
+        ts = getattr(self, t)
+        return calendar.timegm(ts.utctimetuple()) * 1000
+
     def ts_to_unixtime(self, t='ts'):
         """
-        Return an internally represented datetime value as a unix timestamp. 
-        Defaults to returning 'ts' property, but can be given an arg to grab
-        a different property/attribute like Metadata.last_update.
+        Return an internally represented datetime value as a Unix timestamp.
+        Defaults to returning 'ts' property, but can be given an arg to grab a
+        different property/attribute like Metadata.last_update.
         """
         ts = getattr(self, t)
         return calendar.timegm(ts.utctimetuple())
@@ -906,7 +917,7 @@ class RawData(DataContainerBase):
     """
     Container for raw data rows.  Can be instantiated from args when
     reading from persist queue, or via **kw when reading data back
-    out of mongo.
+    out of Cassandra.
     """
     _doc_properties = ['ts']
     
@@ -928,11 +939,11 @@ class RawData(DataContainerBase):
         
     @property
     def min_last_update(self):
-        return self.ts_to_unixtime() - self.freq * 40
+        return self.ts_to_jstime() - self.freq * 40
         
     @property
     def slot(self):
-        return (self.ts_to_unixtime() / self.freq) * self.freq
+        return (self.ts_to_jstime() / self.freq) * self.freq
     
         
 class Metadata(DataContainerBase):
