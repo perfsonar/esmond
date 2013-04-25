@@ -11,10 +11,8 @@ import base64
 
 import web
 from web.webapi import HTTPError
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
+
 try: 
     import cmemcache as memcache
 except ImportError:

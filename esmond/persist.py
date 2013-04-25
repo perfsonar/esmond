@@ -15,10 +15,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 import cPickle as pickle
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 
 import tsdb
 import tsdb.row

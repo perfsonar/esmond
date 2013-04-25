@@ -3,10 +3,7 @@ import time
 import base64
 import httplib2
 import urllib
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 
 #from esmond.util import remove_metachars
 
