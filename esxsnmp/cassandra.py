@@ -64,7 +64,9 @@ from pycassa.system_manager import *
 
 from thrift.transport.TTransport import TTransportException
 
-SEEK_BACK_THRESHOLD = 2592000 # 30 days
+# XXX(jdugan): revisit this number, (was adjusted for ms)
+SEEK_BACK_THRESHOLD = 2592000000 # 30 days in ms
+KEY_DELIMITER = ":"
 
 class CassandraException(Exception):
     """Common base"""
@@ -273,11 +275,11 @@ class CASSANDRA_DB(object):
         
         if self.profiling: self.stats.raw_insert(time.time() - t)
         
-    def set_metadata(self, meta_d):
+    def set_metadata(self, k, meta_d):
         """
         Just does a simple write to the dict being used as metadata.
         """
-        self.metadata_cache[meta_d.get_meta_key()] = meta_d.get_document()
+        self.metadata_cache[k] = meta_d.get_document()
         
     def get_metadata(self, raw_data):
         """
@@ -301,11 +303,11 @@ class CASSANDRA_DB(object):
             # Didn't find a value in the metadata cache.  First look
             # back through the raw data for SEEK_BACK_THRESHOLD seconds
             # to see if we can find the last processed value.
-            ts_max = raw_data.ts_to_jstime() - 1000 # -1000ms to look at older vals
+            ts_max = raw_data.ts_to_jstime() - 1 # -1ms to look at older vals
             ts_min = ts_max - SEEK_BACK_THRESHOLD
             ret = self.raw_data._column_family.multiget(
-                    self._get_row_keys(raw_data.device,raw_data.path,raw_data.oid,
-                            raw_data.freq,ts_min,ts_max),
+                    self._get_row_keys(raw_data.path, raw_data.freq,
+                        ts_min, ts_max),
                     # Note: ts_max and ts_min appear to be reversed here - 
                     # that's because this is a reversed range query.
                     column_start=ts_max, column_finish=ts_min,
@@ -320,23 +322,23 @@ class CASSANDRA_DB(object):
                 ts = ret[key].keys()[0]
                 val = json.loads(ret[key][ts])
                 meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
-                    freq=raw_data.freq, **raw_data.get_path())
-                self.log.debug('Metadata lookup from raw_data for: %s' %\
-                        (meta_d.get_meta_key()))
+                    freq=raw_data.freq, path=raw_data.path)
+                self.log.debug('Metadata lookup from raw_data for: %s' %
+                        (raw_data.get_meta_key()))
             else:
                 # No previous value was found (or at least not one in the defined
                 # time range) so seed/return the current value.
                 meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
-                    min_ts=raw_data.ts, freq=raw_data.freq, **raw_data.get_path())
-                self.log.debug('Initializing metadata for: %s' %\
-                        (meta_d.get_meta_key()))
-            self.set_metadata(meta_d)
+                    min_ts=raw_data.ts, freq=raw_data.freq, path=raw_data.path)
+                self.log.debug('Initializing metadata for: %s' %
+                        (raw_data.get_meta_key()))
+            self.set_metadata(raw_data.get_meta_key(), meta_d)
         else:
             meta_d = Metadata(**self.metadata_cache[raw_data.get_meta_key()])
         
         return meta_d
         
-    def update_metadata(self, metadata):
+    def update_metadata(self, k, metadata):
         """
         Update the metadata cache with a recently updated value.  Called by the
         persister.
@@ -345,7 +347,7 @@ class CASSANDRA_DB(object):
         """
         t = time.time()
         for i in ['last_val', 'min_ts', 'last_update']:
-            self.metadata_cache[metadata.get_meta_key()][i] = getattr(metadata, i)
+            self.metadata_cache[k][i] = getattr(metadata, i)
         #self.stats.meta_update((time.time() - t))
     
     def update_rate_bin(self, ratebin):
@@ -375,7 +377,7 @@ class CASSANDRA_DB(object):
         
         agg = AggregationBin(
             ts=agg_ts, freq=freq, val=raw_data.val, base_freq=raw_data.freq, count=1,
-            min=raw_data.val, max=raw_data.val, **raw_data.get_path()
+            min=raw_data.val, max=raw_data.val, path=raw_data.path
         )
         
         # Super column update.  The base rate frequency is stored as the column
@@ -405,7 +407,7 @@ class CASSANDRA_DB(object):
         # Create the AggBin object.
         agg = AggregationBin(
             ts=agg_ts, freq=freq, val=raw_data.val, base_freq=raw_data.freq, count=1,
-            min=raw_data.val, max=raw_data.val, **raw_data.get_path()
+            min=raw_data.val, max=raw_data.val, path=raw_data.path
         )
         
         t = time.time()
@@ -446,19 +448,14 @@ class CASSANDRA_DB(object):
         
         return updated
         
-    def _get_row_keys(self, device, path, oid, freq, ts_min, ts_max):
+    def _get_row_keys(self, path, freq, ts_min, ts_max):
         """
         Utility function used by the query interface.
-        
-        Row keys are of the following form:
-        
-        router:interface:oid:frequency:year
         
         Given these values and the starting/stopping timestamp, return a
         list of row keys (ie: more than one if the query spans years) to
         be used as the first argument to a multiget cassandra query.
         """
-        full_path = '%s:%s:%s:%s' % (device,path,oid,freq)
        
         year_start = datetime.datetime.utcfromtimestamp(float(ts_min)/1000.0).year
         year_finish = datetime.datetime.utcfromtimestamp(float(ts_max)/1000.0).year
@@ -466,10 +463,10 @@ class CASSANDRA_DB(object):
         key_range = []
         
         if year_start != year_finish:
-            for i in range(year_start, year_finish+1):
-                key_range.append('%s:%s' % (full_path,i))
+            for year in range(year_start, year_finish+1):
+                key_range.append(get_rowkey(path, freq=freq, year=year))
         else:
-            key_range.append('%s:%s' % (full_path, year_start))
+            key_range.append(get_rowkey(path, freq=freq, year=year_start))
             
         return key_range
         
@@ -813,14 +810,9 @@ class DataContainerBase(object):
     """
     
     _doc_properties = []
-    _key_delimiter = ':'
     
-    def __init__(self, device, oidset, oid, path, _id):
-        self.device = device
-        self.oidset = oidset
-        self.oid = oid
+    def __init__(self, path):
         self.path = path
-        self._id = _id
         
     def _handle_date(self,d):
         """
@@ -846,52 +838,12 @@ class DataContainerBase(object):
             doc[p] = getattr(self, '%s' % p)
         
         return doc
-        
+
     def get_key(self):
         """
         Return a cassandra row key based on the contents of the object.
-        
-        Format:
-        
-        router:interface:oid:frequency:year
         """
-        return '%s%s%s%s%s%s%s%s%s' % (
-            self.device, self._key_delimiter,
-            self.path, self._key_delimiter,
-            self.oid, self._key_delimiter,
-            self.freq, self._key_delimiter,
-            self.ts.year
-        )
-        
-    def get_meta_key(self):
-        """
-        Get a "metadata row key" - metadata don't have timestamps/years.
-        Other objects use this to look up entires in the metadata_cache.
-        """
-        return '%s%s%s%s%s%s%s' % (
-            self.device, self._key_delimiter,
-            self.path, self._key_delimiter,
-            self.oid, self._key_delimiter,
-            self.freq
-        )
-        
-    def get_path(self):
-        """
-        Return a dict of the key attributes.
-        """
-        p = {}
-        for k,v in self.__dict__.items():
-            if k not in ['device', 'oidset', 'oid', 'path']:
-                continue
-            p[k] = v
-        return p
-        
-    def get_path_tuple(self):
-        """
-        Return a tuple of the key attributes.
-        """
-        p = self.get_path()
-        return (p['device'], p['oidset'], p['oid'], p['path'])
+        return get_rowkey(self.path)
         
     def ts_to_jstime(self, t='ts'):
         """
@@ -911,24 +863,32 @@ class DataContainerBase(object):
         """
         ts = getattr(self, t)
         return calendar.timegm(ts.utctimetuple())
-        
-        
+
 class RawData(DataContainerBase):
     """
-    Container for raw data rows.  Can be instantiated from args when
-    reading from persist queue, or via **kw when reading data back
-    out of Cassandra.
+    Container for raw data rows.
+
+    Can be instantiated from args when reading from persist queue, or via **kw
+    when reading data back out of Cassandra.
     """
     _doc_properties = ['ts']
-    
-    def __init__(self, device=None, oidset=None, oid=None, path=None,
-            ts=None, val=None, freq=None, _id=None):
-        DataContainerBase.__init__(self, device, oidset, oid, path, _id)
+
+    def __init__(self, path=None, ts=None, val=None):
+        DataContainerBase.__init__(self, path)
         self._ts = None
         self.ts = ts
         self.val = val
-        self.freq = freq
-        
+
+    def get_key(self):
+        """
+        Return a cassandra row key based on the contents of the object.
+
+        We append the year to the row key to limit the size of each row to only
+        one year's worth of data.  This is an implementation detail for using
+        Cassandra effectively.
+        """
+        return get_rowkey(self.path, year=self.ts.year)
+
     @property
     def ts(self):
         return self._ts
@@ -936,6 +896,33 @@ class RawData(DataContainerBase):
     @ts.setter
     def ts(self, value):
         self._ts = self._handle_date(value)
+
+
+class RawRateData(RawData):
+    """
+    Container for raw data for rate based rows.
+    """
+    _doc_properties = ['ts']
+    
+    def __init__(self, path=None, ts=None, val=None, freq=None):
+        RawData.__init__(self, path, ts, val)
+        self.freq = freq
+        
+    def get_key(self):
+        """
+        Return a cassandra row key based on the contents of the object.
+
+        For rate data we add the frequency to the row key before the year, see
+        the RawData.get_key() documentation for details about the year.
+        """
+        return get_rowkey(self.path, freq=self.freq, year=self.ts.year)
+
+    def get_meta_key(self):
+        """
+        Get a "metadata row key" - metadata don't have timestamps/years.
+        Other objects use this to look up entires in the metadata_cache.
+        """
+        return get_rowkey(self.path, freq=self.freq)
         
     @property
     def min_last_update(self):
@@ -953,9 +940,8 @@ class Metadata(DataContainerBase):
     
     _doc_properties = ['min_ts', 'last_update']
     
-    def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None,
-            last_update=None, last_val=None, min_ts=None, freq=None):
-        DataContainerBase.__init__(self, device, oidset, oid, path, _id)
+    def __init__(self, path=None, last_update=None, last_val=None, min_ts=None, freq=None):
+        DataContainerBase.__init__(self, path)
         self._min_ts = self._last_update = None
         self.last_update = last_update
         self.last_val = last_val
@@ -991,30 +977,17 @@ class Metadata(DataContainerBase):
         self.last_val = data.val
         
 
-class BaseRateBin(DataContainerBase):
+class BaseRateBin(RawRateData):
     """
     Container for base rates.  Has 'avg' property to return the averages.
     """
     
     _doc_properties = ['ts']
     
-    def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None, 
-            ts=None, freq=None, val=None, is_valid=1):
-        DataContainerBase.__init__(self, device, oidset, oid, path, _id)
-        self._ts = None
-        self.ts = ts
-        self.freq = freq
-        self.val = val
+    def __init__(self, path=None, ts=None, val=None, freq=None, is_valid=1):
+        RawRateData.__init__(self, path, ts, val, freq)
         self.is_valid = is_valid
 
-    @property
-    def ts(self):
-        return self._ts
-
-    @ts.setter
-    def ts(self, value):
-        self._ts = self._handle_date(value)
-        
     @property
     def avg(self):
         return self.val / self.freq
@@ -1025,10 +998,9 @@ class AggregationBin(BaseRateBin):
     Container for aggregation rollups.  Also has 'avg' property to generage averages.
     """
     
-    def __init__(self, device=None, oidset=None, oid=None, path=None, _id=None,
-            ts=None, freq=None, val=None, base_freq=None, count=None, 
+    def __init__(self, path=None, ts=None, val=None, freq=None, base_freq=None, count=None, 
             min=None, max=None):
-        BaseRateBin.__init__(self, device, oidset, oid, path, _id, ts, freq, val)
+        BaseRateBin.__init__(self, path, ts, val, freq)
         
         self.count = count
         self.min = min
@@ -1038,3 +1010,54 @@ class AggregationBin(BaseRateBin):
     @property
     def avg(self):
         return self.val / (self.count * self.base_freq)
+
+def escape_path(path):
+    escaped = []
+    for step in path:
+        escaped.append(step.replace(KEY_DELIMITER, 
+            "\\%s" % KEY_DELIMITER))
+
+    return escaped
+
+def get_rowkey(path, freq=None, year=None):
+    """
+    Given a path and some additional data build the Cassandra row key.
+
+    The freq and year arguments are used for internal book keeping inside
+    Cassandra.
+    """
+
+
+    appends = []
+    if freq:
+        appends.append(str(freq))
+    if year:
+        appends.append(str(year))
+
+    return KEY_DELIMITER.join(escape_path(path) + appends)
+
+def _split_rowkey(s, escape='\\'):
+    """
+    Return the elements of the rowkey taking escaping into account.
+
+    FOR INTERNAL USE ONLY!  This returns more than just the path in most
+    instances and needs to be used with specific knowledge of what kind of row
+    key is used.
+    """
+    indices = []
+
+    for i in range(len(s)):
+        if s[i] == KEY_DELIMITER:
+            if i > 0 and s[i-1] != escape:
+                indices.append(i)
+            elif i == 0:
+                indices.append(i)
+
+    out = []
+    last = 0
+    for i in indices:
+        out.append(s[last:i].replace(escape, ""))
+        last = i+1
+    out.append(s[last:])
+
+    return out

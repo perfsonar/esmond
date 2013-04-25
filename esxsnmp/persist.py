@@ -33,7 +33,7 @@ from esxsnmp.error import ConfigError
 
 from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
 
-from esxsnmp.cassandra import CASSANDRA_DB, RawData, BaseRateBin, AggregationBin, \
+from esxsnmp.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin, \
         SEEK_BACK_THRESHOLD
 
 try:
@@ -416,8 +416,8 @@ class CassandraPollPersister(PollPersister):
             # Create data encapsulation object (defined in cassandra.py 
             # module) and store the raw input.
 
-            raw_data = RawData(device_n, oidset_n, oid_n, path_n,
-                    result.timestamp * 1000, val=val, freq=oidset.frequency_ms)
+            raw_data = RawRateData(path=[device_n, oidset_n, oid_n, path_n],
+                    ts=result.timestamp * 1000, val=val, freq=oidset.frequency_ms)
 
             self.db.set_raw_data(raw_data)
 
@@ -524,15 +524,15 @@ class CassandraPollPersister(PollPersister):
                 # less than 30 days.
                 for slot in range(prev_slot, curr_slot, data.freq):
                     bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, 
-                        is_valid=0, **data.get_path())
+                        is_valid=0, path=data.path)
                     self.db.update_rate_bin(bad_bin)
             # Update only the "current" bin and return.
             curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
-                **data.get_path())
+                path=data.path)
             self.db.update_rate_bin(curr_bin)
             
             metadata.refresh_from_raw(data)
-            self.db.update_metadata(metadata)
+            self.db.update_metadata(data.get_meta_key(), metadata)
 
             return
             
@@ -540,9 +540,9 @@ class CassandraPollPersister(PollPersister):
         # Now, write the new valid data between the appropriate bins.
 
         prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
-                **data.get_path())
+                path=data.path)
         curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
-                **data.get_path())
+                path=data.path)
 
         self.db.update_rate_bin(prev_bin)
         self.db.update_rate_bin(curr_bin)
@@ -565,26 +565,26 @@ class CassandraPollPersister(PollPersister):
                 missed_rem = missed % (missed_frac * len(missed_slots))
                 for slot in missed_slots:
                     miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=missed_frac,
-                            **data.get_path())
+                            path=data.path)
                     self.db.update_rate_bin(miss_bin)
 
                     for i in range(missed_rem):
                         dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
-                            val=1, **data.get_path())
+                            val=1, path=data.path)
                         self.db.update_rate_bin(dist_bin)
             else:
                 # Presume invalid data (new logic) and fill gap/slots
                 # with invalid values.
                 for slot in missed_slots:
                     miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=0,
-                            is_valid=0, **data.get_path())
+                            is_valid=0, path=data.path)
                     self.db.update_rate_bin(miss_bin)
 
         # Gotten to the final success condition, so update the metadata
         # cache with values from the current data input and return the 
         # valid delta to the calling code.
         metadata.refresh_from_raw(data)
-        self.db.update_metadata(metadata)
+        self.db.update_metadata(data.get_meta_key(), metadata)
         
         return delta_v
 
