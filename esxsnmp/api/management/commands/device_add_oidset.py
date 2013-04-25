@@ -1,0 +1,39 @@
+import sys
+
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+
+from esxsnmp.api.models import Device, OIDSet, DeviceOIDSetMap
+
+class Command(BaseCommand):
+    args = 'device_name oidset_name [oidset_name ..]'
+    help = 'Add an OIDSet to a Device'
+
+    def handle(self, *args, **options):
+        self.options = options
+
+        if len(args) < 2:
+            print >>sys.stderr, "need more args: %s" % self.args
+            return
+
+        device_name = args[0]
+
+        try:
+            device = Device.objects.get(name=device_name)
+        except Device.DoesNotExist:
+            print >>sys.stderr, "No such device: %s" % (device_name)
+            return
+
+        oidsets = []
+        for oidset_name in args[1:]:
+            try:
+                oidset = OIDSet.objects.get(name=oidset_name)
+                oidsets.append(oidset)
+            except OIDSet.DoesNotExist:
+                print >>sys.stderr, "No such oidset: %s" % (oidset_name)
+                print >>sys.stderr, "Aborting. No OIDSets were added."
+                return
+
+        for oidset in oidsets:
+            print device, oidset
+            DeviceOIDSetMap(device=device, oid_set=oidset).save()

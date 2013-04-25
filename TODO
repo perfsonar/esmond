@@ -1,3 +1,43 @@
+
+Near term
+---------
+
+Finish updating docs
+publish on PyPI
+revisit logging  config
+revisit/remove exception handler
+
+MongoDB port (Monte)
+
+Rewrite REST API with Tasty Pie
+
+PUBSUB framework
+----------------
+
+Do 30 agg before storing data?
+Redis? ZeroMQ?
+
+Packaging
+---------
+
+rework RPM
+create DEB
+FreeBSD port
+
+Longer term
+-----------
+
+Rename to esmond
+Pull DLNetSNMP into tree?
+Add support for TL1?
+Add support for SFlow?
+Add support for ALU stats thingie?
+
+submodules/apps for different collection types?
+
+OLD TODOs
+---------
+
 Get specific OIDS for:
   OSPF MOC
   BGP  MOC
