@@ -3,7 +3,6 @@
 export VENV_ROOT=`pwd`
 export ESXSNMP_ROOT=${VENV_ROOT}/devel
 export ESXSNMP_CONF=${ESXSNMP_ROOT}/esxsnmp-devel.conf
-export ESXSNMP_CLUSTER_CONF=${ESXSNMP_ROOT}/mongodb-cluster.conf
 export DJANGO_SETTINGS_MODULE=esxsnmp.settings
 
 # create a dummy TSDB

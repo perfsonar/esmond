@@ -7,8 +7,6 @@ publish on PyPI
 revisit logging  config
 revisit/remove exception handler
 
-MongoDB port (Monte)
-
 Rewrite REST API with Tasty Pie
 
 PUBSUB framework

@@ -242,15 +242,9 @@ class InterfaceDataResource(Resource):
 
         return data
 
-    def _data_from_mongo(self, args):
-        pass
-
     def data_traffic(self, request, obj, args):
         if args not in ['in', 'out']:
             raise NotFound("no such sub dataset")
-
-        # XXX do lookup in database and populate obj, possibly using
-        # _data_from_mongo
 
         obj.data = [[0,10], [30,20], [60, 40]]
 
