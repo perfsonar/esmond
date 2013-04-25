@@ -1,7 +1,7 @@
 #!/bin/sh
 
 MAILTO=me@example.com
-CRASHDIR=/data/esxsnmp/crashlog
+CRASHDIR=/data/esmond/crashlog
 TMPFILE=/tmp/crashsweep.$$
 
 cd ${CRASHDIR}
@@ -20,7 +20,7 @@ done
 cat ${TMPFILE} | xargs head -1 >> ${TMPFILE}-mail
 
 if [ -s ${TMPFILE}-mail ]; then
-    mail -s "ESxSNMP Crash Report" ${MAILTO} < ${TMPFILE}-mail
+    mail -s "Esmond Crash Report" ${MAILTO} < ${TMPFILE}-mail
 fi
 
 rm -f ${TMPFILE}*

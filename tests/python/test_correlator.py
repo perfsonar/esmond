@@ -1,4 +1,4 @@
-from esxsnmp.poll import IfDescrCorrelator, JnxFirewallCorrelator, \
+from esmond.poll import IfDescrCorrelator, JnxFirewallCorrelator, \
                             JnxCOSCorrelator, SentryCorrelator, \
                             ALUSAPCorrelator
 

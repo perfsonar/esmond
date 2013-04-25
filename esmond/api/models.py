@@ -1,7 +1,7 @@
 from django.db import models
 import datetime
 
-from esxsnmp.util import datetime_to_unixtime
+from esmond.util import datetime_to_unixtime
 
 class DeviceTag(models.Model):
     """A tag for a :py:class:`.Device.`"""

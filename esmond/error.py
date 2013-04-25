@@ -1,14 +1,14 @@
-class ESxSNMPError(Exception):
-    """Base class for ESxSNMPErrors."""
+class EsmondError(Exception):
+    """Base class for EsmondErrors."""
     pass
 
-class ConfigError(ESxSNMPError):
+class ConfigError(EsmondError):
     """Unable to find config file."""
     pass
 
-class BadQuery(ESxSNMPError):
+class BadQuery(EsmondError):
     pass
 
-class PollerError(ESxSNMPError):
+class PollerError(EsmondError):
     """Problem with a poller."""
     pass

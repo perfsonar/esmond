@@ -2,19 +2,19 @@
 
 import sys
 sys.path[0:0] = [
-    '/opt/esxsnmp/src/python',
-    '/opt/esxsnmp/eggs/nose-1.0.0-py2.6.egg',
-    '/opt/esxsnmp/eggs/mock-0.7.0-py2.6.egg',
-    '/opt/esxsnmp/eggs/Pympler-0.1-py2.6.egg',
-    '/opt/esxsnmp/eggs/DLNetSNMP-0.4.1-py2.6.egg/DLNetSNMP',
-    '/opt/esxsnmp/eggs/httplib2-0.6.0-py2.6.egg',
-    '/opt/esxsnmp/eggs/web.py-0.34-py2.6.egg',
-    '/opt/esxsnmp/eggs/simplejson-2.1.5-py2.6-linux-i686.egg',
-    '/opt/esxsnmp/eggs/SQLAlchemy-0.5.2-py2.6.egg',
-    '/opt/esxsnmp/parts/tsdb',
-    '/opt/esxsnmp/eggs/fpconst-0.7.2-py2.6.egg',
+    '/opt/esmond/src/python',
+    '/opt/esmond/eggs/nose-1.0.0-py2.6.egg',
+    '/opt/esmond/eggs/mock-0.7.0-py2.6.egg',
+    '/opt/esmond/eggs/Pympler-0.1-py2.6.egg',
+    '/opt/esmond/eggs/DLNetSNMP-0.4.1-py2.6.egg/DLNetSNMP',
+    '/opt/esmond/eggs/httplib2-0.6.0-py2.6.egg',
+    '/opt/esmond/eggs/web.py-0.34-py2.6.egg',
+    '/opt/esmond/eggs/simplejson-2.1.5-py2.6-linux-i686.egg',
+    '/opt/esmond/eggs/SQLAlchemy-0.5.2-py2.6.egg',
+    '/opt/esmond/parts/tsdb',
+    '/opt/esmond/eggs/fpconst-0.7.2-py2.6.egg',
     ]
 
-import esxsnmp.newdb
+import esmond.newdb
 
-application = esxsnmp.newdb.esdb_wsgi("/opt/esxsnmp/esxsnmp.conf")
+application = esmond.newdb.esdb_wsgi("/opt/esmond/esmond.conf")

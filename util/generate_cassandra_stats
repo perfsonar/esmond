@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Generates secondary aggregation statistics from esxsnmp data base rates.
+Generates secondary aggregation statistics from esmond data base rates.
 
 When run with no arguments, it will update min/max/etc 'statistics' from 
 the base rates with a slight delay on the end so the base rates can catch 
@@ -22,8 +22,8 @@ from optparse import OptionParser
 
 from django.conf import settings
 
-from esxsnmp.config import get_config, get_config_path
-from esxsnmp.cassandra import CASSANDRA_DB, RawData
+from esmond.config import get_config, get_config_path
+from esmond.cassandra import CASSANDRA_DB, RawData
 
 from pycassa.columnfamily import NotFoundException
 
@@ -50,7 +50,7 @@ def _agg_timestamp(data, freq):
     return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
 
 # Check to see if another insgtance is running.
-if not program_lock(os.path.join(settings.ESXSNMP_ROOT, 'statgen.lock')):
+if not program_lock(os.path.join(settings.ESMOND_ROOT, 'statgen.lock')):
     sys.exit()
     
 usage = '%prog | -v | --start | --end'

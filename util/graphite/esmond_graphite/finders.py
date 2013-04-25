@@ -5,19 +5,19 @@ from graphite.node import BranchNode, LeafNode
 from graphite.util import is_pattern
 from graphite.intervals import Interval, IntervalSet
 
-from esxsnmp.api import ESxSNMPAPI, ClientError
-from esxsnmp.util import remove_metachars
+from esmond.api import EsmondAPI, ClientError
+from esmond.util import remove_metachars
 
-class ESxSNMPFinder:
+class EsmondFinder:
     def __init__(self, uri, username=None, password=None, debug=True):
         self.uri = uri
         self.username = username
         self.password = password
         self.debug = debug
 
-        self.client = ESxSNMPAPI(uri, debug=debug)
+        self.client = EsmondAPI(uri, debug=debug)
         if username and password:
-            self.auth_client = ESxSNMPAPI(uri, debug=debug,
+            self.auth_client = EsmondAPI(uri, debug=debug,
                     username=username, password=password)
         else:
             self.auth_client = self.client
@@ -83,19 +83,19 @@ class ESxSNMPFinder:
 
                 if child['leaf']:
                     #print "CHILD", child, cpath
-                    reader = ESxSNMPReader(self.uri, cpath, query.startTime,
+                    reader = EsmondReader(self.uri, cpath, query.startTime,
                             query.endTime, username=self.username,
                             password=self.password, debug=self.debug)
-                    yield ESxSNMPLeaf(cpath, reader, client=client,
+                    yield EsmondLeaf(cpath, reader, client=client,
                             name=name, label=label)
                 else:
-                    yield ESxSNMPBranch(cpath, name=name, label=label)
+                    yield EsmondBranch(cpath, name=name, label=label)
         else:
-            reader = ESxSNMPReader(self.uri, path, query.startTime,
+            reader = EsmondReader(self.uri, path, query.startTime,
                     query.endTime, username=self.username, 
                     password=self.password, debug=self.debug)
 
-            yield ESxSNMPLeaf(path, reader, client=client)
+            yield EsmondLeaf(path, reader, client=client)
 
     def searchable(self):
         return 1
@@ -116,7 +116,7 @@ class ESxSNMPFinder:
 
         return r
 
-class ESxSNMPBranch(BranchNode):
+class EsmondBranch(BranchNode):
     def __init__(self, *args, **kwargs):
         name = None
         label = None
@@ -136,10 +136,10 @@ class ESxSNMPBranch(BranchNode):
 
 
     def __str__(self):
-        return "<ESxSNMPBranch: %s %s>" % (self.name, self.metric_path)
+        return "<EsmondBranch: %s %s>" % (self.name, self.metric_path)
 
 
-class ESxSNMPLeaf(LeafNode):
+class EsmondLeaf(LeafNode):
     def __init__(self, *args, **kwargs):
         self.client = kwargs['client']
         del kwargs['client']
@@ -160,9 +160,9 @@ class ESxSNMPLeaf(LeafNode):
         self.metric_path = self.path
 
     def __str__(self):
-        return "<ESxSNMPLeaf: %s %s>" % (self.name, self.metric_path)
+        return "<EsmondLeaf: %s %s>" % (self.name, self.metric_path)
 
-class ESxSNMPReader(object):
+class EsmondReader(object):
     def __init__(self, uri, metric_path, start_time, end_time, username=None,
             password=None, debug=False):
         self.metric_path = metric_path
@@ -172,9 +172,9 @@ class ESxSNMPReader(object):
         self.password = password
         self.debug = debug
 
-        self.client = ESxSNMPAPI(uri, debug=debug)
+        self.client = EsmondAPI(uri, debug=debug)
         if username and password:
-            self.auth_client = ESxSNMPAPI(uri, debug=debug,
+            self.auth_client = EsmondAPI(uri, debug=debug,
                     username=username, password=password)
         else:
             self.auth_client = self.client

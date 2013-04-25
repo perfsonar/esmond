@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from esxsnmp.api.models import *
+from esmond.api.models import *
 
 class IfRefAdmin(admin.ModelAdmin):
     list_filter = ('device',)

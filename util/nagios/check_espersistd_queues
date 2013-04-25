@@ -4,11 +4,11 @@ import os
 import sys
 import optparse
 
-sys.path.append('/data/esxsnmp/esxsnmp/src/python')
-os.environ['ESXSNMP_CONF'] = '/data/esxsnmp/etc/esxsnmp.conf'
+sys.path.append('/data/esmond/esmond/src/python')
+os.environ['ESMOND_CONF'] = '/data/esmond/etc/esmond.conf'
 
-from esxsnmp.config import get_opt_parser, get_config, get_config_path
-from esxsnmp.error import ConfigError
+from esmond.config import get_opt_parser, get_config, get_config_path
+from esmond.error import ConfigError
 try:
     import cmemcache as memcache
 except ImportError:

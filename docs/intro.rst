@@ -5,12 +5,12 @@ Introduction
 Summary
 =======
 
-ESxSNMP is a system for collecting, storing, visualizing and analyzing large
+esmond is a system for collecting, storing, visualizing and analyzing large
 sets of SNMP data. It was driven by the needs of the ESnet engineering team
-but is likely useful to a much wider audience. ESxSNMP has a RESTful API which
+but is likely useful to a much wider audience. esmond has a RESTful API which
 allows easy access to the data which is collected.
 
-ESxSNMP uses a hybrid model for storing data. Time series data such as
+esmond uses a hybrid model for storing data. Time series data such as
 interface counters is stored using TSDB_. TSDB is a library for storing time
 series data with no loss of information. TSDB optimizes the store of it's data
 so that data which share similar timestamps is stored nearby on the disk
@@ -26,7 +26,7 @@ PostgreSQL_, but it's likely that SQLite_ would work just fine.
 Desgin Goals
 ============
 
-ESxSNMP was designed to meet the needs of the Network Engineering group at
+esmond was designed to meet the needs of the Network Engineering group at
 ESnet_.  The key design goals were:
 
   * data collection should be very reliable

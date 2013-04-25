@@ -1,4 +1,4 @@
-#!/data/esxsnmp/esxsnmp/bin/python
+#!/data/esmond/esmond/bin/python
 # 
 """template python command with command line parsing"""
 
@@ -10,9 +10,9 @@ import optparse
 
 import requests
 
-from esxsnmp.api.models import *
-from esxsnmp.cassandra import CASSANDRA_DB
-from esxsnmp.config import get_config, get_config_path
+from esmond.api.models import *
+from esmond.cassandra import CASSANDRA_DB
+from esmond.config import get_config, get_config_path
 
 VERSION = "0"
 

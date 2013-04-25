@@ -3,7 +3,7 @@
 """
 Cassandra DB interface calls and data encapsulation objects.
 
-Esxsnmp schema in json-like notation:
+esmond schema in json-like notation:
 
 // regular col family
 "raw_data" : {
@@ -54,7 +54,7 @@ import sys
 import time
 from collections import OrderedDict
 
-from esxsnmp.util import get_logger
+from esmond.util import get_logger
 
 # Third party
 from pycassa import PycassaLogger
@@ -80,7 +80,7 @@ class ConnectionException(CassandraException):
         
 class CASSANDRA_DB(object):
     
-    keyspace = 'esxsnmp'
+    keyspace = 'esmond'
     raw_cf = 'raw_data'
     rate_cf = 'base_rates'
     agg_cf = 'rate_aggregations'
@@ -129,7 +129,7 @@ class CASSANDRA_DB(object):
         
         # Blow everything away if we're testing - be aware of this and use
         # with care.
-        if clear_on_test and os.environ.get("ESXSNMP_TESTING", False):
+        if clear_on_test and os.environ.get("ESMOND_TESTING", False):
             self.log.info('Dropping keyspace %s' % self.keyspace)
             if self.keyspace in sysman.list_keyspaces():
                 sysman.drop_keyspace(self.keyspace)
@@ -227,7 +227,7 @@ class CASSANDRA_DB(object):
         # just spits out statistics at the end of a run of test data.  Mostly
         # useful for timing specific database calls to aid in development.
         self.profiling = False
-        if config.db_profile_on_testing and os.environ.get("ESXSNMP_TESTING", False):
+        if config.db_profile_on_testing and os.environ.get("ESMOND_TESTING", False):
             self.profiling = True
         self.stats = DatabaseMetrics(profiling=self.profiling)
         

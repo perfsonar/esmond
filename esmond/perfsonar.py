@@ -5,9 +5,9 @@ import sys
 import socket
 import time
 
-from esxsnmp.config import get_opt_parser, get_config, get_config_path
-from esxsnmp.error import ConfigError
-from esxsnmp.api import ESxSNMPAPI
+from esmond.config import get_opt_parser, get_config, get_config_path
+from esmond.error import ConfigError
+from esmond.api import EsmondAPI
 
 def gen_ma_storefile():
     """Translated from the original Perl by jdugan"""
@@ -82,7 +82,7 @@ Notes:
 
     print HEADER
 
-    client = ESxSNMPAPI(config.esdb_uri)
+    client = EsmondAPI(config.esdb_uri)
 
     oidset_rtr_map = {}
     interfaces = []
@@ -194,7 +194,7 @@ name="supportedEventType">http://ggf.org/ns/nmwg/characteristic/%(event_type)s/2
 \t<nmwg:data xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="data%(i)d" metadataIdRef="meta%(i)d">
 \t\t<nmwg:key id="keyid%(i)d">
 \t\t\t<nmwg:parameters id="dataparam%(i)d">
-\t\t\t\t<nmwg:parameter name="type">esxsnmp</nmwg:parameter>
+\t\t\t\t<nmwg:parameter name="type">esmond</nmwg:parameter>
 \t\t\t\t<nmwg:parameter name="valueUnits">%(units)s</nmwg:parameter>
 \t\t\t\t<nmwg:parameter name="name">%(name)s</nmwg:parameter>
 \t\t\t\t<nmwg:parameter name="eventType">http://ggf.org/ns/nmwg/characteristic/%(event_type)s/2.0</nmwg:parameter>

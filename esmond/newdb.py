@@ -1,4 +1,4 @@
-"""Implement a RESTish API to ESxSNMP data.
+"""Implement a RESTish API to Esmond data.
 
 
 """
@@ -26,11 +26,11 @@ import logging
 
 import tsdb
 from tsdb.error import *
-from esxsnmp.util import get_logger, remove_metachars, datetime_to_unixtime
-from esxsnmp.error import *
-from esxsnmp.config import get_opt_parser, get_config, get_config_path
+from esmond.util import get_logger, remove_metachars, datetime_to_unixtime
+from esmond.error import *
+from esmond.config import get_opt_parser, get_config, get_config_path
 
-from esxsnmp.api.models import Device, IfRef, ALUSAPRef
+from esmond.api.models import Device, IfRef, ALUSAPRef
 import datetime
 
 import pprint

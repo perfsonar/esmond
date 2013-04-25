@@ -25,15 +25,15 @@ import tsdb.row
 from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
         TSDBVarDoesNotExistError, InvalidMetaData
 
-from esxsnmp.util import setproctitle, init_logging, get_logger, \
+from esmond.util import setproctitle, init_logging, get_logger, \
         remove_metachars, decode_alu_port
-from esxsnmp.util import daemonize, setup_exc_handler
-from esxsnmp.config import get_opt_parser, get_config, get_config_path
-from esxsnmp.error import ConfigError
+from esmond.util import daemonize, setup_exc_handler
+from esmond.config import get_opt_parser, get_config, get_config_path
+from esmond.error import ConfigError
 
-from esxsnmp.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
+from esmond.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
 
-from esxsnmp.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin, \
+from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin, \
         SEEK_BACK_THRESHOLD
 
 try:

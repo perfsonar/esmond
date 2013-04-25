@@ -6,8 +6,8 @@ Quick script to initialize a fresh cassandra cluster.
 It reads from the config file to get what machines to connect to.
 """
 
-from esxsnmp.config import get_config, get_config_path
-from esxsnmp.cassandra import CASSANDRA_DB
+from esmond.config import get_config, get_config_path
+from esmond.cassandra import CASSANDRA_DB
 
 config = get_config(get_config_path())
 db = CASSANDRA_DB(config)

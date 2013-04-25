@@ -4,7 +4,7 @@ from django.conf.urls.defaults import *
 from django.contrib import admin
 admin.autodiscover()
 
-from esxsnmp.api.api import v1_api
+from esmond.api.api import v1_api
 
 urlpatterns = patterns('',
     # Example:

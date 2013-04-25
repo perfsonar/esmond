@@ -3,7 +3,7 @@
 """
 esfetch emulates the rrdfetch tool.
 
-the file is a key that can be used to find data in the ESxSNMP datastore.
+the file is a key that can be used to find data in the Esmond datastore.
 the file field has the following form:
 
     device,collection_group,interface
@@ -18,7 +18,7 @@ import optparse
 from pprint import pprint
 
 import tsdb
-from esxsnmp.util import get_ESDB_client
+from esmond.util import get_ESDB_client
 
 def output_data(data):
     import pdb

@@ -1,8 +1,8 @@
-ESxSNMP Graphite Integration
+Esmond Graphite Integration
 ============================
 
 This project contains a module that contains a specialized settings.py for
-Graphite as well as the glue to connect to ESxSNMP.
+Graphite as well as the glue to connect to Esmond.
 
 We use a copy of graphite-web with our mods to allow configuring "finders" in
 the config file.  These live on github.  There are two branches on github
@@ -15,14 +15,14 @@ https://github.com/esnet/graphite-web
 And ESnet local changes go into:
 https://github.com/esnet/graphite-web/tree/esnet_tweaks
 
-Our settings are kept in the module esxsnmp_graphite.settings.
+Our settings are kept in the module esmond_graphite.settings.
 
 On the webserver that will run Graphite choose GRAPHITE_ROOT and do the
 following::
 
    $ cd $GRAPHITE_ROOT
    # copy the contents of the util/graphite directory into place
-   $ cp -r $ESXSNMP_SRC/util/graphite/* .
+   $ cp -r $ESMOND_SRC/util/graphite/* .
    $ virtualenv .
    $ source bin/activate  # or bin/activate.csh depending on your shell
    # create directories needed by Graphite
@@ -32,7 +32,7 @@ following::
    $ pip install -r requirements.txt
    $ python manage.py syncdb
    $ python manage.py collectstatic
-   $ $EDITOR esxsnmp_graphite/settings.py # set the NEEDS TO BE CHANGED items
+   $ $EDITOR esmond_graphite/settings.py # set the NEEDS TO BE CHANGED items
 
 Edit your apache config to include this::
 
@@ -42,7 +42,7 @@ Edit your apache config to include this::
    Allow from all
    </Directory>
    
-   WSGIScriptAlias / $GRAPHITE_ROOT/wsgi/esxsnmp_graphite.wsgi
+   WSGIScriptAlias / $GRAPHITE_ROOT/wsgi/esmond_graphite.wsgi
    WSGIPassAuthorization On
    
    <Directory $GRAPHITE_ROOT/wsgi/>

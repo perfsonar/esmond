@@ -1,18 +1,18 @@
 #!/bin/sh
 
 export VENV_ROOT=`pwd`
-export ESXSNMP_ROOT=${VENV_ROOT}/devel
-export ESXSNMP_CONF=${ESXSNMP_ROOT}/esxsnmp-devel.conf
-export DJANGO_SETTINGS_MODULE=esxsnmp.settings
+export ESMOND_ROOT=${VENV_ROOT}/devel
+export ESMOND_CONF=${ESMOND_ROOT}/esmond-devel.conf
+export DJANGO_SETTINGS_MODULE=esmond.settings
 
 # create a dummy TSDB
-if [ ! -d ${ESXSNMP_ROOT}/tsdb-data ]; then
-    mkdir ${ESXSNMP_ROOT}/tsdb-data
-    touch ${ESXSNMP_ROOT}/tsdb-data/TSDB
+if [ ! -d ${ESMOND_ROOT}/tsdb-data ]; then
+    mkdir ${ESMOND_ROOT}/tsdb-data
+    touch ${ESMOND_ROOT}/tsdb-data/TSDB
 fi
 
 # create the virtualenv
-virtualenv --prompt="(esxsnmp)" .
+virtualenv --prompt="(esmond)" .
 . bin/activate
 
 # XXX(jdugan) FreeBSD hack look for headers and libraries in /usr/local
@@ -27,15 +27,15 @@ fi
 
 pip install -r requirements.txt
 
-cat <<EOF > esxsnmp.env
-export ESXSNMP_ROOT=${ESXSNMP_ROOT}
-export ESXSNMP_CONF=${ESXSNMP_CONF}
-export ESXSNMP_CLUSTER_CONF=${ESXSNMP_CLUSTER_CONF}
-export ESXSNMP_TESTING=1
+cat <<EOF > esmond.env
+export ESMOND_ROOT=${ESMOND_ROOT}
+export ESMOND_CONF=${ESMOND_CONF}
+export ESMOND_CLUSTER_CONF=${ESMOND_CLUSTER_CONF}
+export ESMOND_TESTING=1
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
 export VENV_ROOT=${VENV_ROOT}
 . ${VENV_ROOT}/bin/activate
 EOF
 
-echo environment variables and activation put in ${VENV_ROOT}/esxsnmp.env:
-cat ${VENV_ROOT}/esxsnmp.env
+echo environment variables and activation put in ${VENV_ROOT}/esmond.env:
+cat ${VENV_ROOT}/esmond.env

@@ -1,1 +1,1 @@
-*/1 * * * * root /opt/esxsnmp/util/generate_perfsonar_store_file &> /dev/null
+*/1 * * * * root /opt/esmond/util/generate_perfsonar_store_file &> /dev/null

@@ -2,7 +2,7 @@
 
 * Started this ChangeLog
 * added zc.buildout support (bootstrap.py, buildout.cfg)
-* intial attempt at documentation in doc/ESxSNMP.txt (in ReStructured Text)
+* intial attempt at documentation in doc/Esmond.txt (in ReStructured Text)
 * removed esdbd, espolld, esfetch and added them as entrypoints via distutils
 * moved to SQLAlchemy 0.4
 * sql.py, poll.py: reworked database access to avoid problems with children using the same

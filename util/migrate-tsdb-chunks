@@ -2,8 +2,8 @@
 
 export PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin
 
-FASTROOT=/ssd/esxsnmp/data/
-SLOWROOT=/data/esxsnmp/data/
+FASTROOT=/ssd/esmond/data/
+SLOWROOT=/data/esmond/data/
 SYSLOG_FACILITY=local7
 PROG=`basename $0`
 PURGE_DAYS=10

@@ -1,4 +1,4 @@
-ESxSNMP subsystems
+esmond subsystems
 ------------------
 
 `espolld`
@@ -24,12 +24,12 @@ storage is either a TSDB database or a SQL database.
 
 At present `espolld` and `espersistd` do not use `esdbd` for database
 interactions but instead contacts the SQL and TSDB databases directly.  This
-issue will be addressed in future versions of ESxSNMP.
+issue will be addressed in future versions of esmond.
 
 `esdbd`
 :::::::
 
-`esdbd` provides a consistent interface to the ESxSNMP databases.  It provides
+`esdbd` provides a consistent interface to the esmond databases.  It provides
 a front end service to query both the SQL and TSDB datastores.  `esdb` is
 deprecated, see `newdbd`
 

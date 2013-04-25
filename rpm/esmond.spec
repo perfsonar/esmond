@@ -4,12 +4,12 @@
 # Don't create a debug package
 %define debug_package %{nil}
 
-%define install_base /opt/esxsnmp
+%define install_base /opt/esmond
 
 %define init_script_1 espolld
 %define init_script_2 espersistd
  
-Name:           esxsnmp
+Name:           esmond
 Version:        0.99       
 Release:        1%{?dist}
 Summary:        REPLACE
@@ -38,7 +38,7 @@ Requires:       python26-mod_wsgi
 Requires:       httpd
  
 %description
-ESxSNMP is a system for collecting and storing large sets of SNMP data. ESxSNMP
+Esmond is a system for collecting and storing large sets of SNMP data. Esmond
 uses a hybrid model for storing data using TSDB for time series data and an SQL
 database for everything else. All data is available via a REST style interface
 (as JSON) allowing for easy integration with other tools.
@@ -61,8 +61,8 @@ bin/buildout -U
 # Get rid of any remnants of the buildroot directory
 find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 
-# Move the default RPM esxsnmp.conf into place
-mv %{buildroot}/%{install_base}/rpm/config_files/esxsnmp.conf %{buildroot}/%{install_base}/esxsnmp.conf
+# Move the default RPM esmond.conf into place
+mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{install_base}/esmond.conf
 
 # Move the init scripts into place
 mkdir -p %{buildroot}/etc/init.d
@@ -95,23 +95,23 @@ done
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
 
 %post
-# Create the 'esxsnmp' user
-/usr/sbin/groupadd esxsnmp 2> /dev/null || :
-/usr/sbin/useradd -g esxsnmp -r -s /sbin/nologin -c "ESxSNMP User" -d /tmp esxsnmp 2> /dev/null || :
+# Create the 'esmond' user
+/usr/sbin/groupadd esmond 2> /dev/null || :
+/usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 
 # Create the logging directories
-mkdir -p /var/log/esxsnmp
-mkdir -p /var/log/esxsnmp/crashlog
-chown -R esxsnmp:esxsnmp /var/log/esxsnmp
+mkdir -p /var/log/esmond
+mkdir -p /var/log/esmond/crashlog
+chown -R esmond:esmond /var/log/esmond
 
 # Create the TSDB directory
-mkdir -p /var/lib/esxsnmp
-touch /var/lib/esxsnmp/TSDB
-chown -R esxsnmp:esxsnmp /var/lib/esxsnmp
+mkdir -p /var/lib/esmond
+touch /var/lib/esmond/TSDB
+chown -R esmond:esmond /var/lib/esmond
 
 # Create the 'run' directory
-mkdir -p /var/run/esxsnmp
-chown -R esxsnmp:esxsnmp /var/run/esxsnmp
+mkdir -p /var/run/esmond
+chown -R esmond:esmond /var/run/esmond
 
 %files
 %defattr(-,root,root,-)
@@ -123,4 +123,4 @@ chown -R esxsnmp:esxsnmp /var/run/esxsnmp
  
 %changelog
 * Wed Apr 27 2011 Aaron Brown <aaron@internet2.edu> 1.0-1
-- Initial ESxSNMP Spec File
+- Initial Esmond Spec File

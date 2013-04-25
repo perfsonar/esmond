@@ -4,7 +4,7 @@ import datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from esxsnmp.api.models import Device, OIDSet, DeviceOIDSetMap
+from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
 
 class Command(BaseCommand):
     args = 'name community'

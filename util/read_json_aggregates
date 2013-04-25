@@ -13,8 +13,8 @@ import time
 
 from optparse import OptionParser
 
-from esxsnmp.config import get_config, get_config_path
-from esxsnmp.cassandra import CASSANDRA_DB, RawData
+from esmond.config import get_config, get_config_path
+from esmond.cassandra import CASSANDRA_DB, RawData
 
 from pycassa.columnfamily import NotFoundException
 
@@ -22,7 +22,7 @@ usage = '%prog -f FILE'
 desc = ' '.join(__doc__.split())
 parser = OptionParser(usage=usage, description=desc)
 parser.add_option('-f', '--infile', dest='filename', metavar='FILE', default="",
-                  help='Read FILE containing esxsnmp json data.')
+                  help='Read FILE containing esmond json data.')
 options, args = parser.parse_args()
 
 if not options.filename:

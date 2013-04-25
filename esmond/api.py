@@ -8,7 +8,7 @@ try:
 except ImportError:
     import simplejson as json
 
-#from esxsnmp.util import remove_metachars
+#from esmond.util import remove_metachars
 
 def remove_metachars(name):
     """remove troublesome metacharacters from ifDescr"""
@@ -19,7 +19,7 @@ def remove_metachars(name):
 class ClientError(Exception):
     pass
 
-class ESxSNMPAPI(object):
+class EsmondAPI(object):
     def __init__(self, url, debug=False, username=None, password=None):
         if url[-1] == '/':
             url = url[:-1]
@@ -117,7 +117,7 @@ class ESxSNMPAPI(object):
 
 
 if __name__ == '__main__':
-    api = ESxSNMPAPI('http://snmp-west.es.net:8001/', debug=True)
+    api = EsmondAPI('http://snmp-west.es.net:8001/', debug=True)
     print "==== ROUTERS " + "=" * 40
     r = api.get_routers()
     print r

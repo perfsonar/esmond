@@ -5,18 +5,18 @@ import sys
 import site
 
 try:
-    ESXSNMP_ROOT = os.environ['ESXSNMP_ROOT']
+    ESMOND_ROOT = os.environ['ESMOND_ROOT']
 except:
-    ESXSNMP_ROOT = os.path.dirname(os.path.abspath(__file__)) + "/.."
-    os.environ['ESXSNMP_ROOT'] = ESXSNMP_ROOT
+    ESMOND_ROOT = os.path.dirname(os.path.abspath(__file__)) + "/.."
+    os.environ['ESMOND_ROOT'] = ESMOND_ROOT
 
 if not os.environ.has_key('DJANGO_SETTINGS_MODULE'):
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'esxsnmp.settings'
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'esmond.settings'
 
 pyver = "%d.%d" % (sys.version_info[0], sys.version_info[1])
-venv_dir = '%s/lib/python%s/site-packages' % (ESXSNMP_ROOT, pyver)
+venv_dir = '%s/lib/python%s/site-packages' % (ESMOND_ROOT, pyver)
 site.addsitedir(venv_dir)
 
-import esxsnmp.newdb
+import esmond.newdb
 
-application = esxsnmp.newdb.esdb_wsgi("%s/esxsnmp.conf" % ESXSNMP_ROOT)
+application = esmond.newdb.esdb_wsgi("%s/esmond.conf" % ESMOND_ROOT)

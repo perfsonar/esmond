@@ -1,22 +1,22 @@
 import os
 import os.path
-from esxsnmp.config import get_config
+from esmond.config import get_config
 
 # Django settings for ed project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
-TESTING = os.environ.get("ESXSNMP_TESTING", False)
-ESXSNMP_CONF = os.environ.get("ESXSNMP_CONF")
-ESXSNMP_ROOT = os.environ.get("ESXSNMP_ROOT")
+TESTING = os.environ.get("ESMOND_TESTING", False)
+ESMOND_CONF = os.environ.get("ESMOND_CONF")
+ESMOND_ROOT = os.environ.get("ESMOND_ROOT")
 
-if not ESXSNMP_ROOT:
-    raise Error("ESXSNMP_ROOT not definied in environemnt")
+if not ESMOND_ROOT:
+    raise Error("ESMOND_ROOT not definied in environemnt")
 
-if not ESXSNMP_CONF:
-    ESXSNMP_CONF = os.path.join(ESXSNMP_ROOT, "esxsnmp.conf")
+if not ESMOND_CONF:
+    ESMOND_CONF = os.path.join(ESMOND_ROOT, "esmond.conf")
 
-ESXSNMP_SETTINGS = get_config(ESXSNMP_CONF)
+ESMOND_SETTINGS = get_config(ESMOND_CONF)
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -26,11 +26,11 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': ESXSNMP_SETTINGS.sql_db_engine,
-        'NAME': ESXSNMP_SETTINGS.sql_db_name,
-        'HOST': ESXSNMP_SETTINGS.sql_db_host,
-        'USER': ESXSNMP_SETTINGS.sql_db_user,
-        'PASSWORD': ESXSNMP_SETTINGS.sql_db_password,
+        'ENGINE': ESMOND_SETTINGS.sql_db_engine,
+        'NAME': ESMOND_SETTINGS.sql_db_name,
+        'HOST': ESMOND_SETTINGS.sql_db_host,
+        'USER': ESMOND_SETTINGS.sql_db_user,
+        'PASSWORD': ESMOND_SETTINGS.sql_db_password,
     }
 }
 
@@ -82,7 +82,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-ROOT_URLCONF = 'esxsnmp.urls'
+ROOT_URLCONF = 'esmond.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -95,7 +95,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
-    'esxsnmp.api',
-    'esxsnmp.admin',
+    'esmond.api',
+    'esmond.admin',
     'django.contrib.admin',
 )

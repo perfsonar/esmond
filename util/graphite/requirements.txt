@@ -8,4 +8,4 @@ http://cairographics.org/releases/py2cairo-1.8.10.tar.gz
 -e git+git://github.com/esnet/graphite-web.git@esnet_tweaks#egg=graphite-web
 git+git://github.com/graphite-project/ceres.git
 hg+https://code.google.com/p/tsdb/
-hg+https://code.google.com/p/esxsnmp/
+hg+https://code.google.com/p/esmond/

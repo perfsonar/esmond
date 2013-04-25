@@ -5,7 +5,7 @@ Installation
 Prerequisites
 =============
 
-ESxSNMP relies on the following software:
+esmond relies on the following software:
 
   * Python_, version 2.7 or greater
   * Net-SNMP_
@@ -41,7 +41,7 @@ virtualenv
 buildout, or more specifically zc.buildout, is a tool for creating an isolated
 Python environment and installing packages inside it.  It is used in some
 parts of the Python community to manage deployments and is currently the most
-convienent way to install ESxSNMP.  At some point in the future this may
+convienent way to install esmond.  At some point in the future this may
 change. buildout includes a bootstrap script that has a single dependency
 which is Python.
 
@@ -56,13 +56,13 @@ which is Python.
     Currently there is no release tarball so we'll use a version checked out
     from the Subversion repo.
 
-    The directory you install ESxSNMP into will be referred to as ESXSNMP.
+    The directory you install esmond into will be referred to as ESMOND.
 
-        $ cd $ESXSNMP
-        $ svn checkout http://esxsnmp.googlecode.com/svn/trunk/ esxsnmp
+        $ cd $ESMOND
+        $ svn checkout http://esmond.googlecode.com/svn/trunk/ esmond
 
-    Note that this creates a subdirectory called esxsnmp, so if you have
-    $ESXSNMP set to /opt/esxsnmp, the code will be in /opt/esxsnmp/esxsnmp/
+    Note that this creates a subdirectory called esmond, so if you have
+    $ESMOND set to /opt/esmond, the code will be in /opt/esmond/esmond/
 
 1. Perform the buildout
 
@@ -71,13 +71,13 @@ which is Python.
     dependencies and installing them in this isolated environement.  To do the
     buildout run the following commands:
 
-       $ cd $ESXSNMP/esxsnmp
+       $ cd $ESMOND/esmond
        $ python bootstrap.py
        $ bin/buildout
 
-    Note that all of the programs will be installed in $ESXSNMP/esxsnmp/bin.
+    Note that all of the programs will be installed in $ESMOND/esmond/bin.
     So to run the polling daemon for example you'd run
-    $ESXSNMP/esxsnmp/bin/espolld.
+    $ESMOND/esmond/bin/espolld.
    
 Other installation methods
 --------------------------

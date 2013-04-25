@@ -12,7 +12,7 @@ from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.exceptions import NotFound
 
-from esxsnmp.api.models import Device, IfRef
+from esmond.api.models import Device, IfRef
 
 """
 /$DEVICE/

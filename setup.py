@@ -2,24 +2,24 @@
 
 from distutils.core import setup
 
-setup(name='esxsnmp',
-        version='0.9a1',
-        description='ESnet eXtensible SNMP system.',
+setup(name='esmond',
+        version='0.9b1',
+        description='ESnet Monitoring Daemon',
         author='Jon M. Dugan',
         author_email='jdugan@es.net',
-        url='http://code.google.com/p/esxsnmp/',
-        packages=['esxsnmp', 'esxsnmp.api', 'esxsnmp.admin'],
+        url='http://code.google.com/p/esmond/',
+        packages=['esmond', 'esmond.api', 'esmond.admin'],
         install_requires=['tsdb', 'Django==1.4.1', 'django-tastypie', 'web.py',
             'simplejson', 'python-memcached', 'pycassa', 'psycopg2'],
         entry_points = {
             'console_scripts': [
-                'espolld = esxsnmp.poll:espolld',
-                'espoll = esxsnmp.poll:espoll',
-                'espersistd = esxsnmp.persist:espersistd',
-                'esfetch = esxsnmp.fetch:esfetch',
-                'esdbd = esxsnmp.newdb:esdb_standalone',
-                'gen_ma_storefile = esxsnmp.perfsonar:gen_ma_storefile',
-                'esmanage = esxsnmp.manage:esmanage',
+                'espolld = esmond.poll:espolld',
+                'espoll = esmond.poll:espoll',
+                'espersistd = esmond.persist:espersistd',
+                'esfetch = esmond.fetch:esfetch',
+                'esdbd = esmond.newdb:esdb_standalone',
+                'gen_ma_storefile = esmond.perfsonar:gen_ma_storefile',
+                'esmanage = esmond.manage:esmanage',
             ]
         }
     )

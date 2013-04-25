@@ -2,16 +2,16 @@ import sys
 import time
 
 from graphite.storage import Branch, Leaf, is_pattern
-from esxsnmp.api import ESxSNMPAPI, ClientError
-from esxsnmp.util import remove_metachars
+from esmond.api import EsmondAPI, ClientError
+from esmond.util import remove_metachars
 
 class Store:
     def __init__(self, uri, username=None, password=None, debug=False):
         self.uri = uri
 
-        self.client = ESxSNMPAPI(uri, debug=debug)
+        self.client = EsmondAPI(uri, debug=debug)
         if username and password:
-            self.auth_client = ESxSNMPAPI(uri, debug=debug,
+            self.auth_client = EsmondAPI(uri, debug=debug,
                     username=username, password=password)
         else:
             self.auth_client = self.client
@@ -73,12 +73,12 @@ class Store:
                     cpath = cpath.replace('discard/', 'discard.')
 
                 if child['leaf']:
-                    yield ESxSNMPLeaf(cpath, cpath, client=client,
+                    yield EsmondLeaf(cpath, cpath, client=client,
                             name=name, label=label)
                 else:
-                    yield ESxSNMPBranch(cpath, cpath, name=name, label=label)
+                    yield EsmondBranch(cpath, cpath, name=name, label=label)
         else:
-            yield ESxSNMPLeaf(path, path, client=client)
+            yield EsmondLeaf(path, path, client=client)
 
     def searchable(self):
         return 1
@@ -98,7 +98,7 @@ class Store:
 
         return r
 
-class ESxSNMPBranch(Branch):
+class EsmondBranch(Branch):
     def __init__(self, *args, **kwargs):
         name = None
         label = None
@@ -116,10 +116,10 @@ class ESxSNMPBranch(Branch):
 
 
     def __str__(self):
-        return "<ESxSNMPBranch: %s %s>" % (self.name, self.metric_path)
+        return "<EsmondBranch: %s %s>" % (self.name, self.metric_path)
 
 
-class ESxSNMPLeaf(Leaf):
+class EsmondLeaf(Leaf):
     def __init__(self, *args, **kwargs):
         self.client = kwargs['client']
         del kwargs['client']
@@ -139,7 +139,7 @@ class ESxSNMPLeaf(Leaf):
             self.label = label
 
     def __str__(self):
-        return "<ESxSNMPLeaf: %s %s>" % (self.name, self.metric_path)
+        return "<EsmondLeaf: %s %s>" % (self.name, self.metric_path)
 
     def fetch(self, start_time, end_time):
         #path = self.metric_path.replace('.', '/')

@@ -10,7 +10,7 @@
 # the output is emailed via cron.  here's an example crontab entry:
 #
 # MAILTO=me@my.net
-# 15 0 * * * /path/to/script/esxsnmp_logwatch
+# 15 0 * * * /path/to/script/esmond_logwatch
 #
 
 
@@ -170,7 +170,7 @@ END {
 }
 
 if [ $# -eq 0 ]; then
-    analyze /var/log/esxsnmp.log.0.bz2 
+    analyze /var/log/esmond.log.0.bz2 
 else
     for f in $*; do 
         analyze $f

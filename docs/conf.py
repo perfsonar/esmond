@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# ESxSNMP documentation build configuration file, created by
+# esmond documentation build configuration file, created by
 # sphinx-quickstart on Thu Aug 16 23:38:27 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -40,7 +40,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'ESxSNMP'
+project = u'esmond'
 copyright = u'2012, Jon M. Dugan'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -164,7 +164,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'ESxSNMPdoc'
+htmlhelp_basename = 'esmonddoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -183,7 +183,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'ESxSNMP.tex', u'ESxSNMP Documentation',
+  ('index', 'esmond.tex', u'esmond Documentation',
    u'Jon M. Dugan', 'manual'),
 ]
 
@@ -213,7 +213,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'esxsnmp', u'ESxSNMP Documentation',
+    ('index', 'esmond', u'esmond Documentation',
      [u'Jon M. Dugan'], 1)
 ]
 
@@ -227,8 +227,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'ESxSNMP', u'ESxSNMP Documentation',
-   u'Jon M. Dugan', 'ESxSNMP', 'One line description of project.',
+  ('index', 'esmond', u'esmond Documentation',
+   u'Jon M. Dugan', 'esmond', 'One line description of project.',
    'Miscellaneous'),
 ]
 

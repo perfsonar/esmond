@@ -204,14 +204,14 @@ if not INDEX_FILE:
 if not LOG_DIR:
   LOG_DIR = join(STORAGE_DIR, 'log', 'webapp')
 
-ESXSNMP_USERNAME ='snmp'      # NEEDS TO BE SET
-ESXSNMP_PASSWORD = '********' # NEEDS TO BE SET
-ESXSNMP_REST_URL = 'http://esxsnmp.example.com:8001/' # NEEDS TO BE SET
+ESMOND_USERNAME ='snmp'      # NEEDS TO BE SET
+ESMOND_PASSWORD = '********' # NEEDS TO BE SET
+ESMOND_REST_URL = 'http://esmond.example.com:8001/' # NEEDS TO BE SET
 
 FINDERS = [
-    ('esxsnmp_graphite.finders.ESxSNMPFinder',
+    ('esmond_graphite.finders.EsmondFinder',
     "'%s', username='%s', password='%s'" % (
-        ESXSNMP_REST_URL, ESXSNMP_USERNAME, ESXSNMP_PASSWORD)),
+        ESMOND_REST_URL, ESMOND_USERNAME, ESMOND_PASSWORD)),
 ]
 
 

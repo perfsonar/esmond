@@ -3,29 +3,29 @@
 # $Id: ndt 206 2008-09-09 13:05:01Z throck $
 #
 # chkconfig: 2345 55 25
-# description: Starts the ESxSNMP Collector
+# description: Starts the Esmond Collector
 
 # source function library
 . /etc/rc.d/init.d/functions
 
 # get local NDT configuration
-if [ -f /etc/sysconfig/esxsnmp ];then
-        . /etc/sysconfig/esxsnmp
+if [ -f /etc/sysconfig/esmond ];then
+        . /etc/sysconfig/esmond
 fi
 
 PROGRAM=espersistd
 
 # defaults, if not specified in local config
-[ "$PID_DIR" = "" ] && PID_DIR="/var/run/esxsnmp"
-[ "$ESXSNMP_USER" = "" ] && ESXSNMP_USER="esxsnmp"
-[ "$ESXSNMP_ROOT" = "" ] && ESXSNMP_ROOT="/opt/esxsnmp"
-[ "$CONFIG_FILE" = "" ] && CONFIG_FILE="${ESXSNMP_ROOT}/esxsnmp.conf"
-[ "$DJANGO_SETTINGS_MODULE" = "" ] && DJANGO_SETTINGS_MODULE="esxsnmp.settings"
+[ "$PID_DIR" = "" ] && PID_DIR="/var/run/esmond"
+[ "$ESMOND_USER" = "" ] && ESMOND_USER="esmond"
+[ "$ESMOND_ROOT" = "" ] && ESMOND_ROOT="/opt/esmond"
+[ "$CONFIG_FILE" = "" ] && CONFIG_FILE="${ESMOND_ROOT}/esmond.conf"
+[ "$DJANGO_SETTINGS_MODULE" = "" ] && DJANGO_SETTINGS_MODULE="esmond.settings"
 
-export ESXSNMP_ROOT
+export ESMOND_ROOT
 export DJANGO_SETTINGS_MODULE
 
-[ -f $ESXSNMP_ROOT/bin/$PROGRAM ] || exit -1
+[ -f $ESMOND_ROOT/bin/$PROGRAM ] || exit -1
 [ -d "$PID_DIR" ] || exit -1
 
 # Verify that memcached is running
@@ -40,7 +40,7 @@ start ()
    if [ $cnt = 0 ]
    then
       echo -n "Starting $PROGRAM:"
-      su -c "$ESXSNMP_ROOT/bin/$PROGRAM -f $CONFIG_FILE -p $PID_DIR" $ESXSNMP_USER
+      su -c "$ESMOND_ROOT/bin/$PROGRAM -f $CONFIG_FILE -p $PID_DIR" $ESMOND_USER
       RETVAL=$?
       if [ $RETVAL = 0 ]
       then 

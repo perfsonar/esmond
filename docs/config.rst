@@ -5,22 +5,22 @@ Configuration
 Environment Variables
 =====================
 
-``ESXSNMP_ROOT``
+``ESMOND_ROOT``
 ----------------
 
-The standard root directory for all ESxSNMP configuration and data.  ESxSNMP
-will not start unless ``ESXSNMP_ROOT`` is set.
+The standard root directory for all esmond configuration and data.  esmond
+will not start unless ``ESMOND_ROOT`` is set.
 
-``ESXSNMP_CONF``
+``ESMOND_CONF``
 ----------------
 
-This specifies the location of ``esxsnmp.conf``.
+This specifies the location of ``esmond.conf``.
 
-``ESXSNMP_TESTING``
+``ESMOND_TESTING``
 -------------------
 
-Setting this environment variable will cause ESxSNMP to use SQLite for it's
-SQL database instead of whatever is configured in ``esxsnmp.conf``.
+Setting this environment variable will cause esmond to use SQLite for it's
+SQL database instead of whatever is configured in ``esmond.conf``.
 
 Config File
 ===========
@@ -30,26 +30,26 @@ Config File
     Probably should move this into the code that does the config to make it
     easier to keep it in sync.
 
-ESxSNMP uses an INI style config file.  By default the config file is located
-at ``${ESXSNMP_ROOT}/esxsnmp.conf``.  The ``${ESXSNMP_CONF}`` enviroment
+esmond uses an INI style config file.  By default the config file is located
+at ``${ESMOND_ROOT}/esmond.conf``.  The ``${ESMOND_CONF}`` enviroment
 variable allows overriding the location of the config file.  The value of
-``ESXSNMP_ROOT`` is available within the config file.
+``ESMOND_ROOT`` is available within the config file.
 
-Here is an example ``esxsnmp.conf`` file::
+Here is an example ``esmond.conf`` file::
 
     [main]
-    db_uri =  postgres://snmp:SOMEPASS@localhost/esxsnmp
-    tsdb_root = /ssd/esxsnmp/data
-    tsdb_chunk_prefixes = /ssd/esxsnmp/data,/data/esxsnmp/data
-    mib_dirs = %(ESXSNMP_ROOT)s/etc/mibs
+    db_uri =  postgres://snmp:SOMEPASS@localhost/esmond
+    tsdb_root = /ssd/esmond/data
+    tsdb_chunk_prefixes = /ssd/esmond/data,/data/esmond/data
+    mib_dirs = %(ESMOND_ROOT)s/etc/mibs
     mibs = JUNIPER-FIREWALL-MIB,JUNIPER-COS-MIB,INFINERA-PM-GIGECLIENTCTP-MIB
     syslog_facility = local7
     syslog_priority = debug
-    traceback_dir = /data/esxsnmp/crashlog
-    pid_dir = %(ESXSNMP_ROOT)s/var/
+    traceback_dir = /data/esmond/crashlog
+    pid_dir = %(ESMOND_ROOT)s/var/
     espersistd_uri = 127.0.0.1:11211
     espoll_persist_uri = MemcachedPersistHandler:127.0.0.1:11211
-    htpasswd_file = /data/esxsnmp/etc/htpasswd
+    htpasswd_file = /data/esmond/etc/htpasswd
     [persist_map]
     FastPollHC = tsdb
     FastPoll = tsdb
@@ -76,10 +76,10 @@ This tells `espolld` where to find the work queue for data persistence.  It is
 of the form handler:ip_addr:port.  Currently the only handler implemented is
 the MemcachedPersistHandler.  
 
-esxsnmp_root
+esmond_root
 ------------
 
-The root of the ESxSNMP installation.  This is used to find other important
+The root of the esmond installation.  This is used to find other important
 resource.
 
 htpasswd_file
@@ -107,7 +107,7 @@ Directory to store pid files in.
 syslog_facility
 ---------------
 
-Controls which syslog facility ESxSNMP uses for logging.
+Controls which syslog facility esmond uses for logging.
 
 syslog_priority
 ---------------
@@ -117,7 +117,7 @@ Controls the verbosity of log messages sent to syslog.  Defaults to info.
 traceback_dir
 -------------
 
-When an ESxSNMP daemon crashes the system makes an effort to save a traceback
+When an esmond daemon crashes the system makes an effort to save a traceback
 for later fault analysis.  This controls where those files are logged.
 
 tsdb_chunk_prefixes
@@ -158,7 +158,7 @@ Creating the SQL Database
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The database defined in db_uri needs to be created and loaded with the schema
-in src/sql/esxsnmp.sql.
+in src/sql/esmond.sql.
 
 Configuring Collection
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -170,7 +170,7 @@ Data collection is controlled by the configuration stored in the database.  A
 
 An initial set of OIDs and OIDSets is included in src/sql/testdata.sql.
 
-To add a device to ESxSNMP you need to do:
+To add a device to esmond you need to do:
 
 
    INSERT INTO device (name, begin_time, end_time, community, active)
@@ -195,19 +195,19 @@ Testing Polling
 You can check to see what the results of polling a device would look like by
 using the `espoll` tool.  For example:
 
-    $ bin/espoll -f /path/to/esxsnmp/conf router oidset
+    $ bin/espoll -f /path/to/esmond/conf router oidset
 
 Start Data Collection
 :::::::::::::::::::::
 
 To start collection you need to start the polling and persistence daemons:
 
-    $ bin/espersistd -f /path/to/esxsnmp.conf
-    $ bin/espolld -f /path/to/esxsnmp.conf
+    $ bin/espersistd -f /path/to/esmond.conf
+    $ bin/espolld -f /path/to/esmond.conf
 
 To monitor the progress of the polling and persisting do:
 
-    $ bin/espersistd -f /path/to/esxsnmp.conf -r stats
+    $ bin/espersistd -f /path/to/esmond.conf -r stats
 
 You should also see messages in syslog.
 
@@ -220,7 +220,7 @@ SSD as the top level storage.
 Setting up `esdbd` standalone
 ::::::::::::::::::::::::::::::
 
-   $ bin/esdbd -f /path/to/esxsnmp.conf
+   $ bin/esdbd -f /path/to/esmond.conf
 
 Setting up `esdbd` with mod_wsgi
 ::::::::::::::::::::::::::::::::
@@ -230,7 +230,7 @@ To be written, there is a example wsgi wrapper in util.
 Graphite Integration
 ::::::::::::::::::::
 
-Use Store in esxsnmp.graphite_store as the data store for Graphite.  This
+Use Store in esmond.graphite_store as the data store for Graphite.  This
 section needs to be signficantly fleshed out.
 
 Care and Feeding

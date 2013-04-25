@@ -11,13 +11,13 @@ from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
 
 import tsdb
 
-from esxsnmp.util import setproctitle, init_logging, get_logger, \
+from esmond.util import setproctitle, init_logging, get_logger, \
         remove_metachars, decode_alu_port
-from esxsnmp.util import daemonize, setup_exc_handler
-from esxsnmp.config import get_opt_parser, get_config, get_config_path
-from esxsnmp.error import ConfigError, PollerError
-from esxsnmp.persist import PollResult, PersistClient
-from esxsnmp.api.models import Device, IfRef, OIDSet
+from esmond.util import daemonize, setup_exc_handler
+from esmond.config import get_opt_parser, get_config, get_config_path
+from esmond.error import ConfigError, PollerError
+from esmond.persist import PollResult, PersistClient
+from esmond.api.models import Device, IfRef, OIDSet
 
 
 class PollError(Exception):

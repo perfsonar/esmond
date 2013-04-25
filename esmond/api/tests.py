@@ -18,12 +18,12 @@ from collections import namedtuple
 from django.test import TestCase
 from django.conf import settings
 
-from esxsnmp.api.models import Device, IfRef, ALUSAPRef
+from esmond.api.models import Device, IfRef, ALUSAPRef
 
-from esxsnmp.persist import IfRefPollPersister, ALUSAPRefPersister, \
+from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
      PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister
-from esxsnmp.config import get_config, get_config_path
-from esxsnmp.cassandra import CASSANDRA_DB
+from esmond.config import get_config, get_config_path
+from esmond.cassandra import CASSANDRA_DB
 from pycassa.columnfamily import ColumnFamily
 
 try:
@@ -34,7 +34,7 @@ except ImportError:
 
 
 def load_test_data(name):
-    path = os.path.join(settings.ESXSNMP_ROOT, "..", "test_data", name)
+    path = os.path.join(settings.ESMOND_ROOT, "..", "test_data", name)
     d = json.loads(open(path).read())
     return d
 
@@ -315,7 +315,7 @@ class TestCassandraPollPersister(TestCase):
     
     def setUp(self):
         """make sure we have a clean router_a directory to start with."""
-        router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
+        router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
         if os.path.exists(router_a_path):
             shutil.rmtree(router_a_path, ignore_errors=True)
             
@@ -352,7 +352,7 @@ class TestCassandraPollPersister(TestCase):
         
         path_levels = []
         
-        router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
+        router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
         for (path, dirs, files) in os.walk(router_a_path):
             if dirs[0] == 'TSDBAggregates':
                 break
@@ -513,7 +513,7 @@ if tsdb:
 
         def setUp(self):
             """make sure we have a clean router_a directory to start with."""
-            router_a_path = os.path.join(settings.ESXSNMP_ROOT, "tsdb-data", "router_a")
+            router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
             if os.path.exists(router_a_path):
                 shutil.rmtree(router_a_path)
 

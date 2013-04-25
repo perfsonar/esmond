@@ -2,9 +2,9 @@
 
 export PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin
 
-OUTPUT_FILE=/var/lib/esxsnmp/store.xml
-GENERATE_SCRIPT=/opt/esxsnmp/bin/gen_ma_storefile
-CONFIG_FILE=/opt/esxsnmp/esxsnmp.conf
+OUTPUT_FILE=/var/lib/esmond/store.xml
+GENERATE_SCRIPT=/opt/esmond/bin/gen_ma_storefile
+CONFIG_FILE=/opt/esmond/esmond.conf
 HEADER_BYTES=607
 
 TEMP_FILE=${OUTPUT_FILE}.tmp

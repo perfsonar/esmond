@@ -4,13 +4,13 @@ import logging
 from logging.handlers import SysLogHandler
 import ConfigParser
 
-from esxsnmp.error import ConfigError
+from esmond.error import ConfigError
 
 def get_config_path():
-    if os.environ.has_key('ESXSNMP_CONF'):
-        conf = os.environ['ESXSNMP_CONF']
+    if os.environ.has_key('ESMOND_CONF'):
+        conf = os.environ['ESMOND_CONF']
     else:
-        conf = './esxsnmp.conf'
+        conf = './esmond.conf'
 
     return conf
 
@@ -19,7 +19,7 @@ def get_config(config_file, opts=None):
         raise ConfigError("config file not found: %s" % config_file)
 
     try:
-        conf = ESxSNMPConfig(config_file)
+        conf = EsmondConfig(config_file)
     except ConfigParser.Error, e:
         raise ConfigError("unable to parse config: %s" % e)
 
@@ -40,7 +40,7 @@ def get_opt_parser(default_config_file=None, default_pid_dir=None):
 
     return oparse
 
-class ESxSNMPConfig(object):
+class EsmondConfig(object):
     def __init__(self, file):
         self.file = file
 
@@ -88,7 +88,7 @@ class ESxSNMPConfig(object):
     def read_config(self):
         """ read in config from INI-style file, requiring section header 'main'"""
         defaults = {}
-        for v in ('ESXSNMP_ROOT', ):
+        for v in ('ESMOND_ROOT', ):
             defaults[v] = os.environ.get(v)
 
         cfg = ConfigParser.ConfigParser(defaults)
@@ -139,14 +139,14 @@ class ESxSNMPConfig(object):
         
         self.persist_map = {}
         for key, val in cfg.items("persist_map"):
-            if key == 'esxsnmp_root': # XXX(jdugan) this is probably cruft
+            if key == 'esmond_root': # XXX(jdugan) this is probably cruft
                 continue
 
             self.persist_map[key] = val.replace(" ", "").split(",")
 
         self.persist_queues = {}
         for key, val in cfg.items("persist_queues"):
-            if key == 'esxsnmp_root':
+            if key == 'esmond_root':
                 continue
 
             self.persist_queues[key] = val.split(':', 1)
