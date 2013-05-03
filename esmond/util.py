@@ -112,7 +112,7 @@ def setproctitle(name):
             libc_file = '/lib/libc.so.%d' % libc_ver
             if os.path.exists(libc_file):
                 libc = ctypes.CDLL(libc_file)
-                libc.setproctitle(name + "\0")
+                libc.setproctitle("-" + name + "\0")
                 break
 
     global proctitle
