@@ -12,9 +12,9 @@ lib
 include
 develop-eggs
 venv
-esxsnmp.env
+esmond.env
 .env
-esxsnmp.db
+esmond.db
 .Python
 src
 devel/tsdb-data
