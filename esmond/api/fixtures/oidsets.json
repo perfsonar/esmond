@@ -343,7 +343,7 @@
         "fields": {
             "aggregate": false,
             "name": "outletLoadValue",
-            "oid_type": 4
+            "oid_type": 8
         }
     },
     {
