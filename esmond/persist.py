@@ -135,6 +135,12 @@ class PollPersister(object):
             except PersistQueueEmpty:
                 break
 
+            # XXX(jdugan): task can be None for two reasons here:
+            # 1. there was no result
+            # 2. the result was None
+            # this means that Nones are consumed very slowly, this should be
+            # revisited.
+
             if task:
                 self.store(task)
                 self.data_count += len(task.data)
