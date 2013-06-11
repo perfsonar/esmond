@@ -467,26 +467,26 @@ class CASSANDRA_DB(object):
                 key_range.append(get_rowkey(path, freq=freq, year=year))
         else:
             key_range.append(get_rowkey(path, freq=freq, year=year_start))
-            
         return key_range
         
-    def query_baserate_timerange(self, device=None, path=None, oid=None, 
-                freq=None, ts_min=None, ts_max=None, cf='average', as_json=False):
+    def query_baserate_timerange(self, path=None, freq=None, 
+            ts_min=None, ts_max=None, cf='average', as_json=False):
         """
         Query interface method to retrieve the base rates (generally average 
         but could be delta as well).  Could return the values programmatically,
         but generally returns formatted json from the FormattedOutput module.
         """
         ret = self.rates._column_family.multiget(
-                self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
+                self._get_row_keys(path,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
         
         if cf not in ['average', 'delta']:
             self.log.error('Not a valid option: %s - defaulting to average' % cf)
             cf = 'average'
         
-        # Divisors to return either the average or a delta.        
-        value_divisors = { 'average': int(freq), 'delta': 1}
+        # Divisors to return either the average or a delta.
+        # XXX(mmg): double check this is right?  It probably isn't - revisit.
+        value_divisors = { 'average': int(freq/1000), 'delta': 1}
         
         # Just return the results and format elsewhere.
         results = []
