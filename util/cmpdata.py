@@ -1,4 +1,4 @@
-#!/data/esmond/esmond/bin/python
+#!/usr/bin/env python
 # 
 """template python command with command line parsing"""
 
@@ -24,8 +24,9 @@ small_dev_set = ['lbl-mr2', 'anl-mr2']
 
 class DataBundle(object):
     """bundle together data for comparison"""
-    def __init__(self, oid, frequency, device, interface, direction, begin, end, data):
+    def __init__(self, oidset, oid, frequency, device, interface, direction, begin, end, data):
         self.oid = oid
+        self.oidset = str(oidset)
         self.frequency = frequency
         self.device = device
         self.interface = interface
@@ -57,19 +58,20 @@ def old_iface_list(dev):
 
 def compare_data(bundle, db):
     print bundle.device, bundle.interface, bundle.oid, bundle.frequency
-    #bundle.direction, len(bundle.data['data'])
+    # print bundle.direction, len(bundle.data['data'])
+    print 'orig, >>>>', bundle.data
     ret = db.query_baserate_timerange(
-        device=bundle.device,
-        path=bundle.interface,
-        oid=bundle.oid,
-        freq=bundle.frequency,
-        ts_min=bundle.begin,
-        ts_max=bundle.end,
-        cf='delta',
+        path=[bundle.device, bundle.oidset, bundle.oid, bundle.interface],
+        freq=bundle.frequency*1000,
+        ts_min=bundle.begin*1000,
+        ts_max=bundle.end*1000,
+        cf='average',
         as_json=True
     )
     
     print ret
+    print '======'
+
 
 def old_fetch_data(oidset, dev, iface, begin, end, db):
     params = dict(begin=begin, end=end)
@@ -86,8 +88,7 @@ def old_fetch_data(oidset, dev, iface, begin, end, db):
             oid = 'ifHCInOctets'
         else:
             oid = 'ifHCOutOctets'
-
-        bundle = DataBundle(oid, oidset.frequency, dev, iface, d,
+        bundle = DataBundle(oidset, oid, oidset.frequency, dev, iface, d,
                 begin, end, data)
         compare_data(bundle, db)
 
