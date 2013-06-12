@@ -476,9 +476,19 @@ class CASSANDRA_DB(object):
         but could be delta as well).  Could return the values programmatically,
         but generally returns formatted json from the FormattedOutput module.
         """
-        ret = self.rates._column_family.multiget(
+        ret_count = self.rates._column_family.multiget_count(
                 self._get_row_keys(path,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
+
+        cols = 0
+
+        for i in ret_count.keys():
+            cols += ret_count[i]
+
+        ret = self.rates._column_family.multiget(
+                self._get_row_keys(path,freq,ts_min,ts_max), 
+                column_start=ts_min, column_finish=ts_max,
+                column_count=cols+5)
         
         if cf not in ['average', 'delta']:
             self.log.error('Not a valid option: %s - defaulting to average' % cf)
@@ -486,7 +496,7 @@ class CASSANDRA_DB(object):
         
         # Divisors to return either the average or a delta.
         # XXX(mmg): double check this is right?  It probably isn't - revisit.
-        value_divisors = { 'average': int(freq/1000), 'delta': 1}
+        value_divisors = { 'average': int(freq), 'delta': 1}
         
         # Just return the results and format elsewhere.
         results = []

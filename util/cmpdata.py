@@ -57,11 +57,11 @@ def old_iface_list(dev):
     return ifaces
 
 def compare_data(bundle, db):
-    print bundle.device, bundle.interface, bundle.oid, bundle.frequency
+    # print bundle.device, bundle.interface, bundle.oid, bundle.frequency
     # print bundle.direction, len(bundle.data['data'])
-    print 'orig, >>>>', bundle.data
+    path = [bundle.device, bundle.oidset, bundle.oid, bundle.interface]
     ret = db.query_baserate_timerange(
-        path=[bundle.device, bundle.oidset, bundle.oid, bundle.interface],
+        path=path,
         freq=bundle.frequency*1000,
         ts_min=bundle.begin*1000,
         ts_max=bundle.end*1000,
@@ -69,8 +69,34 @@ def compare_data(bundle, db):
         as_json=True
     )
     
-    print ret
-    print '======'
+    # print ret
+
+    data_n = json.loads(ret)
+    print '**', ':'.join(path)
+    # print bundle.data['begin_time'], data_n['begin_time']
+    # print bundle.data['end_time'], data_n['end_time']
+
+    val_new = {}
+
+    for i in data_n['data']:
+        val_new[i[0]] = i[1]
+
+    for i in bundle.data['data']:
+        print i[0]*1000, ':' ,
+        if val_new.get(i[0]*1000):
+            orig_val = i[1]
+            new_val = val_new.get(i[0]*1000)*1000
+            # new_val = val_new.get(i[0]*1000)/30
+            if orig_val is None or new_val is None:
+                print 'one value is none'
+                continue
+            elif orig_val == 0:
+                print 'divide by zero'
+            else:
+                print orig_val, new_val, new_val/orig_val*100
+        else:
+            print 'no match found'
+
 
 
 def old_fetch_data(oidset, dev, iface, begin, end, db):
