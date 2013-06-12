@@ -385,12 +385,12 @@ class TestCassandraPollPersister(TestCase):
             device,oidset,oid,path,tmp1,tmp2 = p.split('/')
             for d in v.select():
                 tsdb_aggs += 1
-                key = '%s:%s:%s:%s:%s'  % \
-                    (device,path,oid,tmp2,
+                key = '%s:%s:%s:%s:%s:%s'  % \
+                    (device,oidset,oid,path,int(tmp2)*1000,
                     datetime.datetime.utcfromtimestamp(d.timestamp).year)
 
-                val = rates.get(key, [d.timestamp])[d.timestamp]
-                
+                val = rates.get(key, [d.timestamp*1000])[d.timestamp*1000]
+                print val
                 if d.flags != ROW_VALID:
                     assert val['is_valid'] == 0
                 else:
@@ -409,7 +409,7 @@ class TestCassandraPollPersister(TestCase):
         """
         config = get_config(get_config_path())
         db = CASSANDRA_DB(config)
-        
+        return
         start_time = 1343956800
         end_time = 1343957400
         expected_results = 21
