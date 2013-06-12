@@ -498,7 +498,7 @@ class CassandraPollPersister(PollPersister):
 
         if delta_v < 0:
             self.log.error('delta_v < 0: %s vals: %s - %s path: %s' % \
-                (delta_v,data.val,metadata.last_val,metadata.get_meta_key()))
+                (delta_v,data.val,metadata.last_val,data.get_meta_key()))
             metadata.refresh_from_raw(data)
             return
             
