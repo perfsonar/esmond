@@ -40,6 +40,7 @@ class DeviceResource(ModelResource):
         serializer = DeviceSerializer()
         excludes = ['community', ]
         allowed_methods = ['get']
+        detail_uri_name = 'name'
 
     def dehydrate_begin_time(self, bundle):
         return int(time.mktime(bundle.data['begin_time'].timetuple()))
@@ -47,7 +48,7 @@ class DeviceResource(ModelResource):
     def dehydrate_end_time(self, bundle):
         return int(time.mktime(bundle.data['end_time'].timetuple()))
 
-    def override_urls(self):
+    def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/$" \
                 % self._meta.resource_name, self.wrap_view('dispatch_detail'),
@@ -104,24 +105,6 @@ class DeviceResource(ModelResource):
     def get_interface_data(self, request, **kwargs):
         return InterfaceDataResource().get_detail(request, **kwargs)
 
-    def get_resource_uri(self, bundle_or_obj):
-        """
-        Use the name of the Device rather than it's pk.
-        """
-        kwargs = {
-            'resource_name': self._meta.resource_name,
-        }
-
-        if isinstance(bundle_or_obj, Bundle):
-            kwargs['pk'] = bundle_or_obj.obj.name
-        else:
-            kwargs['pk'] = bundle_or_obj.name
-
-        if self._meta.api_name is not None:
-            kwargs['api_name'] = self._meta.api_name
-
-        return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
-
 class InterfaceResource(ModelResource):
     """An interface on a device.
 
@@ -132,17 +115,7 @@ class InterfaceResource(ModelResource):
         resource_name = 'interface'
         queryset = IfRef.objects.all()
         allowed_methods = ['get']
-
-    def get_resource_uri(self, bundle_or_obj):
-        if isinstance(bundle_or_obj, Bundle):
-            obj = bundle_or_obj.obj
-        else:
-            obj = bundle_or_obj
-
-        return '%s%s/%s/' % (
-            DeviceResource().get_resource_uri(obj.device),
-            self._meta.resource_name,
-            obj.ifDescr,)
+        detail_uri_name = 'ifDescr'
 
 class InterfaceDataObject(object):
     def __init__(self, initial=None):
