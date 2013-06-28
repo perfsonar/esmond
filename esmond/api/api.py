@@ -29,7 +29,6 @@ class DeviceSerializer(Serializer):
             d = data['objects']
         else:
             d = data
-        print d
         return json.dumps(d, cls=DjangoJSONEncoder, sort_keys=True)
 
 
@@ -98,7 +97,6 @@ class DeviceResource(ModelResource):
         return InterfaceResource().get_list(request, device__name=kwargs['name'])
 
     def get_interface_detail(self, request, **kwargs):
-        device = self.obj_get(name=kwargs['name'])
         return InterfaceResource().get_detail(request,
                 device__name=kwargs['name'], ifDescr=kwargs['iface'] )
 
@@ -116,6 +114,10 @@ class InterfaceResource(ModelResource):
         queryset = IfRef.objects.all()
         allowed_methods = ['get']
         detail_uri_name = 'ifDescr'
+
+    def obj_get(self, bundle, **kwargs):
+        kwargs['ifDescr'] = kwargs['ifDescr'].replace("_", "/")
+        return ModelResource.obj_get(self, bundle, **kwargs)
 
 class InterfaceDataObject(object):
     def __init__(self, initial=None):
