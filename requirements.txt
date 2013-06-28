@@ -1,4 +1,5 @@
 sphinx
+django-discover-runner
 -e hg+https://bitbucket.org/jdugan/dlnetsnmp#egg=DLNetSNMP
 -e hg+https://code.google.com/p/tsdb/#egg=tsdb
 -e .

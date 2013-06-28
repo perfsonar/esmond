@@ -9,6 +9,8 @@ TEMPLATE_DEBUG = DEBUG
 TESTING = os.environ.get("ESMOND_TESTING", False)
 ESMOND_CONF = os.environ.get("ESMOND_CONF")
 ESMOND_ROOT = os.environ.get("ESMOND_ROOT")
+TEST_RUNNER = 'discover_runner.DiscoverRunner'
+
 
 if not ESMOND_ROOT:
     raise Error("ESMOND_ROOT not definied in environemnt")
@@ -95,7 +97,8 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
+    'django.contrib.admin',
     'esmond.api',
     'esmond.admin',
-    'django.contrib.admin',
+    'discover_runner',
 )
