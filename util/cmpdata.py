@@ -7,6 +7,7 @@ import sys
 import json
 import time
 import optparse
+import datetime
 
 import requests
 
@@ -81,8 +82,15 @@ def compare_data(bundle, db):
     for i in data_n['data']:
         val_new[i[0]] = i[1]
 
+    period = 600*1000 # avg bin period in ms
+    av_div = period/(30*1000)
+
+    orig_avg = {}
+    new_avg = {}
+    ordered_bins = []
+
     for i in bundle.data['data']:
-        print i[0]*1000, ':' ,
+        # print i[0]*1000, ':' ,
         if val_new.get(i[0]*1000):
             orig_val = i[1]
             new_val = val_new.get(i[0]*1000)*1000
@@ -93,9 +101,20 @@ def compare_data(bundle, db):
             elif orig_val == 0:
                 print 'divide by zero'
             else:
-                print orig_val, new_val, new_val/orig_val*100
+                # print orig_val, new_val, new_val/orig_val*100
+                avg_bin = ((i[0]*1000)/period)*period
+                if not orig_avg.has_key(avg_bin):
+                    ordered_bins.append(avg_bin)
+                    orig_avg[avg_bin] = new_avg[avg_bin] = 0
+                orig_avg[avg_bin] += orig_val
+                new_avg[avg_bin] += new_val
         else:
             print 'no match found'
+
+    for i in ordered_bins:
+        # print i , '-', datetime.datetime.utcfromtimestamp(i/1000),
+        print i , 
+        print orig_avg[i], new_avg[i], new_avg[i]/orig_avg[i]*100
 
 
 
