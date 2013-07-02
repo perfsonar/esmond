@@ -1,5 +1,6 @@
 import json
 import time
+import datetime
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf.urls.defaults import url
@@ -22,6 +23,31 @@ from esmond.api.models import Device, IfRef
 /$DEVICE/interface/$INTERFACE/out
 """
 
+def build_time_filters(filters, orm_filters):
+    """Build default time filters.
+
+    By default we want only currently active items.  This will inspect
+    orm_filters and fill in defaults if they are missing."""
+
+    if 'begin' in filters:
+        orm_filters['end_time__gte'] = datetime.datetime.fromtimestamp(
+                float(filters['begin']))
+
+    if 'end' in filters:
+        orm_filters['begin_time__lte'] = datetime.datetime.fromtimestamp(
+                float(filters['end']))
+
+    filter_keys = map(lambda x: x.split("__")[0], orm_filters.keys())
+    now = datetime.datetime.now()
+
+    if 'begin_time' not in filter_keys:
+        orm_filters['begin_time__lte'] = now
+
+    if 'end_time' not in filter_keys:
+        orm_filters['end_time__gte'] = now
+
+    return orm_filters
+
 class DeviceSerializer(Serializer):
     def to_json(self, data, options=None):
         data = self.to_simple(data, options)
@@ -29,7 +55,6 @@ class DeviceSerializer(Serializer):
             d = data['objects']
         else:
             d = data
-        print d
         return json.dumps(d, cls=DjangoJSONEncoder, sort_keys=True)
 
 
@@ -40,6 +65,10 @@ class DeviceResource(ModelResource):
         serializer = DeviceSerializer()
         excludes = ['community', ]
         allowed_methods = ['get']
+        detail_uri_name = 'name'
+        filtering = {
+            'name': ALL,
+        }
 
     def dehydrate_begin_time(self, bundle):
         return int(time.mktime(bundle.data['begin_time'].timetuple()))
@@ -47,7 +76,7 @@ class DeviceResource(ModelResource):
     def dehydrate_end_time(self, bundle):
         return int(time.mktime(bundle.data['end_time'].timetuple()))
 
-    def override_urls(self):
+    def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/$" \
                 % self._meta.resource_name, self.wrap_view('dispatch_detail'),
@@ -65,23 +94,14 @@ class DeviceResource(ModelResource):
                 name="api_get_children"),
                 ]
 
-    def get_object_list(self, request):
-        qs = self._meta.queryset._clone()
+    def build_filters(self,  filters=None):
+        if filters is None:
+            filters = {}
 
-        # if the begin or end time is specified respect that, otherwise filter
-        # to show only objects that are valid at the current time
-        time_filter = False
-        if hasattr(request,'GET'):
-            for i in ('begin', 'begin_time', 'end', 'end_time'):
-                if i in request.GET:
-                    time_filter = True
-                    break
+        orm_filters = super(DeviceResource, self).build_filters(filters)
+        orm_filters = build_time_filters(filters, orm_filters)
 
-        if not time_filter:          
-            n = now()
-            qs.filter(begin_time__lte=n, end_time__gt=n)
-
-        return qs
+        return orm_filters
 
     # XXX(jdugan): next steps
     # data formatting
@@ -97,30 +117,11 @@ class DeviceResource(ModelResource):
         return InterfaceResource().get_list(request, device__name=kwargs['name'])
 
     def get_interface_detail(self, request, **kwargs):
-        device = self.obj_get(name=kwargs['name'])
         return InterfaceResource().get_detail(request,
                 device__name=kwargs['name'], ifDescr=kwargs['iface'] )
 
     def get_interface_data(self, request, **kwargs):
         return InterfaceDataResource().get_detail(request, **kwargs)
-
-    def get_resource_uri(self, bundle_or_obj):
-        """
-        Use the name of the Device rather than it's pk.
-        """
-        kwargs = {
-            'resource_name': self._meta.resource_name,
-        }
-
-        if isinstance(bundle_or_obj, Bundle):
-            kwargs['pk'] = bundle_or_obj.obj.name
-        else:
-            kwargs['pk'] = bundle_or_obj.name
-
-        if self._meta.api_name is not None:
-            kwargs['api_name'] = self._meta.api_name
-
-        return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
 
 class InterfaceResource(ModelResource):
     """An interface on a device.
@@ -128,21 +129,33 @@ class InterfaceResource(ModelResource):
     Note: this resource is always nested under a DeviceResource and is not bound
     into the normal namespace for the API."""
 
+    device = fields.ToOneField(DeviceResource, 'device')
+
     class Meta:
         resource_name = 'interface'
         queryset = IfRef.objects.all()
         allowed_methods = ['get']
+        detail_uri_name = 'ifDescr'
+        filtering = {
+            'device': ALL_WITH_RELATIONS,
+        }
 
-    def get_resource_uri(self, bundle_or_obj):
-        if isinstance(bundle_or_obj, Bundle):
-            obj = bundle_or_obj.obj
-        else:
-            obj = bundle_or_obj
+    def obj_get(self, bundle, **kwargs):
+        kwargs['ifDescr'] = kwargs['ifDescr'].replace("_", "/")
+        return super(InterfaceResource, self).obj_get(bundle, **kwargs)
 
-        return '%s%s/%s/' % (
-            DeviceResource().get_resource_uri(obj.device),
-            self._meta.resource_name,
-            obj.ifDescr,)
+    def obj_get_list(self, bundle, **kwargs):
+        return super(InterfaceResource, self).obj_get_list(bundle, **kwargs)
+
+    def build_filters(self,  filters=None):
+        if filters is None:
+            filters = {}
+
+        orm_filters = super(InterfaceResource, self).build_filters(filters)
+        orm_filters = build_time_filters(filters, orm_filters)
+
+        return orm_filters
+
 
 class InterfaceDataObject(object):
     def __init__(self, initial=None):
