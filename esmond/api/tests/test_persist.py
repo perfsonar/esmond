@@ -40,38 +40,38 @@ def load_test_data(name):
 
 ifref_test_data = """
 [{
-    "oidset_name": "IfRefPoll", 
-    "device_name": "router_a", 
+    "oidset_name": "IfRefPoll",
+    "device_name": "router_a",
     "timestamp": 1345125600,
-    "oid_name": "", 
+    "oid_name": "",
     "data": {
-        "ifSpeed": [ [ "ifSpeed.1", 1000000000 ] ], 
-        "ifType": [ [ "ifType.1", 53 ] ], 
-        "ipAdEntIfIndex": [ [ "ipAdEntIfIndex.10.37.37.1", 1 ] ], 
-        "ifHighSpeed": [ [ "ifHighSpeed.1", 1000 ] ], 
-        "ifAlias": [ [ "ifAlias.1", "test one" ] ], 
-        "ifPhysAddress": [ [ "ifPhysAddress.1", "\u0000\u001c\u000fFk@" ] ], 
-        "ifAdminStatus": [ [ "ifAdminStatus.1", 1 ] ], 
-        "ifDescr": [ [ "ifDescr.1", "Vlan1" ] ], 
-        "ifMtu": [ [ "ifMtu.1", 1500 ] ], 
+        "ifSpeed": [ [ "ifSpeed.1", 1000000000 ] ],
+        "ifType": [ [ "ifType.1", 53 ] ],
+        "ipAdEntIfIndex": [ [ "ipAdEntIfIndex.10.37.37.1", 1 ] ],
+        "ifHighSpeed": [ [ "ifHighSpeed.1", 1000 ] ],
+        "ifAlias": [ [ "ifAlias.1", "test one" ] ],
+        "ifPhysAddress": [ [ "ifPhysAddress.1", "\u0000\u001c\u000fFk@" ] ],
+        "ifAdminStatus": [ [ "ifAdminStatus.1", 1 ] ],
+        "ifDescr": [ [ "ifDescr.1", "Vlan1" ] ],
+        "ifMtu": [ [ "ifMtu.1", 1500 ] ],
         "ifOperStatus": [ [ "ifOperStatus.1", 1 ] ]
     }
 },
 {
-    "oidset_name": "IfRefPoll", 
-    "device_name": "router_a", 
+    "oidset_name": "IfRefPoll",
+    "device_name": "router_a",
     "timestamp": 1345125660,
-    "oid_name": "", 
+    "oid_name": "",
     "data": {
-        "ifSpeed": [ [ "ifSpeed.1", 1000000000 ] ], 
-        "ifType": [ [ "ifType.1", 53 ] ], 
-        "ipAdEntIfIndex": [ [ "ipAdEntIfIndex.10.37.37.1", 1 ] ], 
-        "ifHighSpeed": [ [ "ifHighSpeed.1", 1000 ] ], 
-        "ifAlias": [ [ "ifAlias.1", "test two" ] ], 
-        "ifPhysAddress": [ [ "ifPhysAddress.1", "\u0000\u001c\u000fFk@" ] ], 
-        "ifAdminStatus": [ [ "ifAdminStatus.1", 1 ] ], 
-        "ifDescr": [ [ "ifDescr.1", "Vlan1" ] ], 
-        "ifMtu": [ [ "ifMtu.1", 1500 ] ], 
+        "ifSpeed": [ [ "ifSpeed.1", 1000000000 ] ],
+        "ifType": [ [ "ifType.1", 53 ] ],
+        "ipAdEntIfIndex": [ [ "ipAdEntIfIndex.10.37.37.1", 1 ] ],
+        "ifHighSpeed": [ [ "ifHighSpeed.1", 1000 ] ],
+        "ifAlias": [ [ "ifAlias.1", "test two" ] ],
+        "ifPhysAddress": [ [ "ifPhysAddress.1", "\u0000\u001c\u000fFk@" ] ],
+        "ifAdminStatus": [ [ "ifAdminStatus.1", 1 ] ],
+        "ifDescr": [ [ "ifDescr.1", "Vlan1" ] ],
+        "ifMtu": [ [ "ifMtu.1", 1500 ] ],
         "ifOperStatus": [ [ "ifOperStatus.1", 1 ] ]
     }
 }]
@@ -79,10 +79,10 @@ ifref_test_data = """
 
 empty_ifref_test_data = """
 [{
-    "oidset_name": "IfRefPoll", 
-    "device_name": "router_a", 
+    "oidset_name": "IfRefPoll",
+    "device_name": "router_a",
     "timestamp": 1345125720,
-    "oid_name": "", 
+    "oid_name": "",
     "data": {
         "ifSpeed": [],
         "ifType": [],
@@ -160,45 +160,45 @@ class TestIfRefPersister(TestCase):
         ifrefs = IfRef.objects.filter(device__name="router_a", ifDescr="Vlan1")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
-       
+
         self.assertTrue(ifrefs[1].end_time < datetime.datetime.max)
 
 alu_sap_test_data = """
 [
     {
-        "oidset_name": "ALUSAPRefPoll", 
-        "device_name": "router_a", 
-        "timestamp": 1345125600, 
-        "oid_name": "", 
+        "oidset_name": "ALUSAPRefPoll",
+        "device_name": "router_a",
+        "timestamp": 1345125600,
+        "oid_name": "",
         "data": {
             "sapDescription": [
                 [ "sapDescription.1.1342177281.100", "one" ]
-            ], 
+            ],
             "sapIngressQosPolicyId": [
                 [ "sapIngressQosPolicyId.1.1342177281.100", 2 ]
-            ], 
+            ],
             "sapEgressQosPolicyId": [
                 [ "sapEgressQosPolicyId.1.1342177281.100", 2 ]
             ]
-        }, 
+        },
         "metadata": {}
     },
     {
-        "oidset_name": "ALUSAPRefPoll", 
-        "device_name": "router_a", 
-        "timestamp": 1345125660, 
-        "oid_name": "", 
+        "oidset_name": "ALUSAPRefPoll",
+        "device_name": "router_a",
+        "timestamp": 1345125660,
+        "oid_name": "",
         "data": {
             "sapDescription": [
                 [ "sapDescription.1.1342177281.100", "two" ]
-            ], 
+            ],
             "sapIngressQosPolicyId": [
                 [ "sapIngressQosPolicyId.1.1342177281.100", 2 ]
-            ], 
+            ],
             "sapEgressQosPolicyId": [
                 [ "sapEgressQosPolicyId.1.1342177281.100", 2 ]
             ]
-        }, 
+        },
         "metadata": {}
     }
 ]
@@ -206,15 +206,15 @@ alu_sap_test_data = """
 empty_alu_sap_test_data = """
 [
     {
-        "oidset_name": "ALUSAPRefPoll", 
-        "device_name": "router_a", 
-        "timestamp": 1345125720, 
-        "oid_name": "", 
+        "oidset_name": "ALUSAPRefPoll",
+        "device_name": "router_a",
+        "timestamp": 1345125720,
+        "oid_name": "",
         "data": {
-            "sapDescription": [], 
-            "sapIngressQosPolicyId": [], 
+            "sapDescription": [],
+            "sapIngressQosPolicyId": [],
             "sapEgressQosPolicyId": []
-        }, 
+        },
         "metadata": {}
     }
 ]"""
@@ -246,7 +246,7 @@ class TestALUSAPRefPersister(TestCase):
         ifrefs = ALUSAPRef.objects.filter(device__name="router_a", name="1-8_0_0-100")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
-       
+
         self.assertTrue(ifrefs[1].end_time < datetime.datetime.max)
 
 # XXX(jdugan): it would probably be better and easier in the long run to keep
@@ -254,55 +254,55 @@ class TestALUSAPRefPersister(TestCase):
 timeseries_test_data = """
 [
     {
-        "oidset_name": "FastPollHC", 
-        "device_name": "router_a", 
+        "oidset_name": "FastPollHC",
+        "device_name": "router_a",
         "timestamp": 1343953700,
-        "oid_name": "ifHCInOctets", 
+        "oid_name": "ifHCInOctets",
         "data": [
             [
-                "ifHCInOctets/GigabitEthernet0_1", 
+                "ifHCInOctets/GigabitEthernet0_1",
                 25066556556930
-            ], 
+            ],
             [
-                "ifHCInOctets/GigabitEthernet0_2", 
+                "ifHCInOctets/GigabitEthernet0_2",
                 126782001836
-            ], 
+            ],
             [
-                "ifHCInOctets/GigabitEthernet0_3", 
+                "ifHCInOctets/GigabitEthernet0_3",
                 27871397880
-            ], 
+            ],
             [
-                "ifHCInOctets/Loopback0", 
+                "ifHCInOctets/Loopback0",
                 0
-            ] 
-        ], 
+            ]
+        ],
         "metadata": {
             "tsdb_flags": 1
         }
     },
     {
-        "oidset_name": "FastPollHC", 
-        "device_name": "router_a", 
+        "oidset_name": "FastPollHC",
+        "device_name": "router_a",
         "timestamp": 1343953730,
-        "oid_name": "ifHCInOctets", 
+        "oid_name": "ifHCInOctets",
         "data": [
             [
-                "ifHCInOctets/GigabitEthernet0_1", 
+                "ifHCInOctets/GigabitEthernet0_1",
                 25066575790604
-            ], 
+            ],
             [
-                "ifHCInOctets/GigabitEthernet0_2", 
+                "ifHCInOctets/GigabitEthernet0_2",
                 126782005062
-            ], 
+            ],
             [
-                "ifHCInOctets/GigabitEthernet0_3", 
+                "ifHCInOctets/GigabitEthernet0_3",
                 27871411592
-            ], 
+            ],
             [
-                "ifHCInOctets/Loopback0", 
+                "ifHCInOctets/Loopback0",
                 0
             ]
-        ], 
+        ],
         "metadata": {
             "tsdb_flags": 1
         }
@@ -312,13 +312,13 @@ timeseries_test_data = """
 
 class TestCassandraPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
-    
+
     def setUp(self):
         """make sure we have a clean router_a directory to start with."""
         router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
         if os.path.exists(router_a_path):
             shutil.rmtree(router_a_path, ignore_errors=True)
-            
+
     def test_persister(self):
         """This is a very basic smoke test for a cassandra persister."""
         config = get_config(get_config_path())
@@ -329,41 +329,41 @@ class TestCassandraPollPersister(TestCase):
         p.run()
         p.db.close()
         p.db.stats.report('all')
-        
+
     def test_persister_long(self):
         """Make sure the tsdb and cassandra data match"""
         config = get_config(get_config_path())
         test_data = load_test_data("router_a_ifhcin_long.json")
-        
+
         config.db_clear_on_testing = True
         config.db_profile_on_testing = True
-        
+
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
         p.db.flush()
         p.db.close()
         p.db.stats.report('all')
-        
+
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = TSDBPollPersister(config, "test", persistq=q)
         p.run()
-        
+
         path_levels = []
-        
+
         router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
         for (path, dirs, files) in os.walk(router_a_path):
             if dirs[0] == 'TSDBAggregates':
                 break
             path_levels.append(dirs)
-            
+
         oidsets = path_levels[0]
         oids    = path_levels[1]
         paths   = path_levels[2]
-        
+
         full_paths = {}
-        
+
         for oidset in oidsets:
             for oid in oids:
                 for path in paths:
@@ -371,15 +371,15 @@ class TestCassandraPollPersister(TestCase):
                         (oidset, oid, path)
                     if not full_paths.has_key(full_path):
                         full_paths[full_path] = 1
-                        
+
         ts_db = tsdb.TSDB(config.tsdb_root)
         db = CASSANDRA_DB(config)
-        
+
         rates = ColumnFamily(db.pool, db.rate_cf)
-        
+
         count_bad = 0
         tsdb_aggs = 0
-                        
+
         for p in full_paths.keys():
             v = ts_db.get_var(p)
             device,oidset,oid,path,tmp1,tmp2 = p.split('/')
@@ -396,9 +396,9 @@ class TestCassandraPollPersister(TestCase):
                 else:
                     assert val['val'] == d.delta
                     assert val['is_valid'] > 0
-                    
+
         db.close()
-                    
+
     def test_range_baserate_query(self):
         """
         Presumed using test data loaded in previous test method.
@@ -435,13 +435,13 @@ class TestCassandraPollPersister(TestCase):
             cf='average', # average | delta - optional
             as_json=True
         )
-        
+
         ret = json.loads(ret)
 
         assert len(ret['data']) == expected_results
         assert ret['begin_time'] == start_time
         assert ret['end_time'] == end_time
-        
+
         ret = db.query_raw_data(
             device='router_a',
             path='fxp0.0',
@@ -451,9 +451,9 @@ class TestCassandraPollPersister(TestCase):
             ts_max=end_time,
             as_json=True
         )
-        
+
         ret = json.loads(ret)
-        
+
         assert len(ret['data']) == expected_results - 1
 
         ret = db.query_aggregation_timerange(
@@ -471,7 +471,7 @@ class TestCassandraPollPersister(TestCase):
 
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 17
-        
+
         ret = db.query_aggregation_timerange(
             device='router_a',
             path='fxp0.0',
@@ -482,12 +482,12 @@ class TestCassandraPollPersister(TestCase):
             cf='min',  # min | max | average - also required!
             as_json=True
         )
-        
+
         ret = json.loads(ret)
-        
+
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 0
-        
+
         ret = db.query_aggregation_timerange(
             device='router_a',
             path='fxp0.0',
@@ -498,12 +498,12 @@ class TestCassandraPollPersister(TestCase):
             cf='max',  # min | max | average - also required!
             as_json=True
         )
-        
+
         ret = json.loads(ret)
-        
+
         assert ret['agg'] == 3600
         assert ret['data'][0][1] == 7500
-        
+
         db.close()
 
 
@@ -517,11 +517,11 @@ if tsdb:
             if os.path.exists(router_a_path):
                 shutil.rmtree(router_a_path)
 
-    
+
         def test_persister(self):
             """This is a very basic smoke test for a TSDB persister."""
             config = get_config(get_config_path())
-    
+
             test_data = json.loads(timeseries_test_data)
             q = TestPersistQueue(test_data)
             p = TSDBPollPersister(config, "test", persistq=q)
