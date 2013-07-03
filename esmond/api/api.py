@@ -76,6 +76,9 @@ class DeviceSerializer(Serializer):
 
 
 class DeviceResource(ModelResource):
+    children = fields.ListField()
+    leaf = fields.BooleanField()
+
     class Meta:
         queryset = Device.objects.all()
         resource_name = 'device'
@@ -93,6 +96,10 @@ class DeviceResource(ModelResource):
     def dehydrate_end_time(self, bundle):
         return int(time.mktime(bundle.data['end_time'].timetuple()))
 
+    def alter_detail_data_to_serialize(self, request, data):
+        data.data['uri'] = data.data['resource_uri']
+        return data
+
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/$" \
@@ -102,11 +109,11 @@ class DeviceResource(ModelResource):
                 % (self._meta.resource_name,),
                 self.wrap_view('get_interface_list'),
                 name="api_get_children"),
-            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface>[\w\d_.-]+)/?$"
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.-]+)/?$"
                 % (self._meta.resource_name,),
                 self.wrap_view('get_interface_detail'),
                 name="api_get_children"),
-            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface>[\w\d_.-]+)/(?P<data>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.-]+)/(?P<data>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
                 self.wrap_view('get_interface_data'),
                 name="api_get_children"),
                 ]
@@ -135,10 +142,21 @@ class DeviceResource(ModelResource):
 
     def get_interface_detail(self, request, **kwargs):
         return InterfaceResource().get_detail(request,
-                device__name=kwargs['name'], ifDescr=kwargs['iface'] )
+                device__name=kwargs['name'], ifDescr=kwargs['iface_name'] )
 
     def get_interface_data(self, request, **kwargs):
         return InterfaceDataResource().get_detail(request, **kwargs)
+
+    def dehydrate_children(self, bundle):
+        children = ['interface', 'system', 'all']
+
+        base_uri = self.get_resource_uri(bundle)
+        return [ dict(leaf=False, uri='%s%s' % (base_uri, x), name=x)
+                for x in children ]
+
+    def dehydrate(self, bundle):
+        bundle.data['leaf'] = False
+        return bundle
 
 class InterfaceResource(ModelResource):
     """An interface on a device.
@@ -245,8 +263,8 @@ class InterfaceDataResource(Resource):
 
     class Meta:
         resource_name = 'interface_data'
-        queryset = IfRef.objects.all()
         allowed_methods = ['get']
+        object_class = InterfaceDataObject
 
     def get_object_list(self, request):
         qs = self._meta.queryset._clone()
@@ -259,15 +277,15 @@ class InterfaceDataResource(Resource):
         else:
             obj = bundle_or_obj
 
-        uri = "%s%s" % (
+        uri = "%s/%s" % (
                 InterfaceResource().get_resource_uri(obj.iface),
                 obj.datapath)
         return uri
 
-    def obj_get(self, request, **kwargs):
+    def obj_get(self, bundle, **kwargs):
         try:
             iface = IfRef.objects.get( device__name=kwargs['name'],
-                    ifDescr=kwargs['iface'])
+                    ifDescr=kwargs['iface_name'].replace("_", "/"))
         except IfRef.DoesNotExist:
             raise NotFound("no such device/interface")
 
@@ -283,7 +301,7 @@ class InterfaceDataResource(Resource):
         obj.iface = iface
         obj.datapath = datapath
 
-        filters = getattr(request, 'GET', {})
+        filters = getattr(bundle.request, 'GET', {})
 
         if filters.has_key('begin'):
             obj.begin_time = filters['begin']
@@ -307,7 +325,7 @@ class InterfaceDataResource(Resource):
 
         f = getattr(self, "data_%s" % data_set, None)
         if f:
-            data = f(request, obj, args)
+            data = f(bundle.request, obj, args)
         else:
             raise NotFound("no such dataset")
 

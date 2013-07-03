@@ -126,6 +126,35 @@ class DeviceAPITests(ResourceTestCase):
         self.assertEquals(len(data), 1)
         self.assertEquals(data[0]['name'], 'rtr_b')
 
+    def test_get_device_detail(self):
+        url = '/v1/device/rtr_a/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+        print json.dumps(data, indent=4)
+        for field in [
+            'active',
+            'begin_time',
+            'end_time',
+            'id',
+            'name',
+            'resource_uri',
+            'uri',
+            ]:
+            self.assertIn(field,data)
+
+        children = {}
+        for child in data['children']:
+            children[child['name']] = child
+            for field in ['leaf','name','uri']:
+                self.assertIn(field, child)
+
+        for child_name in ['all', 'interface', 'system']:
+            self.assertIn(child_name, children)
+            child = children[child_name]
+            self.assertEqual(child['uri'], url + child_name)
 
     def test_post_device_list_unauthenticated(self):
         # We don't allow POSTs at this time.  Once that capability is added
@@ -208,3 +237,12 @@ class DeviceAPITests(ResourceTestCase):
                 self.assertEqual(child['uri'], url + child_name)
                 self.assertTrue(child['leaf'])
 
+    def test_get_device_interface_data_detail(self):
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        print json.dumps(data, indent=4)
