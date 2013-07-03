@@ -139,13 +139,13 @@ class DeviceAPITests(ResourceTestCase):
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(len(data['objects']), 1)
+        self.assertEquals(len(data['children']), 1)
 
         # no interfaces if we are looking in the distant past
         response = self.client.get(url, dict(end=0))
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(len(data['objects']), 0)
+        self.assertEquals(len(data['children']), 0)
 
         url = '/v1/device/rtr_b/interface/'
 
@@ -156,7 +156,7 @@ class DeviceAPITests(ResourceTestCase):
         response = self.client.get(url, dict(begin=begin, end=end))
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(len(data['objects']), 2)
+        self.assertEquals(len(data['children']), 2)
 
         # rtr_b has only one interface during the last part of it's existence
         begin = datetime_to_timestamp(self.rtr_b.begin_time +
@@ -164,8 +164,8 @@ class DeviceAPITests(ResourceTestCase):
         response = self.client.get(url, dict(begin=begin, end=end))
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(len(data['objects']), 1)
-        self.assertEquals(data['objects'][0]['ifDescr'], 'xe-1/0/0')
+        self.assertEquals(len(data['children']), 1)
+        self.assertEquals(data['children'][0]['ifDescr'], 'xe-1/0/0')
 
     def test_get_device_interface_detail(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/'

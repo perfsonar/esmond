@@ -160,6 +160,11 @@ class InterfaceResource(ModelResource):
 
         return orm_filters
 
+    def alter_list_data_to_serialize(self, request, data):
+        data['children'] = data['objects']
+        del data['objects']
+        return data
+
     def get_resource_uri(self, bundle_or_obj=None):
         if isinstance(bundle_or_obj, Bundle):
             obj = bundle_or_obj.obj
