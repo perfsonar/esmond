@@ -1,7 +1,7 @@
 from django.db import models
 import datetime
 
-from esmond.util import datetime_to_unixtime
+from esmond.util import datetime_to_unixtime, remove_metachars
 
 class DeviceTag(models.Model):
     """A tag for a :py:class:`.Device.`"""
@@ -207,6 +207,9 @@ class IfRef(models.Model):
 
     def __unicode__(self):
         return "%s (%s) %s"%(self.ifDescr, self.ifIndex, self.ifAlias)
+
+    def clean_ifDescr(self):
+        return remove_metachars(self.ifDescr)
 
     def to_dict(self):
 

@@ -130,6 +130,10 @@ class InterfaceResource(ModelResource):
     into the normal namespace for the API."""
 
     device = fields.ToOneField(DeviceResource, 'device')
+    children = fields.ListField()
+    leaf = fields.BooleanField()
+    device_uri = fields.CharField()
+    uri = fields.CharField()
 
     class Meta:
         resource_name = 'interface'
@@ -156,6 +160,29 @@ class InterfaceResource(ModelResource):
 
         return orm_filters
 
+    def get_resource_uri(self, bundle_or_obj=None):
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+        if obj:
+            uri = "%s%s" % (
+                DeviceResource().get_resource_uri(obj.device),
+                obj.clean_ifDescr())
+        else:
+            uri = ''
+
+        return uri
+
+    def dehydrate_children(self, bundle):
+        return ['1', '2']
+
+    def dehydrate(self, bundle):
+        bundle.data['leaf'] = False
+        bundle.data['uri'] = bundle.data['resource_uri']
+        bundle.data['device_uri'] = bundle.data['device']
+        return bundle
 
 class InterfaceDataObject(object):
     def __init__(self, initial=None):

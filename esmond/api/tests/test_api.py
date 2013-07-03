@@ -169,3 +169,19 @@ class DeviceAPITests(ResourceTestCase):
         data = json.loads(response.content)
         self.assertEquals(data['ifDescr'], 'xe-0/0/0')
 
+        for field in [
+                'begin_time',
+                'children',
+                'device_uri',
+                'end_time',
+                'ifAlias',
+                'ifDescr',
+                'ifHighSpeed',
+                'ifIndex',
+                'ifSpeed',
+                'ipAddr',
+                'leaf',
+                'uri',
+            ]:
+            self.assertIn(field, data)
+
