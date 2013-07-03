@@ -23,6 +23,23 @@ from esmond.api.models import Device, IfRef
 /$DEVICE/interface/$INTERFACE/out
 """
 
+OIDSET_INTERFACE_ENDPOINTS = {
+    'FastPollHC': {
+        'in': 'ifHCInOctets',
+        'out': 'ifHCOutOctets',
+    },
+    'Errors': {
+        'error/in': 'ifInErrors',
+        'error/out': 'ifOutErrors',
+        'discard/in': 'ifInDiscards',
+        'discard/out': 'ifOutDiscards',
+    },
+    'InfFastPollHC': {
+        'in': 'gigeClientCtpPmRealInOctets',
+        'out': 'gigeClientCtpPmRealOutOctets',
+    },
+}
+
 def build_time_filters(filters, orm_filters):
     """Build default time filters.
 
@@ -184,8 +201,8 @@ class InterfaceResource(ModelResource):
         children = []
 
         for oidset in bundle.obj.device.oidsets.all():
-            if oidset.name == 'FastPollHC':
-                children.extend(['in', 'out'])
+            if oidset.name in OIDSET_INTERFACE_ENDPOINTS:
+                children.extend(OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys())
 
         return [ dict(leaf=True, uri='', name=x) for x in children ]
 

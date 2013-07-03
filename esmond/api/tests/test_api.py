@@ -6,6 +6,7 @@ from django.core.urlresolvers import reverse
 from tastypie.test import ResourceTestCase
 
 from esmond.api.models import *
+from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
 
 def datetime_to_timestamp(dt):
     return time.mktime(dt.timetuple())
@@ -23,6 +24,8 @@ class DeviceAPITests(ResourceTestCase):
 
         DeviceOIDSetMap(device=self.rtr_a,
                 oid_set=OIDSet.objects.get(name="FastPollHC")).save()
+        DeviceOIDSetMap(device=self.rtr_a,
+                oid_set=OIDSet.objects.get(name="Errors")).save()
 
         rtr_b_begin = datetime.datetime(2013,6,1)
         rtr_b_end = datetime.datetime(2013,6,15)
@@ -198,10 +201,7 @@ class DeviceAPITests(ResourceTestCase):
             for field in ['leaf','name','uri']:
                 self.assertIn(field, child)
 
-        for child in ['in', 'out']:
-            self.assertIn(child, children)
-
-        # NEXT: generalize data endpoints for interfaces
-
-        #print json.dumps(data, indent=4)
+        for oidset in Device.objects.get(name='rtr_a').oidsets.all():
+            for child in OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys():
+                self.assertIn(child, children)
 
