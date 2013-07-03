@@ -176,7 +176,13 @@ class InterfaceResource(ModelResource):
         return uri
 
     def dehydrate_children(self, bundle):
-        return ['1', '2']
+        children = []
+
+        for oidset in bundle.obj.device.oidsets.all():
+            if oidset.name == 'FastPollHC':
+                children.extend(['in', 'out'])
+
+        return [ dict(leaf=True, uri='', name=x) for x in children ]
 
     def dehydrate(self, bundle):
         bundle.data['leaf'] = False

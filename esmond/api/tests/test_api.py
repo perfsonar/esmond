@@ -10,12 +10,19 @@ from esmond.api.models import *
 def datetime_to_timestamp(dt):
     return time.mktime(dt.timetuple())
 
+from django.test import TestCase
 
 class DeviceAPITests(ResourceTestCase):
+    fixtures = ["oidsets.json"]
     def setUp(self):
+        super(DeviceAPITests, self).setUp()
+
         self.rtr_a, _ = Device.objects.get_or_create(
                 name="rtr_a", 
                 community="public")
+
+        DeviceOIDSetMap(device=self.rtr_a,
+                oid_set=OIDSet.objects.get(name="FastPollHC")).save()
 
         rtr_b_begin = datetime.datetime(2013,6,1)
         rtr_b_end = datetime.datetime(2013,6,15)
@@ -118,8 +125,8 @@ class DeviceAPITests(ResourceTestCase):
 
 
     def test_post_device_list_unauthenticated(self):
-        """We don't allow POSTs at this time.  Once that capability is added
-        these tests will need to be expanded."""
+        # We don't allow POSTs at this time.  Once that capability is added
+        # these tests will need to be expanded.
 
         self.assertHttpMethodNotAllowed(
                 self.client.post('/v1/device/entries/', format='json',
@@ -184,4 +191,17 @@ class DeviceAPITests(ResourceTestCase):
                 'uri',
             ]:
             self.assertIn(field, data)
+
+        children = {}
+        for child in data['children']:
+            children[child['name']] = child
+            for field in ['leaf','name','uri']:
+                self.assertIn(field, child)
+
+        for child in ['in', 'out']:
+            self.assertIn(child, children)
+
+        # NEXT: generalize data endpoints for interfaces
+
+        #print json.dumps(data, indent=4)
 
