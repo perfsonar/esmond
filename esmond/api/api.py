@@ -189,8 +189,9 @@ class InterfaceResource(ModelResource):
             obj = bundle_or_obj
 
         if obj:
-            uri = "%s%s" % (
+            uri = "%s%s%s" % (
                 DeviceResource().get_resource_uri(obj.device),
+                'interface/',
                 obj.clean_ifDescr())
         else:
             uri = ''
@@ -204,7 +205,9 @@ class InterfaceResource(ModelResource):
             if oidset.name in OIDSET_INTERFACE_ENDPOINTS:
                 children.extend(OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys())
 
-        return [ dict(leaf=True, uri='', name=x) for x in children ]
+        base_uri = self.get_resource_uri(bundle)
+        return [ dict(leaf=True, uri='%s/%s' % (base_uri, x), name=x)
+                for x in children ]
 
     def dehydrate(self, bundle):
         bundle.data['leaf'] = False

@@ -202,6 +202,9 @@ class DeviceAPITests(ResourceTestCase):
                 self.assertIn(field, child)
 
         for oidset in Device.objects.get(name='rtr_a').oidsets.all():
-            for child in OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys():
-                self.assertIn(child, children)
+            for child_name in OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys():
+                self.assertIn(child_name , children)
+                child = children[child_name]
+                self.assertEqual(child['uri'], url + child_name)
+                self.assertTrue(child['leaf'])
 
