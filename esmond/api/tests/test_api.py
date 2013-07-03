@@ -139,6 +139,7 @@ class DeviceAPITests(ResourceTestCase):
             'begin_time',
             'end_time',
             'id',
+            'leaf',
             'name',
             'resource_uri',
             'uri',
