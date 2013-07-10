@@ -19,7 +19,7 @@ class DeviceAPITestsBase(ResourceTestCase):
         super(DeviceAPITestsBase, self).setUp()
 
         self.rtr_a, _ = Device.objects.get_or_create(
-                name="rtr_a", 
+                name="rtr_a",
                 community="public")
 
         DeviceOIDSetMap(device=self.rtr_a,
@@ -244,12 +244,23 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         super(DeviceAPIDataTests, self).setUp()
 
     def test_bad_endpoints(self):
+        # there is no router called nonexistent
         url = '/v1/device/nonexistent/interface/xe-0_0_0/in'
-
         response = self.client.get(url)
         self.assertEquals(response.status_code, 404)
 
-        url = '/v1/device/rtr_a/interface/xx-0_0_0/in'
+        # rtr_a does not have an nonexistent interface
+        url = '/v1/device/rtr_a/interface/nonexistent/in'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
+
+        # there is no nonexistent sub collection in traffic
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/nonexistent'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
+
+        # there is no nonexistent collection 
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/nonexistent/in'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 404)
 

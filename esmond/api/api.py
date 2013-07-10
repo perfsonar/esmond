@@ -343,13 +343,13 @@ class InterfaceDataResource(Resource):
         if f:
             data = f(bundle.request, obj, args)
         else:
-            raise NotFound("no such dataset")
+            raise ObjectDoesNotExist("no such dataset")
 
         return data
 
     def data_traffic(self, request, obj, args):
         if args not in ['in', 'out']:
-            raise NotFound("no such sub dataset")
+            raise ObjectDoesNotExist("no such sub dataset")
 
         obj.data = [[0,10], [30,20], [60, 40]]
 
