@@ -5,6 +5,7 @@ import datetime
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf.urls.defaults import url
 from django.utils.timezone import now
+from django.core.exceptions import ObjectDoesNotExist
 
 from tastypie.resources import ModelResource, Resource, ALL, ALL_WITH_RELATIONS
 from tastypie.api import Api
@@ -287,7 +288,22 @@ class InterfaceDataResource(Resource):
             iface = IfRef.objects.get( device__name=kwargs['name'],
                     ifDescr=kwargs['iface_name'].replace("_", "/"))
         except IfRef.DoesNotExist:
-            raise NotFound("no such device/interface")
+            raise ObjectDoesNotExist("no such device/interface")
+
+        oidsets = iface.device.oidsets.all()
+        endpoint_map = {}
+        for oidset in oidsets:
+            for endpoint, varname in \
+                    OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
+                path = "/".join((
+                    iface.device.name,
+                    oidset.name,
+                    varname,
+                    kwargs['iface_name']
+                    ))
+                endpoint_map[endpoint] = path
+
+        # NEXT: determine the path to query for the data and write tests
 
         datapath = kwargs['data'].rstrip('/')
 

@@ -13,10 +13,10 @@ def datetime_to_timestamp(dt):
 
 from django.test import TestCase
 
-class DeviceAPITests(ResourceTestCase):
+class DeviceAPITestsBase(ResourceTestCase):
     fixtures = ["oidsets.json"]
     def setUp(self):
-        super(DeviceAPITests, self).setUp()
+        super(DeviceAPITestsBase, self).setUp()
 
         self.rtr_a, _ = Device.objects.get_or_create(
                 name="rtr_a", 
@@ -84,6 +84,7 @@ class DeviceAPITests(ResourceTestCase):
                 end_time=rtr_b_begin + datetime.timedelta(days=7))
 
 
+class DeviceAPITests(DeviceAPITestsBase):
     def test_get_device_list(self):
         url = '/v1/device/'
 
@@ -133,7 +134,7 @@ class DeviceAPITests(ResourceTestCase):
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
-        print json.dumps(data, indent=4)
+        #print json.dumps(data, indent=4)
         for field in [
             'active',
             'begin_time',
@@ -238,6 +239,20 @@ class DeviceAPITests(ResourceTestCase):
                 self.assertEqual(child['uri'], url + child_name)
                 self.assertTrue(child['leaf'])
 
+class DeviceAPIDataTests(DeviceAPITestsBase):
+    def setUp(self):
+        super(DeviceAPIDataTests, self).setUp()
+
+    def test_bad_endpoints(self):
+        url = '/v1/device/nonexistent/interface/xe-0_0_0/in'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
+
+        url = '/v1/device/rtr_a/interface/xx-0_0_0/in'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
+
     def test_get_device_interface_data_detail(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
@@ -247,3 +262,4 @@ class DeviceAPITests(ResourceTestCase):
         data = json.loads(response.content)
 
         print json.dumps(data, indent=4)
+
