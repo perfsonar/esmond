@@ -74,8 +74,6 @@ def compare_data(bundle, db):
 
     data_n = json.loads(ret)
     print '**', ':'.join(path)
-    # print bundle.data['begin_time'], data_n['begin_time']
-    # print bundle.data['end_time'], data_n['end_time']
 
     val_new = {}
 
@@ -91,17 +89,14 @@ def compare_data(bundle, db):
 
     for i in bundle.data['data']:
         # print i[0]*1000, ':' ,
-        if val_new.get(i[0]*1000):
+        if val_new.has_key(i[0]*1000):
             orig_val = i[1]
-            new_val = val_new.get(i[0]*1000)*1000
-            # new_val = val_new.get(i[0]*1000)/30
+            new_val = val_new.get(i[0]*1000)
             if orig_val is None or new_val is None:
-                print 'one value is none'
-                continue
-            elif orig_val == 0:
-                print 'divide by zero'
+                if orig_val is None: orig_val = 0.0
+                if new_val is None: new_val = 0.0
             else:
-                # print orig_val, new_val, new_val/orig_val*100
+                new_val = new_val*1000
                 avg_bin = ((i[0]*1000)/period)*period
                 if not orig_avg.has_key(avg_bin):
                     ordered_bins.append(avg_bin)
@@ -109,14 +104,16 @@ def compare_data(bundle, db):
                 orig_avg[avg_bin] += orig_val
                 new_avg[avg_bin] += new_val
         else:
-            print 'no match found'
+            print 'no match found - orig val:', i[1], datetime.datetime.utcfromtimestamp(i[0]), i[0]*1000
 
     for i in ordered_bins:
-        # print i , '-', datetime.datetime.utcfromtimestamp(i/1000),
-        print i , 
-        print orig_avg[i], new_avg[i], new_avg[i]/orig_avg[i]*100
-
-
+        row = [str(datetime.datetime.utcfromtimestamp(i/1000)),
+                orig_avg[i], new_avg[i]]
+        if orig_avg[i] != 0:
+            row.append(new_avg[i]/orig_avg[i]*100)
+        else:
+            row.append('no data')
+        print '{: >20} {: >15} {: >15} {: <15} '.format(*row)
 
 def old_fetch_data(oidset, dev, iface, begin, end, db):
     params = dict(begin=begin, end=end)
@@ -177,7 +174,6 @@ def main(argv=sys.argv):
     parser.add_option('-l', '--last', dest='last',
         action='store', type='int', default=3600,
         help="set time range to last n seconds")
-
 
     (opts, args) = parser.parse_args(args=argv[1:])
 
