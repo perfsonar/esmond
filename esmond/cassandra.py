@@ -330,8 +330,8 @@ class CASSANDRA_DB(object):
                 # time range) so seed/return the current value.
                 meta_d = Metadata(last_update=raw_data.ts, last_val=raw_data.val,
                     min_ts=raw_data.ts, freq=raw_data.freq, path=raw_data.path)
-                self.log.debug('Initializing metadata for: %s' %
-                        (raw_data.get_meta_key()))
+                self.log.debug('Initializing metadata for: %s using %s' %
+                        (raw_data.get_meta_key(), raw_data))
             self.set_metadata(raw_data.get_meta_key(), meta_d)
         else:
             meta_d = Metadata(**self.metadata_cache[raw_data.get_meta_key()])
@@ -913,11 +913,19 @@ class RawRateData(RawData):
     Container for raw data for rate based rows.
     """
     _doc_properties = ['ts']
-    
+
     def __init__(self, path=None, ts=None, val=None, freq=None):
         RawData.__init__(self, path, ts, val)
         self.freq = freq
-        
+
+    def __unicode__(self):
+        return "<RawRateData/%d: ts=%s, val=%s, path=%s>" % \
+            (id(self), self.ts, self.val, self.path)
+
+    def __repr__(self):
+        return "<RawRateData/%d: ts=%s, val=%s, path=%s>" % \
+            (id(self), self.ts, self.val, self.path)
+
     def get_key(self):
         """
         Return a cassandra row key based on the contents of the object.
@@ -957,6 +965,14 @@ class Metadata(DataContainerBase):
         self.last_val = last_val
         self.min_ts = min_ts
         self.freq = freq
+
+    def __unicode__(self):
+        return "<Metadata/%d: last_update=%s, last_val=%s, min_ts=%s, freq=%s>" % \
+            (id(self), self.last_update, self.last_val, self.min_ts, self.freq)
+
+    def __repr__(self):
+        return "<Metadata/%d: last_update=%s, last_val=%s, min_ts=%s, freq=%s>" % \
+            (id(self), self.last_update, self.last_val, self.min_ts, self.freq)
         
     @property
     def min_ts(self):
