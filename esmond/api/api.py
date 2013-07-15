@@ -15,6 +15,8 @@ from tastypie import fields
 from tastypie.exceptions import NotFound
 
 from esmond.api.models import Device, IfRef
+from esmond.cassandra import CASSANDRA_DB
+from esmond.config import get_config_path, get_config
 
 """
 /$DEVICE/
@@ -335,9 +337,9 @@ class InterfaceDataResource(Resource):
             obj.cf = 'average'
 
         if filters.has_key('agg'):
-            obj.agg = filters['agg']
+            obj.agg = int(filters['agg'])
         else:
-            obj.agg="30"
+            obj.agg = None
 
         f = getattr(self, "data_%s" % data_set, None)
         if f:
@@ -351,7 +353,31 @@ class InterfaceDataResource(Resource):
         if args not in ['in', 'out']:
             raise ObjectDoesNotExist("no such sub dataset")
 
-        obj.data = [[0,10], [30,20], [60, 40]]
+        oidset = None
+        for o in obj.iface.device.oidsets.all():
+            if o.name == 'FastPollHC' or o.name == 'FastPoll':
+                oidset = o
+                break
+
+        if not oidset:
+            return ObjectDoesNotExist("no valid traffic OIDSet for %s" %
+                    (obj.iface.device.name))
+
+        if not obj.agg:
+            obj.agg = oidset.frequency
+
+        # XXX next step compute path
+        path = None
+
+        db = CASSANDRA_DB(get_config(get_config_path()))
+
+        if obj.agg == oidset.frequency:
+            obj.data = db.query_baserate_timerange(path=path, freq=obj.agg,
+                    ts_min=obj.begin, ts_max=obj.end)
+        else:
+            # check to see if this is a valid agg and use
+            # query_aggreation_timerange
+            pass
 
         return obj
 

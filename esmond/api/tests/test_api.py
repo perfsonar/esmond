@@ -2,6 +2,8 @@ import json
 import time
 import datetime
 
+import mock 
+
 from django.core.urlresolvers import reverse
 from tastypie.test import ResourceTestCase
 
@@ -239,9 +241,18 @@ class DeviceAPITests(DeviceAPITestsBase):
                 self.assertEqual(child['uri'], url + child_name)
                 self.assertTrue(child['leaf'])
 
+class MockCASSANDRA_DB(object):
+    def __init__(self, config):
+        pass
+
+    def query_baserate_timerange(self, path=None, freq=None, ts_min=None, ts_max=None):
+        return [[0,10], [30,20], [60, 40]]
+
 class DeviceAPIDataTests(DeviceAPITestsBase):
     def setUp(self):
         super(DeviceAPIDataTests, self).setUp()
+        # mock patches names where used/imported, not where defined
+        mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB).start()
 
     def test_bad_endpoints(self):
         # there is no router called nonexistent
@@ -264,6 +275,12 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url)
         self.assertEquals(response.status_code, 404)
 
+        # rtr_b has no traffic oidsets defined
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/nonexistent/in'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
+
+
     def test_get_device_interface_data_detail(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
@@ -273,4 +290,6 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         data = json.loads(response.content)
 
         print json.dumps(data, indent=4)
+
+        # XXX for Monte: insert checks here to see data returned is as expected
 
