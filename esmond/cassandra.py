@@ -512,8 +512,8 @@ class CASSANDRA_DB(object):
         else:
             return results
             
-    def query_aggregation_timerange(self, device=None, path=None, oid=None, 
-                ts_min=None, ts_max=None, freq=None, cf=None, as_json=False):
+    def query_aggregation_timerange(self, path=None, freq=None, 
+                ts_min=None, ts_max=None, cf=None, as_json=False):
         """
         Query interface method to retrieve the aggregation rollups - could
         be average/min/max.  Different column families will be queried 
@@ -527,9 +527,20 @@ class CASSANDRA_DB(object):
             cf = 'average'
         
         if cf == 'average':
+            ret_count = self.aggs._column_family.multiget_count(
+                self._get_row_keys(path,freq,ts_min,ts_max), 
+                column_start=ts_min, column_finish=ts_max)
+
+            cols = 0
+
+            for i in ret_count.keys():
+                cols += ret_count[i]
+            print cols
+
             ret = self.aggs._column_family.multiget(
-                    self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
-                    column_start=ts_min, column_finish=ts_max)
+                    self._get_row_keys(path,freq,ts_min,ts_max), 
+                    column_start=ts_min, column_finish=ts_max,
+                    column_count=cols+5)
 
             # Just return the results and format elsewhere.
             results = []
@@ -546,24 +557,33 @@ class CASSANDRA_DB(object):
                         else:
                             base_freq = kkk
                             count = vv[kkk]
-                results.append(
-                    {'ts': ts, 'val': val, 'base_freq': int(base_freq), 'count': count}
-                )
+                    results.append(
+                        {'ts': ts, 'val': val,'base_freq': int(base_freq), 'count': count}
+                    )
         elif cf == 'min' or cf == 'max':
+            ret_count = self.stat_agg._column_family.multiget_count(
+                self._get_row_keys(path,freq,ts_min,ts_max), 
+                column_start=ts_min, column_finish=ts_max)
+
+            cols = 0
+
+            for i in ret_count.keys():
+                cols += ret_count[i]
+
             ret = self.stat_agg._column_family.multiget(
-                    self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
-                    column_start=ts_min, column_finish=ts_max)
+                    self._get_row_keys(path,freq,ts_min,ts_max), 
+                    column_start=ts_min, column_finish=ts_max,
+                    column_count=cols+5)
             
             results = []
             
             for k,v in ret.items():
                 for kk,vv in v.items():
                     ts = kk
-                            
-                if cf == 'min':
-                    results.append({'ts': ts, 'min': vv['min']})
-                else:
-                    results.append({'ts': ts, 'max': vv['max']})
+                    if cf == 'min':
+                        results.append({'ts': ts, 'min': vv['min']})
+                    else:
+                        results.append({'ts': ts, 'max': vv['max']})
         
         if as_json: # format results for query interface
             return FormattedOutput.aggregate_rate(ts_min, ts_max, results, freq,
@@ -571,16 +591,26 @@ class CASSANDRA_DB(object):
         else:
             return results
             
-    def query_raw_data(self, device=None, path=None, oid=None, freq=None,
+    def query_raw_data(self, path=None, freq=None,
                 ts_min=None, ts_max=None, as_json=False):
         """
         Query interface to query the raw data.  Could return the values 
         programmatically, but generally returns formatted json from 
         the FormattedOutput module.
         """        
-        ret = self.raw_data._column_family.multiget(
-                self._get_row_keys(device,path,oid,freq,ts_min,ts_max), 
+        ret_count = self.raw_data._column_family.multiget_count(
+                self._get_row_keys(path,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
+
+        cols = 0
+
+        for i in ret_count.keys():
+            cols += ret_count[i]
+
+        ret = self.raw_data._column_family.multiget(
+                self._get_row_keys(path,freq,ts_min,ts_max), 
+                column_start=ts_min, column_finish=ts_max,
+                column_count=cols+5)
 
         # Just return the results and format elsewhere.
         results = []
