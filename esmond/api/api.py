@@ -17,6 +17,7 @@ from tastypie.exceptions import NotFound
 from esmond.api.models import Device, IfRef
 from esmond.cassandra import CASSANDRA_DB
 from esmond.config import get_config_path, get_config
+from esmond.util import remove_metachars
 
 """
 /$DEVICE/
@@ -367,7 +368,16 @@ class InterfaceDataResource(Resource):
             obj.agg = oidset.frequency
 
         # XXX next step compute path
-        path = None
+        # device / 
+        path = "/".join(
+                (
+                    obj.iface.device.name,
+                    oidset.name, 
+                    OIDSET_INTERFACE_ENDPOINTS[oidset.name][args],
+                    remove_metachars(obj.iface.ifDescr),
+                ))
+
+        print "path", path
 
         db = CASSANDRA_DB(get_config(get_config_path()))
 
