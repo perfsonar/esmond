@@ -344,7 +344,7 @@ class TestCassandraPollPersister(TestCase):
         p.db.flush()
         p.db.close()
         p.db.stats.report('all')
-
+        
         test_data = load_test_data("router_a_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = TSDBPollPersister(config, "test", persistq=q)
@@ -459,10 +459,9 @@ class TestCassandraPollPersister(TestCase):
         )
 
         ret = json.loads(ret)
-
+        
         assert ret['agg'] == 3600
-        # XXX(mmg): fix this test later
-        # assert ret['data'][0][1] == 17
+        assert ret['data'][0][1] == 17
 
         ret = db.query_aggregation_timerange(
             path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
