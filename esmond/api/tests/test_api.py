@@ -248,6 +248,16 @@ class MockCASSANDRA_DB(object):
     def query_baserate_timerange(self, path=None, freq=None, ts_min=None, ts_max=None):
         return [[0,10], [30,20], [60, 40]]
 
+    def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
+        if cf == 'average':
+            return [[0, 60], [freq, 120], [freq*2, 240]]
+        elif cf == 'min':
+            return [[0, 0], [freq, 10], [freq*2, 20]]
+        elif cf == 'max':
+            return [[0, 75], [freq, 150], [freq*2, 300]]
+        else:
+            pass
+
 class DeviceAPIDataTests(DeviceAPITestsBase):
     def setUp(self):
         super(DeviceAPIDataTests, self).setUp()
@@ -296,4 +306,64 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['resource_uri'], url)
         self.assertEquals(data['data'][1][0], 30)
         self.assertEquals(data['data'][1][1], 20)
+
+    def test_bad_aggregations(self):
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
+
+        params = {'agg': '3601'} # this agg does not exist
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 404)
+
+        params = {'agg': '3600', 'cf': 'bad'} # this cf does not exist
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 404)
+
+
+    def test_get_device_interface_data_aggs(self):
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
+
+        params = {'agg': '3600'}
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['agg'], params['agg'])
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][2][0], int(params['agg'])*2)
+        self.assertEquals(data['data'][2][1], 240)
+
+        # try the same agg, different cf
+        params['cf'] = 'min'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['cf'], 'min')
+        self.assertEquals(data['agg'], params['agg'])
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][2][0], int(params['agg'])*2)
+        self.assertEquals(data['data'][2][1], 20)
+
+        # and the last cf
+        params['cf'] = 'max'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['cf'], 'max')
+        self.assertEquals(data['agg'], params['agg'])
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][2][0], int(params['agg'])*2)
+        self.assertEquals(data['data'][2][1], 300)
 

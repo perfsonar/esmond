@@ -387,7 +387,14 @@ class InterfaceDataResource(Resource):
         else:
             # check to see if this is a valid agg and use
             # query_aggreation_timerange
-            pass
+            if obj.agg not in oidset.aggregates:
+                raise ObjectDoesNotExist('no aggregation %s for oidset %s' %
+                        (obj.agg, oidset.name))
+            if obj.cf not in ['min', 'max', 'average']:
+                raise ObjectDoesNotExist('%s is not a valid consolidation function' %
+                        (obj.cf))
+            obj.data = db.query_aggregation_timerange(path=path, freq=obj.agg,
+                    ts_min=obj.begin, ts_max=obj.end, cf=obj.cf)
 
         return obj
 
