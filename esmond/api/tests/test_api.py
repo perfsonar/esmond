@@ -289,7 +289,11 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         data = json.loads(response.content)
 
-        print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
-        # XXX for Monte: insert checks here to see data returned is as expected
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(int(data['agg']), 30)
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][1][0], 30)
+        self.assertEquals(data['data'][1][1], 20)
 
