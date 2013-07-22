@@ -361,7 +361,7 @@ class InterfaceDataResource(Resource):
                 break
 
         if not oidset:
-            return ObjectDoesNotExist("no valid traffic OIDSet for %s" %
+            raise ObjectDoesNotExist("no valid traffic OIDSet for %s" %
                     (obj.iface.device.name))
 
         if not obj.agg:
