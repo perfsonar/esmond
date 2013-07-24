@@ -316,6 +316,9 @@ class InterfaceDataResource(Resource):
         else:
             data_set, args = datapath.split('/', 1)
 
+        if data_set == 'error' or data_set == 'discard':
+            data_set = 'error'
+
         obj = InterfaceDataObject()
         obj.iface = iface
         obj.datapath = datapath
@@ -364,19 +367,37 @@ class InterfaceDataResource(Resource):
             raise ObjectDoesNotExist("no valid traffic OIDSet for %s" %
                     (obj.iface.device.name))
 
+        return self._execute_query(oidset, args, obj)
+
+    def data_error(self, request, obj, args):
+        if args not in ['in', 'out']:
+            raise ObjectDoesNotExist("no such sub dataset")
+
+        for o in obj.iface.device.oidsets.all():
+            if o.name == 'Errors':
+                oidset = o
+                break
+
+        if not oidset:
+            raise ObjectDoesNotExist("no valid error OIDSet for %s" %
+                    (obj.iface.device.name))
+
+        return self._execute_query(oidset, obj.datapath, obj)
+
+    def _execute_query(self, oidset, oidkey, obj):
+
         if not obj.agg:
             obj.agg = oidset.frequency
 
-        # XXX next step compute path
-        # device / 
+        # XXX(mmg): fix this - should be a list
         path = "/".join(
                 (
                     obj.iface.device.name,
                     oidset.name, 
-                    OIDSET_INTERFACE_ENDPOINTS[oidset.name][args],
+                    OIDSET_INTERFACE_ENDPOINTS[oidset.name][oidkey],
                     remove_metachars(obj.iface.ifDescr),
                 ))
-
+        
         print "path", path
 
         db = CASSANDRA_DB(get_config(get_config_path()))
