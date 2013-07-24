@@ -373,6 +373,7 @@ class InterfaceDataResource(Resource):
         if args not in ['in', 'out']:
             raise ObjectDoesNotExist("no such sub dataset")
 
+        oidset = None
         for o in obj.iface.device.oidsets.all():
             if o.name == 'Errors':
                 oidset = o
