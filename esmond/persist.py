@@ -601,6 +601,7 @@ class CassandraPollPersister(PollPersister):
         The freq arg is the frequency of the desired aggregation to be written 
         to (ie: 5 mins, hourly, etc) in seconds.
         """
+        freq = freq/1000 # convert ms back to seconds for datetime squish.
         return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
 
     def generate_aggregations(self, data, aggregate_freqs):
