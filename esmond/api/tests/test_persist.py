@@ -453,42 +453,42 @@ class TestCassandraPollPersister(TestCase):
             path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
-            freq=3600, # required!
+            freq=3600000, # required!
             cf='average',  # min | max | average - also required!
             as_json=True
         )
 
         ret = json.loads(ret)
         
-        assert ret['agg'] == 3600
+        assert ret['agg'] == 3600000
         assert ret['data'][0][1] == 17
 
         ret = db.query_aggregation_timerange(
             path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
-            freq=3600, # required!
+            freq=3600000, # required!
             cf='min',  # min | max | average - also required!
             as_json=True
         )
 
         ret = json.loads(ret)
 
-        assert ret['agg'] == 3600
+        assert ret['agg'] == 3600000
         assert ret['data'][0][1] == 0
 
         ret = db.query_aggregation_timerange(
             path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
-            freq=3600, # required!
+            freq=3600000, # required!
             cf='max',  # min | max | average - also required!
             as_json=True
         )
 
         ret = json.loads(ret)
 
-        assert ret['agg'] == 3600
+        assert ret['agg'] == 3600000
         assert ret['data'][0][1] == 7500
 
         db.close()
