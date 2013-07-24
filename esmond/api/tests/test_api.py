@@ -310,12 +310,12 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_bad_aggregations(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
-        params = {'agg': '3601'} # this agg does not exist
+        params = {'agg': '3600001'} # this agg does not exist
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 404)
 
-        params = {'agg': '3600', 'cf': 'bad'} # this cf does not exist
+        params = {'agg': '3600000', 'cf': 'bad'} # this cf does not exist
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 404)
@@ -324,7 +324,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_get_device_interface_data_aggs(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
-        params = {'agg': '3600'}
+        params = {'agg': '3600000'}
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -366,4 +366,29 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['resource_uri'], url)
         self.assertEquals(data['data'][2][0], int(params['agg'])*2)
         self.assertEquals(data['data'][2][1], 300)
+
+    def test_get_device_errors(self):
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/error/in'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['resource_uri'], url)
+
+        # print json.dumps(data, indent=4)
+
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/discard/out'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['resource_uri'], url)
+
+
 
