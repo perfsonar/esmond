@@ -631,7 +631,7 @@
             "poller": 1,
             "frequency": 30,
             "name": "FastPoll",
-            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
+            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=IfDescrCorrelator aggregates=3600000,86400000"
         }
     },
     {
@@ -641,7 +641,7 @@
             "poller": 1,
             "frequency": 30,
             "name": "FastPollHC",
-            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
+            "poller_args": "chunk_mapper=tsdb.YYYYMMDDChunkMapper correlator=IfDescrCorrelator aggregates=3600000,86400000"
         }
     },
     {
@@ -651,7 +651,7 @@
             "poller": 1,
             "frequency": 300,
             "name": "Errors",
-            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=IfDescrCorrelator aggregates=3600,86400"
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=IfDescrCorrelator aggregates=3600000,86400000"
         }
     },
     {
@@ -731,7 +731,7 @@
             "poller": 1,
             "frequency": 300,
             "name": "ALUErrors",
-            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUIfDescrCorrelator aggregates=3600,86400 set_name=Errors"
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUIfDescrCorrelator aggregates=3600000,86400000 set_name=Errors"
         }
     },
     {
@@ -741,7 +741,7 @@
             "poller": 1,
             "frequency": 11,
             "name": "ALUSAPPoll",
-            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUSAPCorrelator aggregates=30,3600,86400"
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUSAPCorrelator aggregates=30000,3600000,86400000"
         }
     },
     {
