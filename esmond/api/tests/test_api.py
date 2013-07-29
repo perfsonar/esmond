@@ -43,9 +43,7 @@ class DeviceAPITestsBase(ResourceTestCase):
 
         DeviceOIDSetMap(device=self.rtr_c,
                 oid_set=OIDSet.objects.get(name="InfFastPollHC")).save()
-        DeviceOIDSetMap(device=self.rtr_c,
-                oid_set=OIDSet.objects.get(name="Errors")).save()
-
+        
         self.rtr_z_post_data = {
             "name": "rtr_z",
             "community": "private",
