@@ -43,7 +43,7 @@ class DeviceAPITestsBase(ResourceTestCase):
 
         DeviceOIDSetMap(device=self.rtr_c,
                 oid_set=OIDSet.objects.get(name="InfFastPollHC")).save()
-        
+
         self.rtr_z_post_data = {
             "name": "rtr_z",
             "community": "private",
@@ -424,6 +424,40 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(data['resource_uri'], url)
+
+    def test_timerange_limiter(self):
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
+
+        params = { 
+            'begin': time.time() - datetime.timedelta(days=31).total_seconds()
+        }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 404)
+
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/out'
+
+        params = {
+            'agg': '3600000',
+            'begin': time.time() - datetime.timedelta(days=366).total_seconds()
+        }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 404)
+
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
+
+        params = {
+            'agg': '86400000',
+            'begin': time.time() - datetime.timedelta(days=366*10).total_seconds()
+        }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 404)
+
+        
+
+
 
 
 

@@ -326,12 +326,12 @@ class InterfaceDataResource(Resource):
         filters = getattr(bundle.request, 'GET', {})
 
         if filters.has_key('begin'):
-            obj.begin_time = filters['begin']
+            obj.begin_time = float(filters['begin'])
         else:
             obj.begin_time = int(time.time() - 3600)
 
         if filters.has_key('end'):
-            obj.end_time = filters['end']
+            obj.end_time = float(filters['end'])
         else:
             obj.end_time = int(time.time())
 
@@ -405,6 +405,11 @@ class InterfaceDataResource(Resource):
         db = CASSANDRA_DB(get_config(get_config_path()))
 
         if obj.agg == oidset.frequency:
+            # XXX(mmg): this logic might be moved elsewhere
+            # or changed to return a valid error message to client.
+            if not self._valid_timerange(obj):
+                raise ObjectDoesNotExist('exceeded valid timerange for agg level: %s' %
+                    obj.agg)
             obj.data = db.query_baserate_timerange(path=path, freq=obj.agg,
                     ts_min=obj.begin, ts_max=obj.end)
         else:
@@ -416,10 +421,40 @@ class InterfaceDataResource(Resource):
             if obj.cf not in ['min', 'max', 'average']:
                 raise ObjectDoesNotExist('%s is not a valid consolidation function' %
                         (obj.cf))
+            # XXX(mmg): this logic might be moved elsewhere
+            # or changed to return a valid error message to client.
+            if not self._valid_timerange(obj):
+                raise ObjectDoesNotExist('exceeded valid timerange for agg level: %s' %
+                    obj.agg)
             obj.data = db.query_aggregation_timerange(path=path, freq=obj.agg,
                     ts_min=obj.begin, ts_max=obj.end, cf=obj.cf)
 
         return obj
+
+    def _valid_timerange(self, obj):
+        timerange_limits = {
+            # XXX(mmg): need to fix these first two base rates
+            # not in ms
+            # XXX(mmg): also move this dict elsewhere when work 
+            # on limiter is ironed out.
+            30: datetime.timedelta(days=30),
+            300: datetime.timedelta(days=30),
+            3600000: datetime.timedelta(days=365),
+            86400000: datetime.timedelta(days=365*10),
+        }
+        # print 'agg:', obj.agg
+        # print 'start', datetime.datetime.utcfromtimestamp(obj.begin_time)
+        # print 'end', datetime.datetime.utcfromtimestamp(obj.end_time)
+
+        s = datetime.timedelta(seconds=obj.begin_time)
+        e = datetime.timedelta(seconds=obj.end_time)
+
+        # print 'range', e - s
+
+        if e - s > timerange_limits[obj.agg]:
+            return False
+
+        return True
 
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
