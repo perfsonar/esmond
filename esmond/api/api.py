@@ -359,7 +359,8 @@ class InterfaceDataResource(Resource):
 
         oidset = None
         for o in obj.iface.device.oidsets.all():
-            if o.name == 'FastPollHC' or o.name == 'FastPoll':
+            if o.name == 'FastPollHC' or o.name == 'FastPoll' \
+                or o.name == 'InfFastPollHC':
                 oidset = o
                 break
 

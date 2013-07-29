@@ -37,6 +37,15 @@ class DeviceAPITestsBase(ResourceTestCase):
                 begin_time = rtr_b_begin,
                 end_time = rtr_b_end)
 
+        self.rtr_c, _ = Device.objects.get_or_create(
+                name="rtr_c",
+                community="public")
+
+        DeviceOIDSetMap(device=self.rtr_c,
+                oid_set=OIDSet.objects.get(name="InfFastPollHC")).save()
+        DeviceOIDSetMap(device=self.rtr_c,
+                oid_set=OIDSet.objects.get(name="Errors")).save()
+
         self.rtr_z_post_data = {
             "name": "rtr_z",
             "community": "private",
@@ -84,6 +93,19 @@ class DeviceAPITestsBase(ResourceTestCase):
                 ifPhysAddress="00:00:00:00:00:00",
                 begin_time=rtr_b_begin,
                 end_time=rtr_b_begin + datetime.timedelta(days=7))
+
+        IfRef.objects.get_or_create(
+                device=self.rtr_c,
+                ifIndex=1,
+                ifDescr="xe-3/0/0",
+                ifAlias="test interface",
+                ipAddr="10.0.0.3",
+                ifSpeed=0,
+                ifHighSpeed=10000,
+                ifMtu=9000,
+                ifOperStatus=1,
+                ifAdminStatus=1,
+                ifPhysAddress="00:00:00:00:00:00")
 
 
 class DeviceAPITests(DeviceAPITestsBase):
@@ -306,6 +328,21 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['resource_uri'], url)
         self.assertEquals(data['data'][1][0], 30)
         self.assertEquals(data['data'][1][1], 20)
+
+        url = '/v1/device/rtr_c/interface/xe-3_0_0/out'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(int(data['agg']), 30)
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][2][0], 60)
+        self.assertEquals(data['data'][2][1], 40)
 
     def test_bad_aggregations(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
