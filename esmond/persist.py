@@ -601,7 +601,6 @@ class CassandraPollPersister(PollPersister):
         The freq arg is the frequency of the desired aggregation to be written 
         to (ie: 5 mins, hourly, etc) in seconds.
         """
-        freq = freq/1000 # convert ms back to seconds for datetime squish.
         return datetime.datetime.utcfromtimestamp((data.ts_to_unixtime() / freq) * freq)
 
     def generate_aggregations(self, data, aggregate_freqs):
@@ -622,9 +621,9 @@ class CassandraPollPersister(PollPersister):
         stat_updated = False
 
         for freq in aggregate_freqs:
-            self.db.update_rate_aggregation(data, self._agg_timestamp(data, freq), freq)
+            self.db.update_rate_aggregation(data, self._agg_timestamp(data, freq), freq*1000)
             updated = self.db.update_stat_aggregation(data, 
-                                        self._agg_timestamp(data, freq), freq)
+                                        self._agg_timestamp(data, freq), freq*1000)
             if updated: stat_updated = True
                                 
         if stat_updated:
