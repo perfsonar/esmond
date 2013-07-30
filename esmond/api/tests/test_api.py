@@ -345,12 +345,12 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_bad_aggregations(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
-        params = {'agg': '3600001'} # this agg does not exist
+        params = {'agg': '3601'} # this agg does not exist
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 404)
 
-        params = {'agg': '3600000', 'cf': 'bad'} # this cf does not exist
+        params = {'agg': '3600', 'cf': 'bad'} # this cf does not exist
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 404)
@@ -359,7 +359,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_get_device_interface_data_aggs(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
-        params = {'agg': '3600000'}
+        params = {'agg': '3600'}
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -438,7 +438,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/out'
 
         params = {
-            'agg': '3600000',
+            'agg': '3600',
             'begin': time.time() - datetime.timedelta(days=366).total_seconds()
         }
 
@@ -448,7 +448,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
         params = {
-            'agg': '86400000',
+            'agg': '86400',
             'begin': time.time() - datetime.timedelta(days=366*10).total_seconds()
         }
 

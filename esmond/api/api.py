@@ -388,8 +388,20 @@ class InterfaceDataResource(Resource):
 
     def _execute_query(self, oidset, oidkey, obj):
 
+        # If no aggregate level defined in request, set to the frequency, 
+        # otherwise, check if the requested aggregate level is valid.
         if not obj.agg:
             obj.agg = oidset.frequency
+        elif obj.agg not in oidset.aggregates:
+            raise ObjectDoesNotExist('no aggregation %s for oidset %s' %
+                (obj.agg, oidset.name))
+
+        # Make sure we're not exceeding allowable time range.
+        if not self._valid_timerange(obj):
+            # XXX(mmg): find a better http exception for this.
+            raise ObjectDoesNotExist('exceeded valid timerange for agg level: %s' %
+                    obj.agg)
+
 
         # XXX(mmg): fix this - should be a list
         path = "/".join(
@@ -405,27 +417,14 @@ class InterfaceDataResource(Resource):
         db = CASSANDRA_DB(get_config(get_config_path()))
 
         if obj.agg == oidset.frequency:
-            # XXX(mmg): this logic might be moved elsewhere
-            # or changed to return a valid error message to client.
-            if not self._valid_timerange(obj):
-                raise ObjectDoesNotExist('exceeded valid timerange for agg level: %s' %
-                    obj.agg)
+            # Fetch the base rate data.
             obj.data = db.query_baserate_timerange(path=path, freq=obj.agg,
                     ts_min=obj.begin, ts_max=obj.end)
         else:
-            # check to see if this is a valid agg and use
-            # query_aggreation_timerange
-            if obj.agg not in oidset.aggregates:
-                raise ObjectDoesNotExist('no aggregation %s for oidset %s' %
-                        (obj.agg, oidset.name))
+            # Get the aggregation.
             if obj.cf not in ['min', 'max', 'average']:
                 raise ObjectDoesNotExist('%s is not a valid consolidation function' %
                         (obj.cf))
-            # XXX(mmg): this logic might be moved elsewhere
-            # or changed to return a valid error message to client.
-            if not self._valid_timerange(obj):
-                raise ObjectDoesNotExist('exceeded valid timerange for agg level: %s' %
-                    obj.agg)
             obj.data = db.query_aggregation_timerange(path=path, freq=obj.agg,
                     ts_min=obj.begin, ts_max=obj.end, cf=obj.cf)
 
@@ -433,14 +432,12 @@ class InterfaceDataResource(Resource):
 
     def _valid_timerange(self, obj):
         timerange_limits = {
-            # XXX(mmg): need to fix these first two base rates
-            # not in ms
             # XXX(mmg): also move this dict elsewhere when work 
             # on limiter is ironed out.
             30: datetime.timedelta(days=30),
             300: datetime.timedelta(days=30),
-            3600000: datetime.timedelta(days=365),
-            86400000: datetime.timedelta(days=365*10),
+            3600: datetime.timedelta(days=365),
+            86400: datetime.timedelta(days=365*10),
         }
         # print 'agg:', obj.agg
         # print 'start', datetime.datetime.utcfromtimestamp(obj.begin_time)
