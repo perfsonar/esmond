@@ -433,7 +433,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         }
 
         response = self.client.get(url, params)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
         url = '/v1/device/rtr_a/interface/xe-0_0_0/out'
 
@@ -443,7 +443,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         }
 
         response = self.client.get(url, params)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
@@ -453,7 +453,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         }
 
         response = self.client.get(url, params)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
         
 

@@ -12,7 +12,7 @@ from tastypie.api import Api
 from tastypie.serializers import Serializer
 from tastypie.bundle import Bundle
 from tastypie import fields
-from tastypie.exceptions import NotFound
+from tastypie.exceptions import NotFound, BadRequest
 
 from esmond.api.models import Device, IfRef
 from esmond.cassandra import CASSANDRA_DB
@@ -399,7 +399,7 @@ class InterfaceDataResource(Resource):
         # Make sure we're not exceeding allowable time range.
         if not self._valid_timerange(obj):
             # XXX(mmg): find a better http exception for this.
-            raise ObjectDoesNotExist('exceeded valid timerange for agg level: %s' %
+            raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
 
 
