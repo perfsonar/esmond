@@ -418,17 +418,37 @@ class InterfaceDataResource(Resource):
 
         if obj.agg == oidset.frequency:
             # Fetch the base rate data.
-            obj.data = db.query_baserate_timerange(path=path, freq=obj.agg,
+            data = db.query_baserate_timerange(path=path, freq=obj.agg,
                     ts_min=obj.begin, ts_max=obj.end)
         else:
             # Get the aggregation.
             if obj.cf not in ['min', 'max', 'average']:
                 raise ObjectDoesNotExist('%s is not a valid consolidation function' %
                         (obj.cf))
-            obj.data = db.query_aggregation_timerange(path=path, freq=obj.agg,
+            data = db.query_aggregation_timerange(path=path, freq=obj.agg,
                     ts_min=obj.begin, ts_max=obj.end, cf=obj.cf)
 
+        obj.data = self._format_data_payload(data)
         return obj
+
+    def _format_data_payload(self, data):
+
+        results = []
+
+        for row in data:
+            d = [row['ts'], row['val']]
+            
+            # Further options for different data sets.
+            if row.has_key('is_valid'): # Base rates
+                if row['is_valid'] == 0: d[1] = None
+            elif row.has_key('cf'): # Aggregations
+                pass
+            else: # Raw Data
+                pass
+            
+            results.append(d)
+
+        return results
 
     def _valid_timerange(self, obj):
         timerange_limits = {

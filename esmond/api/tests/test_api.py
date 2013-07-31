@@ -262,19 +262,40 @@ class DeviceAPITests(DeviceAPITestsBase):
                 self.assertTrue(child['leaf'])
 
 class MockCASSANDRA_DB(object):
+    # {'is_valid': 2, 'ts': 1343956800000, 'val': 0.020266666666666665}
+    # {'ts': 1343956845000, 'val': 281577600}
+    # {'ts': 1343955600000, 'val': 17, 'cf': 'avg'}
     def __init__(self, config):
         pass
 
     def query_baserate_timerange(self, path=None, freq=None, ts_min=None, ts_max=None):
-        return [[0,10], [30,20], [60, 40]]
+        # Mimic returned data, format elsehwere
+        return [
+            {'is_valid': 2, 'ts': 0, 'val': 10},
+            {'is_valid': 2, 'ts': 30, 'val': 20},
+            {'is_valid': 2, 'ts': 60, 'val': 40},
+            {'is_valid': 0, 'ts': 90, 'val': 80}
+        ]
 
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
         if cf == 'average':
-            return [[0, 60], [freq, 120], [freq*2, 240]]
+            return [
+                {'ts': 0, 'val': 60, 'cf': 'avg'},
+                {'ts': freq, 'val': 120, 'cf': 'avg'},
+                {'ts': freq*2, 'val': 240, 'cf': 'avg'},
+            ]
         elif cf == 'min':
-            return [[0, 0], [freq, 10], [freq*2, 20]]
+            return [
+                {'ts': 0, 'val': 0, 'cf': 'min'},
+                {'ts': freq, 'val': 10, 'cf': 'min'},
+                {'ts': freq*2, 'val': 20, 'cf': 'min'},
+            ]
         elif cf == 'max':
-            return [[0, 75], [freq, 150], [freq*2, 300]]
+            return [
+                {'ts': 0, 'val': 75, 'cf': 'max'},
+                {'ts': freq, 'val': 150, 'cf': 'max'},
+                {'ts': freq*2, 'val': 300, 'cf': 'max'},
+            ]
         else:
             pass
 
