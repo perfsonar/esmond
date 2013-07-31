@@ -429,7 +429,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
 
         params = { 
-            'begin': time.time() - datetime.timedelta(days=31).total_seconds()
+            'begin': int(time.time() - datetime.timedelta(days=31).total_seconds())
         }
 
         response = self.client.get(url, params)
@@ -439,7 +439,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         params = {
             'agg': '3600',
-            'begin': time.time() - datetime.timedelta(days=366).total_seconds()
+            'begin': int(time.time() - datetime.timedelta(days=366).total_seconds())
         }
 
         response = self.client.get(url, params)
@@ -449,11 +449,30 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         params = {
             'agg': '86400',
-            'begin': time.time() - datetime.timedelta(days=366*10).total_seconds()
+            'begin': int(time.time() - datetime.timedelta(days=366*10).total_seconds())
         }
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
+
+    def test_float_timestamp_input(self):
+        url = '/v1/device/rtr_a/interface/xe-0_0_0/in'
+
+        # pass in floats
+        params = { 
+            'begin': time.time() - 3600,
+            'end': time.time()
+        }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['begin_time'], int(params['begin']))
+        self.assertEquals(data['end_time'], int(params['end']))
+
+        # print json.dumps(data, indent=4)
 
         
 

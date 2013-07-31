@@ -325,13 +325,14 @@ class InterfaceDataResource(Resource):
 
         filters = getattr(bundle.request, 'GET', {})
 
+        # Make sure incoming begin/end timestamps are ints
         if filters.has_key('begin'):
-            obj.begin_time = float(filters['begin'])
+            obj.begin_time = int(float(filters['begin']))
         else:
             obj.begin_time = int(time.time() - 3600)
 
         if filters.has_key('end'):
-            obj.end_time = float(filters['end'])
+            obj.end_time = int(float(filters['end']))
         else:
             obj.end_time = int(time.time())
 
@@ -398,7 +399,6 @@ class InterfaceDataResource(Resource):
 
         # Make sure we're not exceeding allowable time range.
         if not self._valid_timerange(obj):
-            # XXX(mmg): find a better http exception for this.
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
 
