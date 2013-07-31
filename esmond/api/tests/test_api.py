@@ -271,30 +271,30 @@ class MockCASSANDRA_DB(object):
     def query_baserate_timerange(self, path=None, freq=None, ts_min=None, ts_max=None):
         # Mimic returned data, format elsehwere
         return [
-            {'is_valid': 2, 'ts': 0, 'val': 10},
-            {'is_valid': 2, 'ts': 30, 'val': 20},
-            {'is_valid': 2, 'ts': 60, 'val': 40},
-            {'is_valid': 0, 'ts': 90, 'val': 80}
+            {'is_valid': 2, 'ts': 0*1000, 'val': 10},
+            {'is_valid': 2, 'ts': 30*1000, 'val': 20},
+            {'is_valid': 2, 'ts': 60*1000, 'val': 40},
+            {'is_valid': 0, 'ts': 90*1000, 'val': 80}
         ]
 
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
         if cf == 'average':
             return [
-                {'ts': 0, 'val': 60, 'cf': 'avg'},
-                {'ts': freq, 'val': 120, 'cf': 'avg'},
-                {'ts': freq*2, 'val': 240, 'cf': 'avg'},
+                {'ts': 0*1000, 'val': 60, 'cf': 'avg'},
+                {'ts': freq*1000, 'val': 120, 'cf': 'avg'},
+                {'ts': freq*2*1000, 'val': 240, 'cf': 'avg'},
             ]
         elif cf == 'min':
             return [
-                {'ts': 0, 'val': 0, 'cf': 'min'},
-                {'ts': freq, 'val': 10, 'cf': 'min'},
-                {'ts': freq*2, 'val': 20, 'cf': 'min'},
+                {'ts': 0*1000, 'val': 0, 'cf': 'min'},
+                {'ts': freq*1000, 'val': 10, 'cf': 'min'},
+                {'ts': freq*2*1000,'val': 20, 'cf': 'min'},
             ]
         elif cf == 'max':
             return [
-                {'ts': 0, 'val': 75, 'cf': 'max'},
-                {'ts': freq, 'val': 150, 'cf': 'max'},
-                {'ts': freq*2, 'val': 300, 'cf': 'max'},
+                {'ts': 0*1000, 'val': 75, 'cf': 'max'},
+                {'ts': freq*1000, 'val': 150, 'cf': 'max'},
+                {'ts': freq*2*1000, 'val': 300, 'cf': 'max'},
             ]
         else:
             pass

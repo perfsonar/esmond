@@ -436,7 +436,7 @@ class InterfaceDataResource(Resource):
         results = []
 
         for row in data:
-            d = [row['ts'], row['val']]
+            d = [row['ts']/1000, row['val']]
             
             # Further options for different data sets.
             if row.has_key('is_valid'): # Base rates
