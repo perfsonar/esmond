@@ -544,7 +544,7 @@ class CASSANDRA_DB(object):
 
             # Just return the results and format elsewhere.
             results = []
-        
+            
             for k,v in ret.items():
                 for kk,vv in v.items():
                     ts = kk
@@ -557,8 +557,9 @@ class CASSANDRA_DB(object):
                         else:
                             base_freq = kkk
                             count = vv[kkk]
+                    ab = AggregationBin(**{'ts': ts, 'val': val,'base_freq': int(base_freq), 'count': count, 'cf': 'avg'})
                     results.append(
-                        {'ts': ts, 'val': val,'base_freq': int(base_freq), 'count': count}
+                        {'ts': ts, 'val': ab.avg, 'cf': ab.cf}
                     )
         elif cf == 'min' or cf == 'max':
             ret_count = self.stat_agg._column_family.multiget_count(
@@ -581,9 +582,9 @@ class CASSANDRA_DB(object):
                 for kk,vv in v.items():
                     ts = kk
                     if cf == 'min':
-                        results.append({'ts': ts, 'min': vv['min']})
+                        results.append({'ts': ts, 'val': vv['min'], 'cf': 'min'})
                     else:
-                        results.append({'ts': ts, 'max': vv['max']})
+                        results.append({'ts': ts, 'val': vv['max'], 'cf': 'max'})
         
         if as_json: # format results for query interface
             return FormattedOutput.aggregate_rate(ts_min, ts_max, results, freq,
@@ -1055,13 +1056,14 @@ class AggregationBin(BaseRateBin):
     """
     
     def __init__(self, path=None, ts=None, val=None, freq=None, base_freq=None, count=None, 
-            min=None, max=None):
+            min=None, max=None, cf=None):
         BaseRateBin.__init__(self, path, ts, val, freq)
         
         self.count = count
         self.min = min
         self.max = max
         self.base_freq = base_freq
+        self.cf = cf
         
     @property
     def avg(self):

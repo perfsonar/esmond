@@ -421,33 +421,23 @@ class TestCassandraPollPersister(TestCase):
         )
 
         assert len(ret) == expected_results
-
-        ret = db.query_baserate_timerange(
-            path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
-            freq=30*1000,
-            ts_min=start_time,
-            ts_max=end_time,
-            cf='average', # average | delta - optional
-            as_json=True
-        )
-
-        ret = json.loads(ret)
-
-        assert len(ret['data']) == expected_results
-        assert ret['begin_time'] == start_time
-        assert ret['end_time'] == end_time
+        assert ret[0]['ts'] == start_time
+        assert ret[0]['val'] == 0.020266666666666665
+        assert ret[expected_results-1]['ts'] == end_time
+        assert ret[expected_results-1]['val'] == 0.026533333333333332
 
         ret = db.query_raw_data(
             path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
             freq=30*1000,
             ts_min=start_time,
-            ts_max=end_time,
-            as_json=True
+            ts_max=end_time
         )
 
-        ret = json.loads(ret)
-
-        assert len(ret['data']) == expected_results - 1
+        assert len(ret) == expected_results - 1
+        assert ret[0]['ts'] == 1343956814000
+        assert ret[0]['val'] == 281577000
+        assert ret[len(ret)-1]['ts'] == 1343957394000
+        assert ret[len(ret)-1]['val'] == 281585760
 
         ret = db.query_aggregation_timerange(
             path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -455,27 +445,23 @@ class TestCassandraPollPersister(TestCase):
             ts_max=end_time,
             freq=3600*1000, # required!
             cf='average',  # min | max | average - also required!
-            as_json=True
         )
 
-        ret = json.loads(ret)
+        assert ret[0]['cf'] == 'avg'
+        assert ret[0]['val'] == 17
+        assert ret[0]['ts'] == 1343955600000
         
-        assert ret['agg'] == 3600000
-        assert ret['data'][0][1] == 17
-
         ret = db.query_aggregation_timerange(
             path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
             freq=3600*1000, # required!
             cf='min',  # min | max | average - also required!
-            as_json=True
         )
 
-        ret = json.loads(ret)
-
-        assert ret['agg'] == 3600000
-        assert ret['data'][0][1] == 0
+        assert ret[0]['cf'] == 'min'
+        assert ret[0]['val'] == 0
+        assert ret[0]['ts'] == 1343955600000
 
         ret = db.query_aggregation_timerange(
             path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -483,13 +469,11 @@ class TestCassandraPollPersister(TestCase):
             ts_max=end_time,
             freq=3600*1000, # required!
             cf='max',  # min | max | average - also required!
-            as_json=True
         )
-
-        ret = json.loads(ret)
-
-        assert ret['agg'] == 3600000
-        assert ret['data'][0][1] == 7500
+        
+        assert ret[0]['cf'] == 'max'
+        assert ret[0]['val'] == 7500
+        assert ret[0]['ts'] == 1343955600000
 
         db.close()
 
