@@ -403,8 +403,6 @@ class TestCassandraPollPersister(TestCase):
         Presumed using test data loaded in previous test method.
 
         Shows the three query methods that return json formatted data.
-
-        All args shown other than as_json are required.
         """
         config = get_config(get_config_path())
         db = CASSANDRA_DB(config)

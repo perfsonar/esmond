@@ -471,7 +471,7 @@ class CASSANDRA_DB(object):
         return key_range
         
     def query_baserate_timerange(self, path=None, freq=None, 
-            ts_min=None, ts_max=None, cf='average', as_json=False):
+            ts_min=None, ts_max=None, cf='average'):
         """
         Query interface method to retrieve the base rates (generally average 
         but could be delta as well).  Could return the values programmatically,
@@ -507,14 +507,10 @@ class CASSANDRA_DB(object):
                 results.append({'ts': kk, 'val': float(vv['val']) / value_divisors[cf], 
                                         'is_valid': vv['is_valid']})
             
-        if as_json: # format results for query interface
-            return FormattedOutput.base_rate(ts_min, ts_max, results, freq,
-                    cf.replace('average', 'avg'))
-        else:
-            return results
-            
+        return results
+
     def query_aggregation_timerange(self, path=None, freq=None, 
-                ts_min=None, ts_max=None, cf=None, as_json=False):
+                ts_min=None, ts_max=None, cf=None):
         """
         Query interface method to retrieve the aggregation rollups - could
         be average/min/max.  Different column families will be queried 
@@ -587,14 +583,10 @@ class CASSANDRA_DB(object):
                     else:
                         results.append({'ts': ts, 'val': vv['max'], 'cf': cf})
         
-        if as_json: # format results for query interface
-            return FormattedOutput.aggregate_rate(ts_min, ts_max, results, freq,
-                    cf.replace('average', 'avg'))
-        else:
-            return results
+        return results
             
     def query_raw_data(self, path=None, freq=None,
-                ts_min=None, ts_max=None, as_json=False):
+                ts_min=None, ts_max=None):
         """
         Query interface to query the raw data.  Could return the values 
         programmatically, but generally returns formatted json from 
@@ -624,111 +616,10 @@ class CASSANDRA_DB(object):
                 #              a JSON string?
                 results.append({'ts': kk, 'val': json.loads(vv)})
         
-        if as_json: # format results for query interface
-            return FormattedOutput.raw_data(ts_min, ts_max, results, freq)
-        else:
-            return results
+        return results
             
     def __del__(self):
         pass
-
-class FormattedOutput(object):
-    """
-    Class of static methods to handle formatting lists of dicts returned
-    by the query methods in the CASSANDRA_DB class to the JSON to be 
-    returned to the REST interface.
-    """
-    
-    @staticmethod
-    def _from_datetime(d):
-        """
-        Utility method to convert a datetime object to a JavaScript timestamp.
-        """
-        if type(d) != datetime.datetime:
-            return d
-        else:
-            return calendar.timegm(d.utctimetuple()) * 1000
-    
-    @staticmethod
-    def base_rate(ts_min, ts_max, results, freq, cf):
-        """
-        Generate and populate the JSON wrapper to return the 
-        base rates to the query interface.
-        """
-        fmt = [
-            ('agg', freq if freq else results[0]['freq']),
-            ('end_time', ts_max),
-            ('data', []),
-            ('cf', cf),
-            ('begin_time', ts_min)
-        ]
-        
-        fmt = OrderedDict(fmt)
-        
-        for r in results:
-            fmt['data'].append(
-                [
-                    FormattedOutput._from_datetime(r['ts']),
-                    # Set to non if is_valid is 0.
-                    None if r['is_valid'] == 0 else float(r['val'])
-                ]
-            )
-        
-        return json.dumps(fmt)
-        
-    @staticmethod
-    def aggregate_rate(ts_min, ts_max, results, freq, cf):
-        """
-        Generate and populate the JSON wrapper to return the 
-        rollups to the query interface.
-        """
-        fmt = [
-            ('agg', freq),
-            ('end_time', ts_max),
-            ('data', []),
-            ('cf', cf),
-            ('begin_time', ts_min)
-        ]
-    
-        fmt = OrderedDict(fmt)
-        
-        for r in results:
-            ro = AggregationBin(**r)
-            fmt['data'].append(
-                [
-                    ro.ts_to_jstime(),
-                    # Get the min/max/avg attr frmo Bin object as necessary.
-                    getattr(ro, cf)
-                ]
-            )
-            
-        return json.dumps(fmt)
-        
-    @staticmethod
-    def raw_data(ts_min, ts_max, results, freq=None):
-        """
-        Generate and populate the JSON wrapper to return the 
-        raw data to the query interface.
-        """
-        fmt = [
-            ('agg', freq if freq else results[0]['freq']),
-            ('end_time', ts_max),
-            ('data', []),
-            ('cf', 'raw'),
-            ('begin_time', ts_min)
-        ]
-        
-        fmt = OrderedDict(fmt)
-        
-        for r in results:
-            fmt['data'].append(
-                [
-                    FormattedOutput._from_datetime(r['ts']), 
-                    float(r['val'])
-                ]
-            )
-        
-        return json.dumps(fmt)
 
 # Stats/timing code for connection class
 
