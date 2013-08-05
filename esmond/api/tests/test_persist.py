@@ -517,7 +517,6 @@ if tsdb:
             q = TestPersistQueue(test_data)
             p = TSDBPollPersister(config, "test", persistq=q)
             p.run()
-            sys.exit()
 
             test_data = load_test_data("router_a_ifhcin_long.json")
             ts0 = test_data[0]['timestamp']
