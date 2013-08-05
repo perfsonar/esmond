@@ -496,7 +496,7 @@ class CASSANDRA_DB(object):
         
         # Divisors to return either the average or a delta.
         # XXX(mmg): double check this is right?  It probably isn't - revisit.
-        value_divisors = { 'average': int(freq), 'delta': 1}
+        value_divisors = { 'average': int(freq), 'delta': 1 }
         
         # Just return the results and format elsewhere.
         results = []
@@ -557,9 +557,9 @@ class CASSANDRA_DB(object):
                         else:
                             base_freq = kkk
                             count = vv[kkk]
-                    ab = AggregationBin(**{'ts': ts, 'val': val,'base_freq': int(base_freq), 'count': count, 'cf': 'avg'})
+                    ab = AggregationBin(**{'ts': ts, 'val': val,'base_freq': int(base_freq), 'count': count, 'cf': cf})
                     results.append(
-                        {'ts': ts, 'val': ab.avg, 'cf': ab.cf}
+                        {'ts': ts, 'val': ab.average, 'cf': ab.cf}
                     )
         elif cf == 'min' or cf == 'max':
             ret_count = self.stat_agg._column_family.multiget_count(
@@ -582,9 +582,9 @@ class CASSANDRA_DB(object):
                 for kk,vv in v.items():
                     ts = kk
                     if cf == 'min':
-                        results.append({'ts': ts, 'val': vv['min'], 'cf': 'min'})
+                        results.append({'ts': ts, 'val': vv['min'], 'cf': cf})
                     else:
-                        results.append({'ts': ts, 'val': vv['max'], 'cf': 'max'})
+                        results.append({'ts': ts, 'val': vv['max'], 'cf': cf})
         
         if as_json: # format results for query interface
             return FormattedOutput.aggregate_rate(ts_min, ts_max, results, freq,
@@ -1036,7 +1036,7 @@ class Metadata(DataContainerBase):
 
 class BaseRateBin(RawRateData):
     """
-    Container for base rates.  Has 'avg' property to return the averages.
+    Container for base rates.  Has 'average' property to return the averages.
     """
     
     _doc_properties = ['ts']
@@ -1046,13 +1046,13 @@ class BaseRateBin(RawRateData):
         self.is_valid = is_valid
 
     @property
-    def avg(self):
+    def average(self):
         return self.val / self.freq
     
 
 class AggregationBin(BaseRateBin):
     """
-    Container for aggregation rollups.  Also has 'avg' property to generage averages.
+    Container for aggregation rollups.  Also has 'average' property to generage averages.
     """
     
     def __init__(self, path=None, ts=None, val=None, freq=None, base_freq=None, count=None, 
@@ -1066,7 +1066,7 @@ class AggregationBin(BaseRateBin):
         self.cf = cf
         
     @property
-    def avg(self):
+    def average(self):
         return self.val / (self.count * (self.base_freq/1000))
 
 def escape_path(path):

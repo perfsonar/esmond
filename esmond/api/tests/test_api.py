@@ -262,9 +262,6 @@ class DeviceAPITests(DeviceAPITestsBase):
                 self.assertTrue(child['leaf'])
 
 class MockCASSANDRA_DB(object):
-    # {'is_valid': 2, 'ts': 1343956800000, 'val': 0.020266666666666665}
-    # {'ts': 1343956845000, 'val': 281577600}
-    # {'ts': 1343955600000, 'val': 17, 'cf': 'avg'}
     def __init__(self, config):
         pass
 
@@ -280,9 +277,9 @@ class MockCASSANDRA_DB(object):
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
         if cf == 'average':
             return [
-                {'ts': 0*1000, 'val': 60, 'cf': 'avg'},
-                {'ts': freq*1000, 'val': 120, 'cf': 'avg'},
-                {'ts': freq*2*1000, 'val': 240, 'cf': 'avg'},
+                {'ts': 0*1000, 'val': 60, 'cf': 'average'},
+                {'ts': freq*1000, 'val': 120, 'cf': 'average'},
+                {'ts': freq*2*1000, 'val': 240, 'cf': 'average'},
             ]
         elif cf == 'min':
             return [

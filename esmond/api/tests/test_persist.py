@@ -446,8 +446,8 @@ class TestCassandraPollPersister(TestCase):
             freq=3600*1000, # required!
             cf='average',  # min | max | average - also required!
         )
-
-        assert ret[0]['cf'] == 'avg'
+        
+        assert ret[0]['cf'] == 'average'
         assert ret[0]['val'] == 17
         assert ret[0]['ts'] == 1343955600000
         
