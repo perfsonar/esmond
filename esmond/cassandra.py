@@ -67,6 +67,7 @@ from thrift.transport.TTransport import TTransportException
 # XXX(jdugan): revisit this number, (was adjusted for ms)
 SEEK_BACK_THRESHOLD = 2592000000 # 30 days in ms
 KEY_DELIMITER = ":"
+AGG_TYPES = ['average', 'min', 'max']
 
 class CassandraException(Exception):
     """Common base"""
@@ -522,7 +523,7 @@ class CASSANDRA_DB(object):
         the FormattedOutput module.
         """
                 
-        if cf not in ['average', 'min', 'max']:
+        if cf not in AGG_TYPES:
             self.log.error('Not a valid option: %s - defaulting to average' % cf)
             cf = 'average'
         

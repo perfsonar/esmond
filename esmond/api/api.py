@@ -15,7 +15,7 @@ from tastypie import fields
 from tastypie.exceptions import NotFound, BadRequest
 
 from esmond.api.models import Device, IfRef
-from esmond.cassandra import CASSANDRA_DB
+from esmond.cassandra import CASSANDRA_DB, AGG_TYPES
 from esmond.config import get_config_path, get_config
 from esmond.util import remove_metachars
 
@@ -422,7 +422,7 @@ class InterfaceDataResource(Resource):
                     ts_min=obj.begin, ts_max=obj.end)
         else:
             # Get the aggregation.
-            if obj.cf not in ['min', 'max', 'average']:
+            if obj.cf not in AGG_TYPES:
                 raise ObjectDoesNotExist('%s is not a valid consolidation function' %
                         (obj.cf))
             data = db.query_aggregation_timerange(path=path, freq=obj.agg,
