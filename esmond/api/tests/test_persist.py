@@ -75,7 +75,7 @@ def build_oidsetmapping_and_ifrefs_from_test_data(data):
 ifref_test_data = """
 [{
     "oidset_name": "IfRefPoll",
-    "device_name": "router_a",
+    "device_name": "rtr_d",
     "timestamp": 1345125600,
     "oid_name": "",
     "data": {
@@ -93,7 +93,7 @@ ifref_test_data = """
 },
 {
     "oidset_name": "IfRefPoll",
-    "device_name": "router_a",
+    "device_name": "rtr_d",
     "timestamp": 1345125660,
     "oid_name": "",
     "data": {
@@ -114,7 +114,7 @@ ifref_test_data = """
 empty_ifref_test_data = """
 [{
     "oidset_name": "IfRefPoll",
-    "device_name": "router_a",
+    "device_name": "rtr_d",
     "timestamp": 1345125720,
     "oid_name": "",
     "data": {
@@ -165,11 +165,11 @@ class TestIfRefPersister(TestCase):
     fixtures = ['test_devices.json']
 
     def test_test(self):
-        d = Device.objects.get(name="router_a")
-        self.assertEqual(d.name, "router_a")
+        d = Device.objects.get(name="rtr_d")
+        self.assertEqual(d.name, "rtr_d")
 
     def test_persister(self):
-        ifrefs = IfRef.objects.filter(device__name="router_a", ifDescr="Vlan1")
+        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 0)
 
@@ -177,7 +177,7 @@ class TestIfRefPersister(TestCase):
         p = IfRefPollPersister([], "test", persistq=q)
         p.run()
 
-        ifrefs = IfRef.objects.filter(device__name="router_a", ifDescr="Vlan1")
+        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
@@ -191,7 +191,7 @@ class TestIfRefPersister(TestCase):
         p = IfRefPollPersister([], "test", persistq=q)
         p.run()
 
-        ifrefs = IfRef.objects.filter(device__name="router_a", ifDescr="Vlan1")
+        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
@@ -201,7 +201,7 @@ alu_sap_test_data = """
 [
     {
         "oidset_name": "ALUSAPRefPoll",
-        "device_name": "router_a",
+        "device_name": "rtr_d",
         "timestamp": 1345125600,
         "oid_name": "",
         "data": {
@@ -219,7 +219,7 @@ alu_sap_test_data = """
     },
     {
         "oidset_name": "ALUSAPRefPoll",
-        "device_name": "router_a",
+        "device_name": "rtr_d",
         "timestamp": 1345125660,
         "oid_name": "",
         "data": {
@@ -241,7 +241,7 @@ empty_alu_sap_test_data = """
 [
     {
         "oidset_name": "ALUSAPRefPoll",
-        "device_name": "router_a",
+        "device_name": "rtr_d",
         "timestamp": 1345125720,
         "oid_name": "",
         "data": {
@@ -256,7 +256,7 @@ class TestALUSAPRefPersister(TestCase):
     fixtures = ['test_devices.json']
 
     def test_persister(self):
-        ifrefs = IfRef.objects.filter(device__name="router_a")
+        ifrefs = IfRef.objects.filter(device__name="rtr_d")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 0)
 
@@ -264,7 +264,7 @@ class TestALUSAPRefPersister(TestCase):
         p = ALUSAPRefPersister([], "test", persistq=q)
         p.run()
 
-        ifrefs = ALUSAPRef.objects.filter(device__name="router_a", name="1-8_0_0-100")
+        ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8_0_0-100")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
@@ -277,7 +277,7 @@ class TestALUSAPRefPersister(TestCase):
         p = ALUSAPRefPersister([], "test", persistq=q)
         p.run()
 
-        ifrefs = ALUSAPRef.objects.filter(device__name="router_a", name="1-8_0_0-100")
+        ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8_0_0-100")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
@@ -289,7 +289,7 @@ timeseries_test_data = """
 [
     {
         "oidset_name": "FastPollHC",
-        "device_name": "router_a",
+        "device_name": "rtr_d",
         "timestamp": 1343953700,
         "oid_name": "ifHCInOctets",
         "data": [
@@ -316,7 +316,7 @@ timeseries_test_data = """
     },
     {
         "oidset_name": "FastPollHC",
-        "device_name": "router_a",
+        "device_name": "rtr_d",
         "timestamp": 1343953730,
         "oid_name": "ifHCInOctets",
         "data": [
@@ -348,21 +348,21 @@ class TestCassandraPollPersister(TestCase):
     fixtures = ['test_devices.json', 'oidsets.json']
 
     def setUp(self):
-        """make sure we have a clean router_a directory to start with."""
-        router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
-        if os.path.exists(router_a_path):
-            shutil.rmtree(router_a_path, ignore_errors=True)
+        """make sure we have a clean rtr_d directory to start with."""
+        rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
+        if os.path.exists(rtr_d_path):
+            shutil.rmtree(rtr_d_path, ignore_errors=True)
 
 
     def test_build_oidsetmapping_and_ifrefs_from_test_data(self):
-        router_a = Device.objects.get(name="router_a")
-        self.assertEqual(router_a.oidsets.all().count(), 0)
+        rtr_d = Device.objects.get(name="rtr_d")
+        self.assertEqual(rtr_d.oidsets.all().count(), 0)
 
         test_data = json.loads(timeseries_test_data)
         build_oidsetmapping_and_ifrefs_from_test_data(test_data)
 
-        self.assertEqual(router_a.oidsets.all().count(), 1)
-        self.assertEqual(IfRef.objects.filter(device=router_a).count(), 4)
+        self.assertEqual(rtr_d.oidsets.all().count(), 1)
+        self.assertEqual(IfRef.objects.filter(device=rtr_d).count(), 4)
 
     def test_persister(self):
         """This is a very basic smoke test for a cassandra persister."""
@@ -378,7 +378,7 @@ class TestCassandraPollPersister(TestCase):
     def test_persister_long(self):
         """Make sure the tsdb and cassandra data match"""
         config = get_config(get_config_path())
-        test_data = load_test_data("router_a_ifhcin_long.json")
+        test_data = load_test_data("rtr_d_ifhcin_long.json")
         #return
         config.db_clear_on_testing = True
         config.db_profile_on_testing = True
@@ -390,15 +390,15 @@ class TestCassandraPollPersister(TestCase):
         p.db.close()
         p.db.stats.report('all')
         
-        test_data = load_test_data("router_a_ifhcin_long.json")
+        test_data = load_test_data("rtr_d_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = TSDBPollPersister(config, "test", persistq=q)
         p.run()
 
         path_levels = []
 
-        router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
-        for (path, dirs, files) in os.walk(router_a_path):
+        rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
+        for (path, dirs, files) in os.walk(rtr_d_path):
             if dirs[0] == 'TSDBAggregates':
                 break
             path_levels.append(dirs)
@@ -412,7 +412,7 @@ class TestCassandraPollPersister(TestCase):
         for oidset in oidsets:
             for oid in oids:
                 for path in paths:
-                    full_path = 'router_a/%s/%s/%s/TSDBAggregates/30'  % \
+                    full_path = 'rtr_d/%s/%s/%s/TSDBAggregates/30'  % \
                         (oidset, oid, path)
                     if not full_paths.has_key(full_path):
                         full_paths[full_path] = 1
@@ -457,7 +457,7 @@ class TestCassandraPollPersister(TestCase):
         expected_results = 21
 
         ret = db.query_baserate_timerange(
-            path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             freq=30*1000,
             ts_min=start_time,
             ts_max=end_time
@@ -470,7 +470,7 @@ class TestCassandraPollPersister(TestCase):
         assert ret[expected_results-1]['val'] == 0.026533333333333332
 
         ret = db.query_raw_data(
-            path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             freq=30*1000,
             ts_min=start_time,
             ts_max=end_time
@@ -483,7 +483,7 @@ class TestCassandraPollPersister(TestCase):
         assert ret[len(ret)-1]['val'] == 281585760
 
         ret = db.query_aggregation_timerange(
-            path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
             freq=3600*1000, # required!
@@ -495,7 +495,7 @@ class TestCassandraPollPersister(TestCase):
         assert ret[0]['ts'] == 1343955600000
         
         ret = db.query_aggregation_timerange(
-            path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
             freq=3600*1000, # required!
@@ -507,7 +507,7 @@ class TestCassandraPollPersister(TestCase):
         assert ret[0]['ts'] == 1343955600000
 
         ret = db.query_aggregation_timerange(
-            path=['router_a','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
             freq=3600*1000, # required!
@@ -526,10 +526,10 @@ if tsdb:
         fixtures = ['test_devices.json', 'oidsets.json']
 
         def setUp(self):
-            """make sure we have a clean router_a directory to start with."""
-            router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
-            if os.path.exists(router_a_path):
-                shutil.rmtree(router_a_path)
+            """make sure we have a clean rtr_d directory to start with."""
+            rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
+            if os.path.exists(rtr_d_path):
+                shutil.rmtree(rtr_d_path)
 
 
         def test_persister(self):
@@ -558,12 +558,12 @@ if tsdb:
 
             # load example data
 
-            test_data = load_test_data("router_a_ifhcin_long.json")
+            test_data = load_test_data("rtr_d_ifhcin_long.json")
             q = TestPersistQueue(test_data)
             p = TSDBPollPersister(config, "test", persistq=q)
             p.run()
 
-            test_data = load_test_data("router_a_ifhcin_long.json")
+            test_data = load_test_data("rtr_d_ifhcin_long.json")
             ts0 = test_data[0]['timestamp']
             tsn = test_data[-1]['timestamp']
 
@@ -585,7 +585,7 @@ if tsdb:
             # check that aggregates were calculated as expected
 
             db = tsdb.TSDB(config.tsdb_root)
-            aggs = load_test_data("router_a_ifhcin_long_agg.json")
+            aggs = load_test_data("rtr_d_ifhcin_long_agg.json")
             for path in paths:
                 p = path + "TSDBAggregates/30"
                 v = db.get_var(p)

@@ -5,6 +5,15 @@ class TestData(object):
     pass
 
 def build_default_data():
+    """Builds default data for testing
+
+    The following devices are created:
+
+    rtr_a -- basic, currently active router
+    rtr_b -- basic, currently inactive router
+    rtr_c -- InfineraFastPollHC, currently active router
+
+    """
     td = TestData()
     
     td.rtr_a, _ = Device.objects.get_or_create(
