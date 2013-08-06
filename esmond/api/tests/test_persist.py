@@ -18,7 +18,7 @@ from collections import namedtuple
 from django.test import TestCase
 from django.conf import settings
 
-from esmond.api.models import Device, IfRef, ALUSAPRef
+from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
 
 from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
      PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister
@@ -37,6 +37,40 @@ def load_test_data(name):
     path = os.path.join(settings.ESMOND_ROOT, "..", "test_data", name)
     d = json.loads(open(path).read())
     return d
+
+def build_oidsetmapping_and_ifrefs_from_test_data(data):
+    """Inserts OIDSetMap entries and IfRef data to allow API access to test data.
+
+    Assumes that all entries in the example data have the same set of interfaces
+    and the same OIDSet."""
+
+    d = data[0]
+
+    device = Device.objects.get(name=d['device_name'])
+    DeviceOIDSetMap(device=device,
+            oid_set=OIDSet.objects.get(name=d['oidset_name'])).save()
+
+    ifnames = set([ x[0].split("/")[-1].replace("_","/") for x in d['data'] ])
+    t0 = datetime.datetime.fromtimestamp(int(d["timestamp"]) - 30)
+
+    ifIndex = 1
+
+    for ifname in ifnames:
+        ifr = IfRef(
+                device=device,
+                ifIndex=ifIndex,
+                ifDescr=ifname,
+                ifAlias="test %s" % ifname,
+                ipAddr="10.0.0.%d" % ifIndex,
+                ifSpeed=0,
+                ifHighSpeed=10000,
+                ifMtu=9000,
+                ifOperStatus=1,
+                ifAdminStatus=1,
+                ifPhysAddress="00:00:00:00:00:%02d" % ifIndex,
+                begin_time=t0,
+                end_time=datetime.datetime.max)
+        ifr.save()
 
 ifref_test_data = """
 [{
@@ -318,6 +352,17 @@ class TestCassandraPollPersister(TestCase):
         router_a_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "router_a")
         if os.path.exists(router_a_path):
             shutil.rmtree(router_a_path, ignore_errors=True)
+
+
+    def test_build_oidsetmapping_and_ifrefs_from_test_data(self):
+        router_a = Device.objects.get(name="router_a")
+        self.assertEqual(router_a.oidsets.all().count(), 0)
+
+        test_data = json.loads(timeseries_test_data)
+        build_oidsetmapping_and_ifrefs_from_test_data(test_data)
+
+        self.assertEqual(router_a.oidsets.all().count(), 1)
+        self.assertEqual(IfRef.objects.filter(device=router_a).count(), 4)
 
     def test_persister(self):
         """This is a very basic smoke test for a cassandra persister."""
