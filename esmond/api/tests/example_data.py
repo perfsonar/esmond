@@ -1,10 +1,20 @@
 import datetime
+import json
+import os
+
+from django.conf import settings
+
 from esmond.api.models import *
 
 class TestData(object):
     pass
 
-def build_default_data():
+def load_test_data(name):
+    path = os.path.join(settings.ESMOND_ROOT, "..", "test_data", name)
+    d = json.loads(open(path).read())
+    return d
+
+def build_default_metadata():
     """Builds default data for testing
 
     The following devices are created:
@@ -102,3 +112,58 @@ def build_default_data():
             ifPhysAddress="00:00:00:00:00:00")
 
     return td
+
+def build_rtr_d_metadata():
+    """Creates rtr_d, to be used for larger dataset testing
+
+    The following devices are created:
+
+    rtr_d -- FastPollHC, currently active router with IfRefs
+
+    """
+
+    td = TestData()
+
+    td.rtr_d, _ = Device.objects.get_or_create(
+            name="rtr_d",
+            community= "community_string",
+            active=True,
+            begin_time="2011-11-14T02:54:14.503",
+            end_time=datetime.datetime.max)
+
+    return td
+
+def build_metadata_from_test_data(data):
+    """Inserts OIDSetMap entries and IfRef data to allow API access to test data.
+
+    Assumes that all entries in the example data have the same set of interfaces
+    and the same OIDSet."""
+
+    d = data[0]
+
+    device = Device.objects.get(name=d['device_name'])
+    DeviceOIDSetMap(device=device,
+            oid_set=OIDSet.objects.get(name=d['oidset_name'])).save()
+
+    ifnames = set([ x[0].split("/")[-1].replace("_","/") for x in d['data'] ])
+    t0 = datetime.datetime.fromtimestamp(int(d["timestamp"]) - 30)
+
+    ifIndex = 1
+
+    for ifname in ifnames:
+        ifr = IfRef(
+                device=device,
+                ifIndex=ifIndex,
+                ifDescr=ifname,
+                ifAlias="test %s" % ifname,
+                ipAddr="10.0.0.%d" % ifIndex,
+                ifSpeed=0,
+                ifHighSpeed=10000,
+                ifMtu=9000,
+                ifOperStatus=1,
+                ifAdminStatus=1,
+                ifPhysAddress="00:00:00:00:00:%02d" % ifIndex,
+                begin_time=t0,
+                end_time=datetime.datetime.max)
+        ifr.save()
+

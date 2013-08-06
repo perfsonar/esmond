@@ -9,7 +9,7 @@ from tastypie.test import ResourceTestCase
 
 from esmond.api.models import *
 from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
-from esmond.api.tests.example_data import build_default_data
+from esmond.api.tests.example_data import build_default_metadata
 
 def datetime_to_timestamp(dt):
     return time.mktime(dt.timetuple())
@@ -21,7 +21,7 @@ class DeviceAPITestsBase(ResourceTestCase):
     def setUp(self):
         super(DeviceAPITestsBase, self).setUp()
 
-        self.td = build_default_data()
+        self.td = build_default_metadata()
 
 
 class DeviceAPITests(DeviceAPITestsBase):

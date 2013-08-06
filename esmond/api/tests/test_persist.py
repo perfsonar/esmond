@@ -26,51 +26,15 @@ from esmond.config import get_config, get_config_path
 from esmond.cassandra import CASSANDRA_DB
 from pycassa.columnfamily import ColumnFamily
 
+from esmond.api.tests.example_data import build_rtr_d_metadata, \
+     build_metadata_from_test_data, load_test_data
+
 try:
     import tsdb
     from tsdb.row import ROW_VALID
 except ImportError:
     tsdb = None
 
-
-def load_test_data(name):
-    path = os.path.join(settings.ESMOND_ROOT, "..", "test_data", name)
-    d = json.loads(open(path).read())
-    return d
-
-def build_oidsetmapping_and_ifrefs_from_test_data(data):
-    """Inserts OIDSetMap entries and IfRef data to allow API access to test data.
-
-    Assumes that all entries in the example data have the same set of interfaces
-    and the same OIDSet."""
-
-    d = data[0]
-
-    device = Device.objects.get(name=d['device_name'])
-    DeviceOIDSetMap(device=device,
-            oid_set=OIDSet.objects.get(name=d['oidset_name'])).save()
-
-    ifnames = set([ x[0].split("/")[-1].replace("_","/") for x in d['data'] ])
-    t0 = datetime.datetime.fromtimestamp(int(d["timestamp"]) - 30)
-
-    ifIndex = 1
-
-    for ifname in ifnames:
-        ifr = IfRef(
-                device=device,
-                ifIndex=ifIndex,
-                ifDescr=ifname,
-                ifAlias="test %s" % ifname,
-                ipAddr="10.0.0.%d" % ifIndex,
-                ifSpeed=0,
-                ifHighSpeed=10000,
-                ifMtu=9000,
-                ifOperStatus=1,
-                ifAdminStatus=1,
-                ifPhysAddress="00:00:00:00:00:%02d" % ifIndex,
-                begin_time=t0,
-                end_time=datetime.datetime.max)
-        ifr.save()
 
 ifref_test_data = """
 [{
@@ -162,7 +126,8 @@ class SimpleTest(TestCase):
         self.assertEqual(1 + 1, 2)
 
 class TestIfRefPersister(TestCase):
-    fixtures = ['test_devices.json']
+    def setUp(self):
+        self.td = build_rtr_d_metadata()
 
     def test_test(self):
         d = Device.objects.get(name="rtr_d")
@@ -253,7 +218,8 @@ empty_alu_sap_test_data = """
     }
 ]"""
 class TestALUSAPRefPersister(TestCase):
-    fixtures = ['test_devices.json']
+    def setUp(self):
+        self.td = build_rtr_d_metadata()
 
     def test_persister(self):
         ifrefs = IfRef.objects.filter(device__name="rtr_d")
@@ -345,21 +311,22 @@ timeseries_test_data = """
 """
 
 class TestCassandraPollPersister(TestCase):
-    fixtures = ['test_devices.json', 'oidsets.json']
+    fixtures = ['oidsets.json']
 
     def setUp(self):
         """make sure we have a clean rtr_d directory to start with."""
+        self.td = build_rtr_d_metadata()
         rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
         if os.path.exists(rtr_d_path):
             shutil.rmtree(rtr_d_path, ignore_errors=True)
 
 
-    def test_build_oidsetmapping_and_ifrefs_from_test_data(self):
+    def test_build_metadata_from_test_data(self):
         rtr_d = Device.objects.get(name="rtr_d")
         self.assertEqual(rtr_d.oidsets.all().count(), 0)
 
         test_data = json.loads(timeseries_test_data)
-        build_oidsetmapping_and_ifrefs_from_test_data(test_data)
+        build_metadata_from_test_data(test_data)
 
         self.assertEqual(rtr_d.oidsets.all().count(), 1)
         self.assertEqual(IfRef.objects.filter(device=rtr_d).count(), 4)
@@ -523,10 +490,11 @@ class TestCassandraPollPersister(TestCase):
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):
-        fixtures = ['test_devices.json', 'oidsets.json']
+        fixtures = ['oidsets.json']
 
         def setUp(self):
             """make sure we have a clean rtr_d directory to start with."""
+            self.td = build_rtr_d_metadata()
             rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
             if os.path.exists(rtr_d_path):
                 shutil.rmtree(rtr_d_path)
