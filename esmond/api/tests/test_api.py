@@ -115,21 +115,22 @@ class DeviceAPITests(DeviceAPITestsBase):
 
         # by default only currently active devices are returned
         data = json.loads(response.content)
-        self.assertEquals(len(data), 1)
+        self.assertEquals(len(data), 2)
 
-        # get both devices, with date filters
+        # get all three devices, with date filters
         begin = datetime_to_timestamp(self.rtr_b.begin_time)
         response = self.client.get(url, dict(begin=begin))
         data = json.loads(response.content)
-        self.assertEquals(len(data), 2)
+        self.assertEquals(len(data), 3)
 
         # exclude rtr_b by date
 
         begin = datetime_to_timestamp(self.rtr_a.begin_time)
         response = self.client.get(url, dict(begin=begin))
         data = json.loads(response.content)
-        self.assertEquals(len(data), 1)
-        self.assertEquals(data[0]['name'], 'rtr_a')
+        self.assertEquals(len(data), 2)
+        for d in data:
+            self.assertNotEqual(d['name'], 'rtr_b')
 
         # exclude all routers with very old end date
         response = self.client.get(url, dict(end=0))
