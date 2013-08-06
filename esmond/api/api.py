@@ -412,8 +412,6 @@ class InterfaceDataResource(Resource):
                     remove_metachars(obj.iface.ifDescr),
                 ))
         
-        print "path", path
-
         db = CASSANDRA_DB(get_config(get_config_path()))
 
         if obj.agg == oidset.frequency:
