@@ -303,7 +303,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         data = json.loads(response.content)
 
-        print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(data['agg'], params['agg'])
