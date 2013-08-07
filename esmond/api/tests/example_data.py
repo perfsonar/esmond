@@ -27,6 +27,12 @@ def build_default_metadata():
     rtr_a -- basic, currently active router
     rtr_b -- basic, currently inactive router
     rtr_c -- InfineraFastPollHC, currently active router
+
+    The following users are created with API keys:
+
+    user_admin  -- has full admin rights
+    user_seeall -- has ability to see hidden interfaces
+
     """
     td = TestData()
     
@@ -114,6 +120,18 @@ def build_default_metadata():
             ifOperStatus=1,
             ifAdminStatus=1,
             ifPhysAddress="00:00:00:00:00:00")
+
+    td.user_admin = User(username="admin", is_staff=True)
+    td.user_admin.save()
+    td.user_admin_apikey = ApiKey(user=td.user_admin)
+    td.user_admin_apikey.key = td.user_admin_apikey.generate_key()
+    td.user_admin_apikey.save()
+
+    td.user_seeall = User(username="seeall", is_staff=False)
+    td.user_seeall.save()
+    td.user_seeall_apikey = ApiKey(user=td.user_seeall)
+    td.user_seeall_apikey.key = td.user_seeall_apikey.generate_key()
+    td.user_seeall_apikey.save()
 
     return td
 
