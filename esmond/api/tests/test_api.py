@@ -196,21 +196,21 @@ class MockCASSANDRA_DB(object):
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
         if cf == 'average':
             return [
-                {'ts': 0*1000, 'val': 60, 'cf': 'average'},
-                {'ts': freq*1000, 'val': 120, 'cf': 'average'},
-                {'ts': freq*2*1000, 'val': 240, 'cf': 'average'},
+                {'ts': 0, 'val': 60, 'cf': 'average'},
+                {'ts': freq, 'val': 120, 'cf': 'average'},
+                {'ts': freq*2, 'val': 240, 'cf': 'average'},
             ]
         elif cf == 'min':
             return [
-                {'ts': 0*1000, 'val': 0, 'cf': 'min'},
-                {'ts': freq*1000, 'val': 10, 'cf': 'min'},
-                {'ts': freq*2*1000,'val': 20, 'cf': 'min'},
+                {'ts': 0, 'val': 0, 'cf': 'min'},
+                {'ts': freq, 'val': 10, 'cf': 'min'},
+                {'ts': freq*2,'val': 20, 'cf': 'min'},
             ]
         elif cf == 'max':
             return [
-                {'ts': 0*1000, 'val': 75, 'cf': 'max'},
-                {'ts': freq*1000, 'val': 150, 'cf': 'max'},
-                {'ts': freq*2*1000, 'val': 300, 'cf': 'max'},
+                {'ts': 0, 'val': 75, 'cf': 'max'},
+                {'ts': freq, 'val': 150, 'cf': 'max'},
+                {'ts': freq*2, 'val': 300, 'cf': 'max'},
             ]
         else:
             pass
@@ -303,7 +303,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         data = json.loads(response.content)
 
-        # print json.dumps(data, indent=4)
+        print json.dumps(data, indent=4)
 
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(data['agg'], params['agg'])
