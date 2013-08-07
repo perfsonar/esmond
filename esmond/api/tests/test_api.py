@@ -10,6 +10,7 @@ from tastypie.test import ResourceTestCase
 from esmond.api.models import *
 from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
 from esmond.api.tests.example_data import build_default_metadata
+from esmond.cassandra import AGG_TYPES
 
 def datetime_to_timestamp(dt):
     return time.mktime(dt.timetuple())
@@ -186,6 +187,7 @@ class MockCASSANDRA_DB(object):
 
     def query_baserate_timerange(self, path=None, freq=None, ts_min=None, ts_max=None):
         # Mimic returned data, format elsehwere
+        self._test_incoming_args(path, freq, ts_min, ts_max)
         return [
             {'is_valid': 2, 'ts': 0*1000, 'val': 10},
             {'is_valid': 2, 'ts': 30*1000, 'val': 20},
@@ -194,6 +196,7 @@ class MockCASSANDRA_DB(object):
         ]
 
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
+        self._test_incoming_args(path, freq, ts_min, ts_max, cf)
         if cf == 'average':
             return [
                 {'ts': 0, 'val': 60, 'cf': 'average'},
@@ -214,6 +217,16 @@ class MockCASSANDRA_DB(object):
             ]
         else:
             pass
+
+    def _test_incoming_args(self, path, freq, ts_min, ts_max, cf=None):
+        assert isinstance(path, list)
+        assert isinstance(freq, int)
+        assert isinstance(ts_min, int)
+        assert isinstance(ts_max, int)
+        if cf:
+            assert isinstance(cf, str) or isinstance(cf, unicode)
+            assert cf in AGG_TYPES
+
 
 class DeviceAPIDataTests(DeviceAPITestsBase):
     def setUp(self):
