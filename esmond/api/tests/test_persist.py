@@ -329,7 +329,16 @@ class CassandraTestResults(object):
 
     # Values for aggregation tests
     agg_ts = 1343955600
+    agg_freq = 3600
     agg_avg = 17
+    agg_min = 0
+    agg_max = 7500
+
+    # Values from raw data tests
+    raw_ts_first = 1343956814
+    raw_val_first = 281577000
+    raw_ts_last = 1343957394
+    raw_val_last = 281585760
 
 
 class TestCassandraPollPersister(TestCase):
@@ -341,6 +350,8 @@ class TestCassandraPollPersister(TestCase):
         rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
         if os.path.exists(rtr_d_path):
             shutil.rmtree(rtr_d_path, ignore_errors=True)
+
+        self.ctr = CassandraTestResults()
 
 
     def test_build_metadata_from_test_data(self):
@@ -441,9 +452,8 @@ class TestCassandraPollPersister(TestCase):
         config = get_config(get_config_path())
         db = CASSANDRA_DB(config)
         
-        start_time = 1343956800*1000
-        end_time = 1343957400*1000
-        expected_results = 21
+        start_time = self.ctr.begin*1000
+        end_time = self.ctr.end*1000
 
         ret = db.query_baserate_timerange(
             path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -452,11 +462,11 @@ class TestCassandraPollPersister(TestCase):
             ts_max=end_time
         )
 
-        assert len(ret) == expected_results
+        assert len(ret) == self.ctr.expected_results
         assert ret[0]['ts'] == start_time
-        assert ret[0]['val'] == 0.020266666666666665
-        assert ret[expected_results-1]['ts'] == end_time
-        assert ret[expected_results-1]['val'] == 0.026533333333333332
+        assert ret[0]['val'] == self.ctr.base_rate_val_first
+        assert ret[self.ctr.expected_results-1]['ts'] == end_time
+        assert ret[self.ctr.expected_results-1]['val'] == self.ctr.base_rate_val_last
 
         ret = db.query_raw_data(
             path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -465,47 +475,47 @@ class TestCassandraPollPersister(TestCase):
             ts_max=end_time
         )
 
-        assert len(ret) == expected_results - 1
-        assert ret[0]['ts'] == 1343956814000
-        assert ret[0]['val'] == 281577000
-        assert ret[len(ret)-1]['ts'] == 1343957394000
-        assert ret[len(ret)-1]['val'] == 281585760
+        assert len(ret) == self.ctr.expected_results - 1
+        assert ret[0]['ts'] == self.ctr.raw_ts_first*1000
+        assert ret[0]['val'] == self.ctr.raw_val_first
+        assert ret[len(ret)-1]['ts'] == self.ctr.raw_ts_last*1000
+        assert ret[len(ret)-1]['val'] == self.ctr.raw_val_last
 
         ret = db.query_aggregation_timerange(
             path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
-            freq=3600*1000, # required!
+            freq=self.ctr.agg_freq*1000, # required!
             cf='average',  # min | max | average - also required!
         )
         
         assert ret[0]['cf'] == 'average'
-        assert ret[0]['val'] == 17
-        assert ret[0]['ts'] == 1343955600000
+        assert ret[0]['val'] == self.ctr.agg_avg
+        assert ret[0]['ts'] == self.ctr.agg_ts*1000
         
         ret = db.query_aggregation_timerange(
             path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
-            freq=3600*1000, # required!
+            freq=self.ctr.agg_freq*1000, # required!
             cf='min',  # min | max | average - also required!
         )
 
         assert ret[0]['cf'] == 'min'
-        assert ret[0]['val'] == 0
-        assert ret[0]['ts'] == 1343955600000
+        assert ret[0]['val'] == self.ctr.agg_min
+        assert ret[0]['ts'] == self.ctr.agg_ts*1000
 
         ret = db.query_aggregation_timerange(
             path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
-            freq=3600*1000, # required!
+            freq=self.ctr.agg_freq*1000, # required!
             cf='max',  # min | max | average - also required!
         )
         
         assert ret[0]['cf'] == 'max'
-        assert ret[0]['val'] == 7500
-        assert ret[0]['ts'] == 1343955600000
+        assert ret[0]['val'] == self.ctr.agg_max
+        assert ret[0]['ts'] == self.ctr.agg_ts*1000
 
         db.close()
 
@@ -567,7 +577,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         params = {
             'begin': self.ctr.begin-3600, # back an hour to get agg bin.
             'end': self.ctr.end,
-            'agg': '3600'
+            'agg': self.ctr.agg_freq
         }
 
         url = '/v1/device/rtr_d/interface/fxp0.0/in'
@@ -579,12 +589,48 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
-        self.assertEquals(data['agg'], params['agg'])
+        self.assertEquals(data['agg'], str(params['agg']))
         self.assertEquals(data['cf'], 'average')
 
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
         self.assertEquals(data['data'][0][1], self.ctr.agg_avg)
+
+        params['cf'] = 'min'
+
+        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], str(params['agg']))
+        self.assertEquals(data['cf'], params['cf'])
+
+        self.assertEquals(len(data['data']), 1)
+        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0][1], self.ctr.agg_min)
+
+        params['cf'] = 'max'
+
+        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], str(params['agg']))
+        self.assertEquals(data['cf'], params['cf'])
+
+        self.assertEquals(len(data['data']), 1)
+        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0][1], self.ctr.agg_max)
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):
