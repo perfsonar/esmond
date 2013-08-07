@@ -3,8 +3,13 @@ import json
 import os
 
 from django.conf import settings
+from django.contrib.auth.models import User, Group
+from django.utils.timezone import utc, make_aware
+
+from tastypie.models import ApiKey
 
 from esmond.api.models import *
+from esmond.util import max_datetime
 
 class TestData(object):
     pass
@@ -22,7 +27,6 @@ def build_default_metadata():
     rtr_a -- basic, currently active router
     rtr_b -- basic, currently inactive router
     rtr_c -- InfineraFastPollHC, currently active router
-
     """
     td = TestData()
     
@@ -35,8 +39,8 @@ def build_default_metadata():
     DeviceOIDSetMap(device=td.rtr_a,
             oid_set=OIDSet.objects.get(name="Errors")).save()
 
-    rtr_b_begin = datetime.datetime(2013,6,1)
-    rtr_b_end = datetime.datetime(2013,6,15)
+    rtr_b_begin = make_aware(datetime.datetime(2013,6,1), utc)
+    rtr_b_end = make_aware(datetime.datetime(2013,6,15), utc)
     td.rtr_b, _ = Device.objects.get_or_create(
             name="rtr_b",
             community="public",
@@ -129,7 +133,7 @@ def build_rtr_d_metadata():
             community= "community_string",
             active=True,
             begin_time="2011-11-14T02:54:14.503",
-            end_time=datetime.datetime.max)
+            end_time=max_datetime)
 
     return td
 
@@ -146,7 +150,9 @@ def build_metadata_from_test_data(data):
             oid_set=OIDSet.objects.get(name=d['oidset_name'])).save()
 
     ifnames = set([ x[0].split("/")[-1].replace("_","/") for x in d['data'] ])
-    t0 = datetime.datetime.fromtimestamp(int(d["timestamp"]) - 30)
+    t0 = make_aware(datetime.datetime.fromtimestamp(int(d["timestamp"]) - 30),
+            utc)
+            
 
     ifIndex = 1
 
@@ -164,6 +170,6 @@ def build_metadata_from_test_data(data):
                 ifAdminStatus=1,
                 ifPhysAddress="00:00:00:00:00:%02d" % ifIndex,
                 begin_time=t0,
-                end_time=datetime.datetime.max)
+                end_time=max_datetime)
         ifr.save()
 

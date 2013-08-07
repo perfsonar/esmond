@@ -37,7 +37,6 @@ try:
 except ImportError:
     tsdb = None
 
-
 ifref_test_data = """
 [{
     "oidset_name": "IfRefPoll",

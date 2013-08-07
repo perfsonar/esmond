@@ -2,6 +2,7 @@ import os
 import os.path
 import sys
 import ctypes
+import datetime
 import time
 import logging
 import logging.handlers
@@ -13,6 +14,8 @@ import traceback
 import inspect
 import tempfile
 from optparse import OptionParser
+
+from django.utils.timezone import utc, make_aware
 
 proctitle = None
 
@@ -392,3 +395,7 @@ def decode_alu_port(x):
 def datetime_to_unixtime(dt):
     return int(time.mktime(dt.timetuple()))
 
+# max_datetime is used to represent a time sufficiently far into future such
+# that this datetime is effectively infinite.  it is set to be 2 days less than
+# datetime.datetime.max to prevent overflow due to timezone variances.
+max_datetime = make_aware(datetime.datetime.max - datetime.timedelta(2), utc)

@@ -1,7 +1,8 @@
 from django.db import models
+from django.utils.timezone import now
 import datetime
 
-from esmond.util import datetime_to_unixtime, remove_metachars
+from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime
 
 class DeviceTag(models.Model):
     """A tag for a :py:class:`.Device.`"""
@@ -17,7 +18,7 @@ class DeviceTag(models.Model):
 class DeviceManager(models.Manager):
     def active(self):
         qs = super(DeviceManager, self).get_query_set()
-        qs = qs.filter(active=True, end_time__gt=datetime.datetime.now())
+        qs = qs.filter(active=True, end_time__gt=now())
         return qs
 
     def active_as_dict(self):
@@ -35,8 +36,8 @@ class Device(models.Model):
 
     """
     name = models.CharField(max_length = 256)
-    begin_time = models.DateTimeField(default=datetime.datetime.now)
-    end_time = models.DateTimeField(default=datetime.datetime.max)
+    begin_time = models.DateTimeField(default=now())
+    end_time = models.DateTimeField(default=max_datetime)
     community = models.CharField(max_length = 128)
     active = models.BooleanField(default = True)
     devicetag = models.ManyToManyField(DeviceTag, through = "DeviceTagMap")
@@ -167,7 +168,7 @@ class DeviceOIDSetMap(models.Model):
 class IfRefManager(models.Manager):
     def active(self):
         qs = super(IfRefManager, self).get_query_set()
-        qs = qs.filter(end_time__gt=datetime.datetime.now())
+        qs = qs.filter(end_time__gt=now())
         return qs
 
 class IfRef(models.Model):
@@ -194,8 +195,8 @@ class IfRef(models.Model):
             blank=True, null=True)
     ifAdminStatus = models.IntegerField(db_column="ifadminstatus",
             blank=True, null=True)
-    begin_time = models.DateTimeField(default=datetime.datetime.now)
-    end_time = models.DateTimeField(default=datetime.datetime.max)
+    begin_time = models.DateTimeField(default=now())
+    end_time = models.DateTimeField(default=max_datetime)
     ifPhysAddress = models.CharField(max_length=32, db_column="ifphysaddress",
             blank=True, null=True)
 
@@ -234,7 +235,7 @@ class IfRef(models.Model):
 class ALUSAPRefManager(models.Manager):
     def active(self):
         qs = super(ALUSAPRefManager, self).get_query_set()
-        qs = qs.filter(end_time__gt=datetime.datetime.now())
+        qs = qs.filter(end_time__gt=now())
         return qs
 
 class ALUSAPRef(models.Model):
@@ -249,8 +250,8 @@ class ALUSAPRef(models.Model):
     sapEgressQosPolicyId = models.IntegerField(
             db_column="sapegressqospolicyid")
 
-    begin_time = models.DateTimeField(default=datetime.datetime.now)
-    end_time = models.DateTimeField(default=datetime.datetime.max)
+    begin_time = models.DateTimeField(default=now())
+    end_time = models.DateTimeField(default=max_datetime)
 
     objects = ALUSAPRefManager()
 
@@ -278,8 +279,8 @@ class LSPOpStatus(models.Model):
     dstAddr = models.IPAddressField()
     state = models.IntegerField()
 
-    begin_time = models.DateTimeField(default=datetime.datetime.now)
-    end_time = models.DateTimeField(default=datetime.datetime.max)
+    begin_time = models.DateTimeField(default=now())
+    end_time = models.DateTimeField(default=max_datetime)
 
     class Meta:
         db_table = "lspopstatus"

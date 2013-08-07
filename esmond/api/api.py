@@ -4,7 +4,8 @@ import datetime
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf.urls.defaults import url
-from django.utils.timezone import now
+from django.utils.timezone import make_aware, get_current_timezone
+from django.utils.timezone import now as django_now
 from django.core.exceptions import ObjectDoesNotExist
 
 from tastypie.resources import ModelResource, Resource, ALL, ALL_WITH_RELATIONS
@@ -51,15 +52,15 @@ def build_time_filters(filters, orm_filters):
     orm_filters and fill in defaults if they are missing."""
 
     if 'begin' in filters:
-        orm_filters['end_time__gte'] = datetime.datetime.fromtimestamp(
-                float(filters['begin']))
+        orm_filters['end_time__gte'] = make_aware(datetime.datetime.fromtimestamp(
+                float(filters['begin'])), get_current_timezone())
 
     if 'end' in filters:
-        orm_filters['begin_time__lte'] = datetime.datetime.fromtimestamp(
-                float(filters['end']))
+        orm_filters['begin_time__lte'] = make_aware(datetime.datetime.fromtimestamp(
+                float(filters['end'])), get_current_timezone())
 
     filter_keys = map(lambda x: x.split("__")[0], orm_filters.keys())
-    now = datetime.datetime.now()
+    now = django_now()
 
     if 'begin_time' not in filter_keys:
         orm_filters['begin_time__lte'] = now
