@@ -18,6 +18,8 @@ from collections import namedtuple
 from django.test import TestCase
 from django.conf import settings
 
+from tastypie.test import ResourceTestCase
+
 from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
 
 from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
@@ -310,6 +312,26 @@ timeseries_test_data = """
 ]
 """
 
+class CassandraTestResults(object):
+    """
+    Container to hold timestamps and return values common to 
+    both sets of cassandra data queries (raw and rest apis).
+    """
+    # Common values
+    begin = 1343956800
+    end   = 1343957400
+
+    expected_results = 21
+
+    # Values for base rate tests
+    base_rate_val_first = 0.020266666666666665
+    base_rate_val_last  = 0.026533333333333332
+
+    # Values for aggregation tests
+    agg_ts = 1343955600
+    agg_avg = 17
+
+
 class TestCassandraPollPersister(TestCase):
     fixtures = ['oidsets.json']
 
@@ -487,6 +509,82 @@ class TestCassandraPollPersister(TestCase):
 
         db.close()
 
+class TestCassandraApiQueries(ResourceTestCase):
+    fixtures = ['oidsets.json']
+
+    def setUp(self):
+        super(TestCassandraApiQueries, self).setUp()
+
+        self.td = build_rtr_d_metadata()
+
+        test_data = load_test_data("rtr_d_ifhcin_long.json")
+        build_metadata_from_test_data(test_data)
+
+        self.ctr = CassandraTestResults()
+
+    def test_get_device_list(self):
+        url = '/v1/device/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(data[0]['resource_uri'], '/v1/device/rtr_d/')
+
+    def test_get_device_interface_list(self):
+        url = '/v1/device/rtr_d/interface/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(data['children'][0]['resource_uri'], 
+            '/v1/device/rtr_d/interface/fxp0.0')
+
+    def test_get_device_interface_data_detail(self):
+        params = {
+            'begin': self.ctr.begin,
+            'end': self.ctr.end
+        }
+
+        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], '30')
+        self.assertEquals(data['cf'], 'average')
+
+        self.assertEquals(len(data['data']), self.ctr.expected_results)
+        self.assertEquals(data['data'][0][0], params['begin'])
+        self.assertEquals(data['data'][0][1], self.ctr.base_rate_val_first)
+        self.assertEquals(data['data'][self.ctr.expected_results-1][0], params['end'])
+        self.assertEquals(data['data'][self.ctr.expected_results-1][1], self.ctr.base_rate_val_last)
+
+    def test_get_device_interface_data_aggs(self):
+        params = {
+            'begin': self.ctr.begin-3600, # back an hour to get agg bin.
+            'end': self.ctr.end,
+            'agg': '3600'
+        }
+
+        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], params['agg'])
+        self.assertEquals(data['cf'], 'average')
+
+        self.assertEquals(len(data['data']), 1)
+        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0][1], self.ctr.agg_avg)
 
 if tsdb:
     class TestTSDBPollPersister(TestCase):

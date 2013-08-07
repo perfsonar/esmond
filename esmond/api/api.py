@@ -401,30 +401,27 @@ class InterfaceDataResource(Resource):
         if not self._valid_timerange(obj):
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
-
-
-        # XXX(mmg): fix this - should be a list
-        path = "/".join(
-                (
-                    obj.iface.device.name,
-                    oidset.name, 
-                    OIDSET_INTERFACE_ENDPOINTS[oidset.name][oidkey],
-                    remove_metachars(obj.iface.ifDescr),
-                ))
         
         db = CASSANDRA_DB(get_config(get_config_path()))
 
+        path = [
+            obj.iface.device.name,
+            oidset.name, 
+            OIDSET_INTERFACE_ENDPOINTS[oidset.name][oidkey],
+            remove_metachars(obj.iface.ifDescr),
+        ]
+
         if obj.agg == oidset.frequency:
             # Fetch the base rate data.
-            data = db.query_baserate_timerange(path=path, freq=obj.agg,
-                    ts_min=obj.begin, ts_max=obj.end)
+            data = db.query_baserate_timerange(path=path, freq=obj.agg*1000,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
         else:
             # Get the aggregation.
             if obj.cf not in AGG_TYPES:
                 raise ObjectDoesNotExist('%s is not a valid consolidation function' %
                         (obj.cf))
-            data = db.query_aggregation_timerange(path=path, freq=obj.agg,
-                    ts_min=obj.begin, ts_max=obj.end, cf=obj.cf)
+            data = db.query_aggregation_timerange(path=path, freq=obj.agg*1000,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
 
         obj.data = self._format_data_payload(data)
         return obj
