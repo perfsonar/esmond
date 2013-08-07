@@ -17,6 +17,8 @@ import cPickle as pickle
 
 import json
 
+from django.utils.timezone import now, utc, make_aware
+
 import tsdb
 import tsdb.row
 from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
@@ -24,7 +26,7 @@ from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
 
 from esmond.util import setproctitle, init_logging, get_logger, \
         remove_metachars, decode_alu_port
-from esmond.util import daemonize, setup_exc_handler
+from esmond.util import daemonize, setup_exc_handler, max_datetime
 from esmond.config import get_opt_parser, get_config, get_config_path
 from esmond.error import ConfigError
 
@@ -667,7 +669,7 @@ class HistoryTablePersister(PollPersister):
                         break
 
                 if changed:
-                    old.end_time = datetime.datetime.now()
+                    old.end_time = now()
                     old.save()
                     new_row = self._new_row_from_obj(new)
                     new_row.save()
@@ -676,7 +678,7 @@ class HistoryTablePersister(PollPersister):
                 del self.new_data[key]
             # no entry in self.new_data: interface is gone, update db
             else:
-                old.end_time = datetime.datetime.now()
+                old.end_time = now()
                 old.save()
                 deletes += 1
 
@@ -711,8 +713,8 @@ class IfRefPollPersister(HistoryTablePersister):
 
     def _new_row_from_obj(self, obj):
         obj['device'] = self.device
-        obj['begin_time'] = datetime.datetime.now()
-        obj['end_time'] = datetime.datetime.max
+        obj['begin_time'] = now()
+        obj['end_time'] = max_datetime
         return IfRef(**obj)
 
     def _resolve_ifdescr(self, ifdescr, ifindex):
@@ -790,8 +792,8 @@ class ALUSAPRefPersister(HistoryTablePersister):
 
     def _new_row_from_obj(self, obj):
         obj['device'] = self.device
-        obj['begin_time'] = datetime.datetime.now()
-        obj['end_time'] = datetime.datetime.max
+        obj['begin_time'] = now()
+        obj['end_time'] = max_datetime
 
         return ALUSAPRef(**obj)
 
@@ -837,8 +839,8 @@ class LSPOpStatusPersister(HistoryTablePersister):
 
     def _new_row_from_obj(self, obj):
         obj['device'] = self.device
-        obj['begin_time'] = datetime.datetime.now()
-        obj['end_time'] = datetime.datetime.max
+        obj['begin_time'] = now()
+        obj['end_time'] = max_datetime
 
         return LSPOpStatus(**obj)
 

@@ -26,6 +26,8 @@ from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
      PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister
 from esmond.config import get_config, get_config_path
 from esmond.cassandra import CASSANDRA_DB
+from esmond.util import max_datetime
+
 from pycassa.columnfamily import ColumnFamily
 
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
@@ -148,8 +150,8 @@ class TestIfRefPersister(TestCase):
         self.assertTrue(len(ifrefs) == 2)
 
         self.assertEqual(ifrefs[0].ifIndex, ifrefs[1].ifIndex)
-        self.assertTrue(ifrefs[0].end_time < datetime.datetime.max)
-        self.assertTrue(ifrefs[1].end_time == datetime.datetime.max)
+        self.assertTrue(ifrefs[0].end_time < max_datetime)
+        self.assertTrue(ifrefs[1].end_time == max_datetime)
         self.assertTrue(ifrefs[0].ifAlias == "test one")
         self.assertTrue(ifrefs[1].ifAlias == "test two")
 
@@ -161,7 +163,7 @@ class TestIfRefPersister(TestCase):
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
-        self.assertTrue(ifrefs[1].end_time < datetime.datetime.max)
+        self.assertTrue(ifrefs[1].end_time < max_datetime)
 
 alu_sap_test_data = """
 [
@@ -235,8 +237,8 @@ class TestALUSAPRefPersister(TestCase):
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
-        self.assertTrue(ifrefs[0].end_time < datetime.datetime.max)
-        self.assertTrue(ifrefs[1].end_time == datetime.datetime.max)
+        self.assertTrue(ifrefs[0].end_time < max_datetime)
+        self.assertTrue(ifrefs[1].end_time == max_datetime)
         self.assertTrue(ifrefs[0].sapDescription == "one")
         self.assertTrue(ifrefs[1].sapDescription == "two")
 
@@ -248,7 +250,7 @@ class TestALUSAPRefPersister(TestCase):
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
-        self.assertTrue(ifrefs[1].end_time < datetime.datetime.max)
+        self.assertTrue(ifrefs[1].end_time < max_datetime)
 
 # XXX(jdugan): it would probably be better and easier in the long run to keep
 # these JSON blobs in files and define a small class to load them

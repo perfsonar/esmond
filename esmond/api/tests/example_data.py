@@ -150,7 +150,7 @@ def build_rtr_d_metadata():
             name="rtr_d",
             community= "community_string",
             active=True,
-            begin_time="2011-11-14T02:54:14.503",
+            begin_time=make_aware(datetime.datetime(2011,11,14), utc),
             end_time=max_datetime)
 
     return td
