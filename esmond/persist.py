@@ -968,15 +968,22 @@ class MemcachedPersistQueue(PersistQueue):
         if len(self) <= 0:
             return None
 
+        errors = 0
+
         qid = self.mc.incr(self.last_read)
-        k = '%s_%s_%d' % (self.PREFIX, self.qname, qid)
-        val = self.mc.get(k)
-        self.mc.delete(k)
-        if val:
-            return self.deserialize(val)
-        else:
-            self.log.error("failed to deserialize: got None")
-            return None
+        while qid <= self.mc.get(self.last_added):
+            k = '%s_%s_%d' % (self.PREFIX, self.qname, qid)
+            val = self.mc.get(k)
+            if val:
+                self.mc.delete(k)
+                if errors:
+                    self.log.error("missing data: %d items missing (qids %d-%d)" %
+                            (errors, qid-errors, qid-1))
+                return self.deserialize(val)
+
+            errors += 1
+
+            qid = self.mc.incr(self.last_read)
 
     def __len__(self):
         n = self.mc.get(self.last_added) - self.mc.get(self.last_read)
