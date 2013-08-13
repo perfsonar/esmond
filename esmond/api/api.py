@@ -4,7 +4,7 @@ import datetime
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf.urls.defaults import url
-from django.utils.timezone import make_aware, get_current_timezone
+from django.utils.timezone import make_aware, utc
 from django.utils.timezone import now as django_now
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -52,12 +52,12 @@ def build_time_filters(filters, orm_filters):
     orm_filters and fill in defaults if they are missing."""
 
     if 'begin' in filters:
-        orm_filters['end_time__gte'] = make_aware(datetime.datetime.fromtimestamp(
-                float(filters['begin'])), get_current_timezone())
+        orm_filters['end_time__gte'] = make_aware(datetime.datetime.utcfromtimestamp(
+                float(filters['begin'])), utc)
 
     if 'end' in filters:
-        orm_filters['begin_time__lte'] = make_aware(datetime.datetime.fromtimestamp(
-                float(filters['end'])), get_current_timezone())
+        orm_filters['begin_time__lte'] = make_aware(datetime.datetime.utcfromtimestamp(
+                float(filters['end'])), utc)
 
     filter_keys = map(lambda x: x.split("__")[0], orm_filters.keys())
     now = django_now()

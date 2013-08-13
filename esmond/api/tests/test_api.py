@@ -1,5 +1,6 @@
 import json
 import time
+import calendar
 import datetime
 
 import mock 
@@ -13,7 +14,7 @@ from esmond.api.tests.example_data import build_default_metadata
 from esmond.cassandra import AGG_TYPES
 
 def datetime_to_timestamp(dt):
-    return time.mktime(dt.timetuple())
+    return calendar.timegm(dt.timetuple())
 
 from django.test import TestCase
 

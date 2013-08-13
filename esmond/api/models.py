@@ -36,7 +36,7 @@ class Device(models.Model):
 
     """
     name = models.CharField(max_length = 256)
-    begin_time = models.DateTimeField(auto_now_add=True)
+    begin_time = models.DateTimeField()
     end_time = models.DateTimeField(default=max_datetime)
     community = models.CharField(max_length = 128)
     active = models.BooleanField(default = True)
@@ -195,7 +195,7 @@ class IfRef(models.Model):
             blank=True, null=True)
     ifAdminStatus = models.IntegerField(db_column="ifadminstatus",
             blank=True, null=True)
-    begin_time = models.DateTimeField(auto_now_add=True)
+    begin_time = models.DateTimeField()
     end_time = models.DateTimeField(default=max_datetime)
     ifPhysAddress = models.CharField(max_length=32, db_column="ifphysaddress",
             blank=True, null=True)
@@ -250,7 +250,7 @@ class ALUSAPRef(models.Model):
     sapEgressQosPolicyId = models.IntegerField(
             db_column="sapegressqospolicyid")
 
-    begin_time = models.DateTimeField(auto_now_add=True)
+    begin_time = models.DateTimeField()
     end_time = models.DateTimeField(default=max_datetime)
 
     objects = ALUSAPRefManager()
@@ -279,7 +279,7 @@ class LSPOpStatus(models.Model):
     dstAddr = models.IPAddressField()
     state = models.IntegerField()
 
-    begin_time = models.DateTimeField(auto_now_add=True)
+    begin_time = models.DateTimeField()
     end_time = models.DateTimeField(default=max_datetime)
 
     class Meta:

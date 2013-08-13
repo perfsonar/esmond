@@ -4,7 +4,7 @@ import os
 
 from django.conf import settings
 from django.contrib.auth.models import User, Group
-from django.utils.timezone import utc, make_aware
+from django.utils.timezone import utc, make_aware, now
 
 from tastypie.models import ApiKey
 
@@ -38,7 +38,8 @@ def build_default_metadata():
     
     td.rtr_a, _ = Device.objects.get_or_create(
             name="rtr_a",
-            community="public")
+            community="public",
+            begin_time=now())
 
     DeviceOIDSetMap(device=td.rtr_a,
             oid_set=OIDSet.objects.get(name="FastPollHC")).save()
@@ -55,7 +56,8 @@ def build_default_metadata():
 
     td.rtr_c, _ = Device.objects.get_or_create(
             name="rtr_c",
-            community="public")
+            community="public",
+            begin_time=now())
 
     DeviceOIDSetMap(device=td.rtr_c,
             oid_set=OIDSet.objects.get(name="InfFastPollHC")).save()
@@ -67,6 +69,7 @@ def build_default_metadata():
 
     IfRef.objects.get_or_create(
             device=td.rtr_a,
+            begin_time=td.rtr_a.begin_time,
             ifIndex=1,
             ifDescr="xe-0/0/0",
             ifAlias="test interface",
@@ -110,6 +113,7 @@ def build_default_metadata():
 
     IfRef.objects.get_or_create(
             device=td.rtr_c,
+            begin_time=td.rtr_c.begin_time,
             ifIndex=1,
             ifDescr="xe-3/0/0",
             ifAlias="test interface",
