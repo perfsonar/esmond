@@ -375,7 +375,7 @@ class PollManager(object):
                 bad_devices.append(device.name)
 
         for bad_device in bad_devices:
-            del devices[bad_device]
+            del self.devices[bad_device]
 
         self.last_reload = time.time()
 
