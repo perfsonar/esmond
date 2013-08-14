@@ -297,6 +297,7 @@ class InterfaceDataResource(Resource):
         oidsets = iface.device.oidsets.all()
         endpoint_map = {}
         for oidset in oidsets:
+            continue
             for endpoint, varname in \
                     OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
                 path = "/".join((
