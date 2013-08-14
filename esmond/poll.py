@@ -475,8 +475,13 @@ class PollManager(object):
         new_device_set = set(new_devices.iterkeys())
         old_device_set = set(self.devices.iterkeys())
 
+        bad_devices = []
         for name in new_device_set.difference(old_device_set):
-            self._start_device(new_devices[name])
+            if not self._start_device(new_devices[name]):
+                bad_devices.append(name)
+
+        for bad_device in bad_devices:
+            del new_devices[bad_device]
 
         for name in old_device_set.difference(new_device_set):
             self._stop_device(self.devices[name])
