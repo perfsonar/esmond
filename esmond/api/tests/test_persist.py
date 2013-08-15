@@ -533,17 +533,6 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         self.ctr = CassandraTestResults()
 
-    def test_a_load_data(self):
-        config = get_config(get_config_path())
-        config.db_clear_on_testing = True
-        
-        test_data = load_test_data("rtr_d_ifhcin_long.json")
-        q = TestPersistQueue(test_data)
-        p = CassandraPollPersister(config, "test", persistq=q)
-        p.run()
-        p.db.flush()
-        p.db.close()
-
     def test_get_device_list(self):
         url = '/v1/device/'
 
@@ -573,7 +562,6 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
-        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -599,7 +587,6 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
-        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -646,7 +633,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
         self.assertEquals(data['data'][0][1], self.ctr.agg_max)
 
-if False:
+if tsdb:
     class TestTSDBPollPersister(TestCase):
         fixtures = ['oidsets.json']
 
