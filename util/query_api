@@ -24,9 +24,9 @@ class fetchData(threading.Thread):
         try:
             data = json.loads(r.text)
             if data['data']:
-                print 'data found for {0} by thread {1}'.format(self.uri, self.id)
+                print 'data found for {0} by thread {1} - {2}'.format(self.uri, self.id, r.elapsed)
             else:
-                print 'no data for {0} by thread {1}'.format(self.uri, self.id)
+                print 'no data for {0} by thread {1} - {2}'.format(self.uri, self.id, r.elapsed)
         except ValueError, e:
             print 'bad response {0} for endpoint {1}'.format(r.status_code, self.uri)
 
