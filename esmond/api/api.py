@@ -10,6 +10,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from tastypie.resources import ModelResource, Resource, ALL, ALL_WITH_RELATIONS
 from tastypie.api import Api
+from tastypie.authentication import ApiKeyAuthentication
 from tastypie.serializers import Serializer
 from tastypie.bundle import Bundle
 from tastypie import fields
@@ -70,6 +71,28 @@ def build_time_filters(filters, orm_filters):
 
     return orm_filters
 
+class AnonymousGetElseApiAuthentication(ApiKeyAuthentication):
+    """Allow GET without authentication, rely on API keys for all else"""
+    def is_authenticated(self, request, **kwargs):
+        authenticated = super(AnonymousGetElseApiAuthentication, self).is_authenticated(
+                request, **kwargs)
+
+        # we always allow GET, but is_authenticated() has side effects which add
+        # the user data to the request, which we want if available, so do
+        # is_authenticated first then return True for all GETs
+
+        if request.method == 'GET':
+            return True
+
+        return authenticated
+
+    def get_identifier(self, request):
+        if request.user.is_anonymous():
+            return 'AnonymousUser'
+        else:
+            return super(AnonymousGetElseApiAuthentication,
+                    self).get_identifier(request)
+
 class DeviceSerializer(Serializer):
     def to_json(self, data, options=None):
         data = self.to_simple(data, options)
@@ -94,6 +117,7 @@ class DeviceResource(ModelResource):
         filtering = {
             'name': ALL,
         }
+        authentication = AnonymousGetElseApiAuthentication()
 
     def dehydrate_begin_time(self, bundle):
         return int(time.mktime(bundle.data['begin_time'].timetuple()))
@@ -112,14 +136,14 @@ class DeviceResource(ModelResource):
                   name="api_dispatch_detail"),
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/?$"
                 % (self._meta.resource_name,),
-                self.wrap_view('get_interface_list'),
+                self.wrap_view('dispatch_interface_list'),
                 name="api_get_children"),
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.-]+)/?$"
                 % (self._meta.resource_name,),
-                self.wrap_view('get_interface_detail'),
+                self.wrap_view('dispatch_interface_detail'),
                 name="api_get_children"),
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.-]+)/(?P<iface_dataset>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
-                self.wrap_view('get_interface_data'),
+                self.wrap_view('dispatch_interface_data'),
                 name="api_get_children"),
                 ]
 
@@ -142,15 +166,15 @@ class DeviceResource(ModelResource):
     # add mapping between oidset and REST API.  Something similar to declarative
     # models/resources ala Django models
 
-    def get_interface_list(self, request, **kwargs):
-        return InterfaceResource().get_list(request, device__name=kwargs['name'])
+    def dispatch_interface_list(self, request, **kwargs):
+        return InterfaceResource().dispatch_list(request, device__name=kwargs['name'])
 
-    def get_interface_detail(self, request, **kwargs):
-        return InterfaceResource().get_detail(request,
+    def dispatch_interface_detail(self, request, **kwargs):
+        return InterfaceResource().dispatch_detail(request,
                 device__name=kwargs['name'], ifDescr=kwargs['iface_name'] )
 
-    def get_interface_data(self, request, **kwargs):
-        return InterfaceDataResource().get_detail(request, **kwargs)
+    def dispatch_interface_data(self, request, **kwargs):
+        return InterfaceDataResource().dispatch_detail(request, **kwargs)
 
     def dehydrate_children(self, bundle):
         children = ['interface', 'system', 'all']
@@ -183,10 +207,18 @@ class InterfaceResource(ModelResource):
         filtering = {
             'device': ALL_WITH_RELATIONS,
         }
+        authentication = AnonymousGetElseApiAuthentication()
 
     def obj_get(self, bundle, **kwargs):
         kwargs['ifDescr'] = kwargs['ifDescr'].replace("_", "/")
         return super(InterfaceResource, self).obj_get(bundle, **kwargs)
+
+    def get_object_list(self, request):
+        qs = self._meta.queryset._clone()
+        if not request.user.has_perm("api.can_see_hidden_ifref"):
+            qs = qs.exclude(ifAlias__contains=":hide:")
+
+        return qs
 
     def obj_get_list(self, bundle, **kwargs):
         return super(InterfaceResource, self).obj_get_list(bundle, **kwargs)
@@ -270,6 +302,7 @@ class InterfaceDataResource(Resource):
         resource_name = 'interface_data'
         allowed_methods = ['get']
         object_class = InterfaceDataObject
+        authentication = AnonymousGetElseApiAuthentication()
 
     def get_object_list(self, request):
         qs = self._meta.queryset._clone()
@@ -288,8 +321,9 @@ class InterfaceDataResource(Resource):
         return uri
 
     def obj_get(self, bundle, **kwargs):
+        iface_qs = InterfaceResource().get_object_list(bundle.request)
         try:
-            iface = IfRef.objects.get( device__name=kwargs['name'],
+            iface = iface_qs.get( device__name=kwargs['name'],
                     ifDescr=kwargs['iface_name'].replace("_", "/"))
         except IfRef.DoesNotExist:
             raise ObjectDoesNotExist("no such device/interface")

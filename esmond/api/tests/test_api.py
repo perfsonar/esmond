@@ -182,6 +182,39 @@ class DeviceAPITests(DeviceAPITestsBase):
                 self.assertEqual(child['uri'], url + child_name)
                 self.assertTrue(child['leaf'])
 
+    def test_get_device_interface_list_hidden(self):
+        url = '/v1/device/rtr_a/interface/'
+
+        response = self.client.get(url)
+        data = json.loads(response.content)
+
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(len(data['children']), 1)
+        for child in data['children']:
+            self.assertTrue(":hide:" not in child['ifAlias'])
+
+        authn = self.create_apikey(self.td.user_seeall.username,
+                self.td.user_seeall_apikey.key)
+
+        response = self.api_client.get(url, authentication=authn)
+        data = json.loads(response.content)
+        self.assertEquals(len(data['children']), 2)
+
+    def test_get_device_interface_detail_hidden(self):
+        url = '/v1/device/rtr_a/interface/xe-1_0_0/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
+
+        authn = self.create_apikey(self.td.user_seeall.username,
+                self.td.user_seeall_apikey.key)
+
+        response = self.api_client.get(url, authentication=authn)
+        data = json.loads(response.content)
+        self.assertEquals(response.status_code, 200)
+        self.assertTrue(":hide:" in data['ifAlias'])
+
+
 class MockCASSANDRA_DB(object):
     def __init__(self, config):
         pass
@@ -292,6 +325,21 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['resource_uri'], url)
         self.assertEquals(data['data'][2][0], 60)
         self.assertEquals(data['data'][2][1], 40)
+
+    def test_get_device_interface_data_detail_hidden(self):
+        url = '/v1/device/rtr_a/interface/xe-1_0_0/in'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        authn = self.create_apikey(self.td.user_seeall.username,
+                self.td.user_seeall_apikey.key)
+
+        response = self.api_client.get(url, authentication=authn)
+
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.content)
+        self.assertTrue(len(data['data']) > 0)
 
     def test_bad_aggregations(self):
         url = '/v1/device/rtr_a/interface/xe-0_0_0/in'

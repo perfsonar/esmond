@@ -205,6 +205,10 @@ class IfRef(models.Model):
     class Meta:
         db_table = "ifref"
         ordering = ["device__name", "ifDescr"]
+        permissions = (
+                ("can_see_hidden_ifref",
+                    "Can see IfRefs with ifAlias containing :hide:"),
+                )
 
     def __unicode__(self):
         return "%s (%s) %s"%(self.ifDescr, self.ifIndex, self.ifAlias)

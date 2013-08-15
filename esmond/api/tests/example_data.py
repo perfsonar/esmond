@@ -3,7 +3,7 @@ import json
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User, Group, Permission
 from django.utils.timezone import utc, make_aware, now
 
 from tastypie.models import ApiKey
@@ -82,6 +82,21 @@ def build_default_metadata():
             ifPhysAddress="00:00:00:00:00:00")
 
     IfRef.objects.get_or_create(
+            device=td.rtr_a,
+            begin_time=td.rtr_a.begin_time,
+            ifIndex=1,
+            ifDescr="xe-1/0/0",
+            ifAlias="test interface:hide:",
+            ipAddr="10.0.0.1",
+            ifSpeed=0,
+            ifHighSpeed=10000,
+            ifMtu=9000,
+            ifOperStatus=1,
+            ifAdminStatus=1,
+            ifPhysAddress="00:00:00:00:00:00")
+
+
+    IfRef.objects.get_or_create(
             device=td.rtr_b,
             ifIndex=1,
             ifDescr="xe-1/0/0",
@@ -125,13 +140,20 @@ def build_default_metadata():
             ifAdminStatus=1,
             ifPhysAddress="00:00:00:00:00:00")
 
+    seeall = Permission.objects.get(codename="can_see_hidden_ifref")
+
     td.user_admin = User(username="admin", is_staff=True)
+    td.user_admin.save()
+    td.user_admin.user_permissions.add(seeall)
     td.user_admin.save()
     td.user_admin_apikey = ApiKey(user=td.user_admin)
     td.user_admin_apikey.key = td.user_admin_apikey.generate_key()
     td.user_admin_apikey.save()
 
+
     td.user_seeall = User(username="seeall", is_staff=False)
+    td.user_seeall.save()
+    td.user_seeall.user_permissions.add(seeall)
     td.user_seeall.save()
     td.user_seeall_apikey = ApiKey(user=td.user_seeall)
     td.user_seeall_apikey.key = td.user_seeall_apikey.generate_key()
