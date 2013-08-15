@@ -633,6 +633,11 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
         self.assertEquals(data['data'][0][1], self.ctr.agg_max)
 
+        # make sure that an invalid aggregation raises an error
+        params['agg'] = params['agg'] * 3
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 404)
+
 if tsdb:
     class TestTSDBPollPersister(TestCase):
         fixtures = ['oidsets.json']
