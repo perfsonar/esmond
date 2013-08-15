@@ -4,7 +4,7 @@ import datetime
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf.urls.defaults import url
-from django.utils.timezone import make_aware, get_current_timezone
+from django.utils.timezone import make_aware, utc
 from django.utils.timezone import now as django_now
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -52,12 +52,12 @@ def build_time_filters(filters, orm_filters):
     orm_filters and fill in defaults if they are missing."""
 
     if 'begin' in filters:
-        orm_filters['end_time__gte'] = make_aware(datetime.datetime.fromtimestamp(
-                float(filters['begin'])), get_current_timezone())
+        orm_filters['end_time__gte'] = make_aware(datetime.datetime.utcfromtimestamp(
+                float(filters['begin'])), utc)
 
     if 'end' in filters:
-        orm_filters['begin_time__lte'] = make_aware(datetime.datetime.fromtimestamp(
-                float(filters['end'])), get_current_timezone())
+        orm_filters['begin_time__lte'] = make_aware(datetime.datetime.utcfromtimestamp(
+                float(filters['end'])), utc)
 
     filter_keys = map(lambda x: x.split("__")[0], orm_filters.keys())
     now = django_now()
@@ -118,7 +118,7 @@ class DeviceResource(ModelResource):
                 % (self._meta.resource_name,),
                 self.wrap_view('get_interface_detail'),
                 name="api_get_children"),
-            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.-]+)/(?P<data>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.-]+)/(?P<iface_dataset>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
                 self.wrap_view('get_interface_data'),
                 name="api_get_children"),
                 ]
@@ -284,7 +284,7 @@ class InterfaceDataResource(Resource):
 
         uri = "%s/%s" % (
                 InterfaceResource().get_resource_uri(obj.iface),
-                obj.datapath)
+                obj.iface_dataset)
         return uri
 
     def obj_get(self, bundle, **kwargs):
@@ -297,33 +297,28 @@ class InterfaceDataResource(Resource):
         oidsets = iface.device.oidsets.all()
         endpoint_map = {}
         for oidset in oidsets:
-            continue
+            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
+                continue 
+
             for endpoint, varname in \
                     OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
-                path = "/".join((
+                endpoint_map[endpoint] = [
                     iface.device.name,
                     oidset.name,
                     varname,
                     kwargs['iface_name']
-                    ))
-                endpoint_map[endpoint] = path
+                ]
 
-        # NEXT: determine the path to query for the data and write tests
+        iface_dataset = kwargs['iface_dataset']
 
-        datapath = kwargs['data'].rstrip('/')
+        if iface_dataset not in endpoint_map:
+            raise ObjectDoesNotExist("no such dataset: %s" % iface_dataset)
 
-        if datapath.count('/') == 0:
-            data_set = 'traffic'
-            args = datapath
-        else:
-            data_set, args = datapath.split('/', 1)
-
-        if data_set == 'error' or data_set == 'discard':
-            data_set = 'error'
 
         obj = InterfaceDataObject()
+        obj.datapath = endpoint_map[iface_dataset]
+        obj.iface_dataset = iface_dataset
         obj.iface = iface
-        obj.datapath = datapath
 
         filters = getattr(bundle.request, 'GET', {})
 
@@ -348,49 +343,9 @@ class InterfaceDataResource(Resource):
         else:
             obj.agg = None
 
-        f = getattr(self, "data_%s" % data_set, None)
-        if f:
-            data = f(bundle.request, obj, args)
-        else:
-            raise ObjectDoesNotExist("no such dataset")
+        return self._execute_query(oidset, obj)
 
-        return data
-
-    def data_traffic(self, request, obj, args):
-        if args not in ['in', 'out']:
-            raise ObjectDoesNotExist("no such sub dataset")
-
-        oidset = None
-        for o in obj.iface.device.oidsets.all():
-            if o.name == 'FastPollHC' or o.name == 'FastPoll' \
-                or o.name == 'InfFastPollHC':
-                oidset = o
-                break
-
-        if not oidset:
-            raise ObjectDoesNotExist("no valid traffic OIDSet for %s" %
-                    (obj.iface.device.name))
-
-        return self._execute_query(oidset, args, obj)
-
-    def data_error(self, request, obj, args):
-        if args not in ['in', 'out']:
-            raise ObjectDoesNotExist("no such sub dataset")
-
-        oidset = None
-        for o in obj.iface.device.oidsets.all():
-            if o.name == 'Errors':
-                oidset = o
-                break
-
-        if not oidset:
-            raise ObjectDoesNotExist("no valid error OIDSet for %s" %
-                    (obj.iface.device.name))
-
-        return self._execute_query(oidset, obj.datapath, obj)
-
-    def _execute_query(self, oidset, oidkey, obj):
-
+    def _execute_query(self, oidset, obj):
         # If no aggregate level defined in request, set to the frequency, 
         # otherwise, check if the requested aggregate level is valid.
         if not obj.agg:
@@ -406,23 +361,16 @@ class InterfaceDataResource(Resource):
         
         db = CASSANDRA_DB(get_config(get_config_path()))
 
-        path = [
-            obj.iface.device.name,
-            oidset.name, 
-            OIDSET_INTERFACE_ENDPOINTS[oidset.name][oidkey],
-            remove_metachars(obj.iface.ifDescr),
-        ]
-
         if obj.agg == oidset.frequency:
             # Fetch the base rate data.
-            data = db.query_baserate_timerange(path=path, freq=obj.agg*1000,
+            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg*1000,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
         else:
             # Get the aggregation.
             if obj.cf not in AGG_TYPES:
                 raise ObjectDoesNotExist('%s is not a valid consolidation function' %
                         (obj.cf))
-            data = db.query_aggregation_timerange(path=path, freq=obj.agg*1000,
+            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
 
         obj.data = self._format_data_payload(data)

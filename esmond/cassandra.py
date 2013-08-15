@@ -574,7 +574,7 @@ class CASSANDRA_DB(object):
                     column_count=cols+5)
             
             results = []
-            
+
             for k,v in ret.items():
                 for kk,vv in v.items():
                     ts = kk

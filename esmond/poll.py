@@ -368,8 +368,14 @@ class PollManager(object):
 
         self._start_thread('persist_thread', t)
 
+        bad_devices = []
+
         for device in self.devices.itervalues():
-            self._start_device(device)
+            if not self._start_device(device):
+                bad_devices.append(device.name)
+
+        for bad_device in bad_devices:
+            del self.devices[bad_device]
 
         self.last_reload = time.time()
 
@@ -401,13 +407,16 @@ class PollManager(object):
                 timeout=self.config.poll_timeout,
                 retries=self.config.poll_retries)
         except PollerError, e:
-            self.log.error(str(e))
-            return
+            self.log.error("unable to start device %s: %s"
+                    % (device.name, str(e)))
+            return False
 
         self.log.info("starting all pollers for %s" % device.name)
 
         for oidset in device.oidsets.all():
             self._start_poller(device, oidset)
+
+        return True
 
     def _stop_device(self, device):
         self.log.info("stopping all pollers for %s" % device.name)
@@ -466,8 +475,13 @@ class PollManager(object):
         new_device_set = set(new_devices.iterkeys())
         old_device_set = set(self.devices.iterkeys())
 
+        bad_devices = []
         for name in new_device_set.difference(old_device_set):
-            self._start_device(new_devices[name])
+            if not self._start_device(new_devices[name]):
+                bad_devices.append(name)
+
+        for bad_device in bad_devices:
+            del new_devices[bad_device]
 
         for name in old_device_set.difference(new_device_set):
             self._stop_device(self.devices[name])
