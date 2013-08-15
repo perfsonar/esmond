@@ -233,6 +233,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def setUp(self):
         super(DeviceAPIDataTests, self).setUp()
         # mock patches names where used/imported, not where defined
+        # mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB).start()
         self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
         self.patcher.start()
 

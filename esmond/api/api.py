@@ -28,7 +28,7 @@ from esmond.util import remove_metachars
 /$DEVICE/interface/$INTERFACE/out
 """
 
-db = CASSANDRA_DB(get_config(get_config_path()))
+# db = CASSANDRA_DB(get_config(get_config_path()))
 
 OIDSET_INTERFACE_ENDPOINTS = {
     'FastPollHC': {
@@ -361,7 +361,7 @@ class InterfaceDataResource(Resource):
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
         
-        # db = CASSANDRA_DB(get_config(get_config_path()))
+        db = CASSANDRA_DB(get_config(get_config_path()))
 
         if obj.agg == oidset.frequency:
             # Fetch the base rate data.
