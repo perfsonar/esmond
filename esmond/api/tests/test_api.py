@@ -266,7 +266,12 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def setUp(self):
         super(DeviceAPIDataTests, self).setUp()
         # mock patches names where used/imported, not where defined
-        mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB).start()
+        # mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB).start()
+        self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
+        self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
 
     def test_bad_endpoints(self):
         # there is no router called nonexistent

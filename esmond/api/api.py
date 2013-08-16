@@ -29,6 +29,8 @@ from esmond.util import remove_metachars
 /$DEVICE/interface/$INTERFACE/out
 """
 
+# db = CASSANDRA_DB(get_config(get_config_path()))
+
 OIDSET_INTERFACE_ENDPOINTS = {
     'FastPollHC': {
         'in': 'ifHCInOctets',
