@@ -10,9 +10,10 @@ import sys
 import time
 
 class fetchProcess(Process):
-    def __init__(self, q, uri, delay):
+    def __init__(self, q, host, uri, delay):
         super(fetchProcess, self).__init__()
         self.q = q
+        self.host = host
         self.uri = uri
         self.delay = delay
         self.duration = None
@@ -29,7 +30,7 @@ class fetchProcess(Process):
 
     def run(self):
         time.sleep(random.randint(0, self.delay))
-        r = requests.get('http://{0}/{1}'.format('localhost', self.uri))
+        r = requests.get('http://{0}/{1}'.format(self.host, self.uri))
         self.duration = r.elapsed
         self.text = r.text
         self.status = r.status_code
@@ -90,7 +91,7 @@ def main():
         print 'got bad response'
 
     for u in traffic_uris[0:options.threads]:
-        p = fetchProcess(Queue(), u, options.delay)
+        p = fetchProcess(Queue(), options.hostname, u, options.delay)
         processes.append(p)
 
     print 'launching {0} client processes'.format(len(processes))
