@@ -449,8 +449,12 @@ class InterfaceDataResource(Resource):
 
         # print 'range', e - s
 
-        if e - s > timerange_limits[obj.agg]:
-            return False
+        try:
+            if e - s > timerange_limits[obj.agg]:
+                return False
+        except KeyError:
+            raise BadRequest('invalid aggregation level: %s' %
+                    obj.agg)
 
         return True
 
