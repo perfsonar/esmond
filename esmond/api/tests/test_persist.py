@@ -32,6 +32,7 @@ from pycassa.columnfamily import ColumnFamily
 
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
      build_metadata_from_test_data, load_test_data
+from esmond.api.api import check_connection
 
 try:
     import tsdb
@@ -532,6 +533,11 @@ class TestCassandraApiQueries(ResourceTestCase):
         build_metadata_from_test_data(test_data)
 
         self.ctr = CassandraTestResults()
+
+        # Check connection in case the test_api module was unable
+        # to connect but we've not seen an error yet.  This way
+        # we'll see an explicit error that makes sense.
+        check_connection()
 
     def test_a_load_data(self):
         config = get_config(get_config_path())

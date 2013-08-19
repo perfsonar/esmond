@@ -266,8 +266,10 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def setUp(self):
         super(DeviceAPIDataTests, self).setUp()
         # mock patches names where used/imported, not where defined
-        # mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB).start()
-        self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
+        # This form will patch a class when it is instantiated by the executed code:
+        # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
+        # This form will patch a module-level class instance:
+        self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
         self.patcher.start()
 
     def tearDown(self):

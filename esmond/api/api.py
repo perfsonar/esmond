@@ -1,3 +1,4 @@
+import inspect
 import json
 import time
 import datetime
@@ -17,7 +18,7 @@ from tastypie import fields
 from tastypie.exceptions import NotFound, BadRequest
 
 from esmond.api.models import Device, IfRef
-from esmond.cassandra import CASSANDRA_DB, AGG_TYPES
+from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException
 from esmond.config import get_config_path, get_config
 from esmond.util import remove_metachars
 
@@ -29,7 +30,17 @@ from esmond.util import remove_metachars
 /$DEVICE/interface/$INTERFACE/out
 """
 
-# db = CASSANDRA_DB(get_config(get_config_path()))
+try:
+    db = CASSANDRA_DB(get_config(get_config_path()))
+except ConnectionException, e:
+    # Check the stack before raising an error - if test_api is 
+    # the calling code, we won't need a running db instance.
+    mod = inspect.getmodule(inspect.stack()[1][0])
+    if mod.__name__ == 'api.tests.test_api':
+        print '\nUnable to connect - presuming stand-alone testing mode...'
+        db = None
+    else:
+        raise ConnectionException(str(e))
 
 OIDSET_INTERFACE_ENDPOINTS = {
     'FastPollHC': {
@@ -47,6 +58,15 @@ OIDSET_INTERFACE_ENDPOINTS = {
         'out': 'gigeClientCtpPmRealOutOctets',
     },
 }
+
+def check_connection():
+    """Called by testing suite to produce consistent errors.  If no 
+    cassandra instance is available, test_api might silently hide that 
+    fact with mock.patch causing unclear errors in other modules 
+    like test_persist."""
+    global db
+    if not db:
+        db = CASSANDRA_DB(get_config(get_config_path()))
 
 def build_time_filters(filters, orm_filters):
     """Build default time filters.
@@ -395,7 +415,7 @@ class InterfaceDataResource(Resource):
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
         
-        db = CASSANDRA_DB(get_config(get_config_path()))
+        # db = CASSANDRA_DB(get_config(get_config_path()))
 
         if obj.agg == oidset.frequency:
             # Fetch the base rate data.
