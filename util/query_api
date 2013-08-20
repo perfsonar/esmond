@@ -14,7 +14,7 @@ import time
 from esmond.cassandra import AGG_TYPES
 
 class fetchProcess(Process):
-    def __init__(self, q, host, uri, delay, agg=None, cf=None):
+    def __init__(self, q, host, uri, delay, agg=None, cf=None, last=None):
         super(fetchProcess, self).__init__()
         self.q = q
         self.host = host
@@ -22,6 +22,7 @@ class fetchProcess(Process):
         self.delay = delay
         self.agg = agg
         self.cf = cf
+        self.last = last
         self.duration = None
         self.text = None
         self.status = None
@@ -40,6 +41,7 @@ class fetchProcess(Process):
         p = {}
         if self.agg: p['agg'] = self.agg
         if self.cf: p['cf'] = self.cf
+        if self.last: p['begin'] = time.time() - (self.last*60*60)
         time.sleep(random.randint(0, self.delay))
         r = requests.get('http://{0}{1}'.format(self.host, self.uri), params=p)
         self.url = r.url
@@ -68,6 +70,9 @@ def main():
     parser.add_option('-c', '--cf', metavar='CF',
             type='string', dest='cf', default=None,
             help='Select consolidation function (min/max/average).')
+    parser.add_option('-l', '--last', metavar='LAST',
+            type='int', dest='last', default=0,
+            help='Set time range to last n hours.')
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
@@ -126,7 +131,7 @@ def main():
 
     for u in traffic_uris[0:options.processes]:
         p = fetchProcess(Queue(), options.hostname, u, options.delay, 
-            options.agg, options.cf)
+            options.agg, options.cf, options.last)
         processes.append(p)
 
     print 'launching {0} client processes...'.format(len(processes)),
@@ -142,6 +147,9 @@ def main():
     for p in processes:
         p.join()
         retval = p.q.get()
+        if retval[0].find('got error') > -1:
+            print retval[0]
+            continue
         if len(retval[2]['data']): data_found += 1
         resp = retval[0]
         if options.verbose >= 1:
