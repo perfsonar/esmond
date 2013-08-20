@@ -365,11 +365,12 @@ class InterfaceDataResource(Resource):
                     kwargs['iface_name']
                 ]
 
-        iface_dataset = kwargs['iface_dataset']
+        iface_dataset = kwargs['iface_dataset'].rstrip("/")
 
         if iface_dataset not in endpoint_map:
             raise ObjectDoesNotExist("no such dataset: %s" % iface_dataset)
 
+        oidset = iface.device.oidsets.get(name=endpoint_map[iface_dataset][1])
 
         obj = InterfaceDataObject()
         obj.datapath = endpoint_map[iface_dataset]

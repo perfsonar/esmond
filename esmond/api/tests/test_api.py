@@ -333,6 +333,21 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2][0], 60)
         self.assertEquals(data['data'][2][1], 40)
 
+        # make sure it works with a trailing slash too
+        url = '/v1/device/rtr_c/interface/xe-3_0_0/out/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(int(data['agg']), 30)
+        self.assertEquals(data['resource_uri'], url.rstrip("/"))
+        self.assertEquals(data['data'][2][0], 60)
+        self.assertEquals(data['data'][2][1], 40)
+
+
     def test_get_device_interface_data_detail_hidden(self):
         url = '/v1/device/rtr_a/interface/xe-1_0_0/in'
         response = self.client.get(url)
