@@ -148,7 +148,7 @@ def main():
         p.join()
         retval = p.q.get()
         if retval[0].find('got error') > -1:
-            print retval[0]
+            print retval[0], retval[1]
             continue
         if len(retval[2]['data']): data_found += 1
         resp = retval[0]
