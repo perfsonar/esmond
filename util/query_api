@@ -4,7 +4,9 @@ import json
 from multiprocessing import Process, Queue
 from optparse import OptionParser
 import os
+import pprint
 import random
+import re
 import requests
 import sys
 import time
@@ -26,9 +28,7 @@ class fetchProcess(Process):
         self.url = None
 
     def return_name(self):
-        s = '{0} - {1} in {2}'.format(
-            self.name, self.url, 
-            self.duration)
+        s = '{0} in {1}'.format(self.name, self.duration)
         if self.status != 200:
             s += ' - got error {0}'.format(self.text)
         else:
@@ -46,12 +46,12 @@ class fetchProcess(Process):
         self.duration = r.elapsed
         self.text = json.loads(r.text)
         self.status = r.status_code
-        self.q.put(self.return_name())
+        self.q.put((self.return_name(),self.url,self.text))
 
 processes = []
 
 def main():
-    usage = '%prog [ -H hostname | -p # clients | -d randint delay | -a agg secs | -c cf ]'
+    usage = '%prog [ -H hostname | -p # clients | -d randint delay | -a agg secs | -c cf  | -v or -vv ]'
     parser = OptionParser(usage=usage)
     parser.add_option('-H', '--hostname', metavar='HOST',
             type='string', dest='hostname', 
@@ -68,6 +68,9 @@ def main():
     parser.add_option('-c', '--cf', metavar='CF',
             type='string', dest='cf', default=None,
             help='Select consolidation function (min/max/average).')
+    parser.add_option('-v', '--verbose',
+            dest='verbose', action='count', default=False,
+            help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
 
     if options.cf and options.cf not in AGG_TYPES:
@@ -79,6 +82,8 @@ def main():
         print 'must specify --agg arg when using --cf flag'
         parser.print_help()
         return 1
+
+    pp = pprint.PrettyPrinter(indent=4)
 
     workers = []
 
@@ -111,7 +116,8 @@ def main():
                 data = json.loads(r.text)
                 if data['children']:
                     for c in data['children']:
-                        if c['name'] == 'in' or c['name'] == 'out':
+                        if c['name'].endswith('in') or \
+                            c['name'].endswith('out'):
                             traffic_uris.append(c['uri'])
             
         print 'gathered {0} traffic uris'.format(len(traffic_uris))
@@ -123,7 +129,7 @@ def main():
             options.agg, options.cf)
         processes.append(p)
 
-    print 'launching {0} client processes'.format(len(processes))
+    print 'launching {0} client processes...'.format(len(processes)),
 
     data_found = 0
 
@@ -131,11 +137,21 @@ def main():
     for p in processes:
         p.start()
 
+    print 'go!'
+
     for p in processes:
         p.join()
         retval = p.q.get()
-        if retval.endswith('found data'): data_found += 1
-        print retval
+        if len(retval[2]['data']): data_found += 1
+        resp = retval[0]
+        if options.verbose >= 1:
+            m = re.match('(http[\S]*device)(/[\S]+)*', retval[1])
+            resp += ' ' + m.group(2)
+        print resp
+        if options.verbose >= 2 and len(retval[2]['data']):
+            print '=' * 20
+            pp.pprint(retval[2])
+            print '=' * 20
 
     print 'fetched {0} endpoints in {1} seconds - {2} with data'.format(
             options.processes, 
