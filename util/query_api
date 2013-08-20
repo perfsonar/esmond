@@ -74,6 +74,9 @@ def main():
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
             help='Set time range to last n hours. If unset, api defaults to last hour.')
+    parser.add_option('-f', '--filter',
+            dest='filter', action='store_true', default=False,
+            help='Filter to theoreticaly high traffic devices (ending in -cr5).')
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
@@ -103,6 +106,9 @@ def main():
         r.headers['content-type'] == 'application/json':
         data = json.loads(r.text)
         for i in data:
+            if not i['name'].endswith('-cr5') and options.filter:
+                # continue
+                pass
             for ii in i['children']:
                 if ii['name'] != 'interface':
                     continue
@@ -116,7 +122,7 @@ def main():
             for i in data['children']:
                 interface_uris.append(i['resource_uri'])
 
-        for interface in random.sample(interface_uris, options.processes):
+        for interface in random.sample(interface_uris, len(interface_uris)):
             if len(traffic_uris) >= options.processes:
                 break
             r = requests.get('http://{0}/{1}/'.format(options.hostname, interface))
