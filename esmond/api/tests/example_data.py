@@ -45,6 +45,8 @@ def build_default_metadata():
             oid_set=OIDSet.objects.get(name="FastPollHC")).save()
     DeviceOIDSetMap(device=td.rtr_a,
             oid_set=OIDSet.objects.get(name="Errors")).save()
+    DeviceOIDSetMap(device=td.rtr_a,
+            oid_set=OIDSet.objects.get(name="IfRefPoll")).save()
 
     rtr_b_begin = make_aware(datetime.datetime(2013,6,1), utc)
     rtr_b_end = make_aware(datetime.datetime(2013,6,15), utc)
