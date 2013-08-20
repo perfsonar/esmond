@@ -97,7 +97,7 @@ def main():
     interface_uris = []
     traffic_uris = []
 
-    r = requests.get('http://{0}/v1/device/'.format(options.hostname))
+    r = requests.get('http://{0}/v1/device/?limit=0'.format(options.hostname))
 
     if r.status_code == 200 and \
         r.headers['content-type'] == 'application/json':
@@ -108,13 +108,15 @@ def main():
                     continue
                 device_uris.append(ii['uri'])
 
-        for device in device_uris:
+        for device in random.sample(device_uris, len(device_uris)):
+            if len(interface_uris) > options.processes:
+                break
             r = requests.get('http://{0}/{1}/'.format(options.hostname, device))
             data = json.loads(r.text)
             for i in data['children']:
                 interface_uris.append(i['resource_uri'])
 
-        for interface in interface_uris:
+        for interface in random.sample(interface_uris, options.processes):
             if len(traffic_uris) >= options.processes:
                 break
             r = requests.get('http://{0}/{1}/'.format(options.hostname, interface))
@@ -129,7 +131,7 @@ def main():
         print 'gathered {0} traffic uris'.format(len(traffic_uris))
     else:
         print 'got bad response'
-
+    
     for u in traffic_uris[0:options.processes]:
         p = fetchProcess(Queue(), options.hostname, u, options.delay, 
             options.agg, options.cf, options.last)
