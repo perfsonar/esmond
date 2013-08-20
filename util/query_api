@@ -34,7 +34,8 @@ class fetchProcess(Process):
             s += ' - got error {0}'.format(self.text)
         else:
             if len(self.text['data']):
-                s += ' found data'
+                m = re.match('/v1/device/([\S]*)/interface', self.uri)
+                s += ' found data: {0}'.format(m.group(1))
         return s
 
     def run(self):
