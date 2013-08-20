@@ -73,7 +73,7 @@ def main():
             help='Select consolidation function (min/max/average).')
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
-            help='Set time range to last n hours.')
+            help='Set time range to last n hours. If unset, api defaults to last hour.')
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
