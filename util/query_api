@@ -1,5 +1,29 @@
 #!/usr/bin/env python
 
+"""
+Examples:
+
+query_api -p 120 : query 120 endpoints in order returned by api.
+
+query_api -p 200 -r -a 3600 -v : query 200 random hourly endpoints and
+    include shortened query uri in output.
+
+query_api -r -a 3600 -c max -vv : query default number of random hourly 
+    max aggregation endpoints and dump returned data to the output.
+
+query_api -D cygnus-lbl : dump all interface endpoints from device 
+    cygnus-lbl.
+
+query_api -D esnet-lsw5 -E in : dump all incoming data (including error 
+    and discard) endpoints from device esnet-lsw5.
+
+query_api -D esnet-lsw5 -E traffic : dump all traffic (/in and /out)
+    endpoints from device esnet-lsw5.
+
+See query_api -h for all options.
+
+"""
+
 import json
 from multiprocessing import Process, Queue
 from optparse import OptionParser
