@@ -11,14 +11,14 @@ query_api -p 200 -r -a 3600 -v : query 200 random hourly endpoints and
 query_api -r -a 3600 -c max -vv : query default number of random hourly 
     max aggregation endpoints and dump returned data to the output.
 
-query_api -D cygnus-lbl : dump all interface endpoints from device 
-    cygnus-lbl.
+query_api -D sunn-ar1 : dump all interface endpoints from device 
+    sunn-ar1.
 
-query_api -D esnet-lsw5 -E in : dump all incoming data (including error 
-    and discard) endpoints from device esnet-lsw5.
+query_api -D lbl-mr2 -E in : dump all incoming data (including error 
+    and discard) endpoints from device lbl-mr2.
 
-query_api -D esnet-lsw5 -E traffic : dump all traffic (/in and /out)
-    endpoints from device esnet-lsw5.
+query_api -D lbl-mr2 -E traffic : dump all traffic (/in and /out)
+    endpoints from device lbl-mr2.
 
 See query_api -h for all options.
 
