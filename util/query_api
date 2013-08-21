@@ -143,12 +143,15 @@ class RequestGenerator(object):
             return True
         if self.device_filter and not data['name'] == self.device_filter:
             if not self.filter_warning:
-                print 'Filtering on device {0} - skipping process limits'.format(data['name'])
+                print 'Filtering on device {0} - skipping process limits'.format(self.device_filter)
                 self.filter_warning = True
             return True
         return False
 
     def _generate_devices(self):
+
+        if len(self.device_uris): return # only do it once
+
         r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname))
 
         if r.status_code == 200 and \
@@ -193,6 +196,11 @@ class RequestGenerator(object):
                             self.endpoint_uris.append(c['uri'])
 
         # return self.endpoint_uris[0:self.process_limit]
+
+    def get_device_list(self):
+        self._generate_devices()
+        for d in self.device_uris:
+            yield d.split('/')[3]
 
     def get_endpoint_list(self):
         self._generate_devices()
@@ -240,6 +248,9 @@ def main():
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
+    parser.add_option('-L', '--list',
+            dest='list', action='store_true', default=False,
+            help='Dump list of devices to output and exit.')
     options, args = parser.parse_args()
 
     if options.cf and options.cf not in AGG_TYPES:
@@ -261,6 +272,12 @@ def main():
 
     rgen = RequestGenerator(options.hostname, options.processes,
         options.randomize, options.intercloud, options.device)
+
+    if options.list:
+        print 'Dumping device list and exiting'
+        for d in rgen.get_device_list():
+            print d
+        return 0
 
     endpoint_uris = rgen.get_endpoint_list()
     
