@@ -112,19 +112,23 @@ class ResponseContainer(object):
 
 
 class RequestGenerator(object):
+    endpoint_keywords = ['all', 'traffic', 'discard', 'error', 'in', 'out']
+
     def __init__(self, hostname, process_limit, randomize, intercloud,
-        device_filter):
+        device_filter, endpoint_filter):
         self.hostname = hostname
         self.process_limit = process_limit
         self.randomize = randomize
         self.intercloud = intercloud
         self.device_filter = device_filter
+        self.endpoint_filter = endpoint_filter
 
         self.device_uris = []
         self.interface_uris = []
         self.endpoint_uris = []
 
         self.filter_warning = False
+        self.endpoint_filters = {}
 
     def _limit_exceeded(self, content):
         if self.device_filter:
@@ -183,6 +187,28 @@ class RequestGenerator(object):
 
         # return self.interface_uris
 
+    def _filter_endpoints(self, name):
+        if not self.endpoint_filters:
+            traffic = ['in', 'out']
+            discard = ['discard/in', 'discard/out']
+            errors  = ['error/in', 'error/out']
+
+            all_endpoints = [traffic,discard,errors]
+
+            self.endpoint_filters = {
+                'all': traffic + discard + errors,
+                'traffic': traffic,
+                'discard': discard,
+                'error': errors,
+                'in': [i[0] for i in all_endpoints],
+                'out': [i[1] for i in all_endpoints],
+            }
+
+        if name not in self.endpoint_filters[self.endpoint_filter]:
+            return True
+
+        return False
+
     def _generate_endpoints(self):
         for interface in self.interface_uris:
             if self._limit_exceeded(self.endpoint_uris): break
@@ -191,9 +217,9 @@ class RequestGenerator(object):
                 data = json.loads(r.text)
                 if data['children']:
                     for c in data['children']:
-                        if c['name'].endswith('in') or \
-                            c['name'].endswith('out'):
-                            self.endpoint_uris.append(c['uri'])
+                        if self._filter_endpoints(c['name']):
+                            continue
+                        self.endpoint_uris.append(c['uri'])
 
         # return self.endpoint_uris[0:self.process_limit]
 
@@ -236,21 +262,26 @@ def main():
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
             help='Set optional time range to last n hours. If unset, api defaults to last hour.')
-    parser.add_option('-i', '--intercloud',
+    parser.add_option('-r', '--randomize',
+            dest='randomize', action='store_true', default=False,
+            help='Randomize endpoint list to get heterogenous results (default=%default).')
+    parser.add_option('-I', '--intercloud',
             dest='intercloud', action='store_true', default=False,
             help='Filter to intercloud devices (ending in -cr5).')
     parser.add_option('-D', '--device', metavar='DEVICE',
             type='string', dest='device', default='',
-            help='Device name to filter on.')
-    parser.add_option('-r', '--randomize',
-            dest='randomize', action='store_true', default=False,
-            help='Randomize endpoint list to get heterogenous results (default=%default).')
-    parser.add_option('-v', '--verbose',
-            dest='verbose', action='count', default=False,
-            help='Verbose output - -v, -vv, etc.')
+            help='Device name to filter on (lbl-mr2, etc).')
+    parser.add_option('-E', '--endpoint', metavar='ENDPOINT',
+            type='string', dest='endpoint', default='all',
+            help='Endpoint type to filter on ' + \
+            str(tuple(i for i in RequestGenerator.endpoint_keywords)) + \
+            ' (default=%default).')
     parser.add_option('-L', '--list',
             dest='list', action='store_true', default=False,
             help='Dump list of devices to output and exit.')
+    parser.add_option('-v', '--verbose',
+            dest='verbose', action='count', default=False,
+            help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
 
     if options.cf and options.cf not in AGG_TYPES:
@@ -268,10 +299,17 @@ def main():
         parser.print_help()
         return 1
 
+    if options.endpoint != all and \
+        options.endpoint not in RequestGenerator.endpoint_keywords:
+        print 'invalid option {0} for endpoint filter'.format(options.endpoint)
+        parser.print_help()
+        return 1
+
     endpoint_uris = []
 
     rgen = RequestGenerator(options.hostname, options.processes,
-        options.randomize, options.intercloud, options.device)
+        options.randomize, options.intercloud, options.device,
+        options.endpoint)
 
     if options.list:
         print 'Dumping device list and exiting'
@@ -311,7 +349,7 @@ def main():
             data_found
         )
 
-    sys.exit()
+    return 0
 
 if __name__ == '__main__':
     main()
