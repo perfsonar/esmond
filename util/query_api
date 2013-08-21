@@ -284,26 +284,30 @@ def main():
             help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
 
+    arg_error = False
+
     if options.cf and options.cf not in AGG_TYPES:
         print '--cf flag must be one of {0}'.format(AGG_TYPES)
-        parser.print_help()
-        return 1
+        arg_error = True
 
     if options.cf and not options.agg:
         print 'must specify --agg arg when using --cf flag'
-        parser.print_help()
-        return 1
+        arg_error = True
 
     if options.intercloud and options.device:
         print 'specify either --intercloud or --device filter'
-        parser.print_help()
-        return 1
+        arg_error = True
 
     if options.endpoint != all and \
         options.endpoint not in RequestGenerator.endpoint_keywords:
         print 'invalid option {0} for endpoint filter'.format(options.endpoint)
+        arg_error = True
+
+    if arg_error:
         parser.print_help()
         return 1
+
+    # Done parsing args
 
     endpoint_uris = []
 
