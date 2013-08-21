@@ -64,6 +64,16 @@ def build_default_metadata():
     DeviceOIDSetMap(device=td.rtr_c,
             oid_set=OIDSet.objects.get(name="InfFastPollHC")).save()
 
+    td.rtr_alu, _ = Device.objects.get_or_create(
+            name="rtr_alu",
+            community="public",
+            begin_time=now())
+
+    DeviceOIDSetMap(device=td.rtr_alu,
+            oid_set=OIDSet.objects.get(name="ALUFastPollHC")).save()
+    DeviceOIDSetMap(device=td.rtr_alu,
+            oid_set=OIDSet.objects.get(name="ALUErrors")).save()
+
     td.rtr_z_post_data = {
         "name": "rtr_z",
         "community": "private",
@@ -135,6 +145,20 @@ def build_default_metadata():
             ifDescr="xe-3/0/0",
             ifAlias="test interface",
             ipAddr="10.0.0.3",
+            ifSpeed=0,
+            ifHighSpeed=10000,
+            ifMtu=9000,
+            ifOperStatus=1,
+            ifAdminStatus=1,
+            ifPhysAddress="00:00:00:00:00:00")
+
+    IfRef.objects.get_or_create(
+            device=td.rtr_alu,
+            begin_time=td.rtr_c.begin_time,
+            ifIndex=1,
+            ifDescr="3/1/1",
+            ifAlias="test interface",
+            ipAddr="10.0.0.4",
             ifSpeed=0,
             ifHighSpeed=10000,
             ifMtu=9000,

@@ -35,20 +35,20 @@ class DeviceAPITests(DeviceAPITestsBase):
 
         # by default only currently active devices are returned
         data = json.loads(response.content)
-        self.assertEquals(len(data), 2)
+        self.assertEquals(len(data), 3)
 
         # get all three devices, with date filters
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         response = self.client.get(url, dict(begin=begin))
         data = json.loads(response.content)
-        self.assertEquals(len(data), 3)
+        self.assertEquals(len(data), 4)
 
         # exclude rtr_b by date
 
         begin = datetime_to_timestamp(self.td.rtr_a.begin_time)
         response = self.client.get(url, dict(begin=begin))
         data = json.loads(response.content)
-        self.assertEquals(len(data), 2)
+        self.assertEquals(len(data), 3)
         for d in data:
             self.assertNotEqual(d['name'], 'rtr_b')
 
@@ -144,46 +144,65 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(len(data['children']), 1)
         self.assertEquals(data['children'][0]['ifDescr'], 'xe-1/0/0')
 
-    def test_get_device_interface_detail(self):
-        url = '/v1/device/rtr_a/interface/xe-0_0_0/'
+        url = '/v1/device/rtr_alu/interface/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
-        self.assertEquals(data['ifDescr'], 'xe-0/0/0')
 
-        for field in [
-                'begin_time',
-                'children',
-                'device_uri',
-                'end_time',
-                'ifAlias',
-                'ifDescr',
-                'ifHighSpeed',
-                'ifIndex',
-                'ifSpeed',
-                'ipAddr',
-                'leaf',
-                'uri',
-            ]:
-            self.assertIn(field, data)
+        # print json.dumps(data, indent=4)
 
-        children = {}
-        for child in data['children']:
-            children[child['name']] = child
-            for field in ['leaf','name','uri']:
-                self.assertIn(field, child)
+        self.assertEquals(len(data['children']), 1)
+        self.assertEquals(data['children'][0]['ifDescr'], '3/1/1')
 
-        for oidset in Device.objects.get(name='rtr_a').oidsets.all():
-            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
-                continue
+    def test_get_device_interface_detail(self):
+        for device, iface in (
+                ('rtr_a', 'xe-0_0_0'),
+                ('rtr_alu', '3_1_1'),
+            ):
 
-            for child_name in OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys():
-                self.assertIn(child_name , children)
-                child = children[child_name]
-                self.assertEqual(child['uri'], url + child_name)
-                self.assertTrue(child['leaf'])
+            url = '/v1/device/{0}/interface/{1}/'.format(device, iface)
+
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+
+            data = json.loads(response.content)
+            self.assertEquals(data['ifDescr'], iface.replace("_", "/"))
+
+            for field in [
+                    'begin_time',
+                    'children',
+                    'device_uri',
+                    'end_time',
+                    'ifAlias',
+                    'ifDescr',
+                    'ifHighSpeed',
+                    'ifIndex',
+                    'ifSpeed',
+                    'ipAddr',
+                    'leaf',
+                    'uri',
+                ]:
+                self.assertIn(field, data)
+
+            self.assertNotEqual(len(data['children']), 0)
+
+            children = {}
+            for child in data['children']:
+                children[child['name']] = child
+                for field in ['leaf','name','uri']:
+                    self.assertIn(field, child)
+
+            for oidset in Device.objects.get(name=device).oidsets.all():
+                if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
+                    continue
+
+                for child_name in OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys():
+                    self.assertIn(child_name , children)
+                    child = children[child_name]
+                    self.assertEqual(child['uri'], url + child_name)
+                    self.assertTrue(child['leaf'])
 
     def test_get_device_interface_list_hidden(self):
         url = '/v1/device/rtr_a/interface/'

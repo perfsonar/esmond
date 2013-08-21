@@ -43,7 +43,13 @@ except ConnectionException, e:
         raise ConnectionException(str(e))
 
 OIDSET_INTERFACE_ENDPOINTS = {
-    'FastPollHC': {
+    'ALUErrors': {
+        'error/in': 'ifInErrors',
+        'error/out': 'ifOutErrors',
+        'discard/in': 'ifInDiscards',
+        'discard/out': 'ifOutDiscards',
+    },
+    'ALUFastPollHC': {
         'in': 'ifHCInOctets',
         'out': 'ifHCOutOctets',
     },
@@ -52,6 +58,10 @@ OIDSET_INTERFACE_ENDPOINTS = {
         'error/out': 'ifOutErrors',
         'discard/in': 'ifInDiscards',
         'discard/out': 'ifOutDiscards',
+    },
+    'FastPollHC': {
+        'in': 'ifHCInOctets',
+        'out': 'ifHCOutOctets',
     },
     'InfFastPollHC': {
         'in': 'gigeClientCtpPmRealInOctets',
