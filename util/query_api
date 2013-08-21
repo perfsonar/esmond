@@ -66,33 +66,36 @@ class FetchProcess(Process):
         self.q.put(self.generate_output())
 
 class RequestGenerator(object):
-    def __init__(self, hostname, process_limit, randomize=False):
+    def __init__(self, hostname, process_limit, intercloud, randomize):
         self.hostname = hostname
         self.process_limit = process_limit
+        self.intercloud = intercloud
         self.randomize = randomize
 
         self.device_uris = []
         self.interface_uris = []
         self.endpoint_uris = []
 
-    def generate_devices(self, device_filter):
+    def _generate_devices(self):
         r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname))
 
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             for i in data:
-                if not i['name'].endswith('-cr5') and device_filter:
-                    # continue
-                    pass
+                if not i['name'].endswith('-cr5') and self.intercloud:
+                    continue
                 for ii in i['children']:
                     if ii['name'] != 'interface':
                         continue
                     self.device_uris.append(ii['uri'])
 
-        return self.device_uris
+        if self.randomize: 
+            self.device_uris = random.sample(self.device_uris, len(self.device_uris))
 
-    def generate_interfaces(self):
+        # return self.device_uris
+
+    def _generate_interfaces(self):
         for device in self.device_uris:
             if len(self.interface_uris) > self.process_limit:
                 break
@@ -101,9 +104,12 @@ class RequestGenerator(object):
             for i in data['children']:
                 self.interface_uris.append(i['resource_uri'])
 
-        return self.interface_uris
+        if self.randomize:
+            self.interface_uris = random.sample(self.interface_uris, len(self.interface_uris))
 
-    def generate_endpoints(self):
+        # return self.interface_uris
+
+    def _generate_endpoints(self):
         for interface in self.interface_uris:
             if len(self.endpoint_uris) >= self.process_limit:
                 break
@@ -115,6 +121,13 @@ class RequestGenerator(object):
                         if c['name'].endswith('in') or \
                             c['name'].endswith('out'):
                             self.endpoint_uris.append(c['uri'])
+
+        # return self.endpoint_uris[0:self.process_limit]
+
+    def get_endpoint_list(self):
+        self._generate_devices()
+        self._generate_interfaces()
+        self._generate_endpoints()
 
         return self.endpoint_uris[0:self.process_limit]
 
@@ -142,9 +155,12 @@ def main():
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
             help='Set time range to last n hours. If unset, api defaults to last hour.')
-    parser.add_option('-f', '--filter',
-            dest='filter', action='store_true', default=False,
-            help='Filter to theoreticaly high traffic devices (ending in -cr5).')
+    parser.add_option('-i', '--intercloud',
+            dest='intercloud', action='store_true', default=False,
+            help='Filter to intercloud devices (ending in -cr5).')
+    parser.add_option('-r', '--randomize',
+            dest='randomize', action='store_true', default=False,
+            help='Randomize endpoint list to get heterogenous results.')
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
@@ -162,24 +178,19 @@ def main():
 
     pp = pprint.PrettyPrinter(indent=4)
 
-    workers = []
-
-    device_uris = []
-    interface_uris = []
     endpoint_uris = []
 
-    rgen = RequestGenerator(options.hostname, options.processes)
+    rgen = RequestGenerator(options.hostname, options.processes,
+        options.intercloud, options.randomize)
 
-    device_uris = rgen.generate_devices(options.filter)
-    interface_uris = rgen.generate_interfaces()
-    endpoint_uris = rgen.generate_endpoints()
+    endpoint_uris = rgen.get_endpoint_list()
     
     for u in endpoint_uris:
         p = FetchProcess(Queue(), options.hostname, u, options.delay, 
             options.agg, options.cf, options.last)
         processes.append(p)
 
-    print 'launching {0} client processes...'.format(len(processes)),
+    print 'launching {0} client processes...'.format(len(endpoint_uris)),
 
     data_found = 0
 
@@ -206,7 +217,7 @@ def main():
             print '=' * 20
 
     print 'fetched {0} endpoints in {1} seconds - {2} with data'.format(
-            options.processes, 
+            len(endpoint_uris), 
             time.time() - t,
             data_found
         )
