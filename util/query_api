@@ -39,24 +39,14 @@ class FetchProcess(Process):
         self.url = None
 
     def generate_output(self):
-        s = '{0} in {1}'.format(self.name, self.duration)
-        if self.status != 200:
-            if self.status == 404:
-                s += ' - 404 {0}'.format(self.url.get_shortened_request())
-            else:
-                s += ' - got error {0}'.format(self.text)
-        else:
-            if self.text.strip(): self.text = json.loads(self.text)
-            if len(self.text['data']):
-                s += ' found data: {0}'.format(self.url.get_device())
-        
-        return (s, self.url, self.text)
+        s = '{0} in {1}'.format(self.name, self.duration)        
+        return (s, self.url, self.status, self.text)
 
     def run(self):
         p = {}
         if self.agg: p['agg'] = self.agg
         if self.cf: p['cf'] = self.cf
-        if self.last: p['begin'] = time.time() - (self.last*60*60)
+        if self.last: p['begin'] = int(time.time() - (self.last*60*60))
         time.sleep(random.randint(0, self.delay))
         r = requests.get('http://{0}{1}'.format(self.host, self.uri), params=p)
         self.url = UrlContainer(r.url)
@@ -64,6 +54,62 @@ class FetchProcess(Process):
         self.status = r.status_code
         self.text = r.text
         self.q.put(self.generate_output())
+
+class ResponseContainer(object):
+    def __init__(self, message, url, status, data, verbose):
+        self.message = message
+        self.url = url
+        self.status = status
+        self.data = data
+        self.verbose = verbose
+
+        if self.data.strip(): self.data = json.loads(self.data)
+
+        self.pp = pprint.PrettyPrinter(indent=4)
+
+    @property
+    def is_error(self):
+        return True if self.status != 200 else False
+
+    @property
+    def error_message(self):
+        s = '{0} - '.format(self.message)
+        if self.status == 404:
+            s += '404 for endpoint:'
+        else:
+            s += 'got error {0}'.format(self.data)
+        s += ' ' + self.url.get_shortened_request()
+
+        return s
+
+    @property
+    def has_data(self):
+        if isinstance(self.data, dict) and self.data.has_key('data') \
+            and len(self.data['data']):
+            return True
+        return False
+
+    @property
+    def response_text(self):
+        m = self.message
+
+        if self.has_data and self.verbose < 2:
+            # note that data was found unless dumping payload
+            m += ' data found {0}'.format(self.url.get_device())
+
+        if self.verbose >= 1:
+            # add shortened request uri for context
+            m += ' ' + self.url.get_shortened_request()
+
+        if self.verbose >= 2 and self.has_data:
+            # add actual data payload
+            i = 10
+            m += '\nHad data:\n'
+            m += self.pp.pformat(self.data)
+            m += '\n' + '-' * 20
+
+        return m
+
 
 class RequestGenerator(object):
     def __init__(self, hostname, process_limit, intercloud, randomize):
@@ -176,8 +222,6 @@ def main():
         parser.print_help()
         return 1
 
-    pp = pprint.PrettyPrinter(indent=4)
-
     endpoint_uris = []
 
     rgen = RequestGenerator(options.hostname, options.processes,
@@ -202,19 +246,12 @@ def main():
 
     for p in processes:
         p.join()
-        retval = p.q.get()
-        if retval[0].find('got error') > -1:
-            print retval[0], retval[1]
+        r = ResponseContainer(*p.q.get(), verbose=options.verbose)
+        if r.is_error:
+            print r.error_message
             continue
-        if retval[2] and len(retval[2]['data']): data_found += 1
-        resp = retval[0]
-        if options.verbose >= 1:
-            resp += ' ' + retval[1].get_shortened_request()
-        print resp
-        if options.verbose >= 2 and len(retval[2]['data']):
-            print '=' * 20
-            pp.pprint(retval[2])
-            print '=' * 20
+        if r.has_data: data_found += 1
+        print r.response_text
 
     print 'fetched {0} endpoints in {1} seconds - {2} with data'.format(
             len(endpoint_uris), 
