@@ -112,15 +112,41 @@ class ResponseContainer(object):
 
 
 class RequestGenerator(object):
-    def __init__(self, hostname, process_limit, intercloud, randomize):
+    def __init__(self, hostname, process_limit, randomize, intercloud,
+        device_filter):
         self.hostname = hostname
         self.process_limit = process_limit
-        self.intercloud = intercloud
         self.randomize = randomize
+        self.intercloud = intercloud
+        self.device_filter = device_filter
 
         self.device_uris = []
         self.interface_uris = []
         self.endpoint_uris = []
+
+        self.filter_warning = False
+
+    def _limit_exceeded(self, content):
+        if self.device_filter:
+            return False
+        elif len(content) >= self.process_limit:
+            return True
+        else:
+            return False
+
+    def _filter_device(self, data):
+        """Apply message filters"""
+        if self.intercloud and not data['name'].endswith('-cr5'):
+            if not self.filter_warning:
+                print 'Filtering on intercloud devices'
+                self.filter_warning = True
+            return True
+        if self.device_filter and not data['name'] == self.device_filter:
+            if not self.filter_warning:
+                print 'Filtering on device {0} - skipping process limits'.format(data['name'])
+                self.filter_warning = True
+            return True
+        return False
 
     def _generate_devices(self):
         r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname))
@@ -129,7 +155,7 @@ class RequestGenerator(object):
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             for i in data:
-                if not i['name'].endswith('-cr5') and self.intercloud:
+                if self._filter_device(i):
                     continue
                 for ii in i['children']:
                     if ii['name'] != 'interface':
@@ -143,8 +169,7 @@ class RequestGenerator(object):
 
     def _generate_interfaces(self):
         for device in self.device_uris:
-            if len(self.interface_uris) > self.process_limit:
-                break
+            if self._limit_exceeded(self.interface_uris): break
             r = requests.get('http://{0}/{1}/'.format(self.hostname, device))
             data = json.loads(r.text)
             for i in data['children']:
@@ -157,8 +182,7 @@ class RequestGenerator(object):
 
     def _generate_endpoints(self):
         for interface in self.interface_uris:
-            if len(self.endpoint_uris) >= self.process_limit:
-                break
+            if self._limit_exceeded(self.endpoint_uris): break
             r = requests.get('http://{0}/{1}/'.format(self.hostname, interface))
             if r.status_code == 200:
                 data = json.loads(r.text)
@@ -175,13 +199,16 @@ class RequestGenerator(object):
         self._generate_interfaces()
         self._generate_endpoints()
 
-        return self.endpoint_uris[0:self.process_limit]
+        if self.device_filter:
+            return self.endpoint_uris
+        else:
+            return self.endpoint_uris[0:self.process_limit]
 
 
 processes = []
 
 def main():
-    usage = '%prog [ -H hostname | -p # clients | -d randint delay | -a agg secs | -c cf  | -v or -vv ]'
+    usage = '%prog [ options ]'
     parser = OptionParser(usage=usage)
     parser.add_option('-H', '--hostname', metavar='HOST',
             type='string', dest='hostname', 
@@ -200,13 +227,16 @@ def main():
             help='Select consolidation function (min/max/average).')
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
-            help='Set time range to last n hours. If unset, api defaults to last hour.')
+            help='Set optional time range to last n hours. If unset, api defaults to last hour.')
     parser.add_option('-i', '--intercloud',
             dest='intercloud', action='store_true', default=False,
             help='Filter to intercloud devices (ending in -cr5).')
+    parser.add_option('-D', '--device', metavar='DEVICE',
+            type='string', dest='device', default='',
+            help='Device name to filter on.')
     parser.add_option('-r', '--randomize',
             dest='randomize', action='store_true', default=False,
-            help='Randomize endpoint list to get heterogenous results.')
+            help='Randomize endpoint list to get heterogenous results (default=%default).')
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
@@ -222,10 +252,15 @@ def main():
         parser.print_help()
         return 1
 
+    if options.intercloud and options.device:
+        print 'specify either --intercloud or --device filter'
+        parser.print_help()
+        return 1
+
     endpoint_uris = []
 
     rgen = RequestGenerator(options.hostname, options.processes,
-        options.intercloud, options.randomize)
+        options.randomize, options.intercloud, options.device)
 
     endpoint_uris = rgen.get_endpoint_list()
     
