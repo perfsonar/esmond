@@ -13,9 +13,19 @@ import time
 
 from esmond.cassandra import AGG_TYPES
 
-class fetchProcess(Process):
+class UrlContainer(object):
+    def __init__(self, url):
+        self.url = url
+
+    def get_device(self):
+        return self.url.split('/')[5]
+
+    def get_shortened_request(self):
+        return '/'.join(self.url.split('/')[5:])
+
+class FetchProcess(Process):
     def __init__(self, q, host, uri, delay, agg=None, cf=None, last=None):
-        super(fetchProcess, self).__init__()
+        super(FetchProcess, self).__init__()
         self.q = q
         self.host = host
         self.uri = uri
@@ -28,15 +38,19 @@ class fetchProcess(Process):
         self.status = None
         self.url = None
 
-    def return_name(self):
+    def generate_output(self):
         s = '{0} in {1}'.format(self.name, self.duration)
         if self.status != 200:
-            s += ' - got error {0}'.format(self.text)
+            if self.status == 404:
+                s += ' - 404 {0}'.format(self.url.get_shortened_request())
+            else:
+                s += ' - got error {0}'.format(self.text)
         else:
+            if self.text.strip(): self.text = json.loads(self.text)
             if len(self.text['data']):
-                m = re.match('/v1/device/([\S]*)/interface', self.uri)
-                s += ' found data: {0}'.format(m.group(1))
-        return s
+                s += ' found data: {0}'.format(self.url.get_device())
+        
+        return (s, self.url, self.text)
 
     def run(self):
         p = {}
@@ -45,11 +59,65 @@ class fetchProcess(Process):
         if self.last: p['begin'] = time.time() - (self.last*60*60)
         time.sleep(random.randint(0, self.delay))
         r = requests.get('http://{0}{1}'.format(self.host, self.uri), params=p)
-        self.url = r.url
+        self.url = UrlContainer(r.url)
         self.duration = r.elapsed
-        self.text = json.loads(r.text)
         self.status = r.status_code
-        self.q.put((self.return_name(),self.url,self.text))
+        self.text = r.text
+        self.q.put(self.generate_output())
+
+class RequestGenerator(object):
+    def __init__(self, hostname, process_limit, randomize=False):
+        self.hostname = hostname
+        self.process_limit = process_limit
+        self.randomize = randomize
+
+        self.device_uris = []
+        self.interface_uris = []
+        self.endpoint_uris = []
+
+    def generate_devices(self, device_filter):
+        r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname))
+
+        if r.status_code == 200 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            for i in data:
+                if not i['name'].endswith('-cr5') and device_filter:
+                    # continue
+                    pass
+                for ii in i['children']:
+                    if ii['name'] != 'interface':
+                        continue
+                    self.device_uris.append(ii['uri'])
+
+        return self.device_uris
+
+    def generate_interfaces(self):
+        for device in self.device_uris:
+            if len(self.interface_uris) > self.process_limit:
+                break
+            r = requests.get('http://{0}/{1}/'.format(self.hostname, device))
+            data = json.loads(r.text)
+            for i in data['children']:
+                self.interface_uris.append(i['resource_uri'])
+
+        return self.interface_uris
+
+    def generate_endpoints(self):
+        for interface in self.interface_uris:
+            if len(self.endpoint_uris) >= self.process_limit:
+                break
+            r = requests.get('http://{0}/{1}/'.format(self.hostname, interface))
+            if r.status_code == 200:
+                data = json.loads(r.text)
+                if data['children']:
+                    for c in data['children']:
+                        if c['name'].endswith('in') or \
+                            c['name'].endswith('out'):
+                            self.endpoint_uris.append(c['uri'])
+
+        return self.endpoint_uris[0:self.process_limit]
+
 
 processes = []
 
@@ -98,48 +166,16 @@ def main():
 
     device_uris = []
     interface_uris = []
-    traffic_uris = []
+    endpoint_uris = []
 
-    r = requests.get('http://{0}/v1/device/?limit=0'.format(options.hostname))
+    rgen = RequestGenerator(options.hostname, options.processes)
 
-    if r.status_code == 200 and \
-        r.headers['content-type'] == 'application/json':
-        data = json.loads(r.text)
-        for i in data:
-            if not i['name'].endswith('-cr5') and options.filter:
-                # continue
-                pass
-            for ii in i['children']:
-                if ii['name'] != 'interface':
-                    continue
-                device_uris.append(ii['uri'])
-
-        for device in random.sample(device_uris, len(device_uris)):
-            if len(interface_uris) > options.processes:
-                break
-            r = requests.get('http://{0}/{1}/'.format(options.hostname, device))
-            data = json.loads(r.text)
-            for i in data['children']:
-                interface_uris.append(i['resource_uri'])
-
-        for interface in random.sample(interface_uris, len(interface_uris)):
-            if len(traffic_uris) >= options.processes:
-                break
-            r = requests.get('http://{0}/{1}/'.format(options.hostname, interface))
-            if r.status_code == 200:
-                data = json.loads(r.text)
-                if data['children']:
-                    for c in data['children']:
-                        if c['name'].endswith('in') or \
-                            c['name'].endswith('out'):
-                            traffic_uris.append(c['uri'])
-            
-        print 'gathered {0} traffic uris'.format(len(traffic_uris))
-    else:
-        print 'got bad response'
+    device_uris = rgen.generate_devices(options.filter)
+    interface_uris = rgen.generate_interfaces()
+    endpoint_uris = rgen.generate_endpoints()
     
-    for u in traffic_uris[0:options.processes]:
-        p = fetchProcess(Queue(), options.hostname, u, options.delay, 
+    for u in endpoint_uris:
+        p = FetchProcess(Queue(), options.hostname, u, options.delay, 
             options.agg, options.cf, options.last)
         processes.append(p)
 
@@ -159,11 +195,10 @@ def main():
         if retval[0].find('got error') > -1:
             print retval[0], retval[1]
             continue
-        if len(retval[2]['data']): data_found += 1
+        if retval[2] and len(retval[2]['data']): data_found += 1
         resp = retval[0]
         if options.verbose >= 1:
-            m = re.match('(http[\S]*device)(/[\S]+)*', retval[1])
-            resp += ' ' + m.group(2)
+            resp += ' ' + retval[1].get_shortened_request()
         print resp
         if options.verbose >= 2 and len(retval[2]['data']):
             print '=' * 20
