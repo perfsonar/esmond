@@ -160,6 +160,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         for device, iface in (
                 ('rtr_a', 'xe-0_0_0'),
                 ('rtr_alu', '3_1_1'),
+                ('rtr_inf', 'xe-3_0_0'),
             ):
 
             url = '/v1/device/{0}/interface/{1}/'.format(device, iface)
@@ -340,7 +341,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][1][0], 30)
         self.assertEquals(data['data'][1][1], 20)
 
-        url = '/v1/device/rtr_c/interface/xe-3_0_0/out'
+        url = '/v1/device/rtr_inf/interface/xe-3_0_0/out'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -356,7 +357,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2][1], 40)
 
         # make sure it works with a trailing slash too
-        url = '/v1/device/rtr_c/interface/xe-3_0_0/out/'
+        url = '/v1/device/rtr_inf/interface/xe-3_0_0/out/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)

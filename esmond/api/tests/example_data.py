@@ -26,7 +26,9 @@ def build_default_metadata():
 
     rtr_a -- basic, currently active router
     rtr_b -- basic, currently inactive router
-    rtr_c -- InfineraFastPollHC, currently active router
+
+    rtr_alu -- ALUFastPollHC and ALUErrors, currently active router
+    rtr_inf -- InfineraFastPollHC, currently active router
 
     The following users are created with API keys:
 
@@ -56,12 +58,12 @@ def build_default_metadata():
             begin_time = rtr_b_begin,
             end_time = rtr_b_end)
 
-    td.rtr_c, _ = Device.objects.get_or_create(
-            name="rtr_c",
+    td.rtr_inf, _ = Device.objects.get_or_create(
+            name="rtr_inf",
             community="public",
             begin_time=now())
 
-    DeviceOIDSetMap(device=td.rtr_c,
+    DeviceOIDSetMap(device=td.rtr_inf,
             oid_set=OIDSet.objects.get(name="InfFastPollHC")).save()
 
     td.rtr_alu, _ = Device.objects.get_or_create(
@@ -139,8 +141,8 @@ def build_default_metadata():
             end_time=rtr_b_begin + datetime.timedelta(days=7))
 
     IfRef.objects.get_or_create(
-            device=td.rtr_c,
-            begin_time=td.rtr_c.begin_time,
+            device=td.rtr_inf,
+            begin_time=td.rtr_inf.begin_time,
             ifIndex=1,
             ifDescr="xe-3/0/0",
             ifAlias="test interface",
@@ -154,7 +156,7 @@ def build_default_metadata():
 
     IfRef.objects.get_or_create(
             device=td.rtr_alu,
-            begin_time=td.rtr_c.begin_time,
+            begin_time=td.rtr_inf.begin_time,
             ifIndex=1,
             ifDescr="3/1/1",
             ifAlias="test interface",
