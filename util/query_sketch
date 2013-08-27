@@ -1,0 +1,282 @@
+#!/usr/bin/env python
+
+import datetime
+import json
+import os
+import pprint
+import requests
+import sys
+
+from optparse import OptionParser
+
+# - Encapsulation classes for nodes (device, interface, etc).
+
+class NodeInfo(object):
+    """Base class for encapsulation objects"""
+    def __init__(self, data, hostname):
+        super(NodeInfo, self).__init__()
+        self._data = data
+        self.hostname = hostname
+
+        self.pp = pprint.PrettyPrinter(indent=4)
+
+    def _convert_to_datetime(self, d):
+        """API returns both unix timestamps and ISO time so
+        normalize to datetime objects transparently"""
+        t = None
+        try:
+            i = int(d)
+            t = datetime.datetime.utcfromtimestamp(i)
+        except ValueError:
+            # Not an epoch timestamp
+            pass
+
+        if not t:
+            # Presume this is ISO time
+            t = datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%S.%f")
+
+        return t
+
+    # Properties for most subclasses
+    @property
+    def begin_time(self):
+        if self._data.get('begin_time', None):
+            return self._convert_to_datetime(self._data.get('begin_time'))
+        else:
+            return None
+
+    @property
+    def end_time(self):
+        if self._data.get('end_time', None):
+            return self._convert_to_datetime(self._data.get('end_time'))
+        else:
+            return None
+
+    @property
+    def id(self):
+        return self._data.get('id', None)
+
+    @property
+    def leaf(self):
+        return self._data.get('leaf', None)
+
+    @property
+    def resource_uri(self):
+        return self._data.get('resource_uri', None)
+
+    # Utility properties
+    @property
+    def dump(self):
+        return self.pp.pformat(self._data)
+
+
+class Device(NodeInfo):
+    """Class to encapsulate device information"""
+    def __init__(self, data, hostname):
+        super(Device, self).__init__(data, hostname)
+
+    # Property attrs unique to devices
+    @property
+    def active(self):
+        return self._data.get('active', None)
+
+    @property
+    def name(self):
+        return self._data.get('name', None)
+
+    # Fetch and filter data, etc
+    def _filter_interfaces(self, data):
+        return False
+
+    def get_interfaces(self):
+        uri = None
+        for c in self._data['children']:
+            if c['name'] == 'interface':
+                uri = c['uri']
+                break
+
+        if uri:
+            r = requests.get('http://{0}/{1}'.format(self.hostname, uri))
+
+            if r.status_code == 200 and \
+                r.headers['content-type'] == 'application/json':
+                data = json.loads(r.text)
+                for i in data['children']:
+                    if self._filter_interfaces(i):
+                        continue
+                    yield Interface(i, self.hostname)
+
+
+    def __repr__(self):
+        return '<Device/{0}: uri:{1}>'.format(self.name, self.resource_uri)
+
+
+class Interface(NodeInfo):
+    """Class to encapsulate interface information"""
+    def __init__(self, data, hostname):
+        super(Interface, self).__init__(data, hostname)
+
+    # Property attrs unique to interfaces
+    @property
+    def device(self):
+        return self._data.get('device', None)
+
+    @property
+    def ifAdminStatus(self):
+        return self._data.get('ifAdminStatus', None)
+
+    @property
+    def ifAlias(self):
+        return self._data.get('ifAlias', None)
+
+    @property
+    def ifDescr(self):
+        return self._data.get('ifDescr', None)
+
+    @property
+    def ifHighSpeed(self):
+        return self._data.get('ifHighSpeed', None)
+
+    @property
+    def ifIndex(self):
+        return self._data.get('ifIndex', None)
+
+    @property
+    def ifMtu(self):
+        return self._data.get('ifMtu', None)
+
+    @property
+    def ifOperStatus(self):
+        return self._data.get('ifOperStatus', None)
+
+    @property
+    def ifPhysAddress(self):
+        return self._data.get('ifPhysAddress', None)
+
+    @property
+    def ifSpeed(self):
+        return self._data.get('ifSpeed', None)
+
+    @property
+    def ifType(self):
+        return self._data.get('ifType', None)
+
+    @property
+    def ipAddr(self):
+        return self._data.get('ipAddr', None)
+
+    @property
+    def uri(self):
+        return self._data.get('uri', None)
+
+    # Fetch and filter data, etc
+    def _filter_endpoints(self, data):
+        return False
+
+    def get_endpoints(self):
+        for i in self._data['children']:
+            if self._filter_endpoints(i):
+                continue
+            yield Endpoint(i, self.hostname)
+        
+    def __repr__(self):
+        return '<Interface/{0}: uri:{1}'.format(self.ifDescr, self.resource_uri)
+
+class Endpoint(NodeInfo):
+    """Class to encapsulate endpoint information"""
+    def __init__(self, data, hostname):
+        super(Endpoint, self).__init__(data, hostname)
+
+    @property
+    def name(self):
+        return self._data.get('name', None)
+
+    @property
+    def uri(self):
+        return self._data.get('uri', None)
+
+    def get_data(self):
+        r = requests.get('http://{0}/{1}'.format(self.hostname, self.uri))
+
+        if r.status_code == 200 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            return DataPayload(data)
+        
+    def __repr__(self):
+        return '<Endpoint/{0}: uri:{1}>'.format(self.name, self.uri)
+
+class DataPayload(NodeInfo):
+    """Class to encapsulate data payload"""
+    def __init__(self, data):
+        super(DataPayload, self).__init__(data, None)
+
+    @property
+    def agg(self):
+        return self._data.get('agg', None)
+
+    @property
+    def cf(self):
+        return self._data.get('cf', None)
+
+    @property
+    def data(self):
+        return self._data.get('data', None)
+
+    def __repr__(self):
+        return '<DataPayload: len:{0} b:{1} e:{2}>'.format(
+            len(self.data), self.begin_time, self.end_time)
+        
+# - Query entry point.    
+
+class ApiConnect(object):
+    """Core class to pull data from the rest api."""
+    def __init__(self, hostname):
+        super(ApiConnect, self).__init__()
+        self.hostname = hostname
+
+    def _filter_devices(self,data):
+        return False
+
+    def get_devices(self):
+        r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname))
+
+        if r.status_code == 200 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            for i in data:
+                if self._filter_devices(i):
+                    continue
+                yield Device(i, self.hostname)
+        
+# ----
+
+def main():
+    import os.path
+    from optparse import OptionParser
+    usage = '%prog [ -v | -H hostname ]'
+    parser = OptionParser(usage=usage)
+    parser.add_option('-H', '--hostname', metavar='HOST',
+            type='string', dest='hostname', 
+            help='Host running rest api (default=%default).', 
+            default='localhost')
+    parser.add_option('-v', '--verbose',
+                dest='verbose', action='count', default=False,
+                help='Verbose output - -v, -vv, etc.')
+    options, args = parser.parse_args()
+
+    conn = ApiConnect(options.hostname)
+
+    for d in conn.get_devices():
+        print d
+        for i in d.get_interfaces():
+            print '  ', i
+            for e in i.get_endpoints():
+                print '   *', e
+                print '     +', e.get_data().data
+        break
+    
+    pass
+
+if __name__ == '__main__':
+    main()
