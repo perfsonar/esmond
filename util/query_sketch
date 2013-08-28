@@ -24,6 +24,13 @@ class NodeInfo(object):
         self.hostname = hostname
         self.filters = filters
 
+        # Default rest parameters for all objects
+        if self.filters:
+            self._q_params = {
+                'begin': self.filters.ts_epoch('begin_time'),
+                'end': self.filters.ts_epoch('end_time')
+            }
+
         self.pp = pprint.PrettyPrinter(indent=4)
 
     def _convert_to_datetime(self, d):
@@ -107,7 +114,8 @@ class Device(NodeInfo):
                 break
 
         if uri:
-            r = requests.get('http://{0}/{1}'.format(self.hostname, uri))
+            r = requests.get('http://{0}/{1}'.format(self.hostname, uri), 
+                params=self._q_params)
 
             if r.status_code == 200 and \
                 r.headers['content-type'] == 'application/json':
@@ -208,13 +216,8 @@ class Endpoint(NodeInfo):
 
     def get_data(self):
 
-        p = {
-            'begin': self.filters.ts_epoch('begin_time'),
-            'end': self.filters.ts_epoch('end_time')
-        }
-
         r = requests.get('http://{0}/{1}'.format(self.hostname, self.uri),
-            params=p)
+            params=self._q_params)
 
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
@@ -280,7 +283,7 @@ class ApiFilters(object):
     def ts_epoch(self, time_prop):
         """Convert named property back to epoch.  Generally just for 
         sending cgi params to the api."""
-        return calendar.timegm(getattr(self, time_prop).utctimetuple())
+        return int(calendar.timegm(getattr(self, time_prop).utctimetuple()))
 
     def _convert_ts(self, ts):
         if isinstance(ts, type(self._begin_time)):
@@ -331,6 +334,11 @@ class ApiConnect(object):
         self.hostname = hostname
         self.filters = filters
 
+        self._q_params = {
+            'begin': self.filters.ts_epoch('begin_time'),
+            'end': self.filters.ts_epoch('end_time')
+        }
+
     def _filter_devices(self, device):
 
         if self.filters.devices and \
@@ -340,8 +348,9 @@ class ApiConnect(object):
         return device
 
     def get_devices(self):
-        r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname))
-
+        r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname), 
+            params=self._q_params)
+        
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
@@ -381,6 +390,12 @@ def main():
     if options.devices:
         filters.devices = options.devices
 
+    # e = datetime.datetime(year=2013, month=7, day=10)
+    # s = e - datetime.timedelta(days=7)
+    # print s, e
+    # filters.begin_time = s
+    # filters.end_time = e
+
     conn = ApiConnect(options.hostname, filters)
 
     # return 1
@@ -389,14 +404,13 @@ def main():
         print d
         # print d.dump
         print '  *', d.begin_time, '|', d.end_time
-        continue
+        # continue
         for i in d.get_interfaces():
-            print '  ', i
+            print '  ', i, i.begin_time
             for e in i.get_endpoints():
                 print '   *', e
                 print '     +', e.get_data().dump
-        # break
-    
+        # break    
     pass
 
 if __name__ == '__main__':
