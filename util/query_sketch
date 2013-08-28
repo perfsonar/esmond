@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import calendar
 import datetime
 import json
 import os
@@ -9,14 +10,17 @@ import sys
 
 from optparse import OptionParser
 
+from esmond.util import max_datetime
+
 # - Encapsulation classes for nodes (device, interface, etc).
 
 class NodeInfo(object):
     """Base class for encapsulation objects"""
-    def __init__(self, data, hostname):
+    def __init__(self, data, hostname, filters):
         super(NodeInfo, self).__init__()
         self._data = data
         self.hostname = hostname
+        self.filters = filters
 
         self.pp = pprint.PrettyPrinter(indent=4)
 
@@ -72,8 +76,8 @@ class NodeInfo(object):
 
 class Device(NodeInfo):
     """Class to encapsulate device information"""
-    def __init__(self, data, hostname):
-        super(Device, self).__init__(data, hostname)
+    def __init__(self, data, hostname, filters):
+        super(Device, self).__init__(data, hostname, filters)
 
     # Property attrs unique to devices
     @property
@@ -104,7 +108,7 @@ class Device(NodeInfo):
                 for i in data['children']:
                     if self._filter_interfaces(i):
                         continue
-                    yield Interface(i, self.hostname)
+                    yield Interface(i, self.hostname, self.filters)
 
 
     def __repr__(self):
@@ -113,8 +117,8 @@ class Device(NodeInfo):
 
 class Interface(NodeInfo):
     """Class to encapsulate interface information"""
-    def __init__(self, data, hostname):
-        super(Interface, self).__init__(data, hostname)
+    def __init__(self, data, hostname, filters):
+        super(Interface, self).__init__(data, hostname, filters)
 
     # Property attrs unique to interfaces
     @property
@@ -177,15 +181,15 @@ class Interface(NodeInfo):
         for i in self._data['children']:
             if self._filter_endpoints(i):
                 continue
-            yield Endpoint(i, self.hostname)
+            yield Endpoint(i, self.hostname, self.filters)
         
     def __repr__(self):
         return '<Interface/{0}: uri:{1}'.format(self.ifDescr, self.resource_uri)
 
 class Endpoint(NodeInfo):
     """Class to encapsulate endpoint information"""
-    def __init__(self, data, hostname):
-        super(Endpoint, self).__init__(data, hostname)
+    def __init__(self, data, hostname, filters):
+        super(Endpoint, self).__init__(data, hostname, filters)
 
     @property
     def name(self):
@@ -209,7 +213,7 @@ class Endpoint(NodeInfo):
 class DataPayload(NodeInfo):
     """Class to encapsulate data payload"""
     def __init__(self, data):
-        super(DataPayload, self).__init__(data, None)
+        super(DataPayload, self).__init__(data, None, None)
 
     @property
     def agg(self):
@@ -221,21 +225,46 @@ class DataPayload(NodeInfo):
 
     @property
     def data(self):
-        return self._data.get('data', None)
-
+        return [DataPoint(x[0],x[1]) for x in self._data.get('data', None)]
+    
     def __repr__(self):
         return '<DataPayload: len:{0} b:{1} e:{2}>'.format(
             len(self.data), self.begin_time, self.end_time)
+
+class DataPoint(object):
+    """Class to encapsulate the returned data points."""
+    def __init__(self, ts, val):
+        super(DataPoint, self).__init__()
+        self.ts = datetime.datetime.utcfromtimestamp(ts)
+        self.val = val
+
+    @property
+    def ts_epoch(self):
+        return calendar.timegm(self.ts.utctimetuple())
+
+    def __repr__(self):
+        return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
         
-# - Query entry point.    
+        
+# - Query entry point and filtering.
+
+class ApiFilters(object):
+    """Class to hold filtering/query options.  This will be used by 
+    ApiConnect and also passed to all the encapsulation objects."""
+    def __init__(self):
+        super(ApiFilters, self).__init__()
+
 
 class ApiConnect(object):
     """Core class to pull data from the rest api."""
-    def __init__(self, hostname):
+    def __init__(self, hostname, filters=ApiFilters()):
         super(ApiConnect, self).__init__()
         self.hostname = hostname
+        self.filters = filters
 
     def _filter_devices(self,data):
+        if data['name'] != 'lbl-mr2':
+            return True
         return False
 
     def get_devices(self):
@@ -247,7 +276,7 @@ class ApiConnect(object):
             for i in data:
                 if self._filter_devices(i):
                     continue
-                yield Device(i, self.hostname)
+                yield Device(i, self.hostname, self.filters)
         
 # ----
 
