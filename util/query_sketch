@@ -201,7 +201,14 @@ class Endpoint(NodeInfo):
         return self._data.get('uri', None)
 
     def get_data(self):
-        r = requests.get('http://{0}/{1}'.format(self.hostname, self.uri))
+
+        p = {
+            'begin': self.filters.ts_epoch('begin_time'),
+            'end': self.filters.ts_epoch('end_time')
+        }
+
+        r = requests.get('http://{0}/{1}'.format(self.hostname, self.uri),
+            params=p)
 
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
@@ -227,6 +234,10 @@ class DataPayload(NodeInfo):
     @property
     def data(self):
         return [DataPoint(x[0],x[1]) for x in self._data.get('data', None)]
+
+    @property
+    def dump(self):
+        return self.pp.pformat(self.data)
 
     def __repr__(self):
         return '<DataPayload: len:{0} b:{1} e:{2}>'.format(
@@ -299,8 +310,8 @@ class ApiConnect(object):
         self.filters = filters
 
     def _filter_devices(self,data):
-        # if data['name'] != 'lbl-mr2':
-        #     return True
+        if data['name'] != 'lbl-mr2':
+            return True
         return False
 
     def get_devices(self):
@@ -325,12 +336,20 @@ def main():
             type='string', dest='hostname', 
             help='Host running rest api (default=%default).', 
             default='localhost')
+    parser.add_option('-l', '--last', metavar='LAST',
+            type='int', dest='last', default=0,
+            help='Last n minutes of data to query.')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
 
-    conn = ApiConnect(options.hostname)
+    filters = ApiFilters()
+
+    if options.last:
+        filters.begin_time = int(time.time() - (options.last*60))
+
+    conn = ApiConnect(options.hostname, filters)
 
     for d in conn.get_devices():
         print d
@@ -338,7 +357,7 @@ def main():
             print '  ', i
             for e in i.get_endpoints():
                 print '   *', e
-                print '     +', e.get_data().data
+                print '     +', e.get_data().dump
         break
     
     pass
