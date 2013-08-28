@@ -124,6 +124,9 @@ class Device(NodeInfo):
                     iface = self._filter_interfaces(Interface(i, self.hostname, self.filters))
                     if iface:
                         yield iface
+            else:
+                return
+                yield
 
 
     def __repr__(self):
@@ -223,13 +226,15 @@ class Endpoint(NodeInfo):
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             return DataPayload(data)
+        else:
+            return DataPayload()
         
     def __repr__(self):
         return '<Endpoint/{0}: uri:{1}>'.format(self.name, self.uri)
 
 class DataPayload(NodeInfo):
     """Class to encapsulate data payload"""
-    def __init__(self, data):
+    def __init__(self, data={'data':[]}):
         super(DataPayload, self).__init__(data, None, None)
 
     @property
@@ -358,6 +363,9 @@ class ApiConnect(object):
                 d = self._filter_devices(Device(i, self.hostname, self.filters))
                 if d: 
                     yield d
+        else:
+            return
+            yield
         
 # ----
 
