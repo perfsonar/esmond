@@ -90,8 +90,8 @@ class Device(NodeInfo):
         return self._data.get('name', None)
 
     # Fetch and filter data, etc
-    def _filter_interfaces(self, data):
-        return False
+    def _filter_interfaces(self, interface):
+        return interface
 
     def get_interfaces(self):
         uri = None
@@ -107,9 +107,9 @@ class Device(NodeInfo):
                 r.headers['content-type'] == 'application/json':
                 data = json.loads(r.text)
                 for i in data['children']:
-                    if self._filter_interfaces(i):
-                        continue
-                    yield Interface(i, self.hostname, self.filters)
+                    iface = self._filter_interfaces(Interface(i, self.hostname, self.filters))
+                    if iface:
+                        yield iface
 
 
     def __repr__(self):
@@ -175,15 +175,15 @@ class Interface(NodeInfo):
         return self._data.get('uri', None)
 
     # Fetch and filter data, etc
-    def _filter_endpoints(self, data):
-        return False
+    def _filter_endpoints(self, endpoint):
+        return endpoint
 
     def get_endpoints(self):
         for i in self._data['children']:
-            if self._filter_endpoints(i):
-                continue
-            yield Endpoint(i, self.hostname, self.filters)
-        
+            e = self._filter_endpoints(Endpoint(i, self.hostname, self.filters))
+            if e:
+                yield e
+
     def __repr__(self):
         return '<Interface/{0}: uri:{1}'.format(self.ifDescr, self.resource_uri)
 
@@ -265,8 +265,11 @@ class ApiFilters(object):
     ApiConnect and also passed to all the encapsulation objects."""
     def __init__(self):
         super(ApiFilters, self).__init__()
+
         self._begin_time = datetime.datetime.utcfromtimestamp(int(time.time() - 3600))
         self._end_time = datetime.datetime.utcfromtimestamp(int(time.time()))
+
+        self._devices = []
 
     def ts_epoch(self, time_prop):
         """Convert named property back to epoch.  Generally just for 
@@ -286,7 +289,7 @@ class ApiFilters(object):
         def fset(self, value):
             self._begin_time = self._convert_ts(value)
         def fdel(self):
-            del self._begin_time
+            pass
         return locals()
     begin_time = property(**begin_time())
 
@@ -297,9 +300,22 @@ class ApiFilters(object):
         def fset(self, value):
             self._end_time = self._convert_ts(value)
         def fdel(self):
-            del self._end_time
+            pass
         return locals()
     end_time = property(**end_time())
+
+    def devices():
+        doc = "The devices property."
+        def fget(self):
+            return self._devices
+        def fset(self, value):
+            if not isinstance(value, list):
+                raise TypeError('devices attr must be a list')
+            self._devices = value
+        def fdel(self):
+            pass
+        return locals()
+    devices = property(**devices())
 
 
 class ApiConnect(object):
@@ -309,10 +325,13 @@ class ApiConnect(object):
         self.hostname = hostname
         self.filters = filters
 
-    def _filter_devices(self,data):
-        if data['name'] != 'lbl-mr2':
-            return True
-        return False
+    def _filter_devices(self, device):
+
+        if self.filters.devices and \
+            device.name not in self.filters.devices:
+            return None
+
+        return device
 
     def get_devices(self):
         r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname))
@@ -321,9 +340,9 @@ class ApiConnect(object):
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             for i in data:
-                if self._filter_devices(i):
-                    continue
-                yield Device(i, self.hostname, self.filters)
+                d = self._filter_devices(Device(i, self.hostname, self.filters))
+                if d: 
+                    yield d
         
 # ----
 
@@ -339,6 +358,10 @@ def main():
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
             help='Last n minutes of data to query.')
+    parser.add_option('-d', '--device',
+            type='string', action='append', metavar='DEVICE',
+            default=[], dest='devices',
+            help='Device name to filter (can be more than one use of this flag).')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
@@ -349,7 +372,12 @@ def main():
     if options.last:
         filters.begin_time = int(time.time() - (options.last*60))
 
+    if options.devices:
+        filters.devices = options.devices
+
     conn = ApiConnect(options.hostname, filters)
+
+    # return 1
 
     for d in conn.get_devices():
         print d
@@ -358,7 +386,7 @@ def main():
             for e in i.get_endpoints():
                 print '   *', e
                 print '     +', e.get_data().dump
-        break
+        # break
     
     pass
 
