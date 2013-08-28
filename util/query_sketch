@@ -7,6 +7,7 @@ import os
 import pprint
 import requests
 import sys
+import time
 
 from optparse import OptionParser
 
@@ -226,7 +227,7 @@ class DataPayload(NodeInfo):
     @property
     def data(self):
         return [DataPoint(x[0],x[1]) for x in self._data.get('data', None)]
-    
+
     def __repr__(self):
         return '<DataPayload: len:{0} b:{1} e:{2}>'.format(
             len(self.data), self.begin_time, self.end_time)
@@ -253,6 +254,41 @@ class ApiFilters(object):
     ApiConnect and also passed to all the encapsulation objects."""
     def __init__(self):
         super(ApiFilters, self).__init__()
+        self._begin_time = datetime.datetime.utcfromtimestamp(int(time.time() - 3600))
+        self._end_time = datetime.datetime.utcfromtimestamp(int(time.time()))
+
+    def ts_epoch(self, time_prop):
+        """Convert named property back to epoch.  Generally just for 
+        sending cgi params to the api."""
+        return calendar.timegm(getattr(self, time_prop).utctimetuple())
+
+    def _convert_ts(self, ts):
+        if isinstance(ts, type(self._begin_time)):
+            return ts
+        else:
+            return datetime.datetime.utcfromtimestamp(int(ts))
+
+    def begin_time():
+        doc = "The begin_time property."
+        def fget(self):
+            return self._begin_time
+        def fset(self, value):
+            self._begin_time = self._convert_ts(value)
+        def fdel(self):
+            del self._begin_time
+        return locals()
+    begin_time = property(**begin_time())
+
+    def end_time():
+        doc = "The end_time property."
+        def fget(self):
+            return self._end_time
+        def fset(self, value):
+            self._end_time = self._convert_ts(value)
+        def fdel(self):
+            del self._end_time
+        return locals()
+    end_time = property(**end_time())
 
 
 class ApiConnect(object):
@@ -263,8 +299,8 @@ class ApiConnect(object):
         self.filters = filters
 
     def _filter_devices(self,data):
-        if data['name'] != 'lbl-mr2':
-            return True
+        # if data['name'] != 'lbl-mr2':
+        #     return True
         return False
 
     def get_devices(self):
