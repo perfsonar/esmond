@@ -12,6 +12,7 @@ import time
 from optparse import OptionParser
 
 from esmond.util import max_datetime
+max_epoch = calendar.timegm(max_datetime.utctimetuple())
 
 # - Encapsulation classes for nodes (device, interface, etc).
 
@@ -29,9 +30,14 @@ class NodeInfo(object):
         """API returns both unix timestamps and ISO time so
         normalize to datetime objects transparently"""
         t = None
+        
         try:
             i = int(d)
-            t = datetime.datetime.utcfromtimestamp(i)
+            if i > max_epoch:
+                # bullet proof against out of range datetime errors
+                t = max_datetime
+            else:
+                t = datetime.datetime.utcfromtimestamp(i)
         except ValueError:
             # Not an epoch timestamp
             pass
@@ -381,6 +387,9 @@ def main():
 
     for d in conn.get_devices():
         print d
+        # print d.dump
+        print '  *', d.begin_time, '|', d.end_time
+        continue
         for i in d.get_interfaces():
             print '  ', i
             for e in i.get_endpoints():
