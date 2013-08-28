@@ -8,15 +8,24 @@ import pprint
 import requests
 import sys
 import time
+import warnings
 
 from optparse import OptionParser
 
 from esmond.util import max_datetime
 max_epoch = calendar.timegm(max_datetime.utctimetuple())
 
+class NodeInfoWarning(Warning): pass
+class DeviceWarning(NodeInfoWarning): pass
+class InterfaceWarning(NodeInfoWarning): pass
+class EndpointWarning(NodeInfoWarning): pass
+class DataPayloadWarning(NodeInfoWarning): pass
+class ApiConnectWarning(Warning): pass
+
 # - Encapsulation classes for nodes (device, interface, etc).
 
 class NodeInfo(object):
+    wrn = NodeInfoWarning
     """Base class for encapsulation objects"""
     def __init__(self, data, hostname, filters):
         super(NodeInfo, self).__init__()
@@ -87,8 +96,12 @@ class NodeInfo(object):
     def dump(self):
         return self.pp.pformat(self._data)
 
+    def http_alert(self, r):
+        warnings.warn('Request for {0} got status: {1}'.format(r.url,r.status_code), self.wrn, stacklevel=2)
+
 
 class Device(NodeInfo):
+    wrn = DeviceWarning
     """Class to encapsulate device information"""
     def __init__(self, data, hostname, filters):
         super(Device, self).__init__(data, hostname, filters)
@@ -125,6 +138,7 @@ class Device(NodeInfo):
                     if iface:
                         yield iface
             else:
+                self.http_alert(r)
                 return
                 yield
 
@@ -134,6 +148,7 @@ class Device(NodeInfo):
 
 
 class Interface(NodeInfo):
+    wrn = InterfaceWarning
     """Class to encapsulate interface information"""
     def __init__(self, data, hostname, filters):
         super(Interface, self).__init__(data, hostname, filters)
@@ -205,6 +220,7 @@ class Interface(NodeInfo):
         return '<Interface/{0}: uri:{1}'.format(self.ifDescr, self.resource_uri)
 
 class Endpoint(NodeInfo):
+    wrn = EndpointWarning
     """Class to encapsulate endpoint information"""
     def __init__(self, data, hostname, filters):
         super(Endpoint, self).__init__(data, hostname, filters)
@@ -227,12 +243,14 @@ class Endpoint(NodeInfo):
             data = json.loads(r.text)
             return DataPayload(data)
         else:
+            self.http_alert(r)
             return DataPayload()
         
     def __repr__(self):
         return '<Endpoint/{0}: uri:{1}>'.format(self.name, self.uri)
 
 class DataPayload(NodeInfo):
+    wrn = DataPayloadWarning
     """Class to encapsulate data payload"""
     def __init__(self, data={'data':[]}):
         super(DataPayload, self).__init__(data, None, None)
@@ -333,6 +351,7 @@ class ApiFilters(object):
 
 
 class ApiConnect(object):
+    wrn = ApiConnectWarning
     """Core class to pull data from the rest api."""
     def __init__(self, hostname, filters=ApiFilters()):
         super(ApiConnect, self).__init__()
@@ -364,9 +383,12 @@ class ApiConnect(object):
                 if d: 
                     yield d
         else:
+            self.http_alert(r)
             return
             yield
         
+    def http_alert(self, r):
+        warnings.warn('Request for {0} got status: {1}'.format(r.url,r.status_code), self.wrn, stacklevel=2)
 # ----
 
 def main():
@@ -418,7 +440,7 @@ def main():
             for e in i.get_endpoints():
                 print '   *', e
                 print '     +', e.get_data().dump
-        # break    
+        break    
     pass
 
 if __name__ == '__main__':
