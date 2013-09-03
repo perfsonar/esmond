@@ -532,7 +532,7 @@ class CASSANDRA_DB(object):
 
             for i in ret_count.keys():
                 cols += ret_count[i]
-            print cols
+            # print cols
 
             ret = self.aggs._column_family.multiget(
                     self._get_row_keys(path,freq,ts_min,ts_max), 

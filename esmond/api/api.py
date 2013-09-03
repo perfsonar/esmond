@@ -69,6 +69,13 @@ OIDSET_INTERFACE_ENDPOINTS = {
     },
 }
 
+timerange_limits = {
+    30: datetime.timedelta(days=30),
+    300: datetime.timedelta(days=30),
+    3600: datetime.timedelta(days=365),
+    86400: datetime.timedelta(days=365*10),
+}
+
 def check_connection():
     """Called by testing suite to produce consistent errors.  If no 
     cassandra instance is available, test_api might silently hide that 
@@ -318,6 +325,25 @@ class InterfaceDataObject(object):
     def to_dict(self):
         return self._data
 
+def format_data_payload(data):
+    """Massage results from cassandra for json return payload."""
+    results = []
+
+    for row in data:
+        d = [row['ts']/1000, row['val']]
+        
+        # Further options for different data sets.
+        if row.has_key('is_valid'): # Base rates
+            if row['is_valid'] == 0: d[1] = None
+        elif row.has_key('cf'): # Aggregations
+            pass
+        else: # Raw Data
+            pass
+        
+        results.append(d)
+
+    return results
+
 class InterfaceDataResource(Resource):
     """Data for interface on a device.
 
@@ -440,45 +466,13 @@ class InterfaceDataResource(Resource):
             data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
 
-        obj.data = self._format_data_payload(data)
+        obj.data = format_data_payload(data)
         return obj
 
-    def _format_data_payload(self, data):
-
-        results = []
-
-        for row in data:
-            d = [row['ts']/1000, row['val']]
-            
-            # Further options for different data sets.
-            if row.has_key('is_valid'): # Base rates
-                if row['is_valid'] == 0: d[1] = None
-            elif row.has_key('cf'): # Aggregations
-                pass
-            else: # Raw Data
-                pass
-            
-            results.append(d)
-
-        return results
-
     def _valid_timerange(self, obj):
-        timerange_limits = {
-            # XXX(mmg): also move this dict elsewhere when work 
-            # on limiter is ironed out.
-            30: datetime.timedelta(days=30),
-            300: datetime.timedelta(days=30),
-            3600: datetime.timedelta(days=365),
-            86400: datetime.timedelta(days=365*10),
-        }
-        # print 'agg:', obj.agg
-        # print 'start', datetime.datetime.utcfromtimestamp(obj.begin_time)
-        # print 'end', datetime.datetime.utcfromtimestamp(obj.end_time)
 
         s = datetime.timedelta(seconds=obj.begin_time)
         e = datetime.timedelta(seconds=obj.end_time)
-
-        # print 'range', e - s
 
         try:
             if e - s > timerange_limits[obj.agg]:
@@ -489,5 +483,140 @@ class InterfaceDataResource(Resource):
 
         return True
 
+# ---
+
+class TimeseriesDataObject(InterfaceDataObject):
+    pass
+
+class TimeseriesResource(Resource):
+
+    begin_time = fields.IntegerField(attribute='begin_time')
+    end_time = fields.IntegerField(attribute='end_time')
+    data = fields.ListField(attribute='data')
+    cf = fields.CharField(attribute='cf')
+
+    class Meta:
+        resource_name = 'timeseries'
+        allowed_methods = ['get']
+        object_class = TimeseriesDataObject
+        serializer = DeviceSerializer()
+        authentication = AnonymousGetElseApiAuthentication()
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/$" % \
+                self._meta.resource_name, 
+                self.wrap_view('dispatch_namespace_root'), 
+                name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/(?P<path>[\w\d_.-]+)/$" % \
+                self._meta.resource_name, 
+                self.wrap_view('dispatch_detail'), 
+                name="api_dispatch_detail"),
+        ]
+
+    def dispatch_namespace_root(self, request, **kwargs):
+        raise BadRequest('Must supply timeseries namespace and path.')
+
+    def alter_list_data_to_serialize(self, request, data):
+        return data['objects'][0]
+
+    def get_resource_uri(self, bundle_or_obj):
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+        uri = '/{0}/{1}/{2}'.format(self.api_name, self._meta.resource_name, obj.pk)
+        return uri
+
+    def obj_get(self, bundle, **kwargs):
+
+        # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
+
+        # only supplied /timeseries/namespace/ without the rest of the
+        # cassandra key.
+        if kwargs.get('path'):
+            raise BadRequest('Must supply data path for namespace {0}.'.format(kwargs.get('path')))
+
+        obj = InterfaceDataObject()
+
+        obj.pk = kwargs.get('pk')
+        obj.datapath = obj.pk.split('/')
+        obj.agg = obj.datapath.pop()
+        
+        # XXX(mmg): presume last bit of URI is the frequency:
+        # revisit this!
+        try:
+            obj.agg = int(obj.agg)
+        except ValueError:
+            # Change this to a 404?
+            raise BadRequest('Last segment of URI must be frequency integer.')
+
+        filters = getattr(bundle.request, 'GET', {})
+
+        if filters.has_key('begin'):
+            obj.begin_time = int(float(filters['begin']))
+        else:
+            obj.begin_time = int(time.time() - 3600)
+
+        if filters.has_key('end'):
+            obj.end_time = int(float(filters['end']))
+        else:
+            obj.end_time = int(time.time())
+
+        if filters.has_key('cf'):
+            obj.cf = filters['cf']
+        else:
+            obj.cf = 'average'
+
+        obj = self._execute_query(obj)
+
+        if not len(obj.data):
+            raise ObjectDoesNotExist('No data found for request {0} with params {1}'.format(obj.pk, filters))
+
+        return obj
+
+    def _execute_query(self, obj):
+        # Make sure we're not exceeding allowable time range.
+        if not self._valid_timerange(obj):
+            raise BadRequest('exceeded valid timerange for agg level: %s' %
+                    obj.agg)
+
+        # Try the base rates first.
+        data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
+
+        if data:
+            obj.data = format_data_payload(data)
+            return obj
+
+        # If not in base rates, try the aggregations
+        data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
+
+        obj.data = format_data_payload(data)
+
+        return obj
+
+    def _valid_timerange(self, obj):
+
+        s = datetime.timedelta(seconds=obj.begin_time)
+        e = datetime.timedelta(seconds=obj.end_time)
+
+        try:
+            agg = obj.agg/1000
+            if e - s > timerange_limits[agg]:
+                return False
+        except KeyError:
+            raise BadRequest('invalid aggregation level: %s' %
+                    obj.agg)
+
+        return True
+
+
+    # def obj_get_list(self, request=None, **kwargs):
+    #     return self.get_object_list(request)
+
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
+v1_api.register(TimeseriesResource())
