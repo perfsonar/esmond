@@ -453,6 +453,7 @@ class TimeseriesResource(Resource):
     begin_time = fields.IntegerField(attribute='begin_time')
     end_time = fields.IntegerField(attribute='end_time')
     data = fields.ListField(attribute='data')
+    agg = fields.CharField(attribute='agg')
     cf = fields.CharField(attribute='cf')
 
     class Meta:
