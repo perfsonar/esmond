@@ -571,7 +571,7 @@ class TimeseriesResource(Resource):
             # Input has been checked already
             pass
 
-        obj.data = QueryUtil.format_data_payload(data)
+        obj.data = QueryUtil.format_data_payload(data, in_ms=True)
 
         return obj
 
@@ -594,13 +594,10 @@ class QueryUtil(object):
         s = datetime.timedelta(seconds=obj.begin_time)
         e = datetime.timedelta(seconds=obj.end_time)
 
-        agg = obj.agg
-
-        if in_ms:
-            agg = agg/1000
+        divs = { False: 1, True: 1000 }
 
         try:
-            if e - s > QueryUtil._timerange_limits[agg]:
+            if e - s > QueryUtil._timerange_limits[obj.agg/divs[in_ms]]:
                 return False
         except KeyError:
             raise BadRequest('invalid aggregation level: %s' %
@@ -609,12 +606,15 @@ class QueryUtil(object):
         return True
 
     @staticmethod
-    def format_data_payload(data):
+    def format_data_payload(data, in_ms=False):
         """Massage results from cassandra for json return payload."""
+
+        divs = { False: 1000, True: 1 }
+
         results = []
 
         for row in data:
-            d = [row['ts']/1000, row['val']]
+            d = [row['ts']/divs[in_ms], row['val']]
             
             # Further options for different data sets.
             if row.has_key('is_valid'): # Base rates
