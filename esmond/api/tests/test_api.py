@@ -245,6 +245,7 @@ class MockCASSANDRA_DB(object):
     def query_baserate_timerange(self, path=None, freq=None, ts_min=None, ts_max=None):
         # Mimic returned data, format elsehwere
         self._test_incoming_args(path, freq, ts_min, ts_max)
+        if path[0] != 'rtr_a': return []
         return [
             {'is_valid': 2, 'ts': 0*1000, 'val': 10},
             {'is_valid': 2, 'ts': 30*1000, 'val': 20},
@@ -542,6 +543,11 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
+
+        # This does not return any data - currently a 404
+        url = '/v1/timeseries/BaseRate/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
 
     def test_timeseries_data_detail(self):
         agg = 30000
