@@ -468,7 +468,7 @@ class TimeseriesResource(Resource):
                 self._meta.resource_name, 
                 self.wrap_view('dispatch_namespace_root'), 
                 name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/(?P<path>[\w\d_.-]+)/$" % \
+            url(r"^(?P<resource_name>%s)/(?P<ns>[\w\d_.-]+)/$" % \
                 self._meta.resource_name, 
                 self.wrap_view('dispatch_detail'), 
                 name="api_dispatch_detail"),
@@ -495,8 +495,8 @@ class TimeseriesResource(Resource):
 
         # only supplied /timeseries/namespace/ without the rest of the
         # cassandra key.
-        if kwargs.get('path'):
-            raise BadRequest('Must supply data path for namespace {0}.'.format(kwargs.get('path')))
+        if kwargs.get('ns'):
+            raise BadRequest('Must supply data path for namespace {0}.'.format(kwargs.get('ns')))
 
         obj = InterfaceDataObject()
 
