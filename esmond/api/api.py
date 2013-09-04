@@ -318,25 +318,6 @@ class InterfaceDataObject(object):
     def to_dict(self):
         return self._data
 
-def format_data_payload(data):
-    """Massage results from cassandra for json return payload."""
-    results = []
-
-    for row in data:
-        d = [row['ts']/1000, row['val']]
-        
-        # Further options for different data sets.
-        if row.has_key('is_valid'): # Base rates
-            if row['is_valid'] == 0: d[1] = None
-        elif row.has_key('cf'): # Aggregations
-            pass
-        else: # Raw Data
-            pass
-        
-        results.append(d)
-
-    return results
-
 class InterfaceDataResource(Resource):
     """Data for interface on a device.
 
@@ -459,7 +440,7 @@ class InterfaceDataResource(Resource):
             data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
 
-        obj.data = format_data_payload(data)
+        obj.data = QueryUtil.format_data_payload(data)
         return obj
 
 # ---
@@ -566,14 +547,14 @@ class TimeseriesResource(Resource):
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
 
         if data:
-            obj.data = format_data_payload(data)
+            obj.data = QueryUtil.format_data_payload(data)
             return obj
 
         # If not in base rates, try the aggregations
         data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
 
-        obj.data = format_data_payload(data)
+        obj.data = QueryUtil.format_data_payload(data)
 
         return obj
 
@@ -607,6 +588,26 @@ class QueryUtil(object):
                     obj.agg)
 
         return True
+
+    @staticmethod
+    def format_data_payload(data):
+        """Massage results from cassandra for json return payload."""
+        results = []
+
+        for row in data:
+            d = [row['ts']/1000, row['val']]
+            
+            # Further options for different data sets.
+            if row.has_key('is_valid'): # Base rates
+                if row['is_valid'] == 0: d[1] = None
+            elif row.has_key('cf'): # Aggregations
+                pass
+            else: # Raw Data
+                pass
+            
+            results.append(d)
+
+        return results
         
 
 v1_api = Api(api_name='v1')
