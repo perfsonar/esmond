@@ -518,7 +518,166 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         # print json.dumps(data, indent=4)
 
-        
+    #
+    # The following tests are for the /timeseries rest namespace.
+    #
+
+    def test_bad_timeseries_endpoints(self):
+        # url = '/v1/timeseries/BaseRate/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
+
+        # all of these endpoints are incomplete
+        url = '/v1/timeseries/'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 400)
+
+        url = '/v1/timeseries/BaseRate/'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 400)
+
+        url = '/v1/timeseries/BaseRate/rtr_a/'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 400)
+
+        # This does not end in a parsable frequency
+        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 400)
+
+    def test_timeseries_data_detail(self):
+        agg = 30000
+
+        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+
+        response = self.client.get(url)
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(int(data['agg']), agg)
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][1][0], agg)
+        self.assertEquals(data['data'][1][1], 20)
+
+        # make sure it works with a trailing slash too
+        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}/'.format(agg)
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(int(data['agg']), agg)
+        self.assertEquals(data['resource_uri'], url.rstrip("/"))
+        self.assertEquals(data['data'][2][0], agg*2)
+        self.assertEquals(data['data'][2][1], 40)
+
+    def test_timeseries_data_aggs(self):
+        agg = 3600000
+
+        url = '/v1/timeseries/Aggs/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+
+        response = self.client.get(url)
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['agg'], str(agg))
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][2][0], agg*2)
+        self.assertEquals(data['data'][2][1], 240)
+
+        params = { 'cf': 'min' }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['cf'], 'min')
+        self.assertEquals(data['agg'], str(agg))
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][2][0], agg*2)
+        self.assertEquals(data['data'][2][1], 20)
+
+        params['cf'] = 'max'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['cf'], 'max')
+        self.assertEquals(data['agg'], str(agg))
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][2][0], agg*2)
+        self.assertEquals(data['data'][2][1], 300)
+
+    def test_timeseries_bad_aggregations(self):
+        url = '/v1/timeseries/Aggs/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
+
+        params = {'cf': 'bad'} # this cf does not exist
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 400)
+
+    def test_timeseries_timerange_limiter(self):
+        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        params = { 
+            'begin': int(time.time() - datetime.timedelta(days=31).total_seconds())
+        }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 400)
+
+        url = '/v1/timeseries/Aggs/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
+
+        params = {
+            'begin': int(time.time() - datetime.timedelta(days=366).total_seconds())
+        }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 400)
+
+        params = {
+            'begin': int(time.time() - datetime.timedelta(days=366*10).total_seconds())
+        }
+
+        url = '/v1/timeseries/Aggs/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/86400000'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 400)
+
+        # This is an invalid aggregation/frequency
+        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/31000'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 400)
+
+    def test_timeseries_float_timestamp_input(self):
+        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+
+        # pass in floats
+        params = { 
+            'begin': time.time() - 3600,
+            'end': time.time()
+        }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['begin_time'], int(params['begin']))
+        self.assertEquals(data['end_time'], int(params['end']))
+
+
+
+
+
+
 
 
 

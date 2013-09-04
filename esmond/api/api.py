@@ -510,13 +510,10 @@ class TimeseriesResource(Resource):
 
         # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
 
-        if kwargs.get('path').endswith('/'):
-            raise BadRequest('Path URI segment does not have a trailing slash.')
-
         obj = InterfaceDataObject()
 
         obj.r_type = kwargs.get('r_type')
-        obj.datapath = [kwargs.get('ns')] + kwargs.get('path').split('/')
+        obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
         obj.agg = obj.datapath.pop()
 
         try:
@@ -564,6 +561,9 @@ class TimeseriesResource(Resource):
             data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
         elif obj.r_type == 'Aggs':
+            if obj.cf not in AGG_TYPES:
+                raise BadRequest('%s is not a valid consolidation function' %
+                        (obj.cf))
             data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
         elif obj.r_type == 'RawData':
