@@ -575,9 +575,6 @@ class TimeseriesResource(Resource):
 
         return obj
 
-    # def obj_get_list(self, request=None, **kwargs):
-    #     return self.get_object_list(request)
-
 class QueryUtil(object):
     """Class holding common query methods."""
     _timerange_limits = {

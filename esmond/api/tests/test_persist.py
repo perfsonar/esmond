@@ -655,6 +655,113 @@ class TestCassandraApiQueries(ResourceTestCase):
         response = self.client.get(url, params)
         self.assertEqual(response.status_code, 400)
 
+    def test_get_timeseries_data_detail(self):
+        """/timeseries rest test for base rates."""
+        # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
+        params = {
+            'begin': self.ctr.begin,
+            'end': self.ctr.end
+        }
+
+        url = '/v1/timeseries/BaseRate/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], '30000')
+        self.assertEquals(data['cf'], 'average')
+
+        self.assertEquals(len(data['data']), self.ctr.expected_results)
+        self.assertEquals(data['data'][0][0], params['begin']*1000)
+        self.assertEquals(data['data'][0][1], self.ctr.base_rate_val_first)
+        self.assertEquals(data['data'][self.ctr.expected_results-1][0], params['end']*1000)
+        self.assertEquals(data['data'][self.ctr.expected_results-1][1], self.ctr.base_rate_val_last)
+
+    def test_get_timeseries_data_aggs(self):
+        """/timeseries rest test for aggs."""
+        params = {
+            'begin': self.ctr.begin-3600, # back an hour to get agg bin.
+            'end': self.ctr.end,
+        }
+
+        url = '/v1/timeseries/Aggs/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(self.ctr.agg_freq*1000)
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], str(self.ctr.agg_freq*1000))
+        self.assertEquals(data['cf'], 'average')
+
+        self.assertEquals(len(data['data']), 1)
+        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0][1], self.ctr.agg_avg)
+
+        params['cf'] = 'min'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], str(self.ctr.agg_freq*1000))
+        self.assertEquals(data['cf'], params['cf'])
+
+        self.assertEquals(len(data['data']), 1)
+        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0][1], self.ctr.agg_min)
+
+        params['cf'] = 'max'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], str(self.ctr.agg_freq*1000))
+        self.assertEquals(data['cf'], params['cf'])
+
+        self.assertEquals(len(data['data']), 1)
+        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0][1], self.ctr.agg_max)
+
+        # print json.dumps(data, indent=4)
+
+    def test_get_timeseries_raw_data(self):
+        """/timeseries rest test for raw data."""
+        # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
+        params = {
+            'begin': self.ctr.begin,
+            'end': self.ctr.end
+        }
+
+        url = '/v1/timeseries/RawData/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], '30000')
+        self.assertEquals(len(data['data']), self.ctr.expected_results-1)
+
 if False:
     class TestTSDBPollPersister(TestCase):
         fixtures = ['oidsets.json']
