@@ -392,12 +392,12 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         params = {'agg': '3601'} # this agg does not exist
 
         response = self.client.get(url, params)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
         params = {'agg': '3600', 'cf': 'bad'} # this cf does not exist
 
         response = self.client.get(url, params)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
 
     def test_get_device_interface_data_aggs(self):

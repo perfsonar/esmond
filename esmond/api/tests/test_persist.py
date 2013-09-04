@@ -653,7 +653,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         # make sure that an invalid aggregation raises an error
         params['agg'] = params['agg'] * 3
         response = self.client.get(url, params)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
 if False:
     class TestTSDBPollPersister(TestCase):

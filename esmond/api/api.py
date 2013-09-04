@@ -418,7 +418,7 @@ class InterfaceDataResource(Resource):
         if not obj.agg:
             obj.agg = oidset.frequency
         elif obj.agg not in oidset.aggregates:
-            raise ObjectDoesNotExist('no aggregation %s for oidset %s' %
+            raise BadRequest('no aggregation %s for oidset %s' %
                 (obj.agg, oidset.name))
 
         # Make sure we're not exceeding allowable time range.
@@ -435,7 +435,7 @@ class InterfaceDataResource(Resource):
         else:
             # Get the aggregation.
             if obj.cf not in AGG_TYPES:
-                raise ObjectDoesNotExist('%s is not a valid consolidation function' %
+                raise BadRequest('%s is not a valid consolidation function' %
                         (obj.cf))
             data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
