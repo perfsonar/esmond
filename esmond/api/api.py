@@ -69,13 +69,6 @@ OIDSET_INTERFACE_ENDPOINTS = {
     },
 }
 
-timerange_limits = {
-    30: datetime.timedelta(days=30),
-    300: datetime.timedelta(days=30),
-    3600: datetime.timedelta(days=365),
-    86400: datetime.timedelta(days=365*10),
-}
-
 def check_connection():
     """Called by testing suite to produce consistent errors.  If no 
     cassandra instance is available, test_api might silently hide that 
@@ -448,7 +441,7 @@ class InterfaceDataResource(Resource):
                 (obj.agg, oidset.name))
 
         # Make sure we're not exceeding allowable time range.
-        if not self._valid_timerange(obj):
+        if not QueryUtil.valid_timerange(obj):
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
         
@@ -468,20 +461,6 @@ class InterfaceDataResource(Resource):
 
         obj.data = format_data_payload(data)
         return obj
-
-    def _valid_timerange(self, obj):
-
-        s = datetime.timedelta(seconds=obj.begin_time)
-        e = datetime.timedelta(seconds=obj.end_time)
-
-        try:
-            if e - s > timerange_limits[obj.agg]:
-                return False
-        except KeyError:
-            raise BadRequest('invalid aggregation level: %s' %
-                    obj.agg)
-
-        return True
 
 # ---
 
@@ -578,7 +557,7 @@ class TimeseriesResource(Resource):
 
     def _execute_query(self, obj):
         # Make sure we're not exceeding allowable time range.
-        if not self._valid_timerange(obj):
+        if not QueryUtil.valid_timerange(obj, in_ms=True):
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
 
@@ -598,24 +577,37 @@ class TimeseriesResource(Resource):
 
         return obj
 
-    def _valid_timerange(self, obj):
+    # def obj_get_list(self, request=None, **kwargs):
+    #     return self.get_object_list(request)
 
+class QueryUtil(object):
+    """Class holding common query methods."""
+    _timerange_limits = {
+        30: datetime.timedelta(days=30),
+        300: datetime.timedelta(days=30),
+        3600: datetime.timedelta(days=365),
+        86400: datetime.timedelta(days=365*10),
+    }
+
+    @staticmethod
+    def valid_timerange(obj, in_ms=False):
         s = datetime.timedelta(seconds=obj.begin_time)
         e = datetime.timedelta(seconds=obj.end_time)
 
+        agg = obj.agg
+
+        if in_ms:
+            agg = agg/1000
+
         try:
-            agg = obj.agg/1000
-            if e - s > timerange_limits[agg]:
+            if e - s > QueryUtil._timerange_limits[agg]:
                 return False
         except KeyError:
             raise BadRequest('invalid aggregation level: %s' %
                     obj.agg)
 
         return True
-
-
-    # def obj_get_list(self, request=None, **kwargs):
-    #     return self.get_object_list(request)
+        
 
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
