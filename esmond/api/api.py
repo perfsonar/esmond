@@ -501,9 +501,9 @@ class TimeseriesResource(Resource):
         else:
             obj = bundle_or_obj
 
-        uri = '/{0}/{1}/{2}/{3}'.format(self.api_name, self._meta.resource_name, 
-            '/'.join(obj.datapath), obj.agg)
-        
+        uri = '/{0}/{1}/{2}/{3}/{4}'.format(self.api_name, self._meta.resource_name, 
+            obj.r_type, '/'.join(obj.datapath), obj.agg)
+
         return uri
 
     def obj_get(self, bundle, **kwargs):

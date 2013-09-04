@@ -542,7 +542,7 @@ class TestCassandraApiQueries(ResourceTestCase):
     def test_a_load_data(self):
         config = get_config(get_config_path())
         config.db_clear_on_testing = True
-        
+        # return
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
@@ -584,6 +584,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], params['begin'])
         self.assertEquals(data['agg'], '30')
         self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), self.ctr.expected_results)
         self.assertEquals(data['data'][0][0], params['begin'])
@@ -609,6 +610,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], params['begin'])
         self.assertEquals(data['agg'], str(params['agg']))
         self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
@@ -627,6 +629,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], params['begin'])
         self.assertEquals(data['agg'], str(params['agg']))
         self.assertEquals(data['cf'], params['cf'])
+        self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
@@ -645,6 +648,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], params['begin'])
         self.assertEquals(data['agg'], str(params['agg']))
         self.assertEquals(data['cf'], params['cf'])
+        self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
@@ -676,6 +680,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], params['begin'])
         self.assertEquals(data['agg'], '30000')
         self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), self.ctr.expected_results)
         self.assertEquals(data['data'][0][0], params['begin']*1000)
@@ -701,6 +706,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], params['begin'])
         self.assertEquals(data['agg'], str(self.ctr.agg_freq*1000))
         self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
@@ -761,6 +767,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], params['begin'])
         self.assertEquals(data['agg'], '30000')
         self.assertEquals(len(data['data']), self.ctr.expected_results-1)
+        self.assertEquals(data['resource_uri'], url)
 
 if False:
     class TestTSDBPollPersister(TestCase):
