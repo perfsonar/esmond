@@ -469,14 +469,28 @@ class TimeseriesResource(Resource):
                 self._meta.resource_name, 
                 self.wrap_view('dispatch_namespace_root'), 
                 name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/(?P<ns>[\w\d_.-]+)/$" % \
+            url(r"^(?P<resource_name>%s)/(?P<r_type>[\w\d_.-]+)/$" % \
+                self._meta.resource_name, 
+                self.wrap_view('dispatch_data_type'), 
+                name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/(?P<r_type>[\w\d_.-]+)/(?P<ns>[\w\d_.-]+)/$" % \
+                self._meta.resource_name, 
+                self.wrap_view('dispatch_data_ns'), 
+                name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/(?P<r_type>[\w\d_.-]+)/(?P<ns>[\w\d_.-]+)/(?P<path>.+)$" % \
                 self._meta.resource_name, 
                 self.wrap_view('dispatch_detail'), 
                 name="api_dispatch_detail"),
         ]
 
     def dispatch_namespace_root(self, request, **kwargs):
-        raise BadRequest('Must supply timeseries namespace and path.')
+        raise BadRequest('Must supply data type {0}, namespace and path.'.format(QueryUtil.timeseries_request_types))
+
+    def dispatch_data_type(self, request, **kwargs):
+        raise BadRequest('Must supply namespace and path for type {0}.'.format(kwargs.get('r_type')))
+
+    def dispatch_data_ns(self, request, **kwargs):
+        raise BadRequest('Must supply path for namespace {0}'.format(kwargs.get('ns')))
 
     def alter_list_data_to_serialize(self, request, data):
         return data['objects'][0]
@@ -494,24 +508,23 @@ class TimeseriesResource(Resource):
 
         # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
 
-        # only supplied /timeseries/namespace/ without the rest of the
-        # cassandra key.
-        if kwargs.get('ns'):
-            raise BadRequest('Must supply data path for namespace {0}.'.format(kwargs.get('ns')))
+        if kwargs.get('path').endswith('/'):
+            raise BadRequest('Path URI segment does not have a trailing slash.')
 
         obj = InterfaceDataObject()
 
-        obj.pk = kwargs.get('pk')
-        obj.datapath = obj.pk.split('/')
+        obj.r_type = kwargs.get('r_type')
+        obj.datapath = [kwargs.get('ns')] + kwargs.get('path').split('/')
         obj.agg = obj.datapath.pop()
-        
-        # XXX(mmg): presume last bit of URI is the frequency:
-        # revisit this!
+
         try:
             obj.agg = int(obj.agg)
         except ValueError:
             # Change this to a 404?
             raise BadRequest('Last segment of URI must be frequency integer.')
+
+        if obj.r_type not in QueryUtil.timeseries_request_types:
+            raise BadRequest('Request type must be one of {0} - {1} was given.'.format(QueryUtil.timeseries_request_types, obj.r_type))
 
         filters = getattr(bundle.request, 'GET', {})
 
@@ -543,17 +556,20 @@ class TimeseriesResource(Resource):
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
 
-        # Try the base rates first.
-        data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg,
+        data = []
+
+        if obj.r_type == 'BaseRate':
+            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
-
-        if data:
-            obj.data = QueryUtil.format_data_payload(data)
-            return obj
-
-        # If not in base rates, try the aggregations
-        data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
+        elif obj.r_type == 'Aggs':
+            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
+        elif obj.r_type == 'RawData':
+            data = db.query_raw_data(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
+        else:
+            # Input has been checked already
+            pass
 
         obj.data = QueryUtil.format_data_payload(data)
 
@@ -570,6 +586,8 @@ class QueryUtil(object):
         3600: datetime.timedelta(days=365),
         86400: datetime.timedelta(days=365*10),
     }
+
+    timeseries_request_types = ['RawData', 'BaseRate', 'Aggs']
 
     @staticmethod
     def valid_timerange(obj, in_ms=False):
