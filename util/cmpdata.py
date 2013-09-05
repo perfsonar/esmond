@@ -25,7 +25,7 @@ small_dev_set = ['lbl-mr2', 'anl-mr2']
 
 class DataBundle(object):
     """bundle together data for comparison"""
-    def __init__(self, oidset, oid, frequency, device, interface, direction, begin, end, data):
+    def __init__(self, oidset, oid, frequency, device, interface, direction, begin, end, data, url):
         self.oid = oid
         self.oidset = str(oidset)
         self.frequency = frequency
@@ -35,6 +35,7 @@ class DataBundle(object):
         self.begin = begin
         self.end = end
         self.data = data
+        self.url = url
 
 
 def old_iface_list(dev):
@@ -61,27 +62,35 @@ def compare_data(bundle, db):
     # print bundle.device, bundle.interface, bundle.oid, bundle.frequency
     # print bundle.direction, len(bundle.data['data'])
     path = [bundle.device, bundle.oidset, bundle.oid, bundle.interface]
-    ret = db.query_baserate_timerange(
-        path=path,
-        freq=bundle.frequency*1000,
-        ts_min=bundle.begin*1000,
-        ts_max=bundle.end*1000,
-        cf='average',
-        as_json=True
-    )
-    
-    # print ret
 
-    data_n = json.loads(ret)
+    # print path
+    url = 'http://localhost/v1/device' + bundle.url.replace(OLD_REST_API, '')
+
+    params = {
+        'begin': bundle.begin,
+        'end': bundle.end,
+    }
+
+    response = requests.get(url, params=params)
+
     print '**', ':'.join(path)
+    
+    
+    if response.status_code == 200:
+        data_n = json.loads(response.content)
+    else:
+        print 'Got:', response.status_code
+        print response.url
+        return
 
     val_new = {}
 
     for i in data_n['data']:
         val_new[i[0]] = i[1]
 
-    period = 600*1000 # avg bin period in ms
-    av_div = period/(30*1000)
+
+    period = 600 # avg bin period in sec
+    av_div = period/(30)
 
     orig_avg = {}
     new_avg = {}
@@ -89,31 +98,68 @@ def compare_data(bundle, db):
 
     for i in bundle.data['data']:
         # print i[0]*1000, ':' ,
-        if val_new.has_key(i[0]*1000):
+        if val_new.has_key(i[0]):
             orig_val = i[1]
-            new_val = val_new.get(i[0]*1000)
+            new_val = val_new.get(i[0])
             if orig_val is None or new_val is None:
                 if orig_val is None: orig_val = 0.0
                 if new_val is None: new_val = 0.0
             else:
                 new_val = new_val*1000
-                avg_bin = ((i[0]*1000)/period)*period
+                avg_bin = ((i[0])/period)*period
                 if not orig_avg.has_key(avg_bin):
                     ordered_bins.append(avg_bin)
                     orig_avg[avg_bin] = new_avg[avg_bin] = 0
                 orig_avg[avg_bin] += orig_val
                 new_avg[avg_bin] += new_val
         else:
-            print 'no match found - orig val:', i[1], datetime.datetime.utcfromtimestamp(i[0]), i[0]*1000
+            print 'no match found - orig val:', i[1], datetime.datetime.utcfromtimestamp(i[0]), i[0]
 
     for i in ordered_bins:
-        row = [str(datetime.datetime.utcfromtimestamp(i/1000)),
+        row = [str(datetime.datetime.utcfromtimestamp(i)),
                 orig_avg[i], new_avg[i]]
         if orig_avg[i] != 0:
             row.append(new_avg[i]/orig_avg[i]*100)
         else:
             row.append('no data')
         print '{: >20} {: >15} {: >15} {: <15} '.format(*row)
+
+    return
+
+    # period = 600*1000 # avg bin period in ms
+    # av_div = period/(30*1000)
+
+    # orig_avg = {}
+    # new_avg = {}
+    # ordered_bins = []
+
+    # for i in bundle.data['data']:
+    #     # print i[0]*1000, ':' ,
+    #     if val_new.has_key(i[0]*1000):
+    #         orig_val = i[1]
+    #         new_val = val_new.get(i[0]*1000)
+    #         if orig_val is None or new_val is None:
+    #             if orig_val is None: orig_val = 0.0
+    #             if new_val is None: new_val = 0.0
+    #         else:
+    #             new_val = new_val*1000
+    #             avg_bin = ((i[0]*1000)/period)*period
+    #             if not orig_avg.has_key(avg_bin):
+    #                 ordered_bins.append(avg_bin)
+    #                 orig_avg[avg_bin] = new_avg[avg_bin] = 0
+    #             orig_avg[avg_bin] += orig_val
+    #             new_avg[avg_bin] += new_val
+    #     else:
+    #         print 'no match found - orig val:', i[1], datetime.datetime.utcfromtimestamp(i[0]), i[0]*1000
+
+    # for i in ordered_bins:
+    #     row = [str(datetime.datetime.utcfromtimestamp(i/1000)),
+    #             orig_avg[i], new_avg[i]]
+    #     if orig_avg[i] != 0:
+    #         row.append(new_avg[i]/orig_avg[i]*100)
+    #     else:
+    #         row.append('no data')
+    #     print '{: >20} {: >15} {: >15} {: <15} '.format(*row)
 
 def old_fetch_data(oidset, dev, iface, begin, end, db):
     params = dict(begin=begin, end=end)
@@ -131,8 +177,9 @@ def old_fetch_data(oidset, dev, iface, begin, end, db):
         else:
             oid = 'ifHCOutOctets'
         bundle = DataBundle(oidset, oid, oidset.frequency, dev, iface, d,
-                begin, end, data)
+                begin, end, data, url)
         compare_data(bundle, db)
+        # break
 
 def process_devices(opts, devs, db):
     for d in devs:
@@ -149,6 +196,7 @@ def process_devices(opts, devs, db):
         for iface in ifaces:
             data = old_fetch_data(oidset, dev.name, iface,  opts.begin,
                     opts.end, db)
+            # break
 
 def main(argv=sys.argv):
     """Parse options, output config"""
@@ -191,7 +239,8 @@ def main(argv=sys.argv):
         pdb.set_trace()
         
     config = get_config(get_config_path())
-    db = CASSANDRA_DB(config)
+    # db = CASSANDRA_DB(config)
+    db = None
 
     return process_devices(opts, args, db)
 
