@@ -769,6 +769,30 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(len(data['data']), self.ctr.expected_results-1)
         self.assertEquals(data['resource_uri'], url)
 
+    def test_set_timeseries_raw_data(self):
+        url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/interface_test/30000'
+
+        params = {
+            'ts': int(time.time()),
+            'val': 1000
+        }
+
+        response = self.client.post(url, params)
+        self.assertEquals(response.status_code, 201) # not 200!
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+        
+        self.assertEquals(data['agg'], '30000')
+        self.assertEquals(data['resource_uri'], url)
+        # Check last value in case the db has not been wiped by a
+        # full data load.
+        self.assertEquals(data['data'][-1][0], params['ts']*1000)
+        self.assertEquals(data['data'][-1][1], float(params['val']))
+
+
 if False:
     class TestTSDBPollPersister(TestCase):
         fixtures = ['oidsets.json']

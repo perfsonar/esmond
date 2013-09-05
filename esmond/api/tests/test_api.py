@@ -245,7 +245,7 @@ class MockCASSANDRA_DB(object):
     def query_baserate_timerange(self, path=None, freq=None, ts_min=None, ts_max=None):
         # Mimic returned data, format elsehwere
         self._test_incoming_args(path, freq, ts_min, ts_max)
-        if path[0] != 'rtr_a': return []
+        if path[0] not in ['rtr_a', 'rtr_inf'] : return []
         return [
             {'is_valid': 2, 'ts': 0*1000, 'val': 10},
             {'is_valid': 2, 'ts': 30*1000, 'val': 20},

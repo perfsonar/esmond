@@ -16,9 +16,10 @@ from tastypie.serializers import Serializer
 from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.exceptions import NotFound, BadRequest
+from tastypie.http import HttpCreated
 
 from esmond.api.models import Device, IfRef
-from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException
+from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData
 from esmond.config import get_config_path, get_config
 from esmond.util import remove_metachars
 
@@ -458,10 +459,10 @@ class TimeseriesResource(Resource):
 
     class Meta:
         resource_name = 'timeseries'
-        allowed_methods = ['get']
+        allowed_methods = ['get', 'post']
         object_class = TimeseriesDataObject
         serializer = DeviceSerializer()
-        authentication = AnonymousGetElseApiAuthentication()
+        # authentication = AnonymousGetElseApiAuthentication()
 
     def prepend_urls(self):
         return [
@@ -510,7 +511,7 @@ class TimeseriesResource(Resource):
 
         # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
 
-        obj = InterfaceDataObject()
+        obj = TimeseriesDataObject()
 
         obj.r_type = kwargs.get('r_type')
         obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
@@ -549,6 +550,38 @@ class TimeseriesResource(Resource):
 
         return obj
 
+    def post_detail(self, bundle, **kwargs):
+
+        obj = TimeseriesDataObject()
+
+        obj.r_type = kwargs.get('r_type')
+        obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
+        obj.agg = obj.datapath.pop()
+        obj.ts = bundle.POST.get('ts') # Auto-generate if not given?
+        obj.val = bundle.POST.get('val')
+
+        if obj.r_type not in QueryUtil.timeseries_request_types:
+            raise BadRequest('Request type must be one of {0} - {1} was given.'.format(QueryUtil.timeseries_request_types, obj.r_type))
+
+        # Currently only doing raw data - remove later.
+        if obj.r_type != 'RawData':
+            raise BadRequest('Only POSTing RawData currently supported.')
+
+        if not obj.ts or not obj.val:
+            raise BadRequest('Must supply both ts and val args to POST data.')
+
+        try:
+            obj.ts = int(float(obj.ts))
+            obj.val = float(obj.val)
+        except ValueError:
+            raise BadRequest('Must supply a valid numeric args for ts and val - ts:{0} val:{1} given'.format(obj.ts, obj.val))
+
+        if self._execute_insert(obj):
+            return HttpCreated()
+        else:
+            # Error TBA
+            pass
+
     def _execute_query(self, obj):
         # Make sure we're not exceeding allowable time range.
         if not QueryUtil.valid_timerange(obj, in_ms=True):
@@ -576,6 +609,23 @@ class TimeseriesResource(Resource):
         obj.data = QueryUtil.format_data_payload(data, in_ms=True)
 
         return obj
+
+    def _execute_insert(self, obj):
+
+        if obj.r_type == 'BaseRate':
+            pass
+        elif obj.r_type == 'Aggs':
+            pass
+        elif obj.r_type == 'RawData':
+            raw_data = RawRateData(path=obj.datapath, ts=obj.ts * 1000, 
+                val=obj.val, freq=obj.agg)
+            db.set_raw_data(raw_data)
+            db.raw_data.send()
+        else:
+            # Input has been checked already
+            pass
+
+        return True
 
 class QueryUtil(object):
     """Class holding common query methods."""
