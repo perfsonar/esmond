@@ -544,11 +544,6 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
-        # This does not return any data - currently a 404
-        url = '/v1/timeseries/BaseRate/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
-        response = self.client.get(url)
-        self.assertEquals(response.status_code, 404)
-
     def test_timeseries_data_detail(self):
         agg = 30000
 

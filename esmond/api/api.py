@@ -459,7 +459,7 @@ class TimeseriesResource(Resource):
 
     class Meta:
         resource_name = 'timeseries'
-        allowed_methods = ['get', 'post']
+        allowed_methods = ['get', 'post'] # see post_detail comment
         object_class = TimeseriesDataObject
         serializer = DeviceSerializer()
         # authentication = AnonymousGetElseApiAuthentication()
@@ -541,23 +541,29 @@ class TimeseriesResource(Resource):
         if filters.has_key('cf'):
             obj.cf = filters['cf']
         else:
-            obj.cf = 'average'
+            if obj.r_type == 'RawData':
+                obj.cf = 'raw'
+            else:
+                obj.cf = 'average'
 
         obj = self._execute_query(obj)
-
-        if not len(obj.data):
-            raise ObjectDoesNotExist('No data found for request {0} with params {1}'.format(obj.pk, filters))
-
+        
         return obj
 
     def post_detail(self, bundle, **kwargs):
+
+        # When debating the PUT/POST issue on how to handle this,
+        # I read a comment about the issue that theoretically a 
+        # PUT command should be idempotent and not all of our
+        # cassandra writes are (base rates and aggregations for
+        # example) so post was chosen. -mmg
 
         obj = TimeseriesDataObject()
 
         obj.r_type = kwargs.get('r_type')
         obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
         obj.agg = obj.datapath.pop()
-        obj.ts = bundle.POST.get('ts') # Auto-generate if not given?
+        obj.ts = bundle.POST.get('ts')
         obj.val = bundle.POST.get('val')
 
         if obj.r_type not in QueryUtil.timeseries_request_types:
