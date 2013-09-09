@@ -531,12 +531,12 @@ class TimeseriesResource(Resource):
         if filters.has_key('begin'):
             obj.begin_time = int(float(filters['begin']))
         else:
-            obj.begin_time = int(time.time() - 3600)
+            obj.begin_time = int(time.time() - 3600) * 1000
 
         if filters.has_key('end'):
             obj.end_time = int(float(filters['end']))
         else:
-            obj.end_time = int(time.time())
+            obj.end_time = int(time.time()) * 1000
 
         if filters.has_key('cf'):
             obj.cf = filters['cf']
@@ -598,16 +598,16 @@ class TimeseriesResource(Resource):
 
         if obj.r_type == 'BaseRate':
             data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg,
-                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
+                    ts_min=obj.begin_time, ts_max=obj.end_time)
         elif obj.r_type == 'Aggs':
             if obj.cf not in AGG_TYPES:
                 raise BadRequest('%s is not a valid consolidation function' %
                         (obj.cf))
             data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
-                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
+                    ts_min=obj.begin_time, ts_max=obj.end_time, cf=obj.cf)
         elif obj.r_type == 'RawData':
             data = db.query_raw_data(path=obj.datapath, freq=obj.agg,
-                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
+                    ts_min=obj.begin_time, ts_max=obj.end_time)
         else:
             # Input has been checked already
             pass
@@ -623,7 +623,7 @@ class TimeseriesResource(Resource):
         elif obj.r_type == 'Aggs':
             pass
         elif obj.r_type == 'RawData':
-            raw_data = RawRateData(path=obj.datapath, ts=obj.ts * 1000, 
+            raw_data = RawRateData(path=obj.datapath, ts=obj.ts, 
                 val=obj.val, freq=obj.agg)
             db.set_raw_data(raw_data)
             db.raw_data.send()
@@ -646,8 +646,13 @@ class QueryUtil(object):
 
     @staticmethod
     def valid_timerange(obj, in_ms=False):
-        s = datetime.timedelta(seconds=obj.begin_time)
-        e = datetime.timedelta(seconds=obj.end_time)
+
+        if in_ms:
+            s = datetime.timedelta(milliseconds=obj.begin_time)
+            e = datetime.timedelta(milliseconds=obj.end_time)
+        else:
+            s = datetime.timedelta(seconds=obj.begin_time)
+            e = datetime.timedelta(seconds=obj.end_time)
 
         divs = { False: 1, True: 1000 }
 

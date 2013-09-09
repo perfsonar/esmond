@@ -370,7 +370,7 @@ class TestCassandraPollPersister(TestCase):
         """This is a very basic smoke test for a cassandra persister."""
         config = get_config(get_config_path())
         test_data = json.loads(timeseries_test_data)
-        return
+        #return
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
@@ -663,8 +663,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         """/timeseries rest test for base rates."""
         # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
         params = {
-            'begin': self.ctr.begin,
-            'end': self.ctr.end
+            'begin': self.ctr.begin * 1000,
+            'end': self.ctr.end * 1000
         }
 
         url = '/v1/timeseries/BaseRate/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
@@ -683,16 +683,16 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), self.ctr.expected_results)
-        self.assertEquals(data['data'][0][0], params['begin']*1000)
+        self.assertEquals(data['data'][0][0], params['begin'])
         self.assertEquals(data['data'][0][1], self.ctr.base_rate_val_first)
-        self.assertEquals(data['data'][self.ctr.expected_results-1][0], params['end']*1000)
+        self.assertEquals(data['data'][self.ctr.expected_results-1][0], params['end'])
         self.assertEquals(data['data'][self.ctr.expected_results-1][1], self.ctr.base_rate_val_last)
 
     def test_get_timeseries_data_aggs(self):
         """/timeseries rest test for aggs."""
         params = {
-            'begin': self.ctr.begin-3600, # back an hour to get agg bin.
-            'end': self.ctr.end,
+            'begin': (self.ctr.begin - 3600) * 1000, # back an hour to get agg bin.
+            'end': self.ctr.end * 1000,
         }
 
         url = '/v1/timeseries/Aggs/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(self.ctr.agg_freq*1000)
@@ -701,6 +701,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -750,8 +752,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         """/timeseries rest test for raw data."""
         # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
         params = {
-            'begin': self.ctr.begin,
-            'end': self.ctr.end
+            'begin': self.ctr.begin * 1000,
+            'end': self.ctr.end * 1000
         }
 
         url = '/v1/timeseries/RawData/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
@@ -768,12 +770,13 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['agg'], '30000')
         self.assertEquals(len(data['data']), self.ctr.expected_results-1)
         self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['cf'], 'raw')
 
     def test_set_timeseries_raw_data(self):
         url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/interface_test/30000'
 
         params = {
-            'ts': int(time.time()),
+            'ts': int(time.time()) * 1000,
             'val': 1000
         }
 
@@ -789,8 +792,9 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
         # Check last value in case the db has not been wiped by a
         # full data load.
-        self.assertEquals(data['data'][-1][0], params['ts']*1000)
+        self.assertEquals(data['data'][-1][0], params['ts'])
         self.assertEquals(data['data'][-1][1], float(params['val']))
+        self.assertEquals(data['cf'], 'raw')
 
 
 if False:
