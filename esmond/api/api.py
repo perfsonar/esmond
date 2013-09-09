@@ -377,9 +377,9 @@ class InterfaceDataResource(Resource):
                 ]
 
         iface_dataset = kwargs['iface_dataset'].rstrip("/")
-
+        
         if iface_dataset not in endpoint_map:
-            raise ObjectDoesNotExist("no such dataset: %s" % iface_dataset)
+            raise BadRequest("no such dataset: %s" % iface_dataset)
 
         oidset = iface.device.oidsets.get(name=endpoint_map[iface_dataset][1])
 
@@ -547,7 +547,7 @@ class TimeseriesResource(Resource):
                 obj.cf = 'average'
 
         obj = self._execute_query(obj)
-        
+
         return obj
 
     def post_detail(self, bundle, **kwargs):

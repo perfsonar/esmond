@@ -313,15 +313,15 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         # there is no nonexistent sub collection in traffic
         url = '/v1/device/rtr_a/interface/xe-0_0_0/nonexistent'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
         # there is no nonexistent collection 
         url = '/v1/device/rtr_a/interface/xe-0_0_0/nonexistent/in'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
         # rtr_b has no traffic oidsets defined
-        url = '/v1/device/rtr_a/interface/xe-0_0_0/nonexistent/in'
+        url = '/v1/device/rtr_b/interface/xe-0_0_0/nonexistent/in'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 404)
 
