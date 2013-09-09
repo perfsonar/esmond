@@ -558,6 +558,38 @@ class TimeseriesResource(Resource):
         # cassandra writes are (base rates and aggregations for
         # example) so post was chosen. -mmg
 
+        # Validate incoming POST/JSON payload:
+
+        if bundle.META.get('CONTENT_TYPE') != 'application/json':
+            raise BadRequest('Must post content-type: application/json header and json-formatted payload.')
+
+        if not bundle.body:
+            raise BadRequest('No data payload POSTed.')
+
+        try:
+            input_payload = json.loads(bundle.body)
+        except ValueError:
+            raise BadRequest('POST data payload could not be decoded to a JSON object - given: {0}'.format(bundle.body))
+
+        if not isinstance(input_payload, list):
+            raise BadRequest('Successfully decoded JSON, but expecting a list - got: {0} from input: {1}'.format(type(input_payload), input_payload))
+
+        for i in input_payload:
+            if not isinstance(i, dict):
+                raise BadRequest('Expecting a JSON formtted list of dicts - contained {0} as an array element.'.format(type(i)))
+            if not i.has_key('ts') or not i.has_key('val'):
+                raise BadRequest('Expecting list of dicts with keys \'val\' and \'ts\' - got: {0}'.format(i))
+            try:
+                int(float(i.get('ts')))
+                float(i.get('val'))
+            except ValueError:
+                raise BadRequest('Must supply valid numeric args for ts and val dict attributes - got: {0}'.format(i))
+
+
+        print input_payload
+
+        return HttpCreated()
+
         obj = TimeseriesDataObject()
 
         obj.r_type = kwargs.get('r_type')
