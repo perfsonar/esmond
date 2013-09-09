@@ -359,7 +359,7 @@ class InterfaceDataResource(Resource):
             iface = iface_qs.get( device__name=kwargs['name'],
                     ifDescr=kwargs['iface_name'].replace("_", "/"))
         except IfRef.DoesNotExist:
-            raise ObjectDoesNotExist("no such device/interface")
+            raise BadRequest("no such device/interface: dev: {0} int: {1}".format(kwargs['name'], kwargs['iface_name']))
 
         oidsets = iface.device.oidsets.all()
         endpoint_map = {}

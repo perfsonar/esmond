@@ -303,12 +303,12 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         # there is no router called nonexistent
         url = '/v1/device/nonexistent/interface/xe-0_0_0/in'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
         # rtr_a does not have an nonexistent interface
         url = '/v1/device/rtr_a/interface/nonexistent/in'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
         # there is no nonexistent sub collection in traffic
         url = '/v1/device/rtr_a/interface/xe-0_0_0/nonexistent'
@@ -323,7 +323,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         # rtr_b has no traffic oidsets defined
         url = '/v1/device/rtr_b/interface/xe-0_0_0/nonexistent/in'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 400)
 
 
     def test_get_device_interface_data_detail(self):
@@ -375,7 +375,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_get_device_interface_data_detail_hidden(self):
         url = '/v1/device/rtr_a/interface/xe-1_0_0/in'
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
         authn = self.create_apikey(self.td.user_seeall.username,
                 self.td.user_seeall_apikey.key)
