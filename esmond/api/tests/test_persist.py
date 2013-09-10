@@ -775,12 +775,16 @@ class TestCassandraApiQueries(ResourceTestCase):
     def test_set_timeseries_raw_data(self):
         url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/interface_test/30000'
 
-        params = {
-            'ts': int(time.time()) * 1000,
-            'val': 1000
+        params = { 
+            'ts': int(time.time()) * 1000, 
+            'val': 1000 
         }
 
-        response = self.client.post(url, params)
+        # Params sent as json list and not post vars now.
+        payload = [ params ]
+
+        response = self.client.post(url, data=json.dumps(payload), 
+                content_type='application/json')
         self.assertEquals(response.status_code, 201) # not 200!
 
         response = self.client.get(url)
