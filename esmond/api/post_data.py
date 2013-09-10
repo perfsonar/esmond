@@ -27,6 +27,7 @@ Example use:
 
 class PostWarning(Warning): pass
 class PostRawDataWarning(PostWarning): pass
+class PostBaseRateWarning(PostWarning): pass
 
 class PostException(Exception):
     def __init__(self, value):
@@ -134,6 +135,14 @@ class PostRawData(PostData):
     """Class to post raw data to rest api."""
     _p_type = 'RawData'
     _wrn = PostRawDataWarning
+
+class PostBaseRate(PostData):
+    """Class to post base rate deltas to rest api."""
+    _p_type = 'BaseRate'
+    _wrn = PostBaseRateWarning
+
+
+
 
 
 

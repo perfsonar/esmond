@@ -2,7 +2,7 @@
 
 """
 Small example/test script to post some data to locally running rest 
-interface and cassandra instance.
+interface (django runserver) and cassandra instance.
 """
 
 import json
@@ -11,7 +11,19 @@ import requests
 import sys
 import time
 
-from esmond.api.post_data import PostRawData
+from esmond.api.post_data import PostRawData, PostBaseRate
+
+def read_insert(ts, p_type):
+    url = 'http://localhost:8000/v1/timeseries/{0}/rtr_test_post/FastPollHC/ifHCInOctets/interface_test/30000'.format(p_type)
+
+    params = {
+        'begin': ts-90000, 'end': ts+1000
+    }
+
+    r = requests.get(url, params=params)
+    data = json.loads(r.content)
+
+    print json.dumps(data, indent=4)
 
 def main():
 
@@ -27,26 +39,27 @@ def main():
     path = ['rtr_test_post', 'FastPollHC', 'ifHCInOctets', 'interface_test']
 
     p = PostRawData(port=8000, path=path, freq=30000)
+    # set_payload will completely replace the internal payload of the object.
     p.set_payload(payload)
+    # add_to_payload will just add new items to internal payload.
     p.add_to_payload({'ts': ts+1000, 'val': 5000})
+    # send the request and clear the internal payload list.
     p.send_data()
     # Second call will generate a warning since the first will
     # clear the internal payload.
     p.send_data()
 
-    # Read the data back out.
+    read_insert(ts, 'RawData')
 
-    url = 'http://localhost:8000/v1/timeseries/RawData/rtr_test_post/FastPollHC/ifHCInOctets/interface_test/30000'
+    # return
 
-    params = {
-        'begin': ts-90000, 'end': ts+1000
-    }
+    p = PostBaseRate(port=8000, path=path, freq=30000)
+    p.set_payload(payload)
+    p.send_data()
 
-    r = requests.get(url, params=params)
-    data = json.loads(r.content)
+    read_insert(ts, 'BaseRate')
 
-    print json.dumps(data, indent=4)
-    pass
+
 
 if __name__ == '__main__':
     main()
