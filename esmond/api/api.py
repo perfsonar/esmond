@@ -19,7 +19,7 @@ from tastypie.exceptions import NotFound, BadRequest
 from tastypie.http import HttpCreated
 
 from esmond.api.models import Device, IfRef
-from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData
+from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import remove_metachars
 
@@ -584,7 +584,7 @@ class TimeseriesResource(Resource):
                 float(i.get('val'))
             except ValueError:
                 raise BadRequest('Must supply valid numeric args for ts and val dict attributes - got: {0}'.format(i))
-        
+
 
         objs = []
 
@@ -601,8 +601,8 @@ class TimeseriesResource(Resource):
             if obj.r_type not in QueryUtil.timeseries_request_types:
                 raise BadRequest('Request type must be one of {0} - {1} was given.'.format(QueryUtil.timeseries_request_types, obj.r_type))
 
-            # Currently only doing raw data - remove later.
-            if obj.r_type != 'RawData':
+            # Currently only doing raw and base.
+            if obj.r_type not in [ 'RawData', 'BaseRate' ]:
                 raise BadRequest('Only POSTing RawData currently supported.')
 
             objs.append(obj)
@@ -645,7 +645,9 @@ class TimeseriesResource(Resource):
 
         for obj in objs:
             if obj.r_type == 'BaseRate':
-                pass
+                rate_bin = BaseRateBin(path=obj.datapath, ts=obj.ts, 
+                    val=obj.val, freq=obj.agg)
+                db.update_rate_bin(rate_bin)
             elif obj.r_type == 'Aggs':
                 pass
             elif obj.r_type == 'RawData':

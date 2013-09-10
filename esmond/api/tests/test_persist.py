@@ -749,8 +749,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         # print json.dumps(data, indent=4)
 
     def test_get_timeseries_raw_data(self):
-        """/timeseries rest test for raw data."""
-        # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
+        """/timeseries rest test for raw data - this reads from the canned 
+        test data."""
         params = {
             'begin': self.ctr.begin * 1000,
             'end': self.ctr.end * 1000
@@ -772,7 +772,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
         self.assertEquals(data['cf'], 'raw')
 
-    def test_set_timeseries_raw_data(self):
+    def test_timeseries_post_and_read(self):
+        """/timeseries rest test for raw/base rate writes and reads - 
+        does not use the canned test data."""
+        # raw data writes
         url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/interface_test/30000'
 
         params = { 
@@ -799,6 +802,28 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['data'][-1][0], params['ts'])
         self.assertEquals(data['data'][-1][1], float(params['val']))
         self.assertEquals(data['cf'], 'raw')
+
+        # base rate write
+        url = '/v1/timeseries/BaseRate/rtr_test/FastPollHC/ifHCInOctets/interface_test/30000'
+
+        response = self.client.post(url, data=json.dumps(payload), 
+                content_type='application/json')
+        self.assertEquals(response.status_code, 201) # not 200!
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        self.assertEquals(data['agg'], '30000')
+        self.assertEquals(data['resource_uri'], url)
+        # Check last value in case the db has not been wiped by a
+        # full data load.
+        self.assertEquals(data['data'][-1][0], params['ts'])
+        # Base rate read will return the delta divided by the frequency,
+        # not just the value inserted!
+        self.assertEquals(data['data'][-1][1], float(params['val'])/30000)
+        self.assertEquals(data['cf'], 'average')
 
 
 if False:
