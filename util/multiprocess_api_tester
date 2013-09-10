@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 """
+Primarily a tool to load test a running REST api deployment (ie: Apache 
+and cassandra backend).  Spawns processes as denoted by the -p flag 
+and return results.
+
 Examples:
 
 query_api -p 120 : query 120 endpoints in order returned by api.
