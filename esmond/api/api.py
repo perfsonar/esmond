@@ -584,37 +584,30 @@ class TimeseriesResource(Resource):
                 float(i.get('val'))
             except ValueError:
                 raise BadRequest('Must supply valid numeric args for ts and val dict attributes - got: {0}'.format(i))
+        
 
+        objs = []
 
-        print input_payload
+        for i in input_payload:
 
-        return HttpCreated()
+            obj = TimeseriesDataObject()
 
-        obj = TimeseriesDataObject()
+            obj.r_type = kwargs.get('r_type')
+            obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
+            obj.agg = obj.datapath.pop()
+            obj.ts = i.get('ts')
+            obj.val = i.get('val')
 
-        obj.r_type = kwargs.get('r_type')
-        obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
-        obj.agg = obj.datapath.pop()
-        obj.ts = bundle.POST.get('ts')
-        obj.val = bundle.POST.get('val')
+            if obj.r_type not in QueryUtil.timeseries_request_types:
+                raise BadRequest('Request type must be one of {0} - {1} was given.'.format(QueryUtil.timeseries_request_types, obj.r_type))
 
-        if obj.r_type not in QueryUtil.timeseries_request_types:
-            raise BadRequest('Request type must be one of {0} - {1} was given.'.format(QueryUtil.timeseries_request_types, obj.r_type))
+            # Currently only doing raw data - remove later.
+            if obj.r_type != 'RawData':
+                raise BadRequest('Only POSTing RawData currently supported.')
 
-        # Currently only doing raw data - remove later.
-        if obj.r_type != 'RawData':
-            raise BadRequest('Only POSTing RawData currently supported.')
+            objs.append(obj)
 
-        if not obj.ts or not obj.val:
-            raise BadRequest('Must supply both ts and val args to POST data.')
-
-        try:
-            obj.ts = int(float(obj.ts))
-            obj.val = float(obj.val)
-        except ValueError:
-            raise BadRequest('Must supply a valid numeric args for ts and val - ts:{0} val:{1} given'.format(obj.ts, obj.val))
-
-        if self._execute_insert(obj):
+        if self._execute_inserts(objs):
             return HttpCreated()
         else:
             # Error TBA
@@ -648,20 +641,22 @@ class TimeseriesResource(Resource):
 
         return obj
 
-    def _execute_insert(self, obj):
+    def _execute_inserts(self, objs):
 
-        if obj.r_type == 'BaseRate':
-            pass
-        elif obj.r_type == 'Aggs':
-            pass
-        elif obj.r_type == 'RawData':
-            raw_data = RawRateData(path=obj.datapath, ts=obj.ts, 
-                val=obj.val, freq=obj.agg)
-            db.set_raw_data(raw_data)
-            db.raw_data.send()
-        else:
-            # Input has been checked already
-            pass
+        for obj in objs:
+            if obj.r_type == 'BaseRate':
+                pass
+            elif obj.r_type == 'Aggs':
+                pass
+            elif obj.r_type == 'RawData':
+                raw_data = RawRateData(path=obj.datapath, ts=obj.ts, 
+                    val=obj.val, freq=obj.agg)
+                db.set_raw_data(raw_data)
+            else:
+                # Input has been checked already
+                pass
+
+        db.flush()
 
         return True
 

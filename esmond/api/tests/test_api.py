@@ -681,7 +681,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.post(url)
         self.assertEquals(response.status_code, 400)
 
-        # correct header but not serialized as json
+        # correct header but payload not serialized as json
         response = self.client.post(url, data={}, 
                 CONTENT_TYPE='application/json')
         self.assertEquals(response.status_code, 400)
@@ -692,7 +692,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         # NOTE: CONTENT_TYPE and content_type kwargs do different 
         # things!  Former just sets the header in the tastypie
         # client and the latter is passed to the underlying django
-        # client and impacts serialization.
+        # client and impacts serialization (and header).
 
         payload = { 'bunk': 'data is not a list' }
 
