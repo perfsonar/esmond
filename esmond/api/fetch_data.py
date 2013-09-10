@@ -5,6 +5,43 @@ import pprint
 import requests
 import time
 
+"""
+Library to fetch data from 'simplified' API /v1/snmp/ namespace.
+
+The class ApiConnect is the 'entry point' that the client uses, and 
+the ApiFilters class is used to set time/device/etc filters, and is 
+passed to the ApiConnect class as an argument.
+
+Example:
+
+    filters = ApiFilters()
+
+    if options.last:
+        filters.begin_time = int(time.time() - (options.last*60))
+
+    if options.devices:
+        filters.devices = options.devices
+
+    conn = ApiConnect(options.hostname, filters)
+
+After the entry point is set up, it returns device objects, which in 
+turn return associated interface objects, endpoint objects and data 
+point objects.  
+
+Traversing down through hierarchy of objects:
+
+    for d in conn.get_devices():
+        for i in d.get_interfaces():
+            for e in i.get_endpoints():
+                payload_object = e.get_data()
+                    list_of_data_point_objects = payload_object.data
+                        for i in list_of_data_point_objects:
+                            print i.ts, i.val
+
+Where timestamp values are returned, they are python datetime objects.
+
+"""
+
 from esmond.util import max_datetime
 max_epoch = calendar.timegm(max_datetime.utctimetuple())
 
