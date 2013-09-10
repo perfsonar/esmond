@@ -674,6 +674,54 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['begin_time'], int(params['begin']))
         self.assertEquals(data['end_time'], int(params['end']))
 
+    def test_bad_timeseries_post_requests(self):
+        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+
+        # incorrect header
+        response = self.client.post(url)
+        self.assertEquals(response.status_code, 400)
+
+        # correct header but not serialized as json
+        response = self.client.post(url, data={}, CONTENT_TYPE='application/json')
+        self.assertEquals(response.status_code, 400)
+
+        # Below: correct header and json serialization, but incorrect
+        # data structures and values being sent.
+
+        payload = { 'bunk': 'data is not a list' }
+
+        response = self.client.post(url, format='json', 
+            data=json.dumps(payload), content_type='application/json')
+        self.assertEquals(response.status_code, 400)
+
+        payload = [
+            ['this', 'should not be a list']
+        ]
+
+        response = self.client.post(url, format='json', 
+            data=json.dumps(payload), content_type='application/json')
+        self.assertEquals(response.status_code, 400)
+
+        payload = [
+            {'this': 'has', 'the': 'wrong key names'}
+        ]
+
+        response = self.client.post(url, format='json', 
+            data=json.dumps(payload), content_type='application/json')
+        self.assertEquals(response.status_code, 400)
+
+        payload = [
+            {'val': 'dict values', 'ts': 'should be numbers'}
+        ]
+
+        response = self.client.post(url, format='json', 
+            data=json.dumps(payload), content_type='application/json')
+        self.assertEquals(response.status_code, 400)
+
+        
+
+
+
 
 
 
