@@ -682,43 +682,49 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 400)
 
         # correct header but not serialized as json
-        response = self.client.post(url, data={}, CONTENT_TYPE='application/json')
+        response = self.client.post(url, data={}, 
+                CONTENT_TYPE='application/json')
         self.assertEquals(response.status_code, 400)
 
         # Below: correct header and json serialization, but incorrect
         # data structures and values being sent.
 
+        # NOTE: CONTENT_TYPE and content_type kwargs do different 
+        # things!  Former just sets the header in the tastypie
+        # client and the latter is passed to the underlying django
+        # client and impacts serialization.
+
         payload = { 'bunk': 'data is not a list' }
 
-        response = self.client.post(url, format='json', 
-            data=json.dumps(payload), content_type='application/json')
+        response = self.client.post(url, data=json.dumps(payload), 
+                content_type='application/json')
         self.assertEquals(response.status_code, 400)
 
         payload = [
             ['this', 'should not be a list']
         ]
 
-        response = self.client.post(url, format='json', 
-            data=json.dumps(payload), content_type='application/json')
+        response = self.client.post(url, data=json.dumps(payload), 
+                content_type='application/json')
         self.assertEquals(response.status_code, 400)
 
         payload = [
             {'this': 'has', 'the': 'wrong key names'}
         ]
 
-        response = self.client.post(url, format='json', 
-            data=json.dumps(payload), content_type='application/json')
+        response = self.client.post(url, data=json.dumps(payload), 
+                content_type='application/json')
         self.assertEquals(response.status_code, 400)
 
         payload = [
             {'val': 'dict values', 'ts': 'should be numbers'}
         ]
 
-        response = self.client.post(url, format='json', 
-            data=json.dumps(payload), content_type='application/json')
+        response = self.client.post(url, data=json.dumps(payload), 
+                content_type='application/json')
         self.assertEquals(response.status_code, 400)
 
-        
+
 
 
 
