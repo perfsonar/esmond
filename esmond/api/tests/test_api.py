@@ -12,6 +12,7 @@ from esmond.api.models import *
 from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
 from esmond.api.tests.example_data import build_default_metadata
 from esmond.cassandra import AGG_TYPES
+from esmond.api.api import SNMP_NAMESPACE
 
 def datetime_to_timestamp(dt):
     return calendar.timegm(dt.timetuple())
@@ -245,7 +246,8 @@ class MockCASSANDRA_DB(object):
     def query_baserate_timerange(self, path=None, freq=None, ts_min=None, ts_max=None):
         # Mimic returned data, format elsehwere
         self._test_incoming_args(path, freq, ts_min, ts_max)
-        if path[0] not in ['rtr_a', 'rtr_inf'] : return []
+        if path[0] not in [SNMP_NAMESPACE] : return []
+        if path[1] not in ['rtr_a', 'rtr_inf'] : return []
         return [
             {'is_valid': 2, 'ts': 0*1000, 'val': 10},
             {'is_valid': 2, 'ts': 30*1000, 'val': 20},
@@ -535,19 +537,19 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
-        url = '/v1/timeseries/BaseRate/rtr_a/'
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # This does not end in a parsable frequency
-        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_data_detail(self):
         agg = 30000
 
-        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
         response = self.client.get(url)
         data = json.loads(response.content)
@@ -561,7 +563,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][1][1], 20)
 
         # make sure it works with a trailing slash too
-        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}/'.format(agg)
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}/'.format(agg)
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -577,7 +579,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_timeseries_data_aggs(self):
         agg = 3600000
 
-        url = '/v1/timeseries/Aggs/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
         response = self.client.get(url)
         data = json.loads(response.content)
@@ -617,7 +619,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2][1], 300)
 
     def test_timeseries_bad_aggregations(self):
-        url = '/v1/timeseries/Aggs/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
+        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
 
         params = {'cf': 'bad'} # this cf does not exist
 
@@ -625,7 +627,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_timerange_limiter(self):
-        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
         params = { 
             'begin': int(time.time() - datetime.timedelta(days=31).total_seconds())
         }
@@ -633,7 +635,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
-        url = '/v1/timeseries/Aggs/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
+        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
 
         params = {
             'begin': int(time.time() - datetime.timedelta(days=366).total_seconds())
@@ -646,19 +648,19 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
             'begin': int(time.time() - datetime.timedelta(days=366*10).total_seconds())
         }
 
-        url = '/v1/timeseries/Aggs/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/86400000'
+        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/86400000'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
         # This is an invalid aggregation/frequency
-        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/31000'
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/31000'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_float_timestamp_input(self):
-        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
         # pass in floats
         params = { 
@@ -675,7 +677,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['end_time'], int(params['end']))
 
     def test_bad_timeseries_post_requests(self):
-        url = '/v1/timeseries/BaseRate/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
         # incorrect header
         response = self.client.post(url)

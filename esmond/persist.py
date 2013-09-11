@@ -375,6 +375,8 @@ class CassandraPollPersister(PollPersister):
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
+        self.ns = "snmp"
+
         self.oidsets = {}
         self.poller_args = {}
         self.oids = {}
@@ -421,7 +423,7 @@ class CassandraPollPersister(PollPersister):
             # Create data encapsulation object (defined in cassandra.py 
             # module) and store the raw input.
 
-            raw_data = RawRateData(path=[device_n, oidset_n, oid_n, path_n],
+            raw_data = RawRateData(path=[self.ns, device_n, oidset_n, oid_n, path_n],
                     ts=result.timestamp * 1000, val=val, freq=oidset.frequency_ms)
 
             self.db.set_raw_data(raw_data)

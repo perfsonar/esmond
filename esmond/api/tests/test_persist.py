@@ -32,7 +32,7 @@ from pycassa.columnfamily import ColumnFamily
 
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
      build_metadata_from_test_data, load_test_data
-from esmond.api.api import check_connection
+from esmond.api.api import check_connection, SNMP_NAMESPACE
 
 try:
     import tsdb
@@ -432,8 +432,8 @@ class TestCassandraPollPersister(TestCase):
             device,oidset,oid,path,tmp1,tmp2 = p.split('/')
             for d in v.select():
                 tsdb_aggs += 1
-                key = '%s:%s:%s:%s:%s:%s'  % \
-                    (device,oidset,oid,path,int(tmp2)*1000,
+                key = '%s:%s:%s:%s:%s:%s:%s'  % \
+                    (SNMP_NAMESPACE, device,oidset,oid,path,int(tmp2)*1000,
                     datetime.datetime.utcfromtimestamp(d.timestamp).year)
 
                 val = rates.get(key, [d.timestamp*1000])[d.timestamp*1000]
@@ -458,7 +458,7 @@ class TestCassandraPollPersister(TestCase):
         end_time = self.ctr.end*1000
 
         ret = db.query_baserate_timerange(
-            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             freq=30*1000,
             ts_min=start_time,
             ts_max=end_time
@@ -471,7 +471,7 @@ class TestCassandraPollPersister(TestCase):
         assert ret[self.ctr.expected_results-1]['val'] == self.ctr.base_rate_val_last
 
         ret = db.query_raw_data(
-            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             freq=30*1000,
             ts_min=start_time,
             ts_max=end_time
@@ -484,7 +484,7 @@ class TestCassandraPollPersister(TestCase):
         assert ret[len(ret)-1]['val'] == self.ctr.raw_val_last
 
         ret = db.query_aggregation_timerange(
-            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
             freq=self.ctr.agg_freq*1000, # required!
@@ -496,7 +496,7 @@ class TestCassandraPollPersister(TestCase):
         assert ret[0]['ts'] == self.ctr.agg_ts*1000
         
         ret = db.query_aggregation_timerange(
-            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
             freq=self.ctr.agg_freq*1000, # required!
@@ -508,7 +508,7 @@ class TestCassandraPollPersister(TestCase):
         assert ret[0]['ts'] == self.ctr.agg_ts*1000
 
         ret = db.query_aggregation_timerange(
-            path=['rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
             ts_max=end_time,
             freq=self.ctr.agg_freq*1000, # required!
@@ -667,7 +667,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000
         }
 
-        url = '/v1/timeseries/BaseRate/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v1/timeseries/BaseRate/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -695,7 +695,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000,
         }
 
-        url = '/v1/timeseries/Aggs/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(self.ctr.agg_freq*1000)
+        url = '/v1/timeseries/Aggs/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/{1}'.format(SNMP_NAMESPACE, self.ctr.agg_freq*1000)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -756,7 +756,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000
         }
 
-        url = '/v1/timeseries/RawData/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v1/timeseries/RawData/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)

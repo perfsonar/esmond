@@ -43,6 +43,8 @@ except ConnectionException, e:
     else:
         raise ConnectionException(str(e))
 
+SNMP_NAMESPACE = 'snmp'
+
 OIDSET_INTERFACE_ENDPOINTS = {
     'ALUErrors': {
         'error/in': 'ifInErrors',
@@ -370,6 +372,7 @@ class InterfaceDataResource(Resource):
             for endpoint, varname in \
                     OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
                 endpoint_map[endpoint] = [
+                    SNMP_NAMESPACE,
                     iface.device.name,
                     oidset.name,
                     varname,
@@ -381,7 +384,7 @@ class InterfaceDataResource(Resource):
         if iface_dataset not in endpoint_map:
             raise BadRequest("no such dataset: %s" % iface_dataset)
 
-        oidset = iface.device.oidsets.get(name=endpoint_map[iface_dataset][1])
+        oidset = iface.device.oidsets.get(name=endpoint_map[iface_dataset][2])
 
         obj = InterfaceDataObject()
         obj.datapath = endpoint_map[iface_dataset]
