@@ -11,7 +11,7 @@ import requests
 import sys
 import time
 
-from esmond.api.post_data import PostRawData, PostBaseRate
+from esmond.api.client.post_data import PostRawData, PostBaseRate
 
 def read_insert(ts, p_type):
     url = 'http://localhost:8000/v1/timeseries/{0}/rtr_test_post/FastPollHC/ifHCInOctets/interface_test/30000'.format(p_type)

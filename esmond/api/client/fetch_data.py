@@ -40,6 +40,10 @@ Traversing down through hierarchy of objects:
 
 Where timestamp values are returned, they are python datetime objects.
 
+NOTE: actually executing that example w/out filtering/limiting the 
+devices being polled will grab a lot of data from the API so proceed 
+with caution!
+
 """
 
 from esmond.util import max_datetime

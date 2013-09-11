@@ -36,11 +36,15 @@ class PostException(Exception):
         return repr(self.value)
 
 class PostData(object):
-    """Base class for API write objects"""
+    """Base class for API write objects - writes data to the POST 
+    facility in the /timeseries/ REST interface namespace."""
     _schema_root = 'v1/timeseries'
     _wrn = PostWarning
 
     def __init__(self, hostname='localhost', port=80, path=[], freq=None):
+        """Constructor - the path list arg is an ordered list of elements
+        that will be used (along with the freq arg) to construct the 
+        cassandra row key.  See example above."""
         super(PostData, self).__init__()
         self.hostname = hostname
         self.port = port
@@ -81,9 +85,14 @@ class PostData(object):
         print self.url
 
     def set_payload(self, payload):
-        """Sets object payload to a complete list of dicts passed in."""
+        """Sets object payload to a complete list of dicts passed in. 
+        This will overwrite the internal payload if any elements had 
+        been previously defined (and issue a warning)."""
         if not isinstance(payload, list):
             raise PostException('Arg payload to set_payload must be a list instance.')
+
+        if len(self.payload):
+            self._issue_warning('Internal payload was not empty, so this is a warning that you are overwriting an existing payload.')
 
         self.payload = payload
 
@@ -113,7 +122,9 @@ class PostData(object):
                 raise PostException('Must supply valid numeric args for ts and val dict attributes - got: {0}'.format(i))
 
     def send_data(self):
-        """Format current payload, send to REST api and clear the payload."""
+        """Format current payload, send to REST api and clear the payload.
+        Payload is cleared after a write so as not to send duplicate data, 
+        and so the same instance can be used to send multiple times."""
 
         if not self.payload:
             self._issue_warning('Payload empty, no data sent.')
@@ -129,6 +140,7 @@ class PostData(object):
         self.payload = []
 
     def _issue_warning(self, message):
+        """Use to issue a subclass-specific warning."""
         warnings.warn(message, self._wrn, stacklevel=2)
 
 class PostRawData(PostData):

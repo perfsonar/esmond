@@ -16,7 +16,7 @@ import warnings
 
 from optparse import OptionParser
 
-from esmond.api.fetch_data import ApiConnect, ApiFilters
+from esmond.api.client.fetch_data import ApiConnect, ApiFilters
 
 def main():
     import os.path
