@@ -411,7 +411,7 @@ class CassandraPollPersister(PollPersister):
             # XXX(mmg/jugan): this is a bad hack to get testing going.
             if var_name.endswith("sysUpTime"):
                 continue
-            device_n,oidset_n,oid_n,path_n = var_name.split('/')
+            device_n,oidset_n,oid_n,path_n = var_name.split('/', 3)
 
             # This shouldn't happen.
             if val is None:
