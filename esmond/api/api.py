@@ -23,14 +23,6 @@ from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRa
 from esmond.config import get_config_path, get_config
 from esmond.util import remove_metachars
 
-"""
-/$DEVICE/
-/$DEVICE/interface/
-/$DEVICE/interface/$INTERFACE/
-/$DEVICE/interface/$INTERFACE/in
-/$DEVICE/interface/$INTERFACE/out
-"""
-
 try:
     db = CASSANDRA_DB(get_config(get_config_path()))
 except ConnectionException, e:
@@ -42,6 +34,17 @@ except ConnectionException, e:
         db = None
     else:
         raise ConnectionException(str(e))
+
+"""
+Namespace to retrieve traffic data with a simplfied helper syntax.
+
+/v1/device/
+/v1/device/$DEVICE/
+/v1/device/$DEVICE/interface/
+/v1/device/$DEVICE/interface/$INTERFACE/
+/v1/device/$DEVICE/interface/$INTERFACE/in
+/v1/device/$DEVICE/interface/$INTERFACE/out
+"""
 
 SNMP_NAMESPACE = 'snmp'
 
@@ -448,6 +451,22 @@ class InterfaceDataResource(Resource):
         return obj
 
 # ---
+
+"""
+Namespace to retrive data with explicit Cassandra schema-like syntax.  
+
+/v1/timeseries/
+/v1/timeseries/$TYPE/ (where $TYPE is RawData, BaseRate or Aggs)
+/v1/timeseries/$TYPE/$NS/ (this is actually just a prefix/construct of the cassandra keys)
+/v1/timeseries/$TYPE/$NS/$DEVICE/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/$FREQUENCY
+
+Params for get: begin, end, and cf where appropriate.
+Params for put: JSON list of dicts with keys 'val' and 'ts'.
+"""
 
 class TimeseriesDataObject(InterfaceDataObject):
     pass
