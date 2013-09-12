@@ -800,7 +800,7 @@ class TimeseriesResource(Resource):
             else:
                 # Input has been checked already
                 pass
-
+        
         db.flush()
 
         return True

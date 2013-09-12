@@ -34,3 +34,4 @@ util/configure_cluster.orig
 pysqlite2-doc/install-source.txt
 crashlog
 test-env
+.coverage

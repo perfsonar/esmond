@@ -255,6 +255,9 @@ class MockCASSANDRA_DB(object):
             {'is_valid': 0, 'ts': 90*1000, 'val': 80}
         ]
 
+    def query_raw_data(self, path=None, freq=None, ts_min=None, ts_max=None):
+        return self.query_baserate_timerange(path, freq, ts_min, ts_max)
+
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
         self._test_incoming_args(path, freq, ts_min, ts_max, cf)
         if cf == 'average':
@@ -286,6 +289,15 @@ class MockCASSANDRA_DB(object):
         if cf:
             assert isinstance(cf, str) or isinstance(cf, unicode)
             assert cf in AGG_TYPES
+
+    def update_rate_bin(self, ratebin):
+        pass
+
+    def set_raw_data(self, rawdata):
+        pass
+
+    def flush(self):
+        pass
 
 
 class DeviceAPIDataTests(DeviceAPITestsBase):
@@ -537,6 +549,10 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
+        url = '/v1/timeseries/BaseRate/snmp/'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 400)
+
         url = '/v1/timeseries/BaseRate/snmp/rtr_a/'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
@@ -545,6 +561,12 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
+
+        # This type does not exist
+        url = '/v1/timeseries/BadType/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 400)
+
 
     def test_timeseries_data_detail(self):
         agg = 30000
@@ -575,6 +597,20 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['resource_uri'], url.rstrip("/"))
         self.assertEquals(data['data'][2][0], agg*2)
         self.assertEquals(data['data'][2][1], 40)
+
+        # Raw data as well.
+        url = '/v1/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+
+        response = self.client.get(url)
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['cf'], 'raw')
+        self.assertEquals(int(data['agg']), agg)
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][1][0], agg)
+        self.assertEquals(data['data'][1][1], 20)
 
     def test_timeseries_data_aggs(self):
         agg = 3600000
@@ -726,7 +762,26 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
                 content_type='application/json')
         self.assertEquals(response.status_code, 400)
 
+    def test_timeseries_post_requests(self):
+        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
+        params = { 
+            'ts': int(time.time()) * 1000, 
+            'val': 1000 
+        }
+
+        # Params sent as json list and not post vars now.
+        payload = [ params ]
+
+        response = self.client.post(url, data=json.dumps(payload), 
+                content_type='application/json')
+        self.assertEquals(response.status_code, 201) # not 200!
+
+        url = '/v1/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+
+        response = self.client.post(url, data=json.dumps(payload), 
+                content_type='application/json')
+        self.assertEquals(response.status_code, 201) # not 200!
 
 
 
