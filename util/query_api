@@ -30,6 +30,9 @@ def main():
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
             help='Last n minutes of data to query.')
+    parser.add_option('-p', '--port', metavar='PORT',
+            type='int', dest='port', default=80,
+            help='Port number for of rest api.')
     parser.add_option('-d', '--device',
             type='string', action='append', metavar='DEVICE',
             default=[], dest='devices',
@@ -47,7 +50,7 @@ def main():
     if options.devices:
         filters.devices = options.devices
 
-    conn = ApiConnect(options.hostname, filters)
+    conn = ApiConnect(options.hostname, options.port, filters)
 
     # return 1
 

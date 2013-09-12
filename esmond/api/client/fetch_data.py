@@ -67,10 +67,11 @@ class ApiConnectWarning(Warning): pass
 class NodeInfo(object):
     wrn = NodeInfoWarning
     """Base class for encapsulation objects"""
-    def __init__(self, data, hostname, filters):
+    def __init__(self, data, hostname, port, filters):
         super(NodeInfo, self).__init__()
         self._data = data
         self.hostname = hostname
+        self.port = port
         self.filters = filters
 
         # Default rest parameters for all objects
@@ -147,8 +148,8 @@ class NodeInfo(object):
 class Device(NodeInfo):
     wrn = DeviceWarning
     """Class to encapsulate device information"""
-    def __init__(self, data, hostname, filters):
-        super(Device, self).__init__(data, hostname, filters)
+    def __init__(self, data, hostname, port, filters):
+        super(Device, self).__init__(data, hostname, port, filters)
 
     # Property attrs unique to devices
     @property
@@ -183,14 +184,14 @@ class Device(NodeInfo):
                 break
 
         if uri:
-            r = requests.get('http://{0}/{1}'.format(self.hostname, uri), 
+            r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, uri), 
                 params=self._q_params)
 
             if r.status_code == 200 and \
                 r.headers['content-type'] == 'application/json':
                 data = json.loads(r.text)
                 for i in data['children']:
-                    iface = self._filter_interfaces(Interface(i, self.hostname, self.filters))
+                    iface = self._filter_interfaces(Interface(i, self.hostname, self.port, self.filters))
                     if iface:
                         yield iface
             else:
@@ -206,8 +207,8 @@ class Device(NodeInfo):
 class Interface(NodeInfo):
     wrn = InterfaceWarning
     """Class to encapsulate interface information"""
-    def __init__(self, data, hostname, filters):
-        super(Interface, self).__init__(data, hostname, filters)
+    def __init__(self, data, hostname, port, filters):
+        super(Interface, self).__init__(data, hostname, port, filters)
 
     # Property attrs unique to interfaces
     @property
@@ -273,7 +274,7 @@ class Interface(NodeInfo):
         a call to the API, it is a get_ method just for consistency.
         """
         for i in self._data['children']:
-            e = self._filter_endpoints(Endpoint(i, self.hostname, self.filters))
+            e = self._filter_endpoints(Endpoint(i, self.hostname, self.port, self.filters))
             if e:
                 yield e
 
@@ -283,8 +284,8 @@ class Interface(NodeInfo):
 class Endpoint(NodeInfo):
     wrn = EndpointWarning
     """Class to encapsulate endpoint information"""
-    def __init__(self, data, hostname, filters):
-        super(Endpoint, self).__init__(data, hostname, filters)
+    def __init__(self, data, hostname, port, filters):
+        super(Endpoint, self).__init__(data, hostname, port, filters)
 
     @property
     def name(self):
@@ -302,7 +303,7 @@ class Endpoint(NodeInfo):
         empty object.
         """
 
-        r = requests.get('http://{0}/{1}'.format(self.hostname, self.uri),
+        r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, self.uri),
             params=self._q_params)
 
         if r.status_code == 200 and \
@@ -320,7 +321,7 @@ class DataPayload(NodeInfo):
     wrn = DataPayloadWarning
     """Class to encapsulate data payload"""
     def __init__(self, data={'data':[]}):
-        super(DataPayload, self).__init__(data, None, None)
+        super(DataPayload, self).__init__(data, None, None, None)
 
     @property
     def agg(self):
@@ -424,10 +425,11 @@ class ApiFilters(object):
 class ApiConnect(object):
     wrn = ApiConnectWarning
     """Core class to pull data from the rest api."""
-    def __init__(self, hostname, filters=ApiFilters()):
+    def __init__(self, hostname='localhost', port=80, filters=ApiFilters()):
         super(ApiConnect, self).__init__()
         self.hostname = hostname
         self.filters = filters
+        self.port = port
 
         self._q_params = {
             'begin': self.filters.ts_epoch('begin_time'),
@@ -443,14 +445,14 @@ class ApiConnect(object):
         return device
 
     def get_devices(self):
-        r = requests.get('http://{0}/v1/device/?limit=0'.format(self.hostname), 
+        r = requests.get('http://{0}:{1}/v1/device/?limit=0'.format(self.hostname, self.port), 
             params=self._q_params)
         
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             for i in data:
-                d = self._filter_devices(Device(i, self.hostname, self.filters))
+                d = self._filter_devices(Device(i, self.hostname, self.port, self.filters))
                 if d: 
                     yield d
         else:
