@@ -23,6 +23,12 @@ Example use:
     p.add_to_payload({'ts': ts+1000, 'val': 5000})
     p.send_data()
 
+The internal payload is initialized to an empty list.  The client can either
+compltely overwrite the internal payload with the set_payload() method, or 
+one can add indivdual dicts to it with add_to_payload().  
+
+In either case, the payload will be internally validated and an exception
+will be raised if bad data is found.
 """
 
 class PostWarning(Warning): pass

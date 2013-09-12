@@ -4,6 +4,7 @@ import json
 import pprint
 import requests
 import time
+import warnings
 
 """
 Library to fetch data from 'simplified' API /v1/snmp/ namespace.
@@ -44,6 +45,11 @@ NOTE: actually executing that example w/out filtering/limiting the
 devices being polled will grab a lot of data from the API so proceed 
 with caution!
 
+The objects that encapsulate the device/interface/etc data that are
+returned from the api follow the general pattern where information in 
+a given object are accessed by properties, and when acutal 'work' is 
+being done (hitting the api), that is done by a method prefixed with
+get_ (ex: get_interfaces()).
 """
 
 from esmond.util import max_datetime
@@ -131,6 +137,10 @@ class NodeInfo(object):
         return self.pp.pformat(self._data)
 
     def http_alert(self, r):
+        """
+        Issue a subclass specific alert in the case that a call to the REST
+        api does not return a 200 status code.
+        """
         warnings.warn('Request for {0} got status: {1}'.format(r.url,r.status_code), self.wrn, stacklevel=2)
 
 
@@ -151,9 +161,21 @@ class Device(NodeInfo):
 
     # Fetch and filter data, etc
     def _filter_interfaces(self, interface):
+        """
+        Called by get_interfaces() - this is not fully implemented yet.
+        Currently this just returns the interface object that is passed in.
+        When we need to implement interface-name filtering, check the 
+        contents of the self.filters object and if the interface object
+        that has been passed in does not meet the criteria, return 
+        None instead.
+        """
         return interface
 
     def get_interfaces(self):
+        """
+        Issue a call to the API to get a list of interfaces (via a 
+        generator) associated with the device this object refers to.
+        """
         uri = None
         for c in self._data['children']:
             if c['name'] == 'interface':
@@ -245,6 +267,11 @@ class Interface(NodeInfo):
         return endpoint
 
     def get_endpoints(self):
+        """
+        Generate and return a list of endpoints (via a generator) associated
+        with this interface.  Even though this does not 'do work' by issuing
+        a call to the API, it is a get_ method just for consistency.
+        """
         for i in self._data['children']:
             e = self._filter_endpoints(Endpoint(i, self.hostname, self.filters))
             if e:
@@ -268,6 +295,12 @@ class Endpoint(NodeInfo):
         return self._data.get('uri', None)
 
     def get_data(self):
+        """
+        Retrieve the traffic data and return the json response in 
+        a DataPayload object.  If there is something wrong with the 
+        response (status/content) then issue a warning and return an 
+        empty object.
+        """
 
         r = requests.get('http://{0}/{1}'.format(self.hostname, self.uri),
             params=self._q_params)
@@ -299,6 +332,7 @@ class DataPayload(NodeInfo):
 
     @property
     def data(self):
+        """Return internal data from payload as list of DataPoint."""
         return [DataPoint(x[0],x[1]) for x in self._data.get('data', None)]
 
     @property
@@ -343,6 +377,9 @@ class ApiFilters(object):
         return int(calendar.timegm(getattr(self, time_prop).utctimetuple()))
 
     def _convert_ts(self, ts):
+        """
+        Massage the timestamp to datetime if need be.
+        """
         if isinstance(ts, type(self._begin_time)):
             return ts
         else:
