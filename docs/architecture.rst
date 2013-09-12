@@ -132,12 +132,14 @@ it is something that can be constructed by the client querying the data.
 
 The row keys for the stored snmp data is of the following form:
 
-router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012
+snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012
 
 The components of the row key are:
 
-device_name:oidset:oid:interface_name:data_frequency:year
+ns:device_name:oidset:oid:interface_name:data_frequency:year
 
+The namespace component is a prefix to differentiate different kinds of 
+data that might later be put into the backend - currently just 'snmp.'
 The device name and interface names are self explanitory, the oidset is a 
 grouping of a particular type of mesurement (like data traffic), the oid is 
 the measurement itself (the direction of the data traffic), and the 
@@ -193,7 +195,7 @@ The raw data are stored in a regular column family with the following schema:
 
 // regular col family
 "raw_data" : {
-    "router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
+    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
         "1343955624" :   // long column name
         "16150333739148" // UTF-8 containing JSON for values.
     }
@@ -211,7 +213,7 @@ Base Rate cf
 
 // supercolumn
 "base_rates" : {
-    "router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
+    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
         "1343955600" : {     // long column name.
             "val": "123",    // string key, counter type value.
             "is_valid" : "2" // zero or positive non-zero.
@@ -240,7 +242,7 @@ Rate Aggregation cf
 
 // supercolumn
 "rate_aggregations" : {
-    "router_a:FastPollHC:ifHCInOctets:xe-0_2_0:3600000:2012" : {
+    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:3600000:2012" : {
         "1343955600" : {   // long column name.
             "val": "1234", // string key, counter type.
             "30": "38"     // key of the 'non-val' column is freq of the base rate.
@@ -275,7 +277,7 @@ Stat Aggregation cf
 
 // supercolumn
 "stat_aggregations" : {
-    "router_a:FastPollHC:ifHCInOctets:xe-0_2_0:86400000:2012" : {
+    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:86400000:2012" : {
         "1343955600" : { // long column name.
             "min": "0",  // string keys, long types.
             "max": "484140" 

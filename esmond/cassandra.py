@@ -7,7 +7,7 @@ esmond schema in json-like notation:
 
 // regular col family
 "raw_data" : {
-    "router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
+    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
         "1343955624" :   // long column name
         "16150333739148" // UTF-8 containing JSON for values.
     }
@@ -15,7 +15,7 @@ esmond schema in json-like notation:
 
 // supercolumn
 "base_rates" : {
-    "router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
+    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
         "1343955600" : {     // long column name.
             "val": "123",    // string key, counter type value.
             "is_valid" : "2" // zero or positive non-zero.
@@ -25,7 +25,7 @@ esmond schema in json-like notation:
 
 // supercolumn
 "rate_aggregations" : {
-    "router_a:FastPollHC:ifHCInOctets:xe-0_2_0:3600000:2012" : {
+    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:3600000:2012" : {
         "1343955600" : {   // long column name.
             "val": "1234", // string key, counter type.
             "30": "38"     // key of the 'non-val' column is freq of the base rate.
@@ -35,7 +35,7 @@ esmond schema in json-like notation:
 
 // supercolumn
 "stat_aggregations" : {
-    "router_a:FastPollHC:ifHCInOctets:xe-0_2_0:86400000:2012" : {
+    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:86400000:2012" : {
         "1343955600" : { // long column name.
             "min": "0",  // string keys, long types.
             "max": "484140" 
