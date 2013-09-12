@@ -44,6 +44,18 @@ Namespace to retrieve traffic data with a simplfied helper syntax.
 /v1/device/$DEVICE/interface/$INTERFACE/
 /v1/device/$DEVICE/interface/$INTERFACE/in
 /v1/device/$DEVICE/interface/$INTERFACE/out
+
+Params for GET: begin, end, agg and cf where appropriate.  
+
+If none are supplied, sane defaults will be set by the interface and the 
+last hour of base rates will be returned.  The begin/end params are 
+timestamps in seconds, the agg param is the frequency of the aggregation 
+that the client is requesting, and the cf is one of average/min/max.
+
+This namespace is 'browsable' - /v1/device/ will return a list of devices, 
+/v1/device/$DEVICE/interface/ will return the interfaces on a device, etc. 
+A full 'detail' URI with a defined endpoing data set (as outlined in the 
+OIDSET_INTERFACE_ENDPOINTS just below) will return the data.
 """
 
 SNMP_NAMESPACE = 'snmp'
@@ -465,7 +477,26 @@ Namespace to retrive data with explicit Cassandra schema-like syntax.
 /v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/$FREQUENCY
 
 Params for get: begin, end, and cf where appropriate.
-Params for put: JSON list of dicts with keys 'val' and 'ts'.
+Params for put: JSON list of dicts with keys 'val' and 'ts' sent as POST 
+data payload.
+
+GET: The begin/end params are timestamps in milliseconds, and the cf is 
+one of average/min/max.  If none are given, begin/end will default to the 
+last hour.
+
+In short: everything after the /v1/timeseries/$TYPE/ segment of the URI is 
+joined together to create a cassandra row key.  The path must end with a 
+valid numeric frequency.  The URIs could potentailly be longer or shorter 
+depending on the composition of the row keys of the data being retrieved 
+or written - this is just based on the composition of the snmp data keys.
+
+The $NS element is just a construct of how we are storing the data.  It is 
+just a prefix - the esmond data is being stored with the previx snmp for 
+example.  Ultimately it is still just part of the generated path.
+
+This namespace is not 'browsable' - GET and POST requests expect expect a 
+full 'detail' URI.  Entering an incomplete URI (ex: /v1/timeseries/, etc) 
+will result in a 400 error being returned.
 """
 
 class TimeseriesDataObject(InterfaceDataObject):
