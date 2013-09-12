@@ -154,6 +154,11 @@ class DeviceSerializer(Serializer):
 
 
 class DeviceResource(ModelResource):
+    """
+    Root resource of this REST schema.  This will return device information 
+    form using the ORM and dispatch requests for interface and endpoint 
+    information to the appropriate InterfaceResource.
+    """
     children = fields.ListField()
     leaf = fields.BooleanField()
 
@@ -180,6 +185,18 @@ class DeviceResource(ModelResource):
         return data
 
     def prepend_urls(self):
+        """
+        URL regex parsing for this REST schema.  The call to dispatch_detail 
+        returns Device information the ORM, the other calls are dispatched to 
+        the methods below.  
+
+        This is connected to the django url schema by the call:
+
+        v1_api = Api(api_name='v1')
+        v1_api.register(DeviceResource())
+
+        at the bottom of the module.
+        """
         return [
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/$" \
                 % self._meta.resource_name, self.wrap_view('dispatch_detail'),
@@ -215,6 +232,12 @@ class DeviceResource(ModelResource):
     #
     # add mapping between oidset and REST API.  Something similar to declarative
     # models/resources ala Django models
+
+    """
+    The three following methods are invoked by the prepend_urls regex parsing. 
+    They invoke and return an the appropriate method call on an instance of 
+    one of the Interface* resorces below.
+    """
 
     def dispatch_interface_list(self, request, **kwargs):
         return InterfaceResource().dispatch_list(request, device__name=kwargs['name'])
@@ -260,6 +283,11 @@ class InterfaceResource(ModelResource):
         authentication = AnonymousGetElseApiAuthentication()
 
     def obj_get(self, bundle, **kwargs):
+        """
+        This massages the underscores in the incoming interface name 
+        (ifDescr) back to forward slashes and passes it up to the 
+        base class method.
+        """
         kwargs['ifDescr'] = kwargs['ifDescr'].replace("_", "/")
         return super(InterfaceResource, self).obj_get(bundle, **kwargs)
 
@@ -283,11 +311,16 @@ class InterfaceResource(ModelResource):
         return orm_filters
 
     def alter_list_data_to_serialize(self, request, data):
+        """
+        Modify resource object default format before this is returned 
+        and serialized as json.
+        """
         data['children'] = data['objects']
         del data['objects']
         return data
 
     def get_resource_uri(self, bundle_or_obj=None):
+        """Generates the resource uri element that is returned in json payload."""
         if isinstance(bundle_or_obj, Bundle):
             obj = bundle_or_obj.obj
         else:
@@ -321,6 +354,7 @@ class InterfaceResource(ModelResource):
         return bundle
 
 class InterfaceDataObject(object):
+    """Encapsulation object to assign values to during processing."""
     def __init__(self, initial=None):
         self.__dict__['_data'] = {}
 
@@ -360,6 +394,7 @@ class InterfaceDataResource(Resource):
         return qs.filter(begin_time__gte=n, end_time__lt=n)
 
     def get_resource_uri(self, bundle_or_obj):
+        """Generate resource uri"""
         if isinstance(bundle_or_obj, Bundle):
             obj = bundle_or_obj.obj
         else:
@@ -371,6 +406,14 @@ class InterfaceDataResource(Resource):
         return uri
 
     def obj_get(self, bundle, **kwargs):
+        """
+        Invoked when the actual data detail is requested.  Checks the 
+        interface name, and generates the endpoint mapping which contains 
+        the array 'path' that is used to request the data from the backend.
+
+        If that is all good, then query args are parsed, defaults are set if 
+        none were supplied and then the query is executed.
+        """
         iface_qs = InterfaceResource().get_object_list(bundle.request)
         try:
             iface = iface_qs.get( device__name=kwargs['name'],
@@ -432,6 +475,11 @@ class InterfaceDataResource(Resource):
         return self._execute_query(oidset, obj)
 
     def _execute_query(self, oidset, obj):
+        """
+        Executes a couple of reality checks (making sure that a valid 
+        aggregation was requested and checks/limits the time range), and
+        then make calls to cassandra backend.
+        """
         # If no aggregate level defined in request, set to the frequency, 
         # otherwise, check if the requested aggregate level is valid.
         if not obj.agg:
@@ -500,9 +548,20 @@ will result in a 400 error being returned.
 """
 
 class TimeseriesDataObject(InterfaceDataObject):
+    """Data encapsulation."""
     pass
 
 class TimeseriesResource(Resource):
+    """
+    This is a non-ORM resource.  The fields defined right below 
+    are just the return values from ths resource, not connected to 
+    a database backend.
+
+    This accepts both GET and POST requests.  The POST is dispatched 
+    to post_detail and not create_obj since this is using the full 
+    'detail' level URI during the request to define the complete cassandra
+    key.
+    """
 
     begin_time = fields.IntegerField(attribute='begin_time')
     end_time = fields.IntegerField(attribute='end_time')
@@ -518,6 +577,12 @@ class TimeseriesResource(Resource):
         # authentication = AnonymousGetElseApiAuthentication()
 
     def prepend_urls(self):
+        """
+        URL parsing - most of these patterns just match an imcomplete 
+        URL and dispatch them to methods that return an appropriate
+        error message.  The final pattern passes a request to an actual 
+        processing method.
+        """
         return [
             url(r"^(?P<resource_name>%s)/$" % \
                 self._meta.resource_name, 
@@ -538,18 +603,22 @@ class TimeseriesResource(Resource):
         ]
 
     def dispatch_namespace_root(self, request, **kwargs):
+        """Incomplete path: /v1/timeseries/"""
         raise BadRequest('Must supply data type {0}, namespace and path.'.format(QueryUtil.timeseries_request_types))
 
     def dispatch_data_type(self, request, **kwargs):
+        """Incomplete path: /v1/timeseries/$TYPE/"""
         raise BadRequest('Must supply namespace and path for type {0}.'.format(kwargs.get('r_type')))
 
     def dispatch_data_ns(self, request, **kwargs):
+        """Incomplete path: /v1/timeseries/$TYPE/$NS/ """
         raise BadRequest('Must supply path for namespace {0}'.format(kwargs.get('ns')))
 
     def alter_list_data_to_serialize(self, request, data):
         return data['objects'][0]
 
     def get_resource_uri(self, bundle_or_obj):
+        """Generate resource_uri for json payload."""
         if isinstance(bundle_or_obj, Bundle):
             obj = bundle_or_obj.obj
         else:
@@ -561,8 +630,10 @@ class TimeseriesResource(Resource):
         return uri
 
     def obj_get(self, bundle, **kwargs):
-
-        # rtr_d:FastPollHC:ifHCInOctets:xe-1_1_0 30000|3600000|86400000
+        """
+        Invoked when a GET request hits this namespace.  Sanity check incoming
+        URI segment/args, sets defaults if need be and executes the query.
+        """
 
         obj = TimeseriesDataObject()
 
@@ -604,12 +675,22 @@ class TimeseriesResource(Resource):
         return obj
 
     def post_detail(self, bundle, **kwargs):
+        """
+        Invoked when a POST request is issued.  Rather than CGI-style 
+        http parameters, a JSON blob (a list of dicts) is passed in as 
+        the the body of the request.
 
-        # When debating the PUT/POST issue on how to handle this,
-        # I read a comment about the issue that theoretically a 
-        # PUT command should be idempotent and not all of our
-        # cassandra writes are (base rates and aggregations for
-        # example) so post was chosen. -mmg
+        This performs some rather granular sanity checks on the incoming 
+        request/JSON payload.  If that passes, then a list of data objects 
+        is generated from the payload and passed to the method that 
+        executes the inserts.
+
+        When debating the PUT/POST issue on how to handle this,
+        I read a comment about the issue that theoretically a 
+        PUT command should be idempotent and not all of our
+        cassandra writes are (base rates for example) so post 
+        was chosen. -MMG
+        """
 
         # Validate incoming POST/JSON payload:
 
@@ -667,6 +748,10 @@ class TimeseriesResource(Resource):
             pass
 
     def _execute_query(self, obj):
+        """
+        Sanity check the requested timerange, and then make the appropriate
+        method call to the cassandra backend.
+        """
         # Make sure we're not exceeding allowable time range.
         if not QueryUtil.valid_timerange(obj, in_ms=True):
             raise BadRequest('exceeded valid timerange for agg level: %s' %
@@ -695,6 +780,11 @@ class TimeseriesResource(Resource):
         return obj
 
     def _execute_inserts(self, objs):
+        """
+        Iterate through a list of TimeseriesDataObject, execute the 
+        appropriate inserts, and then explicitly flush the db so the 
+        inserts don't sit in the batch wating for more data to auto-flush.
+        """
 
         for obj in objs:
             if obj.r_type == 'BaseRate':
@@ -716,7 +806,9 @@ class TimeseriesResource(Resource):
         return True
 
 class QueryUtil(object):
-    """Class holding common query methods."""
+    """Class holding common query methods used by multiple resources 
+    and data structures to validate incoming request elements."""
+
     _timerange_limits = {
         30: datetime.timedelta(days=30),
         300: datetime.timedelta(days=30),
@@ -728,7 +820,12 @@ class QueryUtil(object):
 
     @staticmethod
     def valid_timerange(obj, in_ms=False):
+        """Check the requested time range against the requested aggregation 
+        level and limit if too much data was requested.
 
+        The in_ms flag is set to true if a given resource (like the 
+        /timeseries/ namespace) is doing business in milliseconds rather 
+        than seconds."""
         if in_ms:
             s = datetime.timedelta(milliseconds=obj.begin_time)
             e = datetime.timedelta(milliseconds=obj.end_time)
@@ -749,7 +846,11 @@ class QueryUtil(object):
 
     @staticmethod
     def format_data_payload(data, in_ms=False):
-        """Massage results from cassandra for json return payload."""
+        """Massage results from cassandra for json return payload.
+
+        The in_ms flag is set to true if a given resource (like the 
+        /timeseries/ namespace) is doing business in milliseconds rather 
+        than seconds."""
 
         divs = { False: 1000, True: 1 }
 
@@ -770,7 +871,7 @@ class QueryUtil(object):
 
         return results
         
-
+"""Connect the 'root' resources to the URL schema."""
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
 v1_api.register(TimeseriesResource())
