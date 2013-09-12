@@ -142,7 +142,7 @@ class NodeInfo(object):
         Issue a subclass specific alert in the case that a call to the REST
         api does not return a 200 status code.
         """
-        warnings.warn('Request for {0} got status: {1}'.format(r.url,r.status_code), self.wrn, stacklevel=2)
+        warnings.warn('Request for {0} got status: {1} - response: {2}'.format(r.url,r.status_code,r.content), self.wrn, stacklevel=2)
 
 
 class Device(NodeInfo):
