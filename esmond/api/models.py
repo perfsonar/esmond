@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.timezone import now
 import datetime
 
-from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime
+from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, atencode
 
 class DeviceTag(models.Model):
     """A tag for a :py:class:`.Device.`"""
@@ -213,8 +213,8 @@ class IfRef(models.Model):
     def __unicode__(self):
         return "%s (%s) %s"%(self.ifDescr, self.ifIndex, self.ifAlias)
 
-    def clean_ifDescr(self):
-        return remove_metachars(self.ifDescr)
+    def encoded_ifDescr(self):
+        return atencode(self.ifDescr)
 
     def to_dict(self):
 

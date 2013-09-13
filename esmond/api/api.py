@@ -21,7 +21,7 @@ from tastypie.http import HttpCreated
 from esmond.api.models import Device, IfRef
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
-from esmond.util import remove_metachars
+from esmond.util import atdecode
 
 try:
     db = CASSANDRA_DB(get_config(get_config_path()))
@@ -205,11 +205,11 @@ class DeviceResource(ModelResource):
                 % (self._meta.resource_name,),
                 self.wrap_view('dispatch_interface_list'),
                 name="api_get_children"),
-            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.-]+)/?$"
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.\-@]+)/?$"
                 % (self._meta.resource_name,),
                 self.wrap_view('dispatch_interface_detail'),
                 name="api_get_children"),
-            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.-]+)/(?P<iface_dataset>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.\-@]+)/(?P<iface_dataset>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
                 self.wrap_view('dispatch_interface_data'),
                 name="api_get_children"),
                 ]
@@ -284,11 +284,11 @@ class InterfaceResource(ModelResource):
 
     def obj_get(self, bundle, **kwargs):
         """
-        This massages the underscores in the incoming interface name 
-        (ifDescr) back to forward slashes and passes it up to the 
-        base class method.
+        This massages the incoming URL fragment to restore characters in 
+        ifDescr which were encoded to avoid URL metacharacters back to
+        their original state.
         """
-        kwargs['ifDescr'] = kwargs['ifDescr'].replace("_", "/")
+        kwargs['ifDescr'] = atdecode(kwargs['ifDescr'])
         return super(InterfaceResource, self).obj_get(bundle, **kwargs)
 
     def get_object_list(self, request):
@@ -330,7 +330,7 @@ class InterfaceResource(ModelResource):
             uri = "%s%s%s" % (
                 DeviceResource().get_resource_uri(obj.device),
                 'interface/',
-                obj.clean_ifDescr())
+                obj.encoded_ifDescr())
         else:
             uri = ''
 
@@ -417,7 +417,7 @@ class InterfaceDataResource(Resource):
         iface_qs = InterfaceResource().get_object_list(bundle.request)
         try:
             iface = iface_qs.get( device__name=kwargs['name'],
-                    ifDescr=kwargs['iface_name'].replace("_", "/"))
+                    ifDescr=atdecode(kwargs['iface_name']))
         except IfRef.DoesNotExist:
             raise BadRequest("no such device/interface: dev: {0} int: {1}".format(kwargs['name'], kwargs['iface_name']))
 

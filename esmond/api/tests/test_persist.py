@@ -264,15 +264,15 @@ timeseries_test_data = """
         "oid_name": "ifHCInOctets",
         "data": [
             [
-                "ifHCInOctets/GigabitEthernet0_1",
+                "ifHCInOctets/GigabitEthernet0@2F1",
                 25066556556930
             ],
             [
-                "ifHCInOctets/GigabitEthernet0_2",
+                "ifHCInOctets/GigabitEthernet0@2F2",
                 126782001836
             ],
             [
-                "ifHCInOctets/GigabitEthernet0_3",
+                "ifHCInOctets/GigabitEthernet0@2F3",
                 27871397880
             ],
             [
@@ -291,15 +291,15 @@ timeseries_test_data = """
         "oid_name": "ifHCInOctets",
         "data": [
             [
-                "ifHCInOctets/GigabitEthernet0_1",
+                "ifHCInOctets/GigabitEthernet0@2F1",
                 25066575790604
             ],
             [
-                "ifHCInOctets/GigabitEthernet0_2",
+                "ifHCInOctets/GigabitEthernet0@2F2",
                 126782005062
             ],
             [
-                "ifHCInOctets/GigabitEthernet0_3",
+                "ifHCInOctets/GigabitEthernet0@2F3",
                 27871411592
             ],
             [
