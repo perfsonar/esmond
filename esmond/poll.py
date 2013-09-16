@@ -110,7 +110,7 @@ class IfDescrCorrelator(PollCorrelator):
             raise PollUnknownIfIndex(ifIndex)
 
 class SentryCorrelator(object):
-    oids = ['Sentry3-MIB::outletID', 'Sentry3-MIB::tempHumidSensorID']
+    oids = ['outletID', 'tempHumidSensorID']
 
     def setup(self, data):
         self.outlet = self._parse_name(self._get_outlet_key,

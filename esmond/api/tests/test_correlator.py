@@ -1,7 +1,7 @@
+from django.test import TestCase
 from esmond.poll import IfDescrCorrelator, JnxFirewallCorrelator, \
                             JnxCOSCorrelator, SentryCorrelator, \
                             ALUSAPCorrelator
-
 class MockSession(object):
     def walk(self, oid):
         if oid == 'ifDescr':
@@ -40,42 +40,42 @@ class MockSession(object):
                      '0', 'counter/fnal-test/discard'),
                     ('jnxFWCounterByteCount."test-from-eqx"."from-eqx".counter',
                      '0', 'counter/test-from-eqx/from-eqx'))
-        elif oid == 'Sentry3-MIB::outletID':
+        elif oid == 'outletID':
             return (
-                    ('Sentry3-MIB::outletID.1.1.1','AA1'),
-                    ('Sentry3-MIB::outletID.1.1.2','AA2'),
+                    ('outletID.1.1.1','AA1'),
+                    ('outletID.1.1.2','AA2'),
                     )
-        elif oid == 'Sentry3-MIB::outletLoadValue':
+        elif oid == 'outletLoadValue':
             return (
-                    ('Sentry3-MIB::outletLoadValue.1.1.1','0',
-                        'Sentry3-MIB::outletLoadValue/AA1'),
-                    ('Sentry3-MIB::outletLoadValue.1.1.2','0',
-                        'Sentry3-MIB::outletLoadValue/AA2'),
+                    ('outletLoadValue.1.1.1','0',
+                        'outletLoadValue/AA1'),
+                    ('outletLoadValue.1.1.2','0',
+                        'outletLoadValue/AA2'),
                     )
-        elif oid == 'Sentry3-MIB::tempHumidSensorID':
+        elif oid == 'tempHumidSensorID':
             return (
-                    ('Sentry3-MIB::tempHumidSensorID.1.1','A1'),
-                    ('Sentry3-MIB::tempHumidSensorID.1.2','A2'),
+                    ('tempHumidSensorID.1.1','A1'),
+                    ('tempHumidSensorID.1.2','A2'),
                     )
-        elif oid == 'Sentry3-MIB::tempHumidSensorTempValue':
+        elif oid == 'tempHumidSensorTempValue':
             return (
-                    ('Sentry3-MIB::tempHumidSensorTempValue.1.1','780',
-                        'Sentry3-MIB::tempHumidSensorTempValue/A1'),
-                    ('Sentry3-MIB::tempHumidSensorTempValue.1.2','735',
-                        'Sentry3-MIB::tempHumidSensorTempValue/A2'),
+                    ('tempHumidSensorTempValue.1.1','780',
+                        'tempHumidSensorTempValue/A1'),
+                    ('tempHumidSensorTempValue.1.2','735',
+                        'tempHumidSensorTempValue/A2'),
                     )
-        elif oid == 'Sentry3-MIB::tempHumidSensorHumidValue':
+        elif oid == 'tempHumidSensorHumidValue':
             return (
-                    ('Sentry3-MIB::tempHumidSensorHumidValue.1.1','38',
-                        'Sentry3-MIB::tempHumidSensorHumidValue/A1'),
-                    ('Sentry3-MIB::tempHumidSensorHumidValue.1.2','47',
-                        'Sentry3-MIB::tempHumidSensorHumidValue/A2'),
+                    ('tempHumidSensorHumidValue.1.1','38',
+                        'tempHumidSensorHumidValue/A1'),
+                    ('tempHumidSensorHumidValue.1.2','47',
+                        'tempHumidSensorHumidValue/A2'),
                     )
         elif oid == 'sapBaseStatsEgressQchipForwardedOutProfOctets':
             return (
                      ('sapBaseStatsEgressQchipForwardedOutProfOctets.834.102793216.834',
                          0L,
-                         'sapBaseStatsEgressQchipForwardedOutProfOctets/834-3_1_0-834'),
+                         'sapBaseStatsEgressQchipForwardedOutProfOctets/834-3_1_1-834'),
                      )
 
 
@@ -86,24 +86,27 @@ class MockOID(object):
     def __init__(self, name):
         self.name = name
 
-def check_correlator(correlator, oid):
-    s = MockSession()
-    c = correlator()
-    c.setup([])
-    for (var,val,check) in s.walk(oid.name):
-        assert check == c.lookup(oid, var)
-
-def test_correlators():
-    for (correlator, oid) in (
+class TestCorrelators(TestCase):
+    def test_correlators(self):
+        for (correlator, oid) in (
             (IfDescrCorrelator, MockOID('ifHCInOctets')),
             (JnxFirewallCorrelator, MockOID('jnxFWCounterByteCount')),
             (JnxCOSCorrelator, MockOID('jnxCosIfqQedBytes')),
-            (SentryCorrelator, MockOID('Sentry3-MIB::outletLoadValue')),
-            (SentryCorrelator, MockOID('Sentry3-MIB::tempHumidSensorTempValue')),
-            (SentryCorrelator, MockOID('Sentry3-MIB::tempHumidSensorHumidValue')),
+            (SentryCorrelator, MockOID('outletLoadValue')),
+            (SentryCorrelator, MockOID('tempHumidSensorTempValue')),
+            (SentryCorrelator, MockOID('tempHumidSensorHumidValue')),
             (ALUSAPCorrelator, MockOID('sapBaseStatsEgressQchipForwardedOutProfOctets')),
-            ):
-        yield check_correlator, correlator, oid
+        ):
+            s = MockSession()
+            c = correlator()
+
+            setup_data = []
+            for oid_name in c.oids:
+                setup_data.extend(s.walk(oid_name))
+
+            c.setup(setup_data)
+            for (var,val,check) in s.walk(oid.name):
+                self.assertEqual(check, c.lookup(oid, var))
 
 #def test_jnx_cos_correlator():
 #    s = MockSession()
