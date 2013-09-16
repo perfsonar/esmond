@@ -14,17 +14,17 @@ class MockSession(object):
                     ('ifAlias.117', ''))
         elif oid == 'ifHCInOctets':
             return (('ifHCInOctets.115', '0', 'ifHCInOctets/ae0'),
-                    ('ifHCInOctets.116', '732401229666','ifHCInOctets/ge-1_0_0'),
+                    ('ifHCInOctets.116', '732401229666','ifHCInOctets/ge-1@2F0@2F0'),
                     ('ifHCInOctets.117', '732401229666', None))
         elif oid == 'jnxCosIfqQedBytes':
             return (('jnxCosIfqQedBytes.116."best-effort"', '2091263919975',
-                        "ge-1_0_0/jnxCosIfqQedBytes/best-effort"),
+                        "ge-1@2F0@2F0/jnxCosIfqQedBytes/best-effort"),
                     ('jnxCosIfqQedBytes.116."network-control"', '325426106',
-                        "ge-1_0_0/jnxCosIfqQedBytes/network-control"),
+                        "ge-1@2F0@2F0/jnxCosIfqQedBytes/network-control"),
                     ('jnxCosIfqQedBytes.116."scavenger-service"', '17688108277',
-                        "ge-1_0_0/jnxCosIfqQedBytes/scavenger-service"),
+                        "ge-1@2F0@2F0/jnxCosIfqQedBytes/scavenger-service"),
                     ('jnxCosIfqQedBytes.116."expedited-forwarding"', '1026807',
-                        "ge-1_0_0/jnxCosIfqQedBytes/expedited-forwarding"),
+                        "ge-1@2F0@2F0/jnxCosIfqQedBytes/expedited-forwarding"),
                     ('jnxCosIfqQedBytes.117."best-effort"', '2091263919975',
                         None),
                     ('jnxCosIfqQedBytes.117."network-control"', '325426106',
@@ -75,7 +75,7 @@ class MockSession(object):
             return (
                      ('sapBaseStatsEgressQchipForwardedOutProfOctets.834.102793216.834',
                          0L,
-                         'sapBaseStatsEgressQchipForwardedOutProfOctets/834-3_1_1-834'),
+                         'sapBaseStatsEgressQchipForwardedOutProfOctets/834-3@2F1@2F1-834'),
                      )
 
 
