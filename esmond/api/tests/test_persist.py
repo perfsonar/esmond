@@ -175,13 +175,13 @@ alu_sap_test_data = """
         "oid_name": "",
         "data": {
             "sapDescription": [
-                [ "sapDescription.1.1342177281.100", "one" ]
+                [ "sapDescription.1.270565376.100", "one" ]
             ],
             "sapIngressQosPolicyId": [
-                [ "sapIngressQosPolicyId.1.1342177281.100", 2 ]
+                [ "sapIngressQosPolicyId.1.270565376.100", 2 ]
             ],
             "sapEgressQosPolicyId": [
-                [ "sapEgressQosPolicyId.1.1342177281.100", 2 ]
+                [ "sapEgressQosPolicyId.1.270565376.100", 2 ]
             ]
         },
         "metadata": {}
@@ -193,13 +193,13 @@ alu_sap_test_data = """
         "oid_name": "",
         "data": {
             "sapDescription": [
-                [ "sapDescription.1.1342177281.100", "two" ]
+                [ "sapDescription.1.270565376.100", "two" ]
             ],
             "sapIngressQosPolicyId": [
-                [ "sapIngressQosPolicyId.1.1342177281.100", 2 ]
+                [ "sapIngressQosPolicyId.1.270565376.100", 2 ]
             ],
             "sapEgressQosPolicyId": [
-                [ "sapEgressQosPolicyId.1.1342177281.100", 2 ]
+                [ "sapEgressQosPolicyId.1.270565376.100", 2 ]
             ]
         },
         "metadata": {}
@@ -234,9 +234,9 @@ class TestALUSAPRefPersister(TestCase):
         p = ALUSAPRefPersister([], "test", persistq=q)
         p.run()
 
-        ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8_0_0-100")
+        ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8/1/1-100")
         ifrefs = ifrefs.order_by("end_time").all()
-        self.assertTrue(len(ifrefs) == 2)
+        self.assertEqual(len(ifrefs), 2)
 
         self.assertTrue(ifrefs[0].end_time < max_datetime)
         self.assertTrue(ifrefs[1].end_time == max_datetime)
@@ -247,7 +247,7 @@ class TestALUSAPRefPersister(TestCase):
         p = ALUSAPRefPersister([], "test", persistq=q)
         p.run()
 
-        ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8_0_0-100")
+        ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8/1/1-100")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
