@@ -53,7 +53,7 @@ get_ (ex: get_interfaces()).
 """
 
 from esmond.util import max_datetime
-max_epoch = calendar.timegm(max_datetime.utctimetuple())
+MAX_EPOCH = calendar.timegm(max_datetime.utctimetuple())
 
 class NodeInfoWarning(Warning): pass
 class DeviceWarning(NodeInfoWarning): pass
@@ -90,7 +90,7 @@ class NodeInfo(object):
         
         try:
             i = int(d)
-            if i > max_epoch:
+            if i > MAX_EPOCH:
                 # bullet proof against out of range datetime errors
                 t = max_datetime
             else:
