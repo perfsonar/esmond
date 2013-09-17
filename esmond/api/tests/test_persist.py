@@ -264,19 +264,19 @@ timeseries_test_data = """
         "oid_name": "ifHCInOctets",
         "data": [
             [
-                "ifHCInOctets/GigabitEthernet0@2F1",
+                ["ifHCInOctets", "GigabitEthernet0/1"],
                 25066556556930
             ],
             [
-                "ifHCInOctets/GigabitEthernet0@2F2",
+                ["ifHCInOctets", "GigabitEthernet0/2"],
                 126782001836
             ],
             [
-                "ifHCInOctets/GigabitEthernet0@2F3",
+                ["ifHCInOctets", "GigabitEthernet0/3"],
                 27871397880
             ],
             [
-                "ifHCInOctets/Loopback0",
+                ["ifHCInOctets", "Loopback0"],
                 0
             ]
         ],
@@ -291,19 +291,19 @@ timeseries_test_data = """
         "oid_name": "ifHCInOctets",
         "data": [
             [
-                "ifHCInOctets/GigabitEthernet0@2F1",
+                ["ifHCInOctets", "GigabitEthernet0/1"],
                 25066575790604
             ],
             [
-                "ifHCInOctets/GigabitEthernet0@2F2",
+                ["ifHCInOctets", "GigabitEthernet0/2"],
                 126782005062
             ],
             [
-                "ifHCInOctets/GigabitEthernet0@2F3",
+                ["ifHCInOctets", "GigabitEthernet0/3"],
                 27871411592
             ],
             [
-                "ifHCInOctets/Loopback0",
+                ["ifHCInOctets", "Loopback0"],
                 0
             ]
         ],
@@ -430,6 +430,7 @@ class TestCassandraPollPersister(TestCase):
         for p in full_paths.keys():
             v = ts_db.get_var(p)
             device,oidset,oid,path,tmp1,tmp2 = p.split('/')
+            path = path.replace("_", "/")
             for d in v.select():
                 tsdb_aggs += 1
                 key = '%s:%s:%s:%s:%s:%s:%s'  % \

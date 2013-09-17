@@ -64,7 +64,7 @@ class OidCorrelator(PollCorrelator):
         pass
 
     def lookup(self, oid, var):
-        return oid.name
+        return [oid.name]
 
 class IndexCorrelator(PollCorrelator):
     """
@@ -76,7 +76,7 @@ class IndexCorrelator(PollCorrelator):
         pass
 
     def lookup(self, oid, var):
-        return "%s/%s"%(oid.name, var[len(oid.name)+1:])
+        return [oid.name, var[len(oid.name)+1:]]
 
 class IfDescrCorrelator(PollCorrelator):
     """correlates an IfIndex to an it's IfDescr"""
@@ -102,7 +102,7 @@ class IfDescrCorrelator(PollCorrelator):
         try:
             r = self.xlate[ifIndex]
             if r:
-                return "/".join((oid.name, r))
+                return [oid.name, r]
             else:
                 return None
 
@@ -124,7 +124,7 @@ class SentryCorrelator(object):
         else:
             k = self.sensor[self._get_sensor_key(var)]
 
-        return '/'.join((oid.name, k))
+        return [oid.name, k]
 
     def _get_outlet_key(self, var):
         return '.'.join(var.split('.')[-3:])
@@ -165,7 +165,7 @@ class InfIfDescrCorrelator(PollCorrelator):
         if '=' in r:
             r = r.split('=')[1]
 
-        return "/".join((oid.name, r))
+        return [oid.name, r]
 
 
 class ALUIfDescrCorrelator(IfDescrCorrelator):
@@ -194,7 +194,7 @@ class ALUIfDescrCorrelator(IfDescrCorrelator):
         try:
             r = self.xlate[ifIndex]
             if r:
-                return "/".join((oid.name, r))
+                return [oid.name, r]
             else:
                 return None
 
@@ -212,8 +212,8 @@ class ALUSAPCorrelator(PollCorrelator):
 
     def lookup(self, oid, var):
         _, vpls, port, vlan = var.split('.')
-        return "%s/%s"%(oid.name, "%s-%s-%s" % (vlan, decode_alu_port(port),
-            vlan))
+        return [oid.name, "-".join((vlan, decode_alu_port(port),
+            vlan))]
 
 class JnxFirewallCorrelator(PollCorrelator):
     """correlates entries in the jnxFWCounterByteCount tables to a variable
@@ -232,7 +232,7 @@ class JnxFirewallCorrelator(PollCorrelator):
         (column, filter_name, counter,
                 filter_type) = self.oidex.search(var).groups()
 
-        return "/".join((filter_type, filter_name, counter))
+        return [filter_type, filter_name, counter]
 
 
 class JnxCOSCorrelator(IfDescrCorrelator):
@@ -263,7 +263,7 @@ class JnxCOSCorrelator(IfDescrCorrelator):
 
             (oid_name, ifindex, queue) = m.groups()
 
-            return "/".join((if_name, oid_name, queue))
+            return [if_name, oid_name, queue]
         else:
             return None
 
@@ -291,7 +291,7 @@ class CiscoCPUCorrelator(PollCorrelator):
                 self.phys_xlate[var.split('.')[-1]]].replace('CPU_of_', '')
         if n == '':
             n = 'CPU'
-        return "/".join((oid.name, n))
+        return [oid.name, n]
 
 
 class PersistThread(threading.Thread):

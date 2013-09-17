@@ -221,7 +221,7 @@ def build_metadata_from_test_data(data):
     DeviceOIDSetMap(device=device,
             oid_set=OIDSet.objects.get(name=d['oidset_name'])).save()
 
-    ifnames = set([ x[0].split("/")[-1].replace("_","/") for x in d['data'] ])
+    ifnames = set([ x[0][-1] for x in d['data'] ])
     t0 = make_aware(datetime.datetime.fromtimestamp(int(d["timestamp"]) - 30),
             utc)
             

@@ -13,18 +13,18 @@ class MockSession(object):
                     ('ifAlias.116', 'ge-1/0/0'),
                     ('ifAlias.117', ''))
         elif oid == 'ifHCInOctets':
-            return (('ifHCInOctets.115', '0', 'ifHCInOctets/ae0'),
-                    ('ifHCInOctets.116', '732401229666','ifHCInOctets/ge-1_0_0'),
+            return (('ifHCInOctets.115', '0', ['ifHCInOctets', 'ae0']),
+                    ('ifHCInOctets.116', '732401229666',['ifHCInOctets', 'ge-1_0_0']),
                     ('ifHCInOctets.117', '732401229666', None))
         elif oid == 'jnxCosIfqQedBytes':
             return (('jnxCosIfqQedBytes.116."best-effort"', '2091263919975',
-                        "ge-1_0_0/jnxCosIfqQedBytes/best-effort"),
+                        ["ge-1_0_0", "jnxCosIfqQedBytes", "best-effort"]),
                     ('jnxCosIfqQedBytes.116."network-control"', '325426106',
-                        "ge-1_0_0/jnxCosIfqQedBytes/network-control"),
+                        ["ge-1_0_0", "jnxCosIfqQedBytes", "network-control"]),
                     ('jnxCosIfqQedBytes.116."scavenger-service"', '17688108277',
-                        "ge-1_0_0/jnxCosIfqQedBytes/scavenger-service"),
+                        ["ge-1_0_0", "jnxCosIfqQedBytes", "scavenger-service"]),
                     ('jnxCosIfqQedBytes.116."expedited-forwarding"', '1026807',
-                        "ge-1_0_0/jnxCosIfqQedBytes/expedited-forwarding"),
+                        ["ge-1_0_0", "jnxCosIfqQedBytes", "expedited-forwarding"]),
                     ('jnxCosIfqQedBytes.117."best-effort"', '2091263919975',
                         None),
                     ('jnxCosIfqQedBytes.117."network-control"', '325426106',
@@ -35,11 +35,11 @@ class MockSession(object):
                         None))
         elif oid == 'jnxFWCounterByteCount':
             return (('jnxFWCounterByteCount."fnal-test"."fnal".counter',
-                     '0', 'counter/fnal-test/fnal'),
+                     '0', ["counter", "fnal-test", "fnal"]),
                     ('jnxFWCounterByteCount."fnal-test"."discard".counter',
-                     '0', 'counter/fnal-test/discard'),
+                     '0', ["counter", "fnal-test", "discard"]),
                     ('jnxFWCounterByteCount."test-from-eqx"."from-eqx".counter',
-                     '0', 'counter/test-from-eqx/from-eqx'))
+                     '0', ["counter", "test-from-eqx", "from-eqx"]))
         elif oid == 'outletID':
             return (
                     ('outletID.1.1.1','AA1'),
@@ -48,9 +48,9 @@ class MockSession(object):
         elif oid == 'outletLoadValue':
             return (
                     ('outletLoadValue.1.1.1','0',
-                        'outletLoadValue/AA1'),
+                        ["outletLoadValue", "AA1"]),
                     ('outletLoadValue.1.1.2','0',
-                        'outletLoadValue/AA2'),
+                        ["outletLoadValue", "AA2"]),
                     )
         elif oid == 'tempHumidSensorID':
             return (
@@ -60,22 +60,23 @@ class MockSession(object):
         elif oid == 'tempHumidSensorTempValue':
             return (
                     ('tempHumidSensorTempValue.1.1','780',
-                        'tempHumidSensorTempValue/A1'),
+                        ["tempHumidSensorTempValue", "A1"]),
                     ('tempHumidSensorTempValue.1.2','735',
-                        'tempHumidSensorTempValue/A2'),
+                        ["tempHumidSensorTempValue", "A2"]),
                     )
         elif oid == 'tempHumidSensorHumidValue':
             return (
                     ('tempHumidSensorHumidValue.1.1','38',
-                        'tempHumidSensorHumidValue/A1'),
+                        ["tempHumidSensorHumidValue", "A1"]),
                     ('tempHumidSensorHumidValue.1.2','47',
-                        'tempHumidSensorHumidValue/A2'),
+                        ["tempHumidSensorHumidValue", "A2"]),
                     )
         elif oid == 'sapBaseStatsEgressQchipForwardedOutProfOctets':
             return (
                      ('sapBaseStatsEgressQchipForwardedOutProfOctets.834.102793216.834',
                          0L,
-                         'sapBaseStatsEgressQchipForwardedOutProfOctets/834-3_1_1-834'),
+                         ["sapBaseStatsEgressQchipForwardedOutProfOctets",
+                             "834-3/1/1-834"]),
                      )
 
 

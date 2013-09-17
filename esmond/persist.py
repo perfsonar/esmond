@@ -252,7 +252,7 @@ class TSDBPollPersister(PollPersister):
                 val = float(val) * 100
             nvar += 1
 
-            var_name = os.path.join(basename, var)
+            var_name = os.path.join(basename, *map(remove_metachars, var))
 
             try:
                 tsdb_var = self.tsdb.get_var(var_name)
@@ -398,7 +398,7 @@ class CassandraPollPersister(PollPersister):
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
         set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
-        basename = os.path.join(result.device_name, set_name)
+        basepath = [self.ns, result.device_name, set_name]
         oid = self.oids[result.oid_name]
         
         t0 = time.time()
@@ -409,29 +409,29 @@ class CassandraPollPersister(PollPersister):
                 val = float(val) * 100
             nvar += 1
             
-            var_name = os.path.join(basename, var)
+            var_path = basepath + var
             # XXX(mmg/jugan): this is a bad hack to get testing going.
-            if var_name.endswith("sysUpTime"):
+            if var_path[-1] == "sysUpTime":
                 continue
-            device_n,oidset_n,oid_n,path_n = var_name.split('/', 3)
 
             # This shouldn't happen.
             if val is None:
-                self.log.error('Got a None value for %s' %s (var_name,))
+                self.log.error('Got a None value for %s' % (":".join(var_path)))
                 continue
                 
             # Create data encapsulation object (defined in cassandra.py 
             # module) and store the raw input.
 
-            raw_data = RawRateData(path=[self.ns, device_n, oidset_n, oid_n, path_n],
-                    ts=result.timestamp * 1000, val=val, freq=oidset.frequency_ms)
+            raw_data = RawRateData(path=var_path, ts=result.timestamp * 1000,
+                    val=val, freq=oidset.frequency_ms)
 
             self.db.set_raw_data(raw_data)
 
             # Generate aggregations if apropos.
             if oid.aggregate:
                 delta_v = self.aggregate_base_rate(raw_data)
-                uptime_name = os.path.join(basename, 'sysUpTime')
+                # XXX: not implemented
+                #uptime_name = os.path.join(basename, 'sysUpTime')
                 
                 if delta_v != None: # a value of zero is ok
                     # We got a good delta back - generate rollups.
