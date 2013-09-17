@@ -25,7 +25,7 @@ from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
         TSDBVarDoesNotExistError, InvalidMetaData
 
 from esmond.util import setproctitle, init_logging, get_logger, \
-        remove_metachars, decode_alu_port
+        remove_metachars, decode_alu_port, build_alu_sap_name
 from esmond.util import daemonize, setup_exc_handler, max_datetime
 from esmond.config import get_opt_parser, get_config, get_config_path
 from esmond.error import ConfigError
@@ -804,8 +804,7 @@ class ALUSAPRefPersister(HistoryTablePersister):
 
         for oid, entries in self.data.iteritems():
             for k, val in entries:
-                _, vpls, port, vlan  = k.split('.')
-                name = "%s-%s-%s" % (vpls, decode_alu_port(port), vlan)
+                name = build_alu_sap_name(k)
 
                 if oid in self.int_oids:
                     val = int(val)

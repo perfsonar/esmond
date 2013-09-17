@@ -1,5 +1,5 @@
 from django.test import TestCase
-from esmond.util import atencode, atdecode, decode_alu_port
+from esmond.util import atencode, atdecode, decode_alu_port, build_alu_sap_name
 
 class TestAtEncoding(TestCase):
     def test_basics(self):
@@ -44,3 +44,8 @@ class TestALUPortDecoder(TestCase):
 
         for idx, port in tests:
             self.assertEqual(decode_alu_port(idx), port)
+
+class TestBuildALUSAPName(TestCase):
+    def test_build_alu_sap_name(self):
+        self.assertEqual(build_alu_sap_name("xxx.111.337969152.2200"), 
+                "111-10/1/10-2200")

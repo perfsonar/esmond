@@ -12,7 +12,7 @@ from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
 import tsdb
 
 from esmond.util import setproctitle, init_logging, get_logger, \
-        remove_metachars, decode_alu_port
+        remove_metachars, build_alu_sap_name
 from esmond.util import daemonize, setup_exc_handler
 from esmond.config import get_opt_parser, get_config, get_config_path
 from esmond.error import ConfigError, PollerError
@@ -211,9 +211,7 @@ class ALUSAPCorrelator(PollCorrelator):
         pass
 
     def lookup(self, oid, var):
-        _, vpls, port, vlan = var.split('.')
-        return [oid.name, "-".join((vlan, decode_alu_port(port),
-            vlan))]
+        return [oid.name, build_alu_sap_name(var)]
 
 class JnxFirewallCorrelator(PollCorrelator):
     """correlates entries in the jnxFWCounterByteCount tables to a variable

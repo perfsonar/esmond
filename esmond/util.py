@@ -427,6 +427,14 @@ def decode_alu_port(x):
 
     return "%d/%d/%d" % (a,b,c)
 
+def build_alu_sap_name(s):
+    """convert the last parts of a SAP OID to an intelligible name.
+    xxx.111.337969152.2200 -> 111-10/1/10-2200
+    """
+    _, service, port, vlan = s.split('.')
+    return "-".join((service, decode_alu_port(port), vlan))
+
+
 def datetime_to_unixtime(dt):
     return int(time.mktime(dt.timetuple()))
 
