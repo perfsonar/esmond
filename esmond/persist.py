@@ -25,7 +25,7 @@ from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
         TSDBVarDoesNotExistError, InvalidMetaData
 
 from esmond.util import setproctitle, init_logging, get_logger, \
-        remove_metachars, decode_alu_port, build_alu_sap_name
+        remove_metachars,  build_alu_sap_name
 from esmond.util import daemonize, setup_exc_handler, max_datetime
 from esmond.config import get_opt_parser, get_config, get_config_path
 from esmond.error import ConfigError
