@@ -410,9 +410,6 @@ class CassandraPollPersister(PollPersister):
             nvar += 1
             
             var_path = basepath + var
-            # XXX(mmg/jugan): this is a bad hack to get testing going.
-            if var_path[-1] == "sysUpTime":
-                continue
 
             # This shouldn't happen.
             if val is None:

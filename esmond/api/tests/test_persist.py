@@ -166,6 +166,7 @@ class TestIfRefPersister(TestCase):
 
         self.assertTrue(ifrefs[1].end_time < max_datetime)
 
+
 alu_sap_test_data = """
 [
     {
@@ -314,6 +315,24 @@ timeseries_test_data = """
 ]
 """
 
+sys_uptime_test_data = """
+[
+    {
+        "oidset_name": "FastPollHC",
+        "device_name": "rtr_d",
+        "timestamp": 1343956800,
+        "oid_name": "sysUpTime",
+        "data": [
+            [
+                ["sysUpTime"],
+                100
+            ]
+        ]
+    }
+]
+"""
+
+
 class CassandraTestResults(object):
     """
     Container to hold timestamps and return values common to 
@@ -365,6 +384,25 @@ class TestCassandraPollPersister(TestCase):
 
         self.assertEqual(rtr_d.oidsets.all().count(), 1)
         self.assertEqual(IfRef.objects.filter(device=rtr_d).count(), 4)
+
+    def test_sys_uptime(self):
+        config = get_config(get_config_path())
+        q = TestPersistQueue(json.loads(sys_uptime_test_data))
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+        p.db.flush()
+        p.db.close()
+
+        db = CASSANDRA_DB(config)
+        ret = db.query_raw_data(
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC', 'sysUpTime'],
+            freq=30*1000,
+            ts_min=self.ctr.begin*1000,
+            ts_max=self.ctr.end*1000)
+
+        ret = ret[0]
+        self.assertEqual(ret['ts'], self.ctr.begin * 1000)
+        self.assertEqual(ret['val'], 100)
 
     def test_persister(self):
         """This is a very basic smoke test for a cassandra persister."""

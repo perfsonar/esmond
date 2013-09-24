@@ -95,7 +95,7 @@ class IfDescrCorrelator(PollCorrelator):
     def lookup(self, oid, var):
         # XXX this sucks
         if oid.name == 'sysUpTime':
-            return 'sysUpTime'
+            return ['sysUpTime']
 
         ifIndex = var.split('.')[-1]
 
@@ -153,7 +153,7 @@ class InfIfDescrCorrelator(PollCorrelator):
     def lookup(self, oid, var):
         # XXX this sucks
         if oid.name == 'sysUpTime':
-            return 'sysUpTime'
+            return ['sysUpTime']
 
         ifIndex = var.split('.')[-1]
 
@@ -187,7 +187,7 @@ class ALUIfDescrCorrelator(IfDescrCorrelator):
     def lookup(self, oid, var):
         # XXX this sucks
         if oid.name == 'sysUpTime':
-            return 'sysUpTime'
+            return ['sysUpTime']
 
         ifIndex = var.split('.')[-1]
 
