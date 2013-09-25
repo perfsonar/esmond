@@ -47,6 +47,8 @@ def main():
 
     filters = ApiFilters()
 
+    filters.verbose = options.verbose
+
     if options.last:
         filters.begin_time = int(time.time() - (options.last*60))
 

@@ -18,7 +18,7 @@ from tastypie import fields
 from tastypie.exceptions import NotFound, BadRequest
 from tastypie.http import HttpCreated
 
-from esmond.api.models import Device, IfRef
+from esmond.api.models import Device, IfRef, DeviceOIDSetMap
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import atdecode
@@ -40,12 +40,15 @@ Namespace to retrieve traffic data with a simplfied helper syntax.
 
 /v1/device/
 /v1/device/$DEVICE/
+/v1/device/$DEVICE/oidset/
 /v1/device/$DEVICE/interface/
 /v1/device/$DEVICE/interface/$INTERFACE/
 /v1/device/$DEVICE/interface/$INTERFACE/in
 /v1/device/$DEVICE/interface/$INTERFACE/out
 
-Params for GET: begin, end, agg and cf where appropriate.  
+Params for GET: begin, end, agg (and cf where appropriate).  The /oidset/ 
+option does not take any GET parameters - it merely returns the oidsets 
+associated with that device.
 
 If none are supplied, sane defaults will be set by the interface and the 
 last hour of base rates will be returned.  The begin/end params are 
@@ -205,6 +208,10 @@ class DeviceResource(ModelResource):
                 % (self._meta.resource_name,),
                 self.wrap_view('dispatch_interface_list'),
                 name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/oidset/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_oidset_list'),
+                name="api_get_children"),
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.\-@]+)/?$"
                 % (self._meta.resource_name,),
                 self.wrap_view('dispatch_interface_detail'),
@@ -248,6 +255,9 @@ class DeviceResource(ModelResource):
 
     def dispatch_interface_data(self, request, **kwargs):
         return InterfaceDataResource().dispatch_detail(request, **kwargs)
+
+    def dispatch_oidset_list(self, request, **kwargs):
+        return OidsetResource().dispatch_list(request, device__name=kwargs['name'])
 
     def dehydrate_children(self, bundle):
         children = ['interface', 'system', 'all']
@@ -510,6 +520,51 @@ class InterfaceDataResource(Resource):
 
         obj.data = QueryUtil.format_data_payload(data)
         return obj
+
+class OidsetDataObject(InterfaceDataObject):
+    """Data encapsulation."""
+    pass
+
+class OidsetResource(ModelResource):
+    """Get information about the oidsets on a given device."""
+
+    device = fields.ToOneField(DeviceResource, 'device')
+    oidset = fields.CharField(attribute='oid_set')
+    leaf = fields.BooleanField()
+
+    class Meta:
+        resource_name = 'oidset'
+        allowed_methods = ['get']
+        queryset = DeviceOIDSetMap.objects.all()
+        object_class = OidsetDataObject
+        serializer = DeviceSerializer()
+        authentication = AnonymousGetElseApiAuthentication()
+        filtering = {
+            'device': ALL_WITH_RELATIONS,
+        }
+
+    def get_object_list(self, request):
+        qs = self._meta.queryset._clone()
+        return qs
+
+    def obj_get_list(self, bundle, **kwargs):
+        return super(OidsetResource, self).obj_get_list(bundle, **kwargs)
+
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        Modify resource object default format before this is returned 
+        and serialized as json.
+        """
+        for d in data['objects']:
+            del d.data['id']
+            pass
+
+        return data
+
+    def dehydrate(self, bundle):
+        bundle.data['leaf'] = True
+        bundle.data['resource_uri'] = bundle.data['device']
+        return bundle
 
 # ---
 
