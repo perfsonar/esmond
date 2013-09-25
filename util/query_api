@@ -33,10 +33,10 @@ def main():
     parser.add_option('-p', '--port', metavar='PORT',
             type='int', dest='port', default=80,
             help='Port number for of rest api.')
-    parser.add_option('-d', '--device',
-            type='string', action='append', metavar='DEVICE',
-            default=[], dest='devices',
-            help='Device name to filter (can be more than one use of this flag).')
+    parser.add_option('-d', '--device', metavar='DEVICE',
+            type='string', action='store', 
+            default=None, dest='device',
+            help='Device name to filter - can also be a pattern (ex: lbl-).')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
@@ -47,8 +47,8 @@ def main():
     if options.last:
         filters.begin_time = int(time.time() - (options.last*60))
 
-    if options.devices:
-        filters.devices = options.devices
+    if options.device:
+        filters.device = options.device
 
     conn = ApiConnect(options.hostname, options.port, filters)
 

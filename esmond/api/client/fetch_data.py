@@ -76,10 +76,7 @@ class NodeInfo(object):
 
         # Default rest parameters for all objects
         if self.filters:
-            self._q_params = {
-                'begin': self.filters.ts_epoch('begin_time'),
-                'end': self.filters.ts_epoch('end_time')
-            }
+            self._default_filters = self.filters.default_filters
 
         self.pp = pprint.PrettyPrinter(indent=4)
 
@@ -161,16 +158,12 @@ class Device(NodeInfo):
         return self._data.get('name', None)
 
     # Fetch and filter data, etc
-    def _filter_interfaces(self, interface):
-        """
-        Called by get_interfaces() - this is not fully implemented yet.
-        Currently this just returns the interface object that is passed in.
-        When we need to implement interface-name filtering, check the 
-        contents of the self.filters object and if the interface object
-        that has been passed in does not meet the criteria, return 
-        None instead.
-        """
-        return interface
+    def _filter_interfaces(self):
+        """Build queryset filters for interface queries."""
+        # Nothing implemented yet
+        filters = {}
+
+        return filters
 
     def get_interfaces(self):
         """
@@ -185,15 +178,13 @@ class Device(NodeInfo):
 
         if uri:
             r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, uri), 
-                params=self._q_params)
+                params=dict(self._default_filters, **self._filter_interfaces()))
 
             if r.status_code == 200 and \
                 r.headers['content-type'] == 'application/json':
                 data = json.loads(r.text)
                 for i in data['children']:
-                    iface = self._filter_interfaces(Interface(i, self.hostname, self.port, self.filters))
-                    if iface:
-                        yield iface
+                    yield Interface(i, self.hostname, self.port, self.filters)
             else:
                 self.http_alert(r)
                 return
@@ -265,6 +256,13 @@ class Interface(NodeInfo):
 
     # Fetch and filter data, etc
     def _filter_endpoints(self, endpoint):
+        """
+        Filter endpoints.
+
+        Since this is not a call to the api, we are not generating queryset
+        filters.  Rather we would need to filter by looking at the payload 
+        and exclude results we don't want.
+        """
         return endpoint
 
     def get_endpoints(self):
@@ -295,6 +293,13 @@ class Endpoint(NodeInfo):
     def uri(self):
         return self._data.get('uri', None)
 
+    def _filter_data(self):
+        """Build queryset filters for data retrieval."""
+        # Nothing implemented yet
+        filters = {}
+
+        return filters
+
     def get_data(self):
         """
         Retrieve the traffic data and return the json response in 
@@ -304,7 +309,7 @@ class Endpoint(NodeInfo):
         """
 
         r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, self.uri),
-            params=self._q_params)
+            params=dict(self._default_filters, **self._filter_data()))
 
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
@@ -370,7 +375,13 @@ class ApiFilters(object):
         self._begin_time = datetime.datetime.utcfromtimestamp(int(time.time() - 3600))
         self._end_time = datetime.datetime.utcfromtimestamp(int(time.time()))
 
-        self._devices = []
+        self._default_filters = {
+            'begin': self.ts_epoch('begin_time'),
+            'end': self.ts_epoch('end_time'),
+            'limit': 0,
+        }
+
+        self._device = None
 
     def ts_epoch(self, time_prop):
         """Convert named property back to epoch.  Generally just for 
@@ -408,18 +419,27 @@ class ApiFilters(object):
         return locals()
     end_time = property(**end_time())
 
-    def devices():
-        doc = "The devices property."
+    def device():
+        doc = "The device property."
         def fget(self):
-            return self._devices
+            return self._device
         def fset(self, value):
-            if not isinstance(value, list):
-                raise TypeError('devices attr must be a list')
-            self._devices = value
+            self._device = str(value)
         def fdel(self):
             pass
         return locals()
-    devices = property(**devices())
+    devices = property(**device())
+
+    def default_filters():
+        doc = "The default_filters property."
+        def fget(self):
+            return self._default_filters
+        def fset(self, value):
+            self._default_filters = value
+        def fdel(self):
+            del self._default_filters
+        return locals()
+    default_filters = property(**default_filters())
 
 
 class ApiConnect(object):
@@ -431,30 +451,27 @@ class ApiConnect(object):
         self.filters = filters
         self.port = port
 
-        self._q_params = {
-            'begin': self.filters.ts_epoch('begin_time'),
-            'end': self.filters.ts_epoch('end_time')
-        }
+        self._default_filters = self.filters.default_filters
 
-    def _filter_devices(self, device):
+    def _filter_devices(self):
+        """Build queryset filters for device queries."""
 
-        if self.filters.devices and \
-            device.name not in self.filters.devices:
-            return None
+        filters = {}
 
-        return device
+        if self.filters.device:
+            filters['name__contains'] = self.filters.device
+
+        return filters
 
     def get_devices(self):
-        r = requests.get('http://{0}:{1}/v1/device/?limit=0'.format(self.hostname, self.port), 
-            params=self._q_params)
+        r = requests.get('http://{0}:{1}/v1/device/'.format(self.hostname, self.port), 
+            params=dict(self._default_filters, **self._filter_devices()))
         
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             for i in data:
-                d = self._filter_devices(Device(i, self.hostname, self.port, self.filters))
-                if d: 
-                    yield d
+                yield Device(i, self.hostname, self.port, self.filters)
         else:
             self.http_alert(r)
             return
