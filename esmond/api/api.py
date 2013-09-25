@@ -279,6 +279,7 @@ class InterfaceResource(ModelResource):
         detail_uri_name = 'ifDescr'
         filtering = {
             'device': ALL_WITH_RELATIONS,
+            'ifDescr': ALL,
         }
         authentication = AnonymousGetElseApiAuthentication()
 

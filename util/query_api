@@ -37,6 +37,9 @@ def main():
             type='string', action='store', 
             default=None, dest='device',
             help='Device name to filter - can also be a pattern (ex: lbl-).')
+    parser.add_option('-i', '--interface', metavar='INTERFACE',
+            type='string', dest='interface', 
+            help='Interface name to filter - can also be a pattern (ex: lo.')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
@@ -49,6 +52,9 @@ def main():
 
     if options.device:
         filters.device = options.device
+
+    if options.interface:
+        filters.interface = options.interface
 
     conn = ApiConnect(options.hostname, options.port, filters)
 

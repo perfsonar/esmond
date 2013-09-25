@@ -157,14 +157,6 @@ class Device(NodeInfo):
     def name(self):
         return self._data.get('name', None)
 
-    # Fetch and filter data, etc
-    def _filter_interfaces(self):
-        """Build queryset filters for interface queries."""
-        # Nothing implemented yet
-        filters = {}
-
-        return filters
-
     def get_interfaces(self):
         """
         Issue a call to the API to get a list of interfaces (via a 
@@ -178,7 +170,7 @@ class Device(NodeInfo):
 
         if uri:
             r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, uri), 
-                params=dict(self._default_filters, **self._filter_interfaces()))
+                params=dict(self.filters.default_filters, **self.filters.filter_interfaces()))
 
             if r.status_code == 200 and \
                 r.headers['content-type'] == 'application/json':
@@ -254,17 +246,6 @@ class Interface(NodeInfo):
     def uri(self):
         return self._data.get('uri', None)
 
-    # Fetch and filter data, etc
-    def _filter_endpoints(self, endpoint):
-        """
-        Filter endpoints.
-
-        Since this is not a call to the api, we are not generating queryset
-        filters.  Rather we would need to filter by looking at the payload 
-        and exclude results we don't want.
-        """
-        return endpoint
-
     def get_endpoints(self):
         """
         Generate and return a list of endpoints (via a generator) associated
@@ -272,7 +253,7 @@ class Interface(NodeInfo):
         a call to the API, it is a get_ method just for consistency.
         """
         for i in self._data['children']:
-            e = self._filter_endpoints(Endpoint(i, self.hostname, self.port, self.filters))
+            e = self.filters.filter_endpoints(Endpoint(i, self.hostname, self.port, self.filters))
             if e:
                 yield e
 
@@ -293,13 +274,6 @@ class Endpoint(NodeInfo):
     def uri(self):
         return self._data.get('uri', None)
 
-    def _filter_data(self):
-        """Build queryset filters for data retrieval."""
-        # Nothing implemented yet
-        filters = {}
-
-        return filters
-
     def get_data(self):
         """
         Retrieve the traffic data and return the json response in 
@@ -309,7 +283,7 @@ class Endpoint(NodeInfo):
         """
 
         r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, self.uri),
-            params=dict(self._default_filters, **self._filter_data()))
+            params=dict(self.filters.default_filters, **self.filters.filter_data()))
 
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
@@ -381,7 +355,9 @@ class ApiFilters(object):
             'limit': 0,
         }
 
+        # Attrs for specific object filtering.
         self._device = None
+        self._interface = None
 
     def ts_epoch(self, time_prop):
         """Convert named property back to epoch.  Generally just for 
@@ -430,6 +406,17 @@ class ApiFilters(object):
         return locals()
     devices = property(**device())
 
+    def interface():
+        doc = "The interface property."
+        def fget(self):
+            return self._interface
+        def fset(self, value):
+            self._interface = value
+        def fdel(self):
+            del self._interface
+        return locals()
+    interface = property(**interface())
+
     def default_filters():
         doc = "The default_filters property."
         def fget(self):
@@ -441,6 +428,42 @@ class ApiFilters(object):
         return locals()
     default_filters = property(**default_filters())
 
+    def filter_devices(self):
+        """Build queryset filters for device queries."""
+
+        filters = {}
+
+        if self.device:
+            filters['name__contains'] = self.device
+
+        return filters
+
+    def filter_interfaces(self):
+        """Build queryset filters for interface queries."""
+        # Nothing implemented yet
+        filters = {}
+
+        if self.interface:
+            filters['ifDescr__contains'] = self.interface
+
+        return filters
+
+    def filter_endpoints(self, endpoint):
+        """
+        Filter endpoints.
+
+        Since this is not a call to the api, we are not generating queryset
+        filters.  Rather we would need to filter by looking at the payload 
+        and exclude results we don't want.
+        """
+        return endpoint
+
+    def filter_data(self):
+        """Build queryset filters for data retrieval."""
+        # Nothing implemented yet
+        filters = {}
+
+        return filters
 
 class ApiConnect(object):
     wrn = ApiConnectWarning
@@ -451,21 +474,9 @@ class ApiConnect(object):
         self.filters = filters
         self.port = port
 
-        self._default_filters = self.filters.default_filters
-
-    def _filter_devices(self):
-        """Build queryset filters for device queries."""
-
-        filters = {}
-
-        if self.filters.device:
-            filters['name__contains'] = self.filters.device
-
-        return filters
-
     def get_devices(self):
         r = requests.get('http://{0}:{1}/v1/device/'.format(self.hostname, self.port), 
-            params=dict(self._default_filters, **self._filter_devices()))
+            params=dict(self.filters.default_filters, **self.filters.filter_devices()))
         
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
