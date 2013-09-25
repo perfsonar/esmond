@@ -455,7 +455,10 @@ class ApiFilters(object):
         Since this is not a call to the api, we are not generating queryset
         filters.  Rather we would need to filter by looking at the payload 
         and exclude results we don't want.
+
+        Return the object if it meets criteria, otherwise, return None.
         """
+        # Nothing implemented yet.
         return endpoint
 
     def filter_data(self):
