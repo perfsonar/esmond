@@ -402,16 +402,16 @@ class ApiFilters(object):
         def fset(self, value):
             self._device = str(value)
         def fdel(self):
-            pass
+            del self._device
         return locals()
-    devices = property(**device())
+    device = property(**device())
 
     def interface():
         doc = "The interface property."
         def fget(self):
             return self._interface
         def fset(self, value):
-            self._interface = value
+            self._interface = str(value)
         def fdel(self):
             del self._interface
         return locals()
