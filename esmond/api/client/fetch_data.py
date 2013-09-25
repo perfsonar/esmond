@@ -141,6 +141,10 @@ class NodeInfo(object):
         """
         warnings.warn('Request for {0} got status: {1} - response: {2}'.format(r.url,r.status_code,r.content), self.wrn, stacklevel=2)
 
+    def inspect_request(self, r):
+        if self.filters.verbose:
+            print '[url: {0}]'.format(r.url)
+
 
 class Device(NodeInfo):
     wrn = DeviceWarning
@@ -171,6 +175,8 @@ class Device(NodeInfo):
         if uri:
             r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, uri), 
                 params=dict(self.filters.default_filters, **self.filters.filter_interfaces()))
+
+            self.inspect_request(r)
 
             if r.status_code == 200 and \
                 r.headers['content-type'] == 'application/json':
@@ -285,6 +291,8 @@ class Endpoint(NodeInfo):
         r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, self.uri),
             params=dict(self.filters.default_filters, **self.filters.filter_data()))
 
+        self.inspect_request(r)
+
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
@@ -354,6 +362,8 @@ class ApiFilters(object):
             'end': self.ts_epoch('end_time'),
             'limit': 0,
         }
+
+        self.verbose = False
 
         # Attrs for specific object filtering.
         self._device = None
@@ -480,6 +490,8 @@ class ApiConnect(object):
     def get_devices(self):
         r = requests.get('http://{0}:{1}/v1/device/'.format(self.hostname, self.port), 
             params=dict(self.filters.default_filters, **self.filters.filter_devices()))
+
+        self.inspect_request(r)
         
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
@@ -490,6 +502,10 @@ class ApiConnect(object):
             self.http_alert(r)
             return
             yield
+
+    def inspect_request(self, r):
+        if self.filters.verbose:
+            print '[url: {0}]'.format(r.url)
         
     def http_alert(self, r):
         warnings.warn('Request for {0} got status: {1}'.format(r.url,r.status_code), self.wrn, stacklevel=2)
