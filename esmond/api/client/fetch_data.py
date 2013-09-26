@@ -191,21 +191,26 @@ class Device(NodeInfo):
 
     def get_oidsets(self):
 
-        uri = self._data['resource_uri'] + 'oidset/'
+        uri = None
+        for c in self._data['children']:
+            if c['name'] == 'oidset':
+                uri = c['uri']
+                break
 
-        # Don't need extra query params for this becasue the device
-        # object was already filtered.
-        r = requests.get('http://{0}:{1}{2}'.format(self.hostname, self.port, uri))
+        if uri:
+            # Don't need extra query params for this becasue the device
+            # object was already filtered.
+            r = requests.get('http://{0}:{1}{2}'.format(self.hostname, self.port, uri))
 
-        self.inspect_request(r)
+            self.inspect_request(r)
 
-        if r.status_code == 200 and \
-            r.headers['content-type'] == 'application/json':
-            data = json.loads(r.text)
-            return Oidset(data, self.hostname, self.port, self.filters)
-        else:
-            self.http_alert(r)
-            return Oidset(None, self.hostname, self.port, self.filters)
+            if r.status_code == 200 and \
+                r.headers['content-type'] == 'application/json':
+                data = json.loads(r.text)
+                return Oidset(data, self.hostname, self.port, self.filters)
+            else:
+                self.http_alert(r)
+                return Oidset(None, self.hostname, self.port, self.filters)
 
 
     def __repr__(self):

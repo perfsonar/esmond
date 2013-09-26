@@ -260,11 +260,15 @@ class DeviceResource(ModelResource):
         return OidsetResource().dispatch_list(request, device__name=kwargs['name'])
 
     def dehydrate_children(self, bundle):
-        children = ['interface', 'system', 'all']
+        children = ['interface', 'system', 'all', 'oidset']
 
         base_uri = self.get_resource_uri(bundle)
-        return [ dict(leaf=False, uri='%s%s' % (base_uri, x), name=x)
+        ret = [ dict(leaf=False, uri='%s%s' % (base_uri, x), name=x)
                 for x in children ]
+        for i in ret:
+            if i['name'] == 'oidset':
+                i['leaf'] = True
+        return ret
 
     def dehydrate(self, bundle):
         bundle.data['leaf'] = False
