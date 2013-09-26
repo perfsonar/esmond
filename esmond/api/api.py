@@ -563,7 +563,7 @@ class OidsetResource(ModelResource):
 
     def dehydrate(self, bundle):
         bundle.data['leaf'] = True
-        bundle.data['resource_uri'] = bundle.data['device']
+        bundle.data['resource_uri'] = bundle.data['device'] + 'oidset/'
         return bundle
 
 # ---
