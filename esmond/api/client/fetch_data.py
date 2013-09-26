@@ -57,6 +57,7 @@ MAX_EPOCH = calendar.timegm(max_datetime.utctimetuple())
 
 class NodeInfoWarning(Warning): pass
 class DeviceWarning(NodeInfoWarning): pass
+class OidsetWarning(NodeInfoWarning): pass
 class InterfaceWarning(NodeInfoWarning): pass
 class EndpointWarning(NodeInfoWarning): pass
 class DataPayloadWarning(NodeInfoWarning): pass
@@ -173,7 +174,7 @@ class Device(NodeInfo):
                 break
 
         if uri:
-            r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, uri), 
+            r = requests.get('http://{0}:{1}{2}'.format(self.hostname, self.port, uri), 
                 params=dict(self.filters.default_filters, **self.filters.filter_interfaces()))
 
             self.inspect_request(r)
@@ -188,10 +189,49 @@ class Device(NodeInfo):
                 return
                 yield
 
+    def get_oidsets(self):
+
+        uri = self._data['resource_uri'] + 'oidset/'
+
+        # Don't need extra query params for this becasue the device
+        # object was already filtered.
+        r = requests.get('http://{0}:{1}{2}'.format(self.hostname, self.port, uri))
+
+        self.inspect_request(r)
+
+        if r.status_code == 200 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            return Oidset(data, self.hostname, self.port, self.filters)
+        else:
+            self.http_alert(r)
+            return Oidset(None, self.hostname, self.port, self.filters)
+
 
     def __repr__(self):
         return '<Device/{0}: uri:{1}>'.format(self.name, self.resource_uri)
 
+class Oidset(NodeInfo):
+    wrn = OidsetWarning
+    """Class to encapsulate device information"""
+    def __init__(self, data, hostname, port, filters):
+        super(Oidset, self).__init__(data, hostname, port, filters)
+
+        self._oidsets = []
+        self._resource_uri = None
+
+        if self._data:
+            for d in self._data:
+                self._oidsets.append(d['oidset'])
+                self._resource_uri = d['resource_uri']
+
+    # Property attrs unique to oidset
+    @property
+    def oidsets(self):
+        return self._oidsets
+
+    def __repr__(self):
+        return '<Oidset: {0}: uri:{1}>'.format(self.oidsets, self._resource_uri)
 
 class Interface(NodeInfo):
     wrn = InterfaceWarning
@@ -264,7 +304,7 @@ class Interface(NodeInfo):
                 yield e
 
     def __repr__(self):
-        return '<Interface/{0}: uri:{1}'.format(self.ifDescr, self.resource_uri)
+        return '<Interface/{0}: uri:{1}>'.format(self.ifDescr, self.resource_uri)
 
 class Endpoint(NodeInfo):
     wrn = EndpointWarning
@@ -288,7 +328,7 @@ class Endpoint(NodeInfo):
         empty object.
         """
 
-        r = requests.get('http://{0}:{1}/{2}'.format(self.hostname, self.port, self.uri),
+        r = requests.get('http://{0}:{1}{2}'.format(self.hostname, self.port, self.uri),
             params=dict(self.filters.default_filters, **self.filters.filter_data()))
 
         self.inspect_request(r)

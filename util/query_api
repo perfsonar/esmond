@@ -66,7 +66,7 @@ def main():
         print d
         # print d.dump
         print '  *', d.begin_time, '|', d.end_time
-        # continue
+        print '  +', d.get_oidsets()
         for i in d.get_interfaces():
             print '  ', i, i.begin_time
             for e in i.get_endpoints():
