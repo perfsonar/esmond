@@ -429,6 +429,7 @@ class ApiFilters(object):
             return self._begin_time
         def fset(self, value):
             self._begin_time = self._convert_ts(value)
+            self._default_filters['begin'] = self.ts_epoch('begin_time')
         def fdel(self):
             pass
         return locals()
@@ -440,6 +441,7 @@ class ApiFilters(object):
             return self._end_time
         def fset(self, value):
             self._end_time = self._convert_ts(value)
+            self._default_filters['end'] = self.ts_epoch('end_time')
         def fdel(self):
             pass
         return locals()
@@ -450,7 +452,8 @@ class ApiFilters(object):
         def fget(self):
             return self._limit
         def fset(self, value):
-            self._limit = str(value)
+            self._limit = int(value)
+            self._default_filters['limit'] = self._limit
         def fdel(self):
             del self._limit
         return locals()
