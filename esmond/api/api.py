@@ -299,12 +299,24 @@ class InterfaceResource(ModelResource):
 
     def obj_get(self, bundle, **kwargs):
         """
-        This massages the incoming URL fragment to restore characters in 
+        The standard time range filtering is applied to obj_get since there may
+        actually be more than one underlying IfRef for this interface. If there
+        is more than one IfRef during the selected time period the IfRef with
+        the greatest end_time is returned.
+
+        This also massages the incoming URL fragment to restore characters in 
         ifDescr which were encoded to avoid URL metacharacters back to
         their original state.
         """
         kwargs['ifDescr'] = atdecode(kwargs['ifDescr'])
         kwargs = build_time_filters(bundle.request.GET, kwargs)
+
+        # XXX(jdugan): we might want to do something different here, such as
+        # return a reference to or a list of other valid IfRefs at this point.
+        object_list = self.get_object_list(bundle.request).filter(**kwargs)
+        if len(object_list) > 1:
+            kwargs['pk'] = object_list.order_by("-end_time")[0].pk
+
         return super(InterfaceResource, self).obj_get(bundle, **kwargs)
 
     def get_object_list(self, request):

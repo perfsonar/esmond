@@ -235,6 +235,17 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(data['ifAlias'], "test interface with new ifAlias")
         self.assertEquals(data['ipAddr'], "10.0.1.2")
 
+        # query covering whole range should get the later xe-2/0/0 ifref
+        begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
+        end = datetime_to_timestamp(self.td.rtr_b.end_time)
+
+        response = self.client.get(url, dict(begin=begin, end=end))
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(data['ifDescr'], iface)
+        self.assertEquals(data['ifAlias'], "test interface with new ifAlias")
+        self.assertEquals(data['ipAddr'], "10.0.1.2")
+
     def test_get_device_interface_list_hidden(self):
         url = '/v1/device/rtr_a/interface/'
 
