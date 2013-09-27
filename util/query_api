@@ -21,24 +21,21 @@ from esmond.api.client.fetch_data import ApiConnect, ApiFilters
 def main():
     import os.path
     from optparse import OptionParser
-    usage = '%prog [ -v | -H hostname ]'
+    usage = '%prog [ -v | -U api_url ]'
     parser = OptionParser(usage=usage)
-    parser.add_option('-H', '--hostname', metavar='HOST',
-            type='string', dest='hostname', 
-            help='Host running rest api (default=%default).', 
+    parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
+            type='string', dest='api_url',
+            help='URL for the REST API (default=%default).',
             default='localhost')
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
             help='Last n minutes of data to query.')
-    parser.add_option('-p', '--port', metavar='PORT',
-            type='int', dest='port', default=80,
-            help='Port number for of rest api.')
     parser.add_option('-d', '--device', metavar='DEVICE',
-            type='string', action='store', 
+            type='string', action='store',
             default=None, dest='device',
             help='Device name to filter - can also be a pattern (ex: lbl-).')
     parser.add_option('-i', '--interface', metavar='INTERFACE',
-            type='string', dest='interface', 
+            type='string', dest='interface',
             help='Interface name to filter - can also be a pattern (ex: lo.')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
@@ -58,7 +55,7 @@ def main():
     if options.interface:
         filters.interface = options.interface
 
-    conn = ApiConnect(options.hostname, options.port, filters)
+    conn = ApiConnect(options.api_url, filters)
 
     # return 1
 
@@ -72,7 +69,7 @@ def main():
             for e in i.get_endpoints():
                 print '   *', e
                 print '     +', e.get_data().dump
-        break    
+        break
     pass
 
 if __name__ == '__main__':
