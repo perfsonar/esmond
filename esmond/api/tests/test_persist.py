@@ -503,11 +503,12 @@ class TestCassandraPollPersister(TestCase):
             ts_max=end_time
         )
 
-        assert len(ret) == self.ctr.expected_results
-        assert ret[0]['ts'] == start_time
-        assert ret[0]['val'] == self.ctr.base_rate_val_first
-        assert ret[self.ctr.expected_results-1]['ts'] == end_time
-        assert ret[self.ctr.expected_results-1]['val'] == self.ctr.base_rate_val_last
+        self.assertEqual(len(ret), self.ctr.expected_results)
+        self.assertEqual(ret[0]['ts'], start_time)
+        self.assertEqual(ret[0]['val'], self.ctr.base_rate_val_first)
+        self.assertEqual(ret[self.ctr.expected_results-1]['ts'], end_time)
+        self.assertEqual(ret[self.ctr.expected_results-1]['val'],
+                self.ctr.base_rate_val_last)
 
         ret = db.query_raw_data(
             path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -516,11 +517,11 @@ class TestCassandraPollPersister(TestCase):
             ts_max=end_time
         )
 
-        assert len(ret) == self.ctr.expected_results - 1
-        assert ret[0]['ts'] == self.ctr.raw_ts_first*1000
-        assert ret[0]['val'] == self.ctr.raw_val_first
-        assert ret[len(ret)-1]['ts'] == self.ctr.raw_ts_last*1000
-        assert ret[len(ret)-1]['val'] == self.ctr.raw_val_last
+        self.assertEqual(len(ret), self.ctr.expected_results - 1)
+        self.assertEqual(ret[0]['ts'], self.ctr.raw_ts_first*1000)
+        self.assertEqual(ret[0]['val'], self.ctr.raw_val_first)
+        self.assertEqual(ret[len(ret)-1]['ts'], self.ctr.raw_ts_last*1000)
+        self.assertEqual(ret[len(ret)-1]['val'], self.ctr.raw_val_last)
 
         ret = db.query_aggregation_timerange(
             path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -530,9 +531,9 @@ class TestCassandraPollPersister(TestCase):
             cf='average',  # min | max | average - also required!
         )
         
-        assert ret[0]['cf'] == 'average'
-        assert ret[0]['val'] == self.ctr.agg_avg
-        assert ret[0]['ts'] == self.ctr.agg_ts*1000
+        self.assertEqual(ret[0]['cf'], 'average')
+        self.assertEqual(ret[0]['val'], self.ctr.agg_avg)
+        self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
         
         ret = db.query_aggregation_timerange(
             path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -542,9 +543,9 @@ class TestCassandraPollPersister(TestCase):
             cf='min',  # min | max | average - also required!
         )
 
-        assert ret[0]['cf'] == 'min'
-        assert ret[0]['val'] == self.ctr.agg_min
-        assert ret[0]['ts'] == self.ctr.agg_ts*1000
+        self.assertEqual(ret[0]['cf'], 'min')
+        self.assertEqual(ret[0]['val'], self.ctr.agg_min)
+        self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
 
         ret = db.query_aggregation_timerange(
             path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -554,9 +555,9 @@ class TestCassandraPollPersister(TestCase):
             cf='max',  # min | max | average - also required!
         )
         
-        assert ret[0]['cf'] == 'max'
-        assert ret[0]['val'] == self.ctr.agg_max
-        assert ret[0]['ts'] == self.ctr.agg_ts*1000
+        self.assertEqual(ret[0]['cf'], 'max')
+        self.assertEqual(ret[0]['val'], self.ctr.agg_max)
+        self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
 
         db.close()
 
