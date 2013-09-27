@@ -50,16 +50,15 @@ def main():
         filters.begin_time = int(time.time() - (options.last*60))
 
     if options.device:
-        filters.device = options.device
-
-    if options.interface:
-        filters.interface = options.interface
+        device_filters = {"name": options.device}
+    else:
+        device_filters = {}
 
     conn = ApiConnect(options.api_url, filters)
 
     # return 1
 
-    for d in conn.get_devices():
+    for d in conn.get_devices(**device_filters):
         print d
         # print d.dump
         print '  *', d.begin_time, '|', d.end_time
