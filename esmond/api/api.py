@@ -304,6 +304,7 @@ class InterfaceResource(ModelResource):
         their original state.
         """
         kwargs['ifDescr'] = atdecode(kwargs['ifDescr'])
+        kwargs = build_time_filters(bundle.request.GET, kwargs)
         return super(InterfaceResource, self).obj_get(bundle, **kwargs)
 
     def get_object_list(self, request):

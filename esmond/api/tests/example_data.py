@@ -138,6 +138,21 @@ def build_default_metadata():
             ifAdminStatus=1,
             ifPhysAddress="00:00:00:00:00:00",
             begin_time=rtr_b_begin,
+            end_time=rtr_b_begin + datetime.timedelta(days=4))
+
+    IfRef.objects.get_or_create(
+            device=td.rtr_b,
+            ifIndex=1,
+            ifDescr="xe-2/0/0",
+            ifAlias="test interface with new ifAlias",
+            ipAddr="10.0.1.2",
+            ifSpeed=0,
+            ifHighSpeed=10000,
+            ifMtu=9000,
+            ifOperStatus=1,
+            ifAdminStatus=1,
+            ifPhysAddress="00:00:00:00:00:00",
+            begin_time=rtr_b_begin + datetime.timedelta(days=4),
             end_time=rtr_b_begin + datetime.timedelta(days=7))
 
     IfRef.objects.get_or_create(

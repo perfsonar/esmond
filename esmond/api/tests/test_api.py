@@ -130,11 +130,11 @@ class DeviceAPITests(DeviceAPITestsBase):
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         end = datetime_to_timestamp(self.td.rtr_b.end_time)
 
-        # rtr_b has two interfaces over it's existence
+        # rtr_b has two interfaces over it's existence, but three ifrefs
         response = self.client.get(url, dict(begin=begin, end=end))
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(len(data['children']), 2)
+        self.assertEquals(len(data['children']), 3)
 
         # rtr_b has only one interface during the last part of it's existence
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time +
@@ -206,6 +206,34 @@ class DeviceAPITests(DeviceAPITestsBase):
                     child = children[child_name]
                     self.assertEqual(child['uri'], url + child_name)
                     self.assertTrue(child['leaf'])
+
+    def test_get_device_interface_detail_with_multiple_ifrefs(self):
+        iface = "xe-2/0/0"
+        url = '/v1/device/rtr_b/interface/{0}'.format(atencode(iface))
+
+        # get the first xe-2/0/0 ifref
+        begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
+        end = datetime_to_timestamp(self.td.rtr_b.begin_time +
+                datetime.timedelta(days=1))
+
+        response = self.client.get(url, dict(begin=begin, end=end))
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(data['ifDescr'], iface)
+        self.assertEquals(data['ifAlias'], "test interface")
+        self.assertEquals(data['ipAddr'], "10.0.0.2")
+
+        # get the second xe-2/0/0 ifref
+        begin = datetime_to_timestamp(self.td.rtr_b.begin_time + 
+                datetime.timedelta(days=5))
+        end = datetime_to_timestamp(self.td.rtr_b.end_time)
+
+        response = self.client.get(url, dict(begin=begin, end=end))
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(data['ifDescr'], iface)
+        self.assertEquals(data['ifAlias'], "test interface with new ifAlias")
+        self.assertEquals(data['ipAddr'], "10.0.1.2")
 
     def test_get_device_interface_list_hidden(self):
         url = '/v1/device/rtr_a/interface/'
