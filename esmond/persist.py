@@ -351,6 +351,130 @@ class TSDBPollPersister(PollPersister):
             self.log.error("bad metadata for %s" % var_name)
             
 
+def fit_to_bins(freq, ts_prev, val_prev, ts_curr, val_curr):
+    """Fit successive counter measurements into evenly spaced bins.
+
+    The return value is a dictionary with bin names as keys and integer amounts to
+    increment the bin by as values.
+
+    In order to be able to compare metrics to one another we need to have a
+    common sequence of equally spaced timestamps. The data comes from the
+    network in imprecise intervals. This code converts measurements as them come
+    in into bins with evenly spaced time stamps.
+
+    bin_prev      bin_mid (0..n bins)         bin_curr      bin_next
+    |             |                           |             |
+    |   ts_prev   |                           |   ts_curr   |
+    |       |     |                           |       |     |
+    v       v     v                           v       v     v
+    +-------------+-------------+-------------+-------------+
+    |       [.....|..... current|measurement .|.......]     |
+    +-------------+-------------+-------------+-------------+  ----> time
+            \     /\                          /\      /
+             \   /  \                        /  \    /
+              \ /    \__________  __________/    \  /
+               v                \/                \/
+            frac_prev        frac_mid           frac_curr
+
+    The diagram shows the equally spaced bins (freq units apart) which this
+    function will fit the data into.
+
+    The diagram above captures all the possible collection states, allowing for
+    data that belongs a partial bin on the left, zero or more bins in the middle
+    and a partial bin on the right.  In the common cases there will be zero or
+    one bin in bin_mid, but if measurements are come in less frequently than
+    freq there may be more than one bin.
+
+    The input data is the frequency of the bins, followed by the timestamp and
+    value of the previous measurement and the timestamp and value of the current
+    measurement. The measurements are expect to be counters that always
+    increase.
+
+    This code goes to great lengths to deal with allocating the remainder of
+    integer division in proporionate fashion.
+
+    Here are some examples.  In this case everything is in bin_prev:
+
+    >>> fit_to_bins(30, 0, 0, 30, 100)
+    {0: 100, 30: 0}
+
+    The data is perfectly aligned with the bins and all of the data ends up in
+    bin 0.
+
+    In this case, there is no bin_mid at all:
+
+    >>> fit_to_bins(30, 31, 100, 62, 213)
+    {60: 7, 30: 106}
+
+    We 29/31 of data goes into bin 30 and the remaining 2/31 goes into bin 60.
+    The example counter values here were chosen to show how the remainder code
+    operates.
+
+    In this case there is no bin_mid, everything is in bin_prev or bin_curr:
+
+    >>> fit_to_bins(30, 90, 100, 121, 200)
+    {120: 3, 90: 97}
+
+    30/31 of the data goes into bin 90 and 1/31 goes into bin 120.
+
+    This example shows where bin_mid is larger than one:
+
+    >>> fit_to_bins(30, 89, 100, 181, 200)
+    {120: 33, 180: 1, 90: 33, 60: 0, 150: 33}
+    """
+
+    assert ts_curr > ts_prev
+
+    bin_prev = ts_prev - (ts_prev % freq)
+    bin_mid = (ts_prev + freq) - (ts_prev % freq)
+    bin_curr = ts_curr - (ts_curr % freq)
+
+    delta_t = ts_curr - ts_prev
+    delta_v = val_curr - val_prev
+
+    frac_prev = (bin_mid - ts_prev)/float(delta_t)
+    frac_curr = (ts_curr - bin_curr)/float(delta_t)
+
+    p = int(round(frac_prev * delta_v))
+    c = int(round(frac_curr * delta_v))
+
+    # updates maps bins to byte deltas
+    updates = {}
+    updates[bin_prev] = p
+    updates[bin_curr] = c
+
+    fractions = []
+    fractions.append((bin_prev, frac_prev))
+    fractions.append((bin_curr, frac_curr))
+
+    if bin_curr - bin_mid > 0:
+        frac_mid = (bin_curr - bin_mid)/float(delta_t)
+        m = frac_mid * delta_v
+        n_mid_bins = (bin_curr-bin_mid)/freq
+        m_per_midbin = int(round(m / n_mid_bins))
+        frac_per_midbin = frac_mid / n_mid_bins
+
+        for b in range(bin_mid, bin_curr, freq):
+            updates[b] = m_per_midbin
+            fractions.append((b, frac_per_midbin))
+
+    remainder = delta_v - sum(updates.itervalues())
+    if remainder != 0:
+        #print "%d bytes left over, %d bins" % (remainder, len(updates))
+        if remainder > 0:
+            incr = 1
+            reverse = True
+        else:
+            incr = -1
+            reverse = False
+
+        fractions.sort(key=lambda x: x[1], reverse=reverse)
+        for i in range(abs(remainder)):
+            b = fractions[i % len(updates)][0]
+            updates[b] += incr
+
+    return updates
+
 class CassandraPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a Cassandra backend.
 
@@ -474,14 +598,13 @@ class CassandraPollPersister(PollPersister):
             data.ts == metadata.last_update:
             return
 
+        last_data_ts = metadata.ts_to_jstime('last_update')
+
         # We've retrieved valid previous vals/ts from metadata, so calculate
         # the value and time delta, and the fractional slots that the data
         # will (usually) be split between.
         delta_t = data.ts_to_jstime() - metadata.ts_to_jstime('last_update')
         delta_v = data.val - metadata.last_val
-
-        prev_slot = (metadata.ts_to_jstime('last_update') / data.freq) * data.freq
-        curr_slot = (data.ts_to_jstime() / data.freq) * data.freq
 
         rate = float(delta_v) / float(delta_t)
         # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
@@ -503,19 +626,6 @@ class CassandraPollPersister(PollPersister):
             metadata.refresh_from_raw(data)
             return
             
-        # Things look good so generate the fractional deltas to distribute
-        # between the bins.
-
-        prev_frac = int( floor(
-                delta_v * (prev_slot + data.freq - metadata.ts_to_jstime('last_update'))
-                / float(delta_t)
-                ))
-
-        curr_frac = int( ceil(
-                    delta_v * (data.ts_to_jstime() - curr_slot)
-                    / float(delta_t)
-                ))
-
         # This re-implements old "hearbeat" logic.  If the current time
         # delta is greater than HEARTBEAT_FREQ_MULTIPLIER (3), write
         # zero-value non-valid bins in the gap.  These MAY be updated
@@ -539,50 +649,16 @@ class CassandraPollPersister(PollPersister):
             self.db.update_metadata(data.get_meta_key(), metadata)
 
             return
-            
-                
+
+
+        updates = fit_to_bins(data.freq, last_data_ts, metadata.last_val,
+                data.ts_to_jstime(), data.val)
         # Now, write the new valid data between the appropriate bins.
 
-        prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
+        for bin_name, val in updates.iteritems():
+            update_bin = BaseRateBin(ts=bin_name, freq=data.freq, val=val,
                 path=data.path)
-        curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
-                path=data.path)
-
-        self.db.update_rate_bin(prev_bin)
-        self.db.update_rate_bin(curr_bin)
-
-        # Original backfill logic from the tsdb.aggregator
-        # This has been slightly modified from the orignial.
-        
-        # The backfill code is invoked if there is a gap in the data (ie: 
-        # the slot times are greater than the frequency), but not so big so
-        # as to require the 'heartbeat' code to be invoked.
-
-        if (curr_slot - prev_slot) > data.freq: # New condition - missing bins?
-            missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
-            if not missed_slots:
-                missed_slots = [curr_slot]
-            missed = delta_v - (curr_frac + prev_frac)
-            if missed > 0:
-                # Presume valid data (old logic)
-                missed_frac = missed / len(missed_slots)
-                missed_rem = missed % (missed_frac * len(missed_slots))
-                for slot in missed_slots:
-                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=missed_frac,
-                            path=data.path)
-                    self.db.update_rate_bin(miss_bin)
-
-                    for i in range(missed_rem):
-                        dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
-                            val=1, path=data.path)
-                        self.db.update_rate_bin(dist_bin)
-            else:
-                # Presume invalid data (new logic) and fill gap/slots
-                # with invalid values.
-                for slot in missed_slots:
-                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=0,
-                            is_valid=0, path=data.path)
-                    self.db.update_rate_bin(miss_bin)
+            self.db.update_rate_bin(update_bin)
 
         # Gotten to the final success condition, so update the metadata
         # cache with values from the current data input and return the 
