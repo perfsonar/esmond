@@ -287,7 +287,7 @@ class MockCASSANDRA_DB(object):
         # Mimic returned data, format elsehwere
         self._test_incoming_args(path, freq, ts_min, ts_max)
         if path[0] not in [SNMP_NAMESPACE] : return []
-        if path[1] not in ['rtr_a', 'rtr_inf'] : return []
+        if path[1] not in ['rtr_a', 'rtr_b', 'rtr_inf'] : return []
         return [
             {'is_valid': 2, 'ts': 0*1000, 'val': 10},
             {'is_valid': 2, 'ts': 30*1000, 'val': 20},
@@ -424,6 +424,25 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['resource_uri'], url.rstrip("/"))
         self.assertEquals(data['data'][2][0], 60)
         self.assertEquals(data['data'][2][1], 40)
+
+        # test for interfaces with multiple IfRefs
+        url = '/v1/device/rtr_b/interface/xe-2@2F0@2F0/in'
+
+        begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
+        end = datetime_to_timestamp(self.td.rtr_b.end_time)
+
+        response = self.client.get(url, dict(begin=begin, end=end))
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(int(data['agg']), 30)
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(data['data'][1][0], 30)
+        self.assertEquals(data['data'][1][1], 20)
 
 
     def test_get_device_interface_data_detail_hidden(self):

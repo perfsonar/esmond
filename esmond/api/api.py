@@ -442,10 +442,9 @@ class InterfaceDataResource(Resource):
         If that is all good, then query args are parsed, defaults are set if 
         none were supplied and then the query is executed.
         """
-        iface_qs = InterfaceResource().get_object_list(bundle.request)
         try:
-            iface = iface_qs.get( device__name=kwargs['name'],
-                    ifDescr=atdecode(kwargs['iface_name']))
+            iface = InterfaceResource().obj_get(bundle, device__name=kwargs['name'],
+                    ifDescr=kwargs['iface_name'])
         except IfRef.DoesNotExist:
             raise BadRequest("no such device/interface: dev: {0} int: {1}".format(kwargs['name'], kwargs['iface_name']))
 

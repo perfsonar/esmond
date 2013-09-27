@@ -58,6 +58,9 @@ def build_default_metadata():
             begin_time = rtr_b_begin,
             end_time = rtr_b_end)
 
+    DeviceOIDSetMap(device=td.rtr_b,
+            oid_set=OIDSet.objects.get(name="FastPollHC")).save()
+
     td.rtr_inf, _ = Device.objects.get_or_create(
             name="rtr_inf",
             community="public",
