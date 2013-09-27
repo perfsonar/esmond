@@ -12,7 +12,7 @@ from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
 import tsdb
 
 from esmond.util import setproctitle, init_logging, get_logger, \
-        remove_metachars, build_alu_sap_name
+        build_alu_sap_name
 from esmond.util import daemonize, setup_exc_handler
 from esmond.config import get_opt_parser, get_config, get_config_path
 from esmond.error import ConfigError, PollerError
@@ -48,7 +48,7 @@ class PollCorrelator(object):
     def _table_parse(self, data):
         d = {}
         for (var, val) in data:
-            d[var.split('.')[-1]] = remove_metachars(val)
+            d[var.split('.')[-1]] = val
         return d
 
 class OidCorrelator(PollCorrelator):
@@ -181,7 +181,7 @@ class ALUIfDescrCorrelator(IfDescrCorrelator):
         d = {}
         for (var, val) in data:
             val = val.split(',')[0] # weird comma separated thing
-            d[var.split('.')[-1]] = remove_metachars(val)
+            d[var.split('.')[-1]] = val
         return d
 
     def lookup(self, oid, var):
