@@ -54,6 +54,11 @@ def main():
     else:
         device_filters = {}
 
+    if options.interface:
+        interface_filters = {'ifDescr': options.interface}
+    else:
+        interface_filters = {}
+
     conn = ApiConnect(options.api_url, filters)
 
     # return 1
@@ -62,8 +67,7 @@ def main():
         print d
         # print d.dump
         print '  *', d.begin_time, '|', d.end_time
-        print '  +', d.get_oidsets()
-        for i in d.get_interfaces():
+        for i in d.get_interfaces(**interface_filters):
             print '  ', i, i.begin_time
             for e in i.get_endpoints():
                 print '   *', e

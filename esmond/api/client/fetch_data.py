@@ -57,7 +57,6 @@ MAX_EPOCH = calendar.timegm(max_datetime.utctimetuple())
 
 class NodeInfoWarning(Warning): pass
 class DeviceWarning(NodeInfoWarning): pass
-class OidsetWarning(NodeInfoWarning): pass
 class InterfaceWarning(NodeInfoWarning): pass
 class EndpointWarning(NodeInfoWarning): pass
 class DataPayloadWarning(NodeInfoWarning): pass
@@ -190,54 +189,9 @@ class Device(NodeInfo):
                 return
                 yield
 
-    def get_oidsets(self):
-
-        uri = None
-        for c in self._data['children']:
-            if c['name'] == 'oidset':
-                uri = c['uri']
-                break
-
-        if uri:
-            # Don't need extra query params for this becasue the device
-            # object was already filtered.
-            r = requests.get('{0}{1}'.format(self.api_url, uri))
-
-            self.inspect_request(r)
-
-            if r.status_code == 200 and \
-                r.headers['content-type'] == 'application/json':
-                data = json.loads(r.text)
-                return Oidset(data, self.api_url, self.filters)
-            else:
-                self.http_alert(r)
-                return Oidset(None, self.api_url, self.filters)
-
 
     def __repr__(self):
         return '<Device/{0}: uri:{1}>'.format(self.name, self.resource_uri)
-
-class Oidset(NodeInfo):
-    wrn = OidsetWarning
-    """Class to encapsulate device information"""
-    def __init__(self, data, api_url, filters):
-        super(Oidset, self).__init__(data, api_url, filters)
-
-        self._oidsets = []
-        self._resource_uri = None
-
-        if self._data:
-            for d in self._data:
-                self._oidsets.append(d['oidset'])
-                self._resource_uri = d['resource_uri']
-
-    # Property attrs unique to oidset
-    @property
-    def oidsets(self):
-        return self._oidsets
-
-    def __repr__(self):
-        return '<Oidset: {0}: uri:{1}>'.format(self.oidsets, self._resource_uri)
 
 class Interface(NodeInfo):
     wrn = InterfaceWarning
