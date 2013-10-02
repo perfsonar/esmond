@@ -18,7 +18,7 @@ from tastypie import fields
 from tastypie.exceptions import NotFound, BadRequest
 from tastypie.http import HttpCreated
 
-from esmond.api.models import Device, IfRef, DeviceOIDSetMap
+from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import atdecode, atencode
@@ -526,6 +526,33 @@ class InterfaceDataResource(Resource):
         obj.data = QueryUtil.format_data_payload(data)
         return obj
 
+class OidsetDataObject(InterfaceDataObject):
+    pass
+
+class OidsetResource(ModelResource):
+    class Meta:
+        resource_name = 'oidset'
+        allowed_methods = ['get']
+        queryset = OIDSet.objects.all()
+        object_class = OidsetDataObject
+        # serializer = DeviceSerializer()
+        authentication = AnonymousGetElseApiAuthentication()
+        excludes = ['id', 'poller_args']
+
+    def get_object_list(self, request):
+        qs = self._meta.queryset._clone()
+        return qs
+
+    def obj_get_list(self, bundle, **kwargs):
+        return super(OidsetResource, self).obj_get_list(bundle, **kwargs)
+
+    def alter_list_data_to_serialize(self, request, data):
+        return [o.data['name'] for o in data['objects']]
+
+    def dehydrate(self, bundle):
+        del bundle.data['resource_uri'] # no drilldown
+        return bundle
+
 # ---
 
 """
@@ -902,3 +929,4 @@ class QueryUtil(object):
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
 v1_api.register(TimeseriesResource())
+v1_api.register(OidsetResource())
