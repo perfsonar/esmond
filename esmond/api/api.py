@@ -462,6 +462,9 @@ class InterfaceDataResource(Resource):
         obj.iface_dataset = iface_dataset
         obj.iface = iface
 
+        # Fix atencoded path before executing query.
+        obj.datapath.append(atdecode(obj.datapath.pop()))
+
         filters = getattr(bundle.request, 'GET', {})
 
         # Make sure incoming begin/end timestamps are ints
