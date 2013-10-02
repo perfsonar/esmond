@@ -2,6 +2,8 @@ import json
 import requests
 import warnings
 
+from esmond.util import atencode
+
 """
 Module to handle posting data to esmond rest interface.
 
@@ -54,7 +56,7 @@ class PostData(object):
         super(PostData, self).__init__()
         self.hostname = hostname
         self.port = port
-        self.path = path
+        self.path = path[:] # copy in case the path ref is reused
         self.freq = freq
 
         # Make sure we're not using the base class
@@ -82,13 +84,14 @@ class PostData(object):
 
         self.payload = []
 
+        # atencode the interface part of the path
+        self.path.append(atencode(self.path.pop()))
+
         self.headers = {'content-type': 'application/json'}
 
         self.url = 'http://{0}:{1}/{2}/{3}/{4}/{5}'.format(self.hostname, 
             self.port, self._schema_root, self._p_type,
             '/'.join(self.path), self.freq)
-
-        print self.url
 
     def set_payload(self, payload):
         """Sets object payload to a complete list of dicts passed in. 

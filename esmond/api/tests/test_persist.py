@@ -33,6 +33,7 @@ from pycassa.columnfamily import ColumnFamily
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
      build_metadata_from_test_data, load_test_data
 from esmond.api.api import check_connection, SNMP_NAMESPACE
+from esmond.util import atencode
 
 try:
     import tsdb
@@ -815,8 +816,11 @@ class TestCassandraApiQueries(ResourceTestCase):
     def test_timeseries_post_and_read(self):
         """/timeseries rest test for raw/base rate writes and reads - 
         does not use the canned test data."""
+
+        interface_name = 'interface_test/0/0.0'
+
         # raw data writes
-        url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/interface_test/30000'
+        url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
 
         params = { 
             'ts': int(time.time()) * 1000, 
@@ -844,7 +848,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['cf'], 'raw')
 
         # base rate write
-        url = '/v1/timeseries/BaseRate/rtr_test/FastPollHC/ifHCInOctets/interface_test/30000'
+        url = '/v1/timeseries/BaseRate/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
 
         response = self.client.post(url, data=json.dumps(payload), 
                 content_type='application/json')

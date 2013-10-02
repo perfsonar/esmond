@@ -12,9 +12,12 @@ import sys
 import time
 
 from esmond.api.client.post_data import PostRawData, PostBaseRate
+from esmond.util import atencode
 
-def read_insert(ts, p_type):
-    url = 'http://localhost:8000/v1/timeseries/{0}/rtr_test_post/FastPollHC/ifHCInOctets/interface_test/30000'.format(p_type)
+def read_insert(ts, p_type, path):
+    url = 'http://localhost:8000/v1/timeseries/{0}/rtr_test_post/FastPollHC/ifHCInOctets/{1}/30000'.format(
+        p_type, atencode(path[-1])
+    )
 
     params = {
         'begin': ts-90000, 'end': ts+1000
@@ -36,7 +39,7 @@ def main():
         { 'ts': ts, 'val': 4000 },
     ]
 
-    path = ['rtr_test_post', 'FastPollHC', 'ifHCInOctets', 'interface_test']
+    path = ['rtr_test_post', 'FastPollHC', 'ifHCInOctets', 'interface_test/0/0.0']
 
     p = PostRawData(port=8000, path=path, freq=30000)
     # set_payload will completely replace the internal payload of the object.
@@ -49,7 +52,7 @@ def main():
     # clear the internal payload.
     p.send_data()
 
-    read_insert(ts, 'RawData')
+    read_insert(ts, 'RawData', path)
 
     # return
 
@@ -57,7 +60,7 @@ def main():
     p.set_payload(payload)
     p.send_data()
 
-    read_insert(ts, 'BaseRate')
+    read_insert(ts, 'BaseRate', path)
 
 
 

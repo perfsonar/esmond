@@ -21,7 +21,7 @@ from tastypie.http import HttpCreated
 from esmond.api.models import Device, IfRef, DeviceOIDSetMap
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
-from esmond.util import atdecode
+from esmond.util import atdecode, atencode
 
 try:
     db = CASSANDRA_DB(get_config(get_config_path()))
@@ -637,6 +637,7 @@ class TimeseriesResource(Resource):
         """Generate resource_uri for json payload."""
         if isinstance(bundle_or_obj, Bundle):
             obj = bundle_or_obj.obj
+            obj.datapath = QueryUtil.encode_datapath(obj.datapath)
         else:
             obj = bundle_or_obj
 
@@ -650,12 +651,12 @@ class TimeseriesResource(Resource):
         Invoked when a GET request hits this namespace.  Sanity check incoming
         URI segment/args, sets defaults if need be and executes the query.
         """
-
         obj = TimeseriesDataObject()
 
         obj.r_type = kwargs.get('r_type')
         obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
         obj.agg = obj.datapath.pop()
+        obj.datapath = QueryUtil.decode_datapath(obj.datapath)
 
         try:
             obj.agg = int(obj.agg)
@@ -707,7 +708,6 @@ class TimeseriesResource(Resource):
         cassandra writes are (base rates for example) so post 
         was chosen. -MMG
         """
-
         # Validate incoming POST/JSON payload:
 
         if bundle.META.get('CONTENT_TYPE') != 'application/json':
@@ -747,6 +747,8 @@ class TimeseriesResource(Resource):
             obj.agg = obj.datapath.pop()
             obj.ts = i.get('ts')
             obj.val = i.get('val')
+
+            obj.datapath = QueryUtil.decode_datapath(obj.datapath)
 
             if obj.r_type not in QueryUtil.timeseries_request_types:
                 raise BadRequest('Request type must be one of {0} - {1} was given.'.format(QueryUtil.timeseries_request_types, obj.r_type))
@@ -801,7 +803,6 @@ class TimeseriesResource(Resource):
         appropriate inserts, and then explicitly flush the db so the 
         inserts don't sit in the batch wating for more data to auto-flush.
         """
-
         for obj in objs:
             if obj.r_type == 'BaseRate':
                 rate_bin = BaseRateBin(path=obj.datapath, ts=obj.ts, 
@@ -833,6 +834,16 @@ class QueryUtil(object):
     }
 
     timeseries_request_types = ['RawData', 'BaseRate', 'Aggs']
+
+    @staticmethod
+    def decode_datapath(datapath):
+        datapath.append(atdecode(datapath.pop()))
+        return datapath
+
+    @staticmethod
+    def encode_datapath(datapath):
+        datapath.append(atencode(datapath.pop()))
+        return datapath
 
     @staticmethod
     def valid_timerange(obj, in_ms=False):
