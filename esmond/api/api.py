@@ -161,6 +161,7 @@ class DeviceResource(ModelResource):
     """
     children = fields.ListField()
     leaf = fields.BooleanField()
+    oidsets = fields.ToManyField('esmond.api.api.OidsetResource', 'oidsets', full=True)
 
     class Meta:
         queryset = Device.objects.all()
@@ -259,6 +260,29 @@ class DeviceResource(ModelResource):
     def dehydrate(self, bundle):
         bundle.data['leaf'] = False
         return bundle
+
+
+class OidsetResource(ModelResource):
+    class Meta:
+        resource_name = 'oidset'
+        allowed_methods = ['get']
+        queryset = OIDSet.objects.all()
+        authentication = AnonymousGetElseApiAuthentication()
+        excludes = ['id', 'poller_args', 'frequency']
+
+    def get_object_list(self, request):
+        qs = self._meta.queryset._clone()
+        return qs
+
+    def obj_get_list(self, bundle, **kwargs):
+        return super(OidsetResource, self).obj_get_list(bundle, **kwargs)
+
+    def alter_list_data_to_serialize(self, request, data):
+        return data['objects']
+
+    def dehydrate(self, bundle):
+        return bundle.data['name']
+
 
 class InterfaceResource(ModelResource):
     """An interface on a device.
@@ -525,33 +549,6 @@ class InterfaceDataResource(Resource):
 
         obj.data = QueryUtil.format_data_payload(data)
         return obj
-
-class OidsetDataObject(InterfaceDataObject):
-    pass
-
-class OidsetResource(ModelResource):
-    class Meta:
-        resource_name = 'oidset'
-        allowed_methods = ['get']
-        queryset = OIDSet.objects.all()
-        object_class = OidsetDataObject
-        # serializer = DeviceSerializer()
-        authentication = AnonymousGetElseApiAuthentication()
-        excludes = ['id', 'poller_args']
-
-    def get_object_list(self, request):
-        qs = self._meta.queryset._clone()
-        return qs
-
-    def obj_get_list(self, bundle, **kwargs):
-        return super(OidsetResource, self).obj_get_list(bundle, **kwargs)
-
-    def alter_list_data_to_serialize(self, request, data):
-        return [o.data['name'] for o in data['objects']]
-
-    def dehydrate(self, bundle):
-        del bundle.data['resource_uri'] # no drilldown
-        return bundle
 
 # ---
 

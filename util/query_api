@@ -66,7 +66,7 @@ def main():
     for d in conn.get_devices(**device_filters):
         print d
         # print d.dump
-        print '  *', d.begin_time, '|', d.end_time
+        print '  *', d.begin_time, '|', d.end_time, '|', d.oidsets
         for i in d.get_interfaces(**interface_filters):
             print '  ', i, i.begin_time
             for e in i.get_endpoints():

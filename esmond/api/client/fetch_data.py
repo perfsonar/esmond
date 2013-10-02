@@ -162,6 +162,10 @@ class Device(NodeInfo):
     def name(self):
         return self._data.get('name', None)
 
+    @property
+    def oidsets(self):
+        return self._data.get('oidsets', None)
+
     def get_interfaces(self, **filters):
         """
         Issue a call to the API to get a list of interfaces (via a 
