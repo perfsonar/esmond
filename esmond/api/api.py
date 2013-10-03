@@ -12,6 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from tastypie.resources import ModelResource, Resource, ALL, ALL_WITH_RELATIONS
 from tastypie.api import Api
 from tastypie.authentication import ApiKeyAuthentication
+from tastypie.authorization import Authorization
 from tastypie.serializers import Serializer
 from tastypie.bundle import Bundle
 from tastypie import fields
@@ -167,19 +168,56 @@ class DeviceResource(ModelResource):
         queryset = Device.objects.all()
         resource_name = 'device'
         serializer = DeviceSerializer()
-        excludes = ['community', ]
-        allowed_methods = ['get']
+        excludes = ['community',]
+        allowed_methods = ['get', 'put']
         detail_uri_name = 'name'
         filtering = {
             'name': ALL,
         }
-        authentication = AnonymousGetElseApiAuthentication()
+        # authentication = AnonymousGetElseApiAuthentication()
+        # XXX(mmg): this needs to be done away with!
+        authorization = Authorization()
 
     def dehydrate_begin_time(self, bundle):
         return int(time.mktime(bundle.data['begin_time'].timetuple()))
 
     def dehydrate_end_time(self, bundle):
         return int(time.mktime(bundle.data['end_time'].timetuple()))
+
+    def hydrate_end_time(self, bundle):
+        # XXX(mmg): the integer timestamp as previously dehydrated needs to 
+        # be coerced back to a date string or the dateutil parser will
+        # barf.  Currently this is off by an hour as thing go by and 
+        # this needs to be fixed.
+        if bundle.request.META['REQUEST_METHOD'] == 'PUT' and isinstance(bundle.data['end_time'], int):
+            bundle.data['end_time'] = datetime.datetime.fromtimestamp(bundle.data['end_time'])
+        return bundle
+
+    def hydrate_begin_time(self, bundle):
+        # XXX(mmg): the integer timestamp as previously dehydrated needs to 
+        # be coerced back to a date string or the dateutil parser will
+        # barf.  Currently this is off by an hour as thing go by and 
+        # this needs to be fixed.
+        if bundle.request.META['REQUEST_METHOD'] == 'PUT' and isinstance(bundle.data['begin_time'], int):
+            bundle.data['begin_time'] = datetime.datetime.fromtimestamp(bundle.data['begin_time'])
+        return bundle
+
+    def hydrate_oidsets(self, bundle):
+        if bundle.data['oidsets'] and not isinstance(bundle.data['oidsets'][0], unicode):
+            return bundle
+        bundle.data['oidsets'] = OIDSet.objects.filter(name__in=bundle.data.get('oidsets', []))
+        return bundle
+
+    def save_m2m(self, bundle):
+
+        device = Device.objects.get(id=bundle.data['id'])
+        device.oidsets.clear()
+
+        for o in bundle.data['oidsets']:
+            omap = DeviceOIDSetMap(device=device, oid_set=o)
+            omap.save()
+
+        return bundle
 
     def alter_detail_data_to_serialize(self, request, data):
         data.data['uri'] = data.data['resource_uri']
