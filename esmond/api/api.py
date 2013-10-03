@@ -391,7 +391,7 @@ class InterfaceResource(ModelResource):
         bundle.data['device_uri'] = bundle.data['device']
         return bundle
 
-class InterfaceDataObject(object):
+class DataObject(object):
     """Encapsulation object to assign values to during processing."""
     def __init__(self, initial=None):
         self.__dict__['_data'] = {}
@@ -407,6 +407,10 @@ class InterfaceDataObject(object):
 
     def to_dict(self):
         return self._data
+
+class InterfaceDataObject(DataObject):
+    """Encapsulation object to assign values to during processing."""
+    pass
 
 class InterfaceDataResource(Resource):
     """Data for interface on a device.
@@ -587,7 +591,7 @@ full 'detail' URI.  Entering an incomplete URI (ex: /v1/timeseries/, etc)
 will result in a 400 error being returned.
 """
 
-class TimeseriesDataObject(InterfaceDataObject):
+class TimeseriesDataObject(DataObject):
     """Data encapsulation."""
     pass
 
