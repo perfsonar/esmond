@@ -905,13 +905,11 @@ class QueryUtil(object):
 
     @staticmethod
     def decode_datapath(datapath):
-        datapath.append(atdecode(datapath.pop()))
-        return datapath
+        return [ atdecode(step) for step in datapath ]
 
     @staticmethod
     def encode_datapath(datapath):
-        datapath.append(atencode(datapath.pop()))
-        return datapath
+        return [ atencode(step) for step in datapath ]
 
     @staticmethod
     def valid_timerange(obj, in_ms=False):
