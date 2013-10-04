@@ -279,7 +279,8 @@ class DeviceResource(ModelResource):
     """
 
     def dispatch_interface_list(self, request, **kwargs):
-        return InterfaceResource().dispatch_list(request, device__name=kwargs['name'])
+        return InterfaceResource().dispatch_list(request,
+                device__name=kwargs['name'])
 
     def dispatch_interface_detail(self, request, **kwargs):
         return InterfaceResource().dispatch_detail(request,
@@ -494,8 +495,12 @@ class InterfaceDataResource(Resource):
         If that is all good, then query args are parsed, defaults are set if 
         none were supplied and then the query is executed.
         """
+
+        kwargs['iface_name'] = atdecode(kwargs['iface_name'])
+
         try:
-            iface = InterfaceResource().obj_get(bundle, device__name=kwargs['name'],
+            iface = InterfaceResource().obj_get(bundle,
+                    device__name=kwargs['name'],
                     ifDescr=kwargs['iface_name'])
         except IfRef.DoesNotExist:
             raise BadRequest("no such device/interface: dev: {0} int: {1}".format(kwargs['name'], kwargs['iface_name']))
@@ -527,9 +532,6 @@ class InterfaceDataResource(Resource):
         obj.datapath = endpoint_map[iface_dataset]
         obj.iface_dataset = iface_dataset
         obj.iface = iface
-
-        # Fix atencoded path before executing query.
-        obj.datapath.append(atdecode(obj.datapath.pop()))
 
         filters = getattr(bundle.request, 'GET', {})
 
