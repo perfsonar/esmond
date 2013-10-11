@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
 
 class Command(BaseCommand):
-    args = 'name community'
+    args = 'name community [oidset ...]'
     help = 'Add a device'
 
     def handle(self, *args, **options):
