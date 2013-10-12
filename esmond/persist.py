@@ -599,11 +599,12 @@ class CassandraPollPersister(PollPersister):
             return
 
         last_data_ts = metadata.ts_to_jstime('last_update')
+        curr_data_ts = data.ts_to_jstime()
 
         # We've retrieved valid previous vals/ts from metadata, so calculate
         # the value and time delta, and the fractional slots that the data
         # will (usually) be split between.
-        delta_t = data.ts_to_jstime() - metadata.ts_to_jstime('last_update')
+        delta_t = curr_data_ts - last_data_ts
         delta_v = data.val - metadata.last_val
 
         rate = float(delta_v) / float(delta_t)
@@ -633,13 +634,18 @@ class CassandraPollPersister(PollPersister):
         # the current bin, update metadata with current slot info
         # and return the delta.
         if delta_t > data.freq * HEARTBEAT_FREQ_MULTIPLIER:
+            prev_slot = last_data_ts - (last_data_ts % data.freq)
+            curr_slot = curr_data_ts - (curr_data_ts % data.freq)
+
             if delta_t < SEEK_BACK_THRESHOLD:
                 # Only execute the invalid value backfill if delta_t is
                 # less than 30 days.
-                for slot in range(prev_slot, curr_slot, data.freq):
-                    bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, 
+                for bin_name in range(prev_slot, curr_slot, data.freq):
+                    bad_bin = BaseRateBin(ts=bin_name, freq=data.freq, val=0,
                         is_valid=0, path=data.path)
                     self.db.update_rate_bin(bad_bin)
+
+            curr_frac = int(delta_v * ((curr_data_ts - curr_slot)/float(delta_t)))
             # Update only the "current" bin and return.
             curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
                 path=data.path)
@@ -652,7 +658,7 @@ class CassandraPollPersister(PollPersister):
 
 
         updates = fit_to_bins(data.freq, last_data_ts, metadata.last_val,
-                data.ts_to_jstime(), data.val)
+                curr_data_ts, data.val)
         # Now, write the new valid data between the appropriate bins.
 
         for bin_name, val in updates.iteritems():

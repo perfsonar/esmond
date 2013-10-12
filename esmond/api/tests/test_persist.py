@@ -25,7 +25,7 @@ from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
 from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
      PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister
 from esmond.config import get_config, get_config_path
-from esmond.cassandra import CASSANDRA_DB
+from esmond.cassandra import CASSANDRA_DB, SEEK_BACK_THRESHOLD
 from esmond.util import max_datetime
 
 from pycassa.columnfamily import ColumnFamily
@@ -316,6 +316,7 @@ timeseries_test_data = """
 ]
 """
 
+
 sys_uptime_test_data = """
 [
     {
@@ -484,6 +485,85 @@ class TestCassandraPollPersister(TestCase):
                     self.assertGreater(val['is_valid'], 0)
 
         db.close()
+
+    def test_persister_heartbeat(self):
+        """Test the hearbeat code"""
+        config = get_config(get_config_path())
+
+        freq = 30
+        iface = 'GigabitEthernet0/1'
+        t0 = 1343953700
+        t1 = t0 + (4*freq)
+        b0 = t0 - (t0 % freq)
+        b1 = t1 - (t1 % freq)
+        t2 = t1 + 2*freq + (SEEK_BACK_THRESHOLD/1000)
+        b2 = t2 - (t2 % freq)
+        b0 *= 1000
+        b1 *= 1000
+        b2 *= 1000
+
+        data_template = {
+            'oidset_name': 'FastPollHC',
+            'device_name': 'rtr_d',
+            'oid_name': 'ifHCInOctets',
+        }
+
+        # with backfill
+
+        test_data = []
+        d0 = data_template.copy()
+        d0['timestamp'] = t0
+        d0['data'] = [[["ifHCInOctets", iface], 0]]
+        test_data.append(d0)
+
+        d1 = data_template.copy()
+        d1['timestamp'] = t1
+        d1['data'] = [[["ifHCInOctets", iface], 1000]]
+        test_data.append(d1)
+
+        # no backfill
+
+        d2 = data_template.copy()
+        d2['timestamp'] = t2
+        d2['data'] = [[["ifHCInOctets", iface], 865000]]
+        test_data.append(d2)
+
+        q = TestPersistQueue(test_data)
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+        p.db.flush()
+        p.db.close()
+        p.db.stats.report('all')
+
+        key = '%s:%s:%s:%s:%s:%s:%s'  % (
+                SNMP_NAMESPACE,
+                data_template['device_name'],
+                data_template['oidset_name'],
+                data_template['oid_name'],
+                iface,
+                freq*1000,
+                datetime.datetime.utcfromtimestamp(t0).year
+            )
+
+        db = CASSANDRA_DB(config)
+        rates = ColumnFamily(db.pool, db.rate_cf)
+
+        backfill = rates.get(key, column_start=b0, column_finish=b1)
+
+        self.assertEqual(len(backfill), 5)
+        last = backfill[b1]
+        self.assertEqual(last['val'], 166)
+        self.assertEqual(last['is_valid'], 1)
+
+        nobackfill = rates.get(key, column_start=b1, column_finish=b2)
+
+        # test no backfill, make sure we don't insert a month of zeros...
+
+        self.assertEqual(len(nobackfill), 2)
+        self.assertEqual(nobackfill[b1]['is_valid'], 1)
+        self.assertEqual(nobackfill[b1]['val'], 166)
+        self.assertEqual(nobackfill[b2]['is_valid'], 1)
+        self.assertEqual(nobackfill[b2]['val'], 6)
 
     def test_range_baserate_query(self):
         """
