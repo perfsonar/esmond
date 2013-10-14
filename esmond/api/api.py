@@ -2,6 +2,7 @@ import inspect
 import json
 import time
 import datetime
+import calendar
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf.urls.defaults import url
@@ -179,27 +180,27 @@ class DeviceResource(ModelResource):
         authorization = Authorization()
 
     def dehydrate_begin_time(self, bundle):
-        return int(time.mktime(bundle.data['begin_time'].timetuple()))
+        # return int(time.mktime(bundle.data['begin_time'].timetuple()))
+        return int(calendar.timegm(bundle.data['begin_time'].utctimetuple()))
 
     def dehydrate_end_time(self, bundle):
-        return int(time.mktime(bundle.data['end_time'].timetuple()))
+        # return int(time.mktime(bundle.data['end_time'].timetuple()))
+        return int(calendar.timegm(bundle.data['end_time'].utctimetuple()))
 
     def hydrate_end_time(self, bundle):
-        # XXX(mmg): the integer timestamp as previously dehydrated needs to 
+        # The integer timestamp as previously dehydrated needs to 
         # be coerced back to a date string or the dateutil parser will
-        # barf.  Currently this is off by an hour as thing go by and 
-        # this needs to be fixed.
+        # barf.
         if bundle.request.META['REQUEST_METHOD'] == 'PUT' and isinstance(bundle.data['end_time'], int):
-            bundle.data['end_time'] = datetime.datetime.fromtimestamp(bundle.data['end_time'])
+            bundle.data['end_time'] = make_aware(datetime.datetime.utcfromtimestamp(
+                bundle.data['end_time']), utc)
         return bundle
 
     def hydrate_begin_time(self, bundle):
-        # XXX(mmg): the integer timestamp as previously dehydrated needs to 
-        # be coerced back to a date string or the dateutil parser will
-        # barf.  Currently this is off by an hour as thing go by and 
-        # this needs to be fixed.
+        # See hydrate_end_time comment.
         if bundle.request.META['REQUEST_METHOD'] == 'PUT' and isinstance(bundle.data['begin_time'], int):
-            bundle.data['begin_time'] = datetime.datetime.fromtimestamp(bundle.data['begin_time'])
+            bundle.data['begin_time'] = make_aware(datetime.datetime.utcfromtimestamp(
+                bundle.data['begin_time']), utc)
         return bundle
 
     def hydrate_oidsets(self, bundle):

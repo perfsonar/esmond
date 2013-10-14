@@ -6,6 +6,7 @@ Test script to update oidsets with device endpoint.
 Just adds and removes a single oidset to a device on subsequent runs.
 """
 
+import datetime
 import json
 import os
 import requests
@@ -21,6 +22,8 @@ def main():
     url = 'http://localhost:8000/v1/device/lbl-mr2/'
 
     data = get(url)
+    beg_o = data['begin_time']
+    end_o = data['end_time']
 
     # add an oidset
     if 'SentryPoll' not in data['oidsets']:
@@ -39,7 +42,18 @@ def main():
         if p.status_code != 204:
             print p.content
 
-    print 'result:', json.dumps(get(url), indent=4)
+    res = get(url)
+
+    print 'result:', json.dumps(res, indent=4)
+
+    beg_n = res['begin_time']
+    end_n = res['end_time']
+
+    if (beg_o != beg_n) or (end_o != end_n):
+        print 'Timestamp mismatch!'
+        print 'beg - orig: {0} - new: {1} - delta: {2}'.format(beg_o, beg_n, datetime.timedelta(seconds=beg_n-beg_o))
+        print 'end - orig: {0} - new: {1} - delta: {2}'.format(end_o, end_n, datetime.timedelta(seconds=end_n-end_o))
+
 
     pass
 
