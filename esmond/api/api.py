@@ -598,6 +598,127 @@ class InterfaceDataResource(Resource):
 
 # ---
 
+class BulkRequestDataObject(DataObject):
+    """Data encapsulation."""
+    pass
+
+class BulkRequestResource(Resource):
+    """
+    Resource to make a series of requests to the cassandra backend
+    to avoid a bunch of round trip http requests to the REST interface.
+    Takes a POST verb to get around around limitations in passing 
+    lots of args to GET requests.  Incoming payload looks like this:
+
+    {
+        'interfaces': [{'interface': me0.0, 'device': albq-asw1}, ...]
+        'endpoint': 'in',
+        other usual args (begin/end/cf...)
+    }
+
+    """
+
+    class Meta:
+        resource_name = 'bulk'
+        allowed_methods = ['post']
+        always_return_data = True
+        object_class = BulkRequestDataObject
+        serializer = DeviceSerializer()
+
+    def obj_create(self, bundle, **kwargs):
+        if bundle.request.META.get('CONTENT_TYPE') != 'application/json':
+            raise BadRequest('Must post content-type: application/json header and json-formatted payload.')
+
+        if not bundle.data:
+            raise BadRequest('No data payload POSTed.')
+
+        if not bundle.data.has_key('interfaces') or not \
+            bundle.data.has_key('endpoint'):
+            raise BadRequest('Payload must contain keys interfaces and endpoint.')
+
+        ret_obj = BulkRequestDataObject()
+        ret_obj.iface_dataset = bundle.data['endpoint']
+        ret_obj.data = []
+        ret_obj.device_names = []
+
+        # Set up filtering and return values
+
+        if bundle.data.has_key('begin'):
+            ret_obj.begin_time = int(float(bundle.data['begin']))
+        else:
+            ret_obj.begin_time = int(time.time() - 3600)
+
+        if bundle.data.has_key('end'):
+            ret_obj.end_time = int(float(bundle.data['end']))
+        else:
+            ret_obj.end_time = int(time.time())
+
+        if bundle.data.has_key('cf'):
+            ret_obj.cf = bundle.data['cf']
+        else:
+            ret_obj.cf = 'average'
+
+        if bundle.data.has_key('agg'):
+            ret_obj.agg = int(bundle.data['agg'])
+        else:
+            ret_obj.agg = None
+
+        for i in bundle.data['interfaces']:
+            device_name = i['device'].rstrip('/').split('/')[-1]
+            iface_name = i['iface']
+
+            endpoint_map = {}
+            device = Device.objects.get(name=device_name)
+            for oidset in device.oidsets.all():
+                if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
+                    continue
+                for endpoint, varname in \
+                    OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
+                    endpoint_map[endpoint] = [
+                        SNMP_NAMESPACE,
+                        device_name,
+                        oidset.name,
+                        varname,
+                        iface_name
+                    ]
+
+            if bundle.data['endpoint'] not in endpoint_map:
+                raise BadRequest("no such dataset: %s" % bundle.data['endpoint'])
+
+            oidset = device.oidsets.get(name=endpoint_map[bundle.data['endpoint']][2])
+
+            obj = BulkRequestDataObject()
+            obj.datapath = endpoint_map[bundle.data['endpoint']]
+            obj.iface_dataset = bundle.data['endpoint']
+            obj.iface = iface_name
+
+            obj.begin_time = ret_obj.begin_time
+            obj.end_time = ret_obj.end_time
+            obj.cf = ret_obj.cf
+            obj.agg = ret_obj.agg
+
+            ret_obj.device_names.append(device_name)
+
+            # Recycle existing query code for interface details
+            data = InterfaceDataResource()._execute_query(oidset, obj)
+
+            ret_obj.data.extend(data.data)
+
+        bundle.obj = ret_obj
+        return bundle
+
+    def alter_detail_data_to_serialize(self, request, data):
+        return data.obj.to_dict()
+
+    def detail_uri_kwargs(self, bundle_or_obj):
+        kwargs = {}
+        if isinstance(bundle_or_obj, Bundle):
+            pass
+        else:
+            pass
+        return kwargs
+
+# ---
+
 """
 Namespace to retrive data with explicit Cassandra schema-like syntax.  
 
@@ -972,3 +1093,4 @@ v1_api.register(DeviceResource())
 v1_api.register(TimeseriesResource())
 v1_api.register(OidsetResource())
 v1_api.register(InterfaceResource())
+v1_api.register(BulkRequestResource())

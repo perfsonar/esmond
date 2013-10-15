@@ -60,6 +60,7 @@ class DeviceWarning(NodeInfoWarning): pass
 class InterfaceWarning(NodeInfoWarning): pass
 class EndpointWarning(NodeInfoWarning): pass
 class DataPayloadWarning(NodeInfoWarning): pass
+class BulkDataPayloadWarning(NodeInfoWarning): pass
 class ApiConnectWarning(Warning): pass
 
 # - Encapsulation classes for nodes (device, interface, etc).
@@ -333,6 +334,20 @@ class DataPayload(NodeInfo):
         return '<DataPayload: len:{0} b:{1} e:{2}>'.format(
             len(self.data), self.begin_time, self.end_time)
 
+class BulkDataPayload(DataPayload):
+    wrn = BulkDataPayloadWarning
+    """Class to encapsulate bulk data payload"""
+    def __init__(self, data={'data':[]}):
+        super(BulkDataPayload, self).__init__(data)
+
+    @property
+    def device_names(self):
+        return self._data.get('device_names', None)
+
+    def __repr__(self):
+        return '<BulkDataPayload: len:{0} devs:{1} b:{2} e:{3}>'.format(
+            len(self.data), len(self.device_names), self.begin_time, self.end_time)
+
 class DataPoint(object):
     """Class to encapsulate the returned data points."""
     def __init__(self, ts, val):
@@ -467,15 +482,32 @@ class ApiConnect(object):
         self.inspect_request(r)
 
         if r.status_code == 200 and \
-                r.headers['content-type'] == 'application/json':
-                data = json.loads(r.text)
-                for i in data['children']:
-                    yield Interface(i, self.api_url, self.filters)
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            for i in data['children']:
+                yield Interface(i, self.api_url, self.filters)
         else:
             self.http_alert(r)
             return
             yield
 
+    def get_interface_bulk_data(self, interfaces=[], endpoint='in'):
+
+        payload = {'interfaces': interfaces, 'endpoint': endpoint}
+
+        headers = {'content-type': 'application/json'}
+
+        r = requests.post('{0}/v1/bulk/'.format(self.api_url), 
+            headers=headers, data=json.dumps(payload))
+
+        self.inspect_request(r)
+
+        if r.status_code == 201 and \
+            r.headers['content-type'] == 'application/json':
+            return BulkDataPayload(json.loads(r.text))
+        else:
+            self.http_alert(r)
+            return BulkDataPayload()
 
     def inspect_request(self, r):
         if self.filters.verbose:
