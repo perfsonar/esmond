@@ -1,16 +1,16 @@
-# This wsgi file pre-supposes that it is deployed in the root of the esmond
-# distribution checkout (rather than in esmond/esmond where it sits in the
-# repository) and that the root of the virtualenv is in the same directory. 
-#
 # Season to taste - ESMOND_ROOT will need to be reset if it isn't
-# /services/esmond
+# /services/esmond or isn't set correctly in the Apache configuration.
 
 import os
 import site
 import sys
 
-rootpath=os.path.dirname(os.path.realpath(__file__))
-
+# ESMOND_ROOT should be defined via SetEnv in your Apache configuration.
+# to the directory esmond is installed in.
+if not os.environ.has_key('ESMOND_ROOT'):
+    print >>sys.stderr, "Please define ESMOND_ROOT in your Apache configuration"
+    exit()
+rootpath=os.environ['ESMOND_ROOT'] 
 # This will make Django run in a virtual env
 # Remember original sys.path.
 prev_sys_path = list(sys.path)
@@ -28,7 +28,6 @@ sys.path[:0] = new_sys_path
 
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esmond.settings'
-os.environ['ESMOND_ROOT'] = '/services/esmond'
 
 print >>sys.stderr, "path=", sys.path
 try:
@@ -40,15 +39,16 @@ except Exception, e:
 """
 Example apache httpd.conf directives:
 
-WSGIScriptAlias / /services/esmond/wsgi.py
+WSGIScriptAlias / /services/esmond/esmond/wsgi.py
 WSGIPythonPath /services/esmond/esmond:/services/esmond/venv/lib/python2.7/site-packages
 WSGIPythonHome /services/esmond/venv
 
 WSGIDaemonProcess www python-path=/services/esmond/esmond:/services/esmond/venv/lib/python2.7/site-packages home=/services/esmond
 WSGIProcessGroup www
 
-<Directory /services/esmond>
+<Directory /services/esmond/esmond>
 <Files wsgi.py>
+SetEnv ESMOND_ROOT /services/esmond
 AuthType None
 Order deny,allow
 Allow from all
