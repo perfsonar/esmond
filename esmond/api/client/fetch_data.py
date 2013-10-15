@@ -460,6 +460,23 @@ class ApiConnect(object):
             return
             yield
 
+    def get_interfaces(self, **filters):
+        r = requests.get('{0}/v1/interface/'.format(self.api_url),
+                params=self.filters.compose_filters(filters))
+
+        self.inspect_request(r)
+
+        if r.status_code == 200 and \
+                r.headers['content-type'] == 'application/json':
+                data = json.loads(r.text)
+                for i in data['children']:
+                    yield Interface(i, self.api_url, self.filters)
+        else:
+            self.http_alert(r)
+            return
+            yield
+
+
     def inspect_request(self, r):
         if self.filters.verbose:
             print '[url: {0}]'.format(r.url)

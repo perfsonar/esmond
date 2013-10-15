@@ -344,6 +344,7 @@ class InterfaceResource(ModelResource):
         filtering = {
             'device': ALL_WITH_RELATIONS,
             'ifDescr': ALL,
+            'ifAlias': ALL,
         }
         authentication = AnonymousGetElseApiAuthentication()
 
@@ -970,3 +971,4 @@ v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
 v1_api.register(TimeseriesResource())
 v1_api.register(OidsetResource())
+v1_api.register(InterfaceResource())
