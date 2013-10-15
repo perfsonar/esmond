@@ -10,7 +10,7 @@ setup(name='esmond',
         url='http://code.google.com/p/esmond/',
         packages=['esmond', 'esmond.api', 'esmond.admin'],
         install_requires=['tsdb', 'Django==1.5.1', 'django-tastypie', 'web.py',
-            'python-memcached', 'pycassa', 'psycopg2'],
+            'python-memcached', 'pycassa', 'psycopg2','python-mimeparse'],
         entry_points = {
             'console_scripts': [
                 'espolld = esmond.poll:espolld',
