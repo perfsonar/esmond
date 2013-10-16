@@ -382,7 +382,7 @@ class ApiFilters(object):
 
         # Values to use in POST requests, verbose flag, etc.
         self.verbose = False
-        self.endpoint = 'in'
+        self.endpoint = ['in']
         self.cf = 'average'
         self.agg = None
 

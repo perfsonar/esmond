@@ -666,42 +666,44 @@ class BulkRequestResource(Resource):
             device_name = i['device'].rstrip('/').split('/')[-1]
             iface_name = i['iface']
 
-            endpoint_map = {}
-            device = Device.objects.get(name=device_name)
-            for oidset in device.oidsets.all():
-                if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
-                    continue
-                for endpoint, varname in \
-                    OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
-                    endpoint_map[endpoint] = [
-                        SNMP_NAMESPACE,
-                        device_name,
-                        oidset.name,
-                        varname,
-                        iface_name
-                    ]
+            for endpoint in bundle.data['endpoint']:
+                # print device_name, iface_name, endpoint
+                endpoint_map = {}
+                device = Device.objects.get(name=device_name)
+                for oidset in device.oidsets.all():
+                    if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
+                        continue
+                    for endpoint, varname in \
+                        OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
+                        endpoint_map[endpoint] = [
+                            SNMP_NAMESPACE,
+                            device_name,
+                            oidset.name,
+                            varname,
+                            iface_name
+                        ]
 
-            if bundle.data['endpoint'] not in endpoint_map:
-                raise BadRequest("no such dataset: %s" % bundle.data['endpoint'])
+                if endpoint not in endpoint_map:
+                    raise BadRequest("no such dataset: %s" % endpoint)
 
-            oidset = device.oidsets.get(name=endpoint_map[bundle.data['endpoint']][2])
+                oidset = device.oidsets.get(name=endpoint_map[endpoint][2])
 
-            obj = BulkRequestDataObject()
-            obj.datapath = endpoint_map[bundle.data['endpoint']]
-            obj.iface_dataset = bundle.data['endpoint']
-            obj.iface = iface_name
+                obj = BulkRequestDataObject()
+                obj.datapath = endpoint_map[endpoint]
+                obj.iface_dataset = endpoint
+                obj.iface = iface_name
 
-            obj.begin_time = ret_obj.begin_time
-            obj.end_time = ret_obj.end_time
-            obj.cf = ret_obj.cf
-            obj.agg = ret_obj.agg
+                obj.begin_time = ret_obj.begin_time
+                obj.end_time = ret_obj.end_time
+                obj.cf = ret_obj.cf
+                obj.agg = ret_obj.agg
 
-            ret_obj.device_names.append(device_name)
+                ret_obj.device_names.append(device_name)
 
-            # Recycle existing query code for interface details
-            data = InterfaceDataResource()._execute_query(oidset, obj)
+                # Recycle existing query code for interface details
+                data = InterfaceDataResource()._execute_query(oidset, obj)
 
-            ret_obj.data.extend(data.data)
+                ret_obj.data.extend(data.data)
 
         bundle.obj = ret_obj
         return bundle

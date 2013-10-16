@@ -16,7 +16,7 @@ from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
 from esmond.api.client.snmp import ApiConnect, ApiFilters, BulkDataPayload
 
 def main():    
-    usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint ]'
+    usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
     parser = OptionParser(usage=usage)
     parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
             type='string', dest='api_url', 
@@ -29,8 +29,8 @@ def main():
             type='string', dest='alias_pattern', 
             help='Pattern to apply to interface alias search.')
     parser.add_option('-e', '--endpoint', metavar='ENDPOINT',
-            type='string', dest='endpoint', 
-            help='Endpoint type to query (required).')
+            dest='endpoint', action='append', default=[],
+            help='Endpoint type to query (required) - can specify more than one.')
     parser.add_option('-l', '--last', metavar='LAST',
             type='int', dest='last', default=0,
             help='Last n minutes of data to query - api defaults to 60 if not given.')
@@ -69,12 +69,19 @@ def main():
         elif options.alias_pattern:
             interface_filters = { 'ifAlias__contains': options.alias_pattern }
 
-    if not options.endpoint or options.endpoint not in valid_endpoints:
-        print 'Specify a valid endpoint of the form: {0}'.format(valid_endpoints)
+    if not options.endpoint:
+        print 'No endpoints specified: {0}'.format(valid_endpoints)
         parser.print_help()
         return -1
     else:
+        for ep in options.endpoint:
+            if ep not in valid_endpoints:
+                print 'Specify a valid endpoint of the form: {0}'.format(valid_endpoints)
+                parser.print_help()
+                return -1
+        print options.endpoint
         filters.endpoint = options.endpoint
+        pass
 
     conn = ApiConnect(options.api_url, filters)
 
