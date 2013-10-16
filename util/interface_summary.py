@@ -13,7 +13,7 @@ import time
 from optparse import OptionParser
 
 from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
-from esmond.api.client.fetch_data import ApiConnect, ApiFilters, BulkDataPayload
+from esmond.api.client.snmp import ApiConnect, ApiFilters, BulkDataPayload
 
 def main():    
     usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint ]'

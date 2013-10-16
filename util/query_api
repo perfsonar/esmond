@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Small example script to drive the api.fetch_data query objects.
+Small example script to drive the api.snmp query objects.
 """
 
 import calendar
@@ -16,7 +16,7 @@ import warnings
 
 from optparse import OptionParser
 
-from esmond.api.client.fetch_data import ApiConnect, ApiFilters
+from esmond.api.client.snmp import ApiConnect, ApiFilters
 
 def main():
     import os.path
