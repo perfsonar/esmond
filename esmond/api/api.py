@@ -668,8 +668,8 @@ class BulkRequestResource(Resource):
 
             ret_obj.device_names.append(device_name)
 
-            for endpoint in bundle.data['endpoint']:
-                # print device_name, iface_name, endpoint
+            for end_point in bundle.data['endpoint']:
+                # print device_name, iface_name, end_point
                 endpoint_map = {}
                 device = Device.objects.get(name=device_name)
                 for oidset in device.oidsets.all():
@@ -685,14 +685,14 @@ class BulkRequestResource(Resource):
                             iface_name
                         ]
 
-                if endpoint not in endpoint_map:
-                    raise BadRequest("no such dataset: %s" % endpoint)
+                if end_point not in endpoint_map:
+                    raise BadRequest("no such dataset: %s" % end_point)
 
-                oidset = device.oidsets.get(name=endpoint_map[endpoint][2])
+                oidset = device.oidsets.get(name=endpoint_map[end_point][2])
 
                 obj = BulkRequestDataObject()
-                obj.datapath = endpoint_map[endpoint]
-                obj.iface_dataset = endpoint
+                obj.datapath = endpoint_map[end_point]
+                obj.iface_dataset = end_point
                 obj.iface = iface_name
 
                 obj.begin_time = ret_obj.begin_time
@@ -702,8 +702,13 @@ class BulkRequestResource(Resource):
 
                 # Recycle existing query code for interface details
                 data = InterfaceDataResource()._execute_query(oidset, obj)
+                # There are limitations to what we can send back in json,
+                # so append a dict with information about this batch of
+                # data and pop() it off on the other end.  Sucks less 
+                # than trying to delimit and parse it. -mmg
+                data.data.append({'dev': device_name,'iface': iface_name,'endpoint': end_point})
 
-                ret_obj.data.extend(data.data)
+                ret_obj.data.append(data.data)
 
         bundle.obj = ret_obj
         return bundle

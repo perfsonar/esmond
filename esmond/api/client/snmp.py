@@ -334,20 +334,6 @@ class DataPayload(NodeInfo):
         return '<DataPayload: len:{0} b:{1} e:{2}>'.format(
             len(self.data), self.begin_time, self.end_time)
 
-class BulkDataPayload(DataPayload):
-    wrn = BulkDataPayloadWarning
-    """Class to encapsulate bulk data payload"""
-    def __init__(self, data={'data':[]}):
-        super(BulkDataPayload, self).__init__(data)
-
-    @property
-    def device_names(self):
-        return self._data.get('device_names', None)
-
-    def __repr__(self):
-        return '<BulkDataPayload: len:{0} devs:{1} b:{2} e:{3}>'.format(
-            len(self.data), len(self.device_names), self.begin_time, self.end_time)
-
 class DataPoint(object):
     """Class to encapsulate the returned data points."""
     def __init__(self, ts, val):
@@ -361,8 +347,51 @@ class DataPoint(object):
 
     def __repr__(self):
         return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
-        
-        
+
+class BulkDataPayload(DataPayload):
+    wrn = BulkDataPayloadWarning
+    """Class to encapsulate bulk data payload"""
+    def __init__(self, data={'data':[]}):
+        super(BulkDataPayload, self).__init__(data)
+
+    @property
+    def data(self):
+        return [BulkDataRow(x) for x in self._data.get('data', None)]
+
+    @property
+    def device_names(self):
+        return self._data.get('device_names', None)
+
+    def __repr__(self):
+        return '<BulkDataPayload: len:{0} devs:{1} b:{2} e:{3}>'.format(
+            len(self._data.get('data', None)), len(self.device_names), self.begin_time, self.end_time)
+
+class BulkDataRow(object):
+    def __init__(self, row=[{}]):
+        super(BulkDataRow, self).__init__()
+        self._info = row.pop()
+        self._data = row
+
+    @property
+    def device(self):
+        return self._info.get('dev', None)
+
+    @property
+    def interface(self):
+        return self._info.get('iface', None)
+
+    @property
+    def endpoint(self):
+        return self._info.get('endpoint', None)
+
+    @property
+    def data(self):
+        return [DataPoint(x[0],x[1]) for x in self._data]
+
+    def __repr__(self):
+        return '<BulkDataRow: dev:{0} iface:{1} endpoint:{2} len:{3}>'.format(
+            self.device, self.interface, self.endpoint,len(self._data))
+
 # - Query entry point and filtering.
 
 class ApiFilters(object):

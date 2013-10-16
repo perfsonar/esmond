@@ -79,7 +79,6 @@ def main():
                 print 'Specify a valid endpoint of the form: {0}'.format(valid_endpoints)
                 parser.print_help()
                 return -1
-        print options.endpoint
         filters.endpoint = options.endpoint
         pass
 
@@ -89,9 +88,13 @@ def main():
 
     print data
 
-    for datum in data.data:
+    for row in data.data:
         # do something....
-        # print datum
+        if options.verbose:
+            print ' *', row
+        for data in row.data:
+            if options.verbose > 1:
+                print '  *', data
         pass
 
     pass
