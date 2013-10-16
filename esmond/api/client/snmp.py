@@ -364,7 +364,7 @@ class BulkDataPayload(DataPayload):
 
     def __repr__(self):
         return '<BulkDataPayload: len:{0} devs:{1} b:{2} e:{3}>'.format(
-            len(self._data.get('data', '')), len(self.device_names), self.begin_time, self.end_time)
+            len(self._data.get('data', [])), len(self.device_names), self.begin_time, self.end_time)
 
 class BulkDataRow(object):
     def __init__(self, row=[{}]):
