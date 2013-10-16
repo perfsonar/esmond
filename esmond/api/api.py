@@ -666,6 +666,8 @@ class BulkRequestResource(Resource):
             device_name = i['device'].rstrip('/').split('/')[-1]
             iface_name = i['iface']
 
+            ret_obj.device_names.append(device_name)
+
             for endpoint in bundle.data['endpoint']:
                 # print device_name, iface_name, endpoint
                 endpoint_map = {}
@@ -697,9 +699,6 @@ class BulkRequestResource(Resource):
                 obj.end_time = ret_obj.end_time
                 obj.cf = ret_obj.cf
                 obj.agg = ret_obj.agg
-
-                if device_name not in ret_obj.device_names:
-                    ret_obj.device_names.append(device_name)
 
                 # Recycle existing query code for interface details
                 data = InterfaceDataResource()._execute_query(oidset, obj)
