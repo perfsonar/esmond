@@ -324,7 +324,7 @@ class DataPayload(NodeInfo):
     @property
     def data(self):
         """Return internal data from payload as list of DataPoint."""
-        return [DataPoint(x[0],x[1]) for x in self._data.get('data', None)]
+        return [DataPoint(x[0],x[1]) for x in self._data.get('data', [])]
 
     @property
     def dump(self):
@@ -356,15 +356,15 @@ class BulkDataPayload(DataPayload):
 
     @property
     def data(self):
-        return [BulkDataRow(x) for x in self._data.get('data', None)]
+        return [BulkDataRow(x) for x in self._data.get('data', [])]
 
     @property
     def device_names(self):
-        return self._data.get('device_names', None)
+        return self._data.get('device_names', [])
 
     def __repr__(self):
         return '<BulkDataPayload: len:{0} devs:{1} b:{2} e:{3}>'.format(
-            len(self._data.get('data', None)), len(self.device_names), self.begin_time, self.end_time)
+            len(self._data.get('data', '')), len(self.device_names), self.begin_time, self.end_time)
 
 class BulkDataRow(object):
     def __init__(self, row=[{}]):
@@ -403,6 +403,9 @@ class ApiFilters(object):
         self._begin_time = datetime.datetime.utcfromtimestamp(int(time.time() - 3600))
         self._end_time = datetime.datetime.utcfromtimestamp(int(time.time()))
 
+        # Values to use in GET requests - they are combined with a 
+        # user defined dict of filtering args (agg, cf) and django
+        # filtering options and passed as args to the GET query.
         self._default_filters = {
             'begin': self.ts_epoch('begin_time'),
             'end': self.ts_epoch('end_time'),
@@ -543,7 +546,7 @@ class ApiConnect(object):
             'end': self.filters.ts_epoch('end_time'),
         }
 
-        if self.filters.agg: payload['agg'] = agg
+        if self.filters.agg: payload['agg'] = self.filters.agg
 
         headers = { 'content-type': 'application/json' }
 
@@ -569,5 +572,5 @@ class ApiConnect(object):
             print '[POST payload: {0}]'.format(json.dumps(p, indent=4))
         
     def http_alert(self, r):
-        warnings.warn('Request for {0} got status: {1}'.format(r.url,r.status_code), self.wrn, stacklevel=2)
+        warnings.warn('Request for {0} got status: {1} - response: {2}'.format(r.url,r.status_code, r.content), self.wrn, stacklevel=2)
 # ----

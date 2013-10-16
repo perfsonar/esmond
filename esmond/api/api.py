@@ -570,8 +570,10 @@ class InterfaceDataResource(Resource):
         # otherwise, check if the requested aggregate level is valid.
         if not obj.agg:
             obj.agg = oidset.frequency
+        elif obj.agg and not oidset.aggregates:
+            raise BadRequest('there are no aggregations for oidset {0} - {1} was requested'.format(oidset.name, obj.agg))
         elif obj.agg not in oidset.aggregates:
-            raise BadRequest('no aggregation %s for oidset %s' %
+            raise BadRequest('no valid aggregation %s in oidset %s' %
                 (obj.agg, oidset.name))
 
         # Make sure we're not exceeding allowable time range.

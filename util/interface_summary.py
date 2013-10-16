@@ -90,11 +90,9 @@ def main():
 
     for row in data.data:
         # do something....
-        if options.verbose:
-            print ' *', row
+        if options.verbose: print ' *', row
         for data in row.data:
-            if options.verbose > 1:
-                print '  *', data
+            if options.verbose > 1: print '  *', data
         pass
 
     pass
