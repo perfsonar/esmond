@@ -73,17 +73,13 @@ def main():
         print 'Specify a valid endpoint of the form: {0}'.format(valid_endpoints)
         parser.print_help()
         return -1
+    else:
+        filters.endpoint = options.endpoint
 
     conn = ApiConnect(options.api_url, filters)
 
-    interfaces = []
+    data = conn.get_interface_bulk_data(**interface_filters)
 
-    for i in conn.get_interfaces(**interface_filters):
-        if options.verbose: print i
-        interfaces.append({'device': i.device, 'iface': i.ifDescr})
-        if options.verbose > 1: print i.dump
-
-    data = conn.get_interface_bulk_data(interfaces, options.endpoint)
     print data
 
     for datum in data.data:

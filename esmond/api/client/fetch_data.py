@@ -380,7 +380,11 @@ class ApiFilters(object):
             'limit': 0,
         }
 
+        # Values to use in POST requests, verbose flag, etc.
         self.verbose = False
+        self.endpoint = 'in'
+        self.cf = 'average'
+        self.agg = 0 # XXX(mmg): fix this when api hitch is addressed.
 
     def ts_epoch(self, time_prop):
         """Convert named property back to epoch.  Generally just for 
@@ -491,20 +495,29 @@ class ApiConnect(object):
             return
             yield
 
-    def get_interface_bulk_data(self, interfaces=[], endpoint='in',
-        cf='average', agg=0):
+    def get_interface_bulk_data(self, **filters):
+        interfaces = []
+
+        for i in self.get_interfaces(**filters):
+            if self.filters.verbose: print i
+            interfaces.append({'device': i.device, 'iface': i.ifDescr})
+            if self.filters.verbose > 1: print i.dump
+
+        return self._execute_get_interface_bulk_data(interfaces)
+
+    def _execute_get_interface_bulk_data(self, interfaces=[]):
         # XXX(mmg) - agg should default to 30 and go in the payload
         # by default but there is currently a bug in the api (it seems).
 
         payload = { 
             'interfaces': interfaces, 
-            'endpoint': endpoint,
-            'cf': cf,
+            'endpoint': self.filters.endpoint,
+            'cf': self.filters.cf,
             'begin': self.filters.ts_epoch('begin_time'),
             'end': self.filters.ts_epoch('end_time'),
         }
 
-        if agg: payload['agg'] = agg
+        if self.filters.agg: payload['agg'] = agg
 
         headers = { 'content-type': 'application/json' }
 
