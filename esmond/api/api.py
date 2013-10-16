@@ -698,7 +698,8 @@ class BulkRequestResource(Resource):
                 obj.cf = ret_obj.cf
                 obj.agg = ret_obj.agg
 
-                ret_obj.device_names.append(device_name)
+                if device_name not in ret_obj.device_names:
+                    ret_obj.device_names.append(device_name)
 
                 # Recycle existing query code for interface details
                 data = InterfaceDataResource()._execute_query(oidset, obj)
