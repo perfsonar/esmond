@@ -491,16 +491,28 @@ class ApiConnect(object):
             return
             yield
 
-    def get_interface_bulk_data(self, interfaces=[], endpoint='in'):
+    def get_interface_bulk_data(self, interfaces=[], endpoint='in',
+        cf='average', agg=0):
+        # XXX(mmg) - agg should default to 30 and go in the payload
+        # by default but there is currently a bug in the api (it seems).
 
-        payload = {'interfaces': interfaces, 'endpoint': endpoint}
+        payload = { 
+            'interfaces': interfaces, 
+            'endpoint': endpoint,
+            'cf': cf,
+            'begin': self.filters.ts_epoch('begin_time'),
+            'end': self.filters.ts_epoch('end_time'),
+        }
 
-        headers = {'content-type': 'application/json'}
+        if agg: payload['agg'] = agg
+
+        headers = { 'content-type': 'application/json' }
 
         r = requests.post('{0}/v1/bulk/'.format(self.api_url), 
             headers=headers, data=json.dumps(payload))
 
         self.inspect_request(r)
+        self.inspect_payload(payload)
 
         if r.status_code == 201 and \
             r.headers['content-type'] == 'application/json':
@@ -512,6 +524,10 @@ class ApiConnect(object):
     def inspect_request(self, r):
         if self.filters.verbose:
             print '[url: {0}]'.format(r.url)
+
+    def inspect_payload(self, p):
+        if self.filters.verbose > 1:
+            print '[POST payload: {0}]'.format(json.dumps(p, indent=4))
         
     def http_alert(self, r):
         warnings.warn('Request for {0} got status: {1}'.format(r.url,r.status_code), self.wrn, stacklevel=2)

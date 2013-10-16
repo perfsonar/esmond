@@ -8,6 +8,7 @@ summary tools.
 import os
 import requests
 import sys
+import time
 
 from optparse import OptionParser
 
@@ -30,6 +31,9 @@ def main():
     parser.add_option('-e', '--endpoint', metavar='ENDPOINT',
             type='string', dest='endpoint', 
             help='Endpoint type to query (required).')
+    parser.add_option('-l', '--last', metavar='LAST',
+            type='int', dest='last', default=0,
+            help='Last n minutes of data to query - api defaults to 60 if not given.')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
@@ -38,6 +42,9 @@ def main():
     filters = ApiFilters()
 
     filters.verbose = options.verbose
+
+    if options.last:
+        filters.begin_time = int(time.time() - (options.last*60))
 
     valid_endpoints = []
 
