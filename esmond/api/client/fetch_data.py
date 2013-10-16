@@ -384,7 +384,7 @@ class ApiFilters(object):
         self.verbose = False
         self.endpoint = 'in'
         self.cf = 'average'
-        self.agg = 0 # XXX(mmg): fix this when api hitch is addressed.
+        self.agg = None
 
     def ts_epoch(self, time_prop):
         """Convert named property back to epoch.  Generally just for 
@@ -506,9 +506,6 @@ class ApiConnect(object):
         return self._execute_get_interface_bulk_data(interfaces)
 
     def _execute_get_interface_bulk_data(self, interfaces=[]):
-        # XXX(mmg) - agg should default to 30 and go in the payload
-        # by default but there is currently a bug in the api (it seems).
-
         payload = { 
             'interfaces': interfaces, 
             'endpoint': self.filters.endpoint,
