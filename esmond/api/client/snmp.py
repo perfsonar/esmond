@@ -143,6 +143,9 @@ class NodeInfo(object):
         """
         warnings.warn('Request for {0} got status: {1} - response: {2}'.format(r.url,r.status_code,r.content), self.wrn, stacklevel=2)
 
+    def warn(self, m):
+        warnings.warn(m, self.wrn, stacklevel=2)
+
     def inspect_request(self, r):
         if self.filters.verbose:
             print '[url: {0}]'.format(r.url)
@@ -165,7 +168,9 @@ class Device(NodeInfo):
 
     @property
     def oidsets(self):
-        return self._data.get('oidsets', None)
+        # Return a copy of the internal list so we don't have unintended
+        # changes to the internal payload by reference.
+        return self._data.get('oidsets', None)[:]
 
     def get_interfaces(self, **filters):
         """
@@ -193,6 +198,29 @@ class Device(NodeInfo):
                 self.http_alert(r)
                 return
                 yield
+
+    def set_oidsets(self, oidsets):
+        if not oidsets or not isinstance(oidsets, list):
+            self.warn('oidsets arg must be a non-empty list')
+            return
+
+        r = requests.get('{0}/v1/oidset'.format(self.api_url))
+        valid_oidsets = json.loads(r.content)
+
+        for o in oidsets:
+            if o not in valid_oidsets:
+                self.warn('{0} is not a valid oidset - aborting oidset update.')
+
+        self._data['oidsets'] = oidsets
+
+        headers = {'content-type': 'application/json'}
+
+        p = requests.put('{0}{1}'.format(self.api_url, self.resource_uri), 
+            data=json.dumps(self._data), headers=headers)
+
+        if p.status_code != 204:
+           self.http_alert(r)
+
 
 
     def __repr__(self):

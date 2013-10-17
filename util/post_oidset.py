@@ -12,48 +12,38 @@ import os
 import requests
 import sys
 
-def get(url):
-    r = requests.get(url)
-    data = json.loads(r.content)
-    return data
-
+from esmond.api.client.snmp import ApiConnect
 
 def main():
-    url = 'http://localhost:8000/v1/device/lbl-mr2/'
 
-    data = get(url)
-    beg_o = data['begin_time']
-    end_o = data['end_time']
+    conn = ApiConnect(api_url='http://localhost:8000')
 
-    # add an oidset
-    if 'SentryPoll' not in data['oidsets']:
-        print 'adding'
-        data['oidsets'].append('SentryPoll')
+    d1 = list(conn.get_devices(**{'name': 'lbl-mr2'}))[0]
+
+    oidsets = d1.oidsets
+
+    if 'SentryPoll' not in oidsets:
+        print 'adding SentryPoll'
+        oidsets.append('SentryPoll')
     else:
-        print 'removing'
-        data['oidsets'].pop()
+        print 'removing SentryPoll'
+        oidsets.pop()
 
-    print 'sending:', json.dumps(data, indent=4)
+    print 'setting oidsets to:', oidsets
 
-    headers = {'content-type': 'application/json'}
+    d1.set_oidsets(oidsets)
 
-    if True:
-        p = requests.put(url, data=json.dumps(data), headers=headers)
-        if p.status_code != 204:
-            print p.content
+    # refresh the result just to make sure.
 
-    res = get(url)
+    d2 = list(conn.get_devices(**{'name': 'lbl-mr2'}))[0]
+    print 'result:', d2
+    print d2.oidsets
 
-    print 'result:', json.dumps(res, indent=4)
-
-    beg_n = res['begin_time']
-    end_n = res['end_time']
-
-    if (beg_o != beg_n) or (end_o != end_n):
+    if (d1.begin_time != d2.begin_time) or \
+        (d1.end_time != d2.end_time):
         print 'Timestamp mismatch!'
-        print 'beg - orig: {0} - new: {1} - delta: {2}'.format(beg_o, beg_n, datetime.timedelta(seconds=beg_n-beg_o))
-        print 'end - orig: {0} - new: {1} - delta: {2}'.format(end_o, end_n, datetime.timedelta(seconds=end_n-end_o))
-
+        print 'orig:' d1.begin_time, d1.end_time
+        print 'new :' d2.begin_time, d2.end_time
 
     pass
 
