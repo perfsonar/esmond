@@ -41,7 +41,7 @@ def main():
 
     path = ['rtr_test_post', 'FastPollHC', 'ifHCInOctets', 'interface_test/0/0.0']
 
-    p = PostRawData(port=8000, path=path, freq=30000)
+    p = PostRawData(api_url='http://localhost:8000/', path=path, freq=30000)
     # set_payload will completely replace the internal payload of the object.
     p.set_payload(payload)
     # add_to_payload will just add new items to internal payload.
@@ -56,7 +56,7 @@ def main():
 
     # return
 
-    p = PostBaseRate(port=8000, path=path, freq=30000)
+    p = PostBaseRate(api_url='http://localhost:8000/', path=path, freq=30000)
     p.set_payload(payload)
     p.send_data()
 

@@ -3,6 +3,7 @@ import requests
 import warnings
 
 from esmond.util import atencode
+from esmond.api.api import QueryUtil
 
 """
 Module to handle posting data to esmond rest interface.
@@ -49,13 +50,12 @@ class PostData(object):
     _schema_root = 'v1/timeseries'
     _wrn = PostWarning
 
-    def __init__(self, hostname='localhost', port=80, path=[], freq=None):
+    def __init__(self, api_url='http://localhost/', path=[], freq=None):
         """Constructor - the path list arg is an ordered list of elements
         that will be used (along with the freq arg) to construct the 
         cassandra row key.  See example above."""
         super(PostData, self).__init__()
-        self.hostname = hostname
-        self.port = port
+        self.api_url = api_url
         self.path = path[:] # copy in case the path ref is reused
         self.freq = freq
 
@@ -85,12 +85,13 @@ class PostData(object):
         self.payload = []
 
         # atencode the interface part of the path
-        self.path.append(atencode(self.path.pop()))
+        # self.path.append(atencode(self.path.pop()))
+        self.path = QueryUtil.encode_datapath(self.path)
 
         self.headers = {'content-type': 'application/json'}
 
-        self.url = 'http://{0}:{1}/{2}/{3}/{4}/{5}'.format(self.hostname, 
-            self.port, self._schema_root, self._p_type,
+        self.url = '{0}{1}/{2}/{3}/{4}'.format(self.api_url, 
+            self._schema_root, self._p_type,
             '/'.join(self.path), self.freq)
 
     def set_payload(self, payload):
