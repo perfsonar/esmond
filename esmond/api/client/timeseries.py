@@ -181,7 +181,8 @@ Classes to execute get requests to timeseries namespace.
 
 These classes are initialized much like the post data class, but with 
 and additional params dict arg that will be passed to the GET request.
-Setting begin or end time would be the most common args set.
+Setting begin or end time would be the most common args set.  Params dict 
+is optional.
 
 Get data will return a payload encapsulation object which will return 
 data point objects.  Since this namespace is supposed to just return 
@@ -189,6 +190,9 @@ that which is in the backend - the timestamps are all in milliseconds
 and there is no coersion to a python datetime object.
 
 Example usage:
+
+    path = ['rtr_test_post', 'FastPollHC', 'ifHCInOctets', 'interface_test/0/0.0']
+
     params = {
         'begin': ts-90000, 'end': ts+1000
     }
