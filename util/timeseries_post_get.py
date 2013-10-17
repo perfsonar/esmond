@@ -11,22 +11,33 @@ import requests
 import sys
 import time
 
-from esmond.api.client.timeseries import PostRawData, PostBaseRate
+from esmond.api.client.timeseries import PostRawData, PostBaseRate, GetRawData, GetBaseRate
 from esmond.util import atencode
 
 def read_insert(ts, p_type, path):
-    url = 'http://localhost:8000/v1/timeseries/{0}/rtr_test_post/FastPollHC/ifHCInOctets/{1}/30000'.format(
-        p_type, atencode(path[-1])
-    )
-
     params = {
         'begin': ts-90000, 'end': ts+1000
     }
 
-    r = requests.get(url, params=params)
-    data = json.loads(r.content)
+    get = None
 
-    print json.dumps(data, indent=4)
+    args = {
+        'api_url': 'http://localhost:8000/', 
+        'path': path, 
+        'freq': 30000,
+        'params': params,
+    }
+
+    if p_type == 'RawData':
+        get = GetRawData(**args)
+    elif p_type == 'BaseRate':
+        get = GetBaseRate(**args)
+
+    payload = get.get_data()
+
+    print payload
+    for d in payload.data:
+        print '  *', d
 
 def main():
 
