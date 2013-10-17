@@ -5,8 +5,46 @@ import warnings
 from esmond.util import atencode
 from esmond.api.api import QueryUtil
 
+class TimeseriesBase(object):
+    _schema_root = 'v1/timeseries'
+    def __init__(self, api_url='http://localhost/', path=[], freq=None):
+        """Constructor - the path list arg is an ordered list of elements
+        that will be used (along with the freq arg) to construct the 
+        cassandra row key.  See example above."""
+        super(TimeseriesBase, self).__init__()
+        self.api_url = api_url
+        self.path = path[:] # copy in case the path ref is reused
+        self.freq = freq
+
+        # Make sure we're not using the base class
+        try:
+            getattr(self, '_p_type')
+        except AttributeError:
+            raise PostException('Do not instantiate TimeseriesBase base class, use appropriate subclass.')
+
+        # Validate args
+        if not self.path or not self.freq or not self.api_url:
+            raise PostException('The args api_url, path and freq must be set.')
+
+        if not isinstance(self.path, list):
+            raise PostException('Path argument must be a list.')
+
+        if not len(self.path) > 1:
+            raise PostException('Path is not of sufficient length.')
+
+        try:
+            int(self.freq)
+        except ValueError:
+            raise PostException('Arg freq must be an integer.')
+
+        self.path = QueryUtil.encode_datapath(self.path)
+
+        self.url = '{0}{1}/{2}/{3}/{4}'.format(self.api_url, 
+            self._schema_root, self._p_type,
+            '/'.join(self.path), self.freq)
+
 """
-Module to handle posting data to esmond rest interface.
+Classes to handle posting data to esmond rest interface.
 
 Example use:
 
@@ -44,55 +82,26 @@ class PostException(Exception):
     def __str__(self):
         return repr(self.value)
 
-class PostData(object):
+class PostData(TimeseriesBase):
     """Base class for API write objects - writes data to the POST 
     facility in the /timeseries/ REST interface namespace."""
-    _schema_root = 'v1/timeseries'
     _wrn = PostWarning
 
     def __init__(self, api_url='http://localhost/', path=[], freq=None):
         """Constructor - the path list arg is an ordered list of elements
         that will be used (along with the freq arg) to construct the 
         cassandra row key.  See example above."""
-        super(PostData, self).__init__()
-        self.api_url = api_url
-        self.path = path[:] # copy in case the path ref is reused
-        self.freq = freq
+        super(PostData, self).__init__(api_url, path, freq)
 
-        # Make sure we're not using the base class
         try:
             getattr(self, '_p_type')
         except AttributeError:
             raise PostException('Do not instantiate PostData base class, use appropriate subclass.')
 
-        # Validate args
-        if not self.path or not self.freq:
-            raise PostException('The args path and freq must be set.')
-
-        if not isinstance(self.path, list):
-            raise PostException('Path argument must be a list.')
-
-        if not len(self.path) > 1:
-            raise PostException('Path is not of sufficient length.')
-
-        try:
-            int(self.freq)
-        except ValueError:
-            raise PostException('Arg freq must be an integer.')
-
-        # Input ok, set up data payload and post url.
+        # Set up playload and headers.
 
         self.payload = []
-
-        # atencode the interface part of the path
-        # self.path.append(atencode(self.path.pop()))
-        self.path = QueryUtil.encode_datapath(self.path)
-
         self.headers = {'content-type': 'application/json'}
-
-        self.url = '{0}{1}/{2}/{3}/{4}'.format(self.api_url, 
-            self._schema_root, self._p_type,
-            '/'.join(self.path), self.freq)
 
     def set_payload(self, payload):
         """Sets object payload to a complete list of dicts passed in. 
