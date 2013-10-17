@@ -42,8 +42,8 @@ def main():
     if (d1.begin_time != d2.begin_time) or \
         (d1.end_time != d2.end_time):
         print 'Timestamp mismatch!'
-        print 'orig:' d1.begin_time, d1.end_time
-        print 'new :' d2.begin_time, d2.end_time
+        print 'orig:', d1.begin_time, d1.end_time
+        print 'new :', d2.begin_time, d2.end_time
 
     pass
 

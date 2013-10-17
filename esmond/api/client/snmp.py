@@ -204,7 +204,7 @@ class Device(NodeInfo):
             self.warn('oidsets arg must be a non-empty list')
             return
 
-        r = requests.get('{0}/v1/oidset'.format(self.api_url))
+        r = requests.get('{0}/v1/oidset/'.format(self.api_url))
         valid_oidsets = json.loads(r.content)
 
         for o in oidsets:
