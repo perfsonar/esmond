@@ -117,7 +117,7 @@ def main():
     for bin_ts in bin_steps:
         print bin_ts
         for endpoint in aggs[bin_ts].keys():
-            path = [ SUMMARY_NS, 'total_traffic' ] + endpoint.split('/')
+            path = [ SUMMARY_NS, 'TotalTraffic' ] + endpoint.split('/')
             print ' *', endpoint, ':', aggs[bin_ts][endpoint], path
 
     pass
