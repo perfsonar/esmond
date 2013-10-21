@@ -5,6 +5,7 @@ Quick one off to query interface data from API.  Starter sketch for
 summary tools.
 """
 
+import datetime
 import os
 import requests
 import sys
@@ -14,6 +15,8 @@ from optparse import OptionParser
 
 from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
 from esmond.api.client.snmp import ApiConnect, ApiFilters, BulkDataPayload
+
+SUMMARY_NS = 'summary'
 
 def main():    
     usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
@@ -45,6 +48,12 @@ def main():
 
     if options.last:
         filters.begin_time = int(time.time() - (options.last*60))
+    else:
+        # Default to one minute ago, then rounded to the nearest 30 
+        # second bin.
+        time_point = int(time.time() - 60)
+        bin_point = time_point - (time_point % 30)
+        filters.begin_time = filters.end_time = bin_point
 
     valid_endpoints = []
 
@@ -88,12 +97,28 @@ def main():
 
     print data
 
+    aggs = {}
+
     for row in data.data:
         # do something....
         if options.verbose: print ' *', row
         for data in row.data:
             if options.verbose > 1: print '  *', data
+            if not aggs.has_key(data.ts_epoch): aggs[data.ts_epoch] = {}
+            if not aggs[data.ts_epoch].has_key(row.endpoint): 
+                aggs[data.ts_epoch][row.endpoint] = 0
+            if data.val != None:
+                aggs[data.ts_epoch][row.endpoint] += data.val
         pass
+
+    bin_steps = aggs.keys()[:]
+    bin_steps.sort()
+
+    for bin_ts in bin_steps:
+        print bin_ts
+        for endpoint in aggs[bin_ts].keys():
+            path = [ SUMMARY_NS, 'total_traffic' ] + endpoint.split('/')
+            print ' *', endpoint, ':', aggs[bin_ts][endpoint], path
 
     pass
 
