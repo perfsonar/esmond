@@ -58,6 +58,26 @@ This namespace is 'browsable' - /v1/device/ will return a list of devices,
 /v1/device/$DEVICE/interface/ will return the interfaces on a device, etc. 
 A full 'detail' URI with a defined endpoing data set (as outlined in the 
 OIDSET_INTERFACE_ENDPOINTS just below) will return the data.
+
+Namespace to retrive a list of valid oidsets.
+
+/v1/oidset/
+
+This endpoint is not 'browsable' and it takes no GET arguments.  It merely 
+return a list of valid oidsets from the metadata database for user 
+reference.
+
+Namespace to retrieve information about discrete interfaces without 
+having to "go through" information about a specific device.
+
+/v1/interface/
+
+This endpoint is not 'browsable.'  It takes common GET arguments that 
+would apply like begin and end to filter active interfaces.  Additionally, 
+standard django filtering arguments can be applied to the ifDesc and 
+ifAlias fields (ex: &ifAlias__contains=intercloud) to get information 
+about specifc subsets of interfaces.
+
 """
 
 SNMP_NAMESPACE = 'snmp'
@@ -600,6 +620,32 @@ class InterfaceDataResource(Resource):
 
 # ---
 
+"""
+Namespace to retrive bulk traffic data from multiple interfaces without 
+needing to make multiple round trip http requests via the main 
+device/interface/endpoint namespace documented at the top of the module.
+
+/v1/bulk/
+
+This namespace is not 'browsable,' and while it runs counter to typical 
+REST semantics/verbs, it implements the POST verb.  This is to get around 
+potential limitations in how many arguments/length of said that can be 
+sent in a GET request.  The request information is sent as a json blob:
+
+{ 
+    'interfaces': [{'interface': me0.0, 'device': albq-asw1}, ...], 
+    'endpoint': ['in', 'out'],
+    'cf': 'average',
+    'begin': 1382459647,
+    'end': 1382463247,
+}
+
+Interfaces are requestes as a list of dicts containing iface and device 
+information.  Different kinds of endpoints (in, out, error/in, 
+discard/out, etc) are passed in as a list and data for each sort of 
+endpoint will be returned for each interface.
+"""
+
 class BulkRequestDataObject(DataObject):
     """Data encapsulation."""
     pass
@@ -612,7 +658,7 @@ class BulkRequestResource(Resource):
     lots of args to GET requests.  Incoming payload looks like this:
 
     {
-        'interfaces': [{'interface': me0.0, 'device': albq-asw1}, ...]
+        'interfaces': [{'interface': me0.0, 'device': albq-asw1}, ...],
         'endpoint': 'in',
         other usual args (begin/end/cf...)
     }
