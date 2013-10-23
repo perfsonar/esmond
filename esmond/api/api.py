@@ -20,7 +20,7 @@ from tastypie import fields
 from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.http import HttpCreated
 
-from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet
+from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import atdecode, atencode
@@ -415,6 +415,52 @@ class OidsetResource(ModelResource):
 
     def dehydrate(self, bundle):
         return bundle.data['name']
+
+class OidsetEndpointResource(ModelResource):
+    oids = fields.ToManyField('esmond.api.api.OidResource', 'oids', full=True)
+    class Meta:
+        resource_name = 'oidsetmap'
+        allowed_methods = ['get']
+        queryset = OIDSet.objects.all()
+        authentication = AnonymousGetElseApiAuthentication()
+        excludes = ['id', 'poller_args', 'frequency']
+        include_resource_uri = False
+
+    def get_object_list(self, request):
+        qs = self._meta.queryset._clone()
+        return qs
+
+    def obj_get_list(self, bundle, **kwargs):
+        return super(OidsetEndpointResource, self).obj_get_list(bundle, **kwargs)
+
+    def alter_list_data_to_serialize(self, request, data):
+        payload = {}
+        for oidset in data['objects']:
+            for oid in oidset.data['oids']:
+                if oid.data['endpoint_alias']:
+                    if not payload.has_key(oidset.obj.name):
+                        payload[oidset.obj.name] = {}
+                    payload[oidset.obj.name][oid.data['endpoint_alias']] = oid.data['name']
+        return payload
+
+    def dehydrate(self, bundle):
+        for oid in bundle.data['oids']:
+            del oid.data['aggregate']
+            del oid.data['id']
+            del oid.data['resource_uri']
+        return bundle
+
+class OidResource(ModelResource):
+    class Meta:
+        resource_name = 'oid'
+        queryset = OID.objects.all()
+
+    def get_object_list(self, request):
+        qs = self._meta.queryset._clone()
+        return qs
+
+    def obj_get_list(self, bundle, **kwargs):
+        return super(OidResource, self).obj_get_list(bundle, **kwargs)
 
 
 class InterfaceResource(ModelResource):
@@ -1222,3 +1268,4 @@ v1_api.register(TimeseriesResource())
 v1_api.register(OidsetResource())
 v1_api.register(InterfaceResource())
 v1_api.register(BulkRequestResource())
+v1_api.register(OidsetEndpointResource())
