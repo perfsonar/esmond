@@ -82,32 +82,51 @@ about specifc subsets of interfaces.
 
 SNMP_NAMESPACE = 'snmp'
 
-OIDSET_INTERFACE_ENDPOINTS = {
-    'ALUErrors': {
-        'error/in': 'ifInErrors',
-        'error/out': 'ifOutErrors',
-        'discard/in': 'ifInDiscards',
-        'discard/out': 'ifOutDiscards',
-    },
-    'ALUFastPollHC': {
-        'in': 'ifHCInOctets',
-        'out': 'ifHCOutOctets',
-    },
-    'Errors': {
-        'error/in': 'ifInErrors',
-        'error/out': 'ifOutErrors',
-        'discard/in': 'ifInDiscards',
-        'discard/out': 'ifOutDiscards',
-    },
-    'FastPollHC': {
-        'in': 'ifHCInOctets',
-        'out': 'ifHCOutOctets',
-    },
-    'InfFastPollHC': {
-        'in': 'gigeClientCtpPmRealRxOctets',
-        'out': 'gigeClientCtpPmRealTxOctets',
-    },
-}
+def generate_endpoint_map():
+    payload = {}
+    for oidset in OIDSet.objects.all().order_by('name'):
+        for oid in oidset.oids.all().order_by('name'):
+            if oid.endpoint_alias:
+                if not payload.has_key(oidset.name):
+                    payload[oidset.name] = {}
+                payload[oidset.name][oid.endpoint_alias] = oid.name
+    return payload
+
+if db:
+    OIDSET_INTERFACE_ENDPOINTS = generate_endpoint_map()
+    print 'generated endpoint map'
+else:
+    print 'using canned endpoint map'
+    # XXX(mmg): we should be dynamically generating this, per above, 
+    # but leaving original data structure in place if the db object 
+    # is not initialized until we determine how to represent this 
+    # data in the canned fixtures for unit testing.
+    OIDSET_INTERFACE_ENDPOINTS = {
+        'ALUErrors': {
+            'error/in': 'ifInErrors',
+            'error/out': 'ifOutErrors',
+            'discard/in': 'ifInDiscards',
+            'discard/out': 'ifOutDiscards',
+        },
+        'ALUFastPollHC': {
+            'in': 'ifHCInOctets',
+            'out': 'ifHCOutOctets',
+        },
+        'Errors': {
+            'error/in': 'ifInErrors',
+            'error/out': 'ifOutErrors',
+            'discard/in': 'ifInDiscards',
+            'discard/out': 'ifOutDiscards',
+        },
+        'FastPollHC': {
+            'in': 'ifHCInOctets',
+            'out': 'ifHCOutOctets',
+        },
+        'InfFastPollHC': {
+            'in': 'gigeClientCtpPmRealRxOctets',
+            'out': 'gigeClientCtpPmRealTxOctets',
+        },
+    }
 
 def check_connection():
     """Called by testing suite to produce consistent errors.  If no 
