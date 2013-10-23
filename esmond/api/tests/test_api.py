@@ -774,13 +774,20 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_bad_timeseries_post_requests(self):
         url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
-        # incorrect header
+        # permission denied
         response = self.client.post(url)
+        self.assertEquals(response.status_code, 401)
+
+        authn = self.create_apikey(self.td.user_admin.username,
+                self.td.user_admin_apikey.key)
+
+        # incorrect header
+        response = self.api_client.post(url, authentication=authn)
         self.assertEquals(response.status_code, 400)
 
         # correct header but payload not serialized as json
-        response = self.client.post(url, data={}, 
-                CONTENT_TYPE='application/json')
+        response = self.api_client.post(url, data={},
+                format='json', authentication=authn)
         self.assertEquals(response.status_code, 400)
 
         # Below: correct header and json serialization, but incorrect
@@ -793,32 +800,32 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         payload = { 'bunk': 'data is not a list' }
 
-        response = self.client.post(url, data=json.dumps(payload), 
-                content_type='application/json')
+        response = self.api_client.post(url, data=payload,
+                format='json', authentication=authn)
         self.assertEquals(response.status_code, 400)
 
         payload = [
             ['this', 'should not be a list']
         ]
 
-        response = self.client.post(url, data=json.dumps(payload), 
-                content_type='application/json')
+        response = self.api_client.post(url, data=payload,
+                format='json', authentication=authn)
         self.assertEquals(response.status_code, 400)
 
         payload = [
             {'this': 'has', 'the': 'wrong key names'}
         ]
 
-        response = self.client.post(url, data=json.dumps(payload), 
-                content_type='application/json')
+        response = self.api_client.post(url, data=payload,
+                format='json', authentication=authn)
         self.assertEquals(response.status_code, 400)
 
         payload = [
             {'val': 'dict values', 'ts': 'should be numbers'}
         ]
 
-        response = self.client.post(url, data=json.dumps(payload), 
-                content_type='application/json')
+        response = self.api_client.post(url, data=payload,
+                format='json', authentication=authn)
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_post_requests(self):
@@ -831,15 +838,17 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         # Params sent as json list and not post vars now.
         payload = [ params ]
+        authn = self.create_apikey(self.td.user_admin.username,
+                self.td.user_admin_apikey.key)
 
-        response = self.client.post(url, data=json.dumps(payload), 
-                content_type='application/json')
+        response = self.api_client.post(url, data=payload, format='json',
+                authentication=authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
         url = '/v1/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
-        response = self.client.post(url, data=json.dumps(payload), 
-                content_type='application/json')
+        response = self.api_client.post(url, data=payload, format='json',
+                authentication=authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
 

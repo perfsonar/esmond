@@ -17,7 +17,7 @@ from tastypie.authorization import Authorization
 from tastypie.serializers import Serializer
 from tastypie.bundle import Bundle
 from tastypie import fields
-from tastypie.exceptions import NotFound, BadRequest
+from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.http import HttpCreated
 
 from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet
@@ -164,6 +164,79 @@ class AnonymousGetElseApiAuthentication(ApiKeyAuthentication):
         else:
             return super(AnonymousGetElseApiAuthentication,
                     self).get_identifier(request)
+
+class EsmondAuthorization(Authorization):
+    """
+    Uses a custom set of ``django.contrib.auth`` permissions to manage
+    authorization for various actions in the API.  Since many of of esmond's
+    resources don't map directly (or at all) to Django models we can't use the
+    ``tastypie.authorization.DjangoAuthorization`` class.
+    """
+
+    perm_prefix = "esmond_api"
+
+    def __init__(self, resource_name):
+        """There is not way to get the resource name from what is passed into
+        the checks below, so for now we list it explicitly."""
+
+        self.resource_name = resource_name
+        return super(Authorization, self).__init__()
+
+    def read_list(self, object_list, bundle):
+        # GET-style methods are always allowed.
+        return object_list
+
+    def read_detail(self, object_list, bundle):
+        # GET-style methods are always allowed.
+        return True
+
+    def create_list(self, object_list, bundle):
+        permission = '%s.add_%s' % (self.perm_prefix, self.resource_name)
+
+        if not bundle.request.user.has_perm(permission):
+            raise Unauthorized("Permission denied")
+
+        return object_list
+
+    def create_detail(self, object_list, bundle):
+        permission = '%s.add_%s' % (self.perm_prefix, self.resource_name)
+
+        if not bundle.request.user.has_perm(permission):
+            raise Unauthorized("Permission denied")
+
+        return True
+
+    def update_list(self, object_list, bundle):
+        permission = '%s.change_%s' % (self.perm_prefix, self.resource_name)
+
+        if not bundle.request.user.has_perm(permission):
+            raise Unauthorized("Permission denied")
+
+        return object_list
+
+    def update_detail(self, object_list, bundle):
+        permission = '%s.change_%s' % (self.perm_prefix, self.resource_name)
+
+        if not bundle.request.user.has_perm(permission):
+            raise Unauthorized("Permission denied")
+
+        return True
+
+    def delete_list(self, object_list, bundle):
+        permission = '%s.delete_%s' % (self.perm_prefix, self.resource_name)
+
+        if not bundle.request.user.has_perm(permission):
+            raise Unauthorized("Permission denied")
+
+        return object_list
+
+    def delete_detail(self, object_list, bundle):
+        permission = '%s.delete_%s' % (self.perm_prefix, self.resource_name)
+
+        if not bundle.request.user.has_perm(permission):
+            raise Unauthorized("Permission denied")
+
+        return True
 
 class DeviceSerializer(Serializer):
     def to_json(self, data, options=None):
@@ -836,7 +909,8 @@ class TimeseriesResource(Resource):
         allowed_methods = ['get', 'post'] # see post_detail comment
         object_class = TimeseriesDataObject
         serializer = DeviceSerializer()
-        # authentication = AnonymousGetElseApiAuthentication()
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = EsmondAuthorization('timeseries')
 
     def prepend_urls(self):
         """
@@ -955,7 +1029,6 @@ class TimeseriesResource(Resource):
         was chosen. -MMG
         """
         # Validate incoming POST/JSON payload:
-
         if bundle.META.get('CONTENT_TYPE') != 'application/json':
             raise BadRequest('Must post content-type: application/json header and json-formatted payload.')
 

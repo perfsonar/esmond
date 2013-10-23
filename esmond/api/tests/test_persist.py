@@ -899,6 +899,9 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         interface_name = 'interface_test/0/0.0'
 
+        authn = self.create_apikey(self.td.user_admin.username, 
+            self.td.user_admin_apikey.key)
+
         # raw data writes
         url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
 
@@ -910,8 +913,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         # Params sent as json list and not post vars now.
         payload = [ params ]
 
-        response = self.client.post(url, data=json.dumps(payload), 
-                content_type='application/json')
+        response = self.api_client.post(url, data=payload, format='json',
+            authentication=authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
         response = self.client.get(url)
@@ -930,8 +933,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         # base rate write
         url = '/v1/timeseries/BaseRate/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
 
-        response = self.client.post(url, data=json.dumps(payload), 
-                content_type='application/json')
+        response = self.api_client.post(url, data=payload, format='json',
+            authentication=authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
         response = self.client.get(url)

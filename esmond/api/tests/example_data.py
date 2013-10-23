@@ -186,16 +186,29 @@ def build_default_metadata():
             ifAdminStatus=1,
             ifPhysAddress="00:00:00:00:00:00")
 
+    users_testdata(td)
+
+    return td
+
+def users_testdata(td):
+
     seeall = Permission.objects.get(codename="can_see_hidden_ifref")
 
     td.user_admin = User(username="admin", is_staff=True)
     td.user_admin.save()
     td.user_admin.user_permissions.add(seeall)
+
+    for resource in ['timeseries']:
+        for perm_name in ['view', 'add', 'change', 'delete']:
+            perm = Permission.objects.get(
+                    codename="esmond_api.{0}_{1}".format(perm_name, resource))
+            td.user_admin.user_permissions.add(perm)
+
     td.user_admin.save()
     td.user_admin_apikey = ApiKey(user=td.user_admin)
     td.user_admin_apikey.key = td.user_admin_apikey.generate_key()
     td.user_admin_apikey.save()
-
+    td.user_admin.save()
 
     td.user_seeall = User(username="seeall", is_staff=False)
     td.user_seeall.save()
@@ -204,8 +217,6 @@ def build_default_metadata():
     td.user_seeall_apikey = ApiKey(user=td.user_seeall)
     td.user_seeall_apikey.key = td.user_seeall_apikey.generate_key()
     td.user_seeall_apikey.save()
-
-    return td
 
 def build_rtr_d_metadata():
     """Creates rtr_d, to be used for larger dataset testing
@@ -224,6 +235,8 @@ def build_rtr_d_metadata():
             active=True,
             begin_time=make_aware(datetime.datetime(2011,11,14), utc),
             end_time=max_datetime)
+
+    users_testdata(td)
 
     return td
 

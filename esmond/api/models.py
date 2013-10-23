@@ -2,6 +2,9 @@ from django.db import models
 from django.utils.timezone import now
 import datetime
 
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+
 from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, atencode
 
 class DeviceTag(models.Model):
@@ -294,3 +297,30 @@ class LSPOpStatus(models.Model):
 
     def __unicode__(self):
         return "%s %s" % (self.device, self.name)
+
+class APIPermissionManager(models.Manager):
+    def get_query_set(self):
+        return super(APIPermissionManager, self).\
+            get_query_set().filter(content_type__name='api_permission')
+
+
+class APIPermission(Permission):
+    """A global permission, not attached to a model"""
+
+    objects = APIPermissionManager()
+
+    class Meta:
+        proxy = True
+        permissions = (
+            ("esmond_api.view_timeseries", "View timseries data"),
+            ("esmond_api.add_timeseries", "Add timseries data"),
+            ("esmond_api.delete_timeseries", "Delete timseries data"),
+            ("esmond_api.change_timeseries", "Change timseries data"),
+        )
+
+    def save(self, *args, **kwargs):
+        ct, created = ContentType.objects.get_or_create(
+            name="api_permission", app_label=self._meta.app_label
+        )
+        self.content_type = ct
+        super(APIPermission, self).save(*args, **kwargs)
