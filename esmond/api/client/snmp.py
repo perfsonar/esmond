@@ -205,6 +205,9 @@ class Device(NodeInfo):
             return
 
         r = requests.get('{0}/v1/oidset/'.format(self.api_url))
+        if r.status_code != 200:
+            self.warn('Could not get a list of valid oidsets from {0}/v1/oidset/ - aborting'.format(self.api_url) )
+            return
         valid_oidsets = json.loads(r.content)
 
         for o in oidsets:
