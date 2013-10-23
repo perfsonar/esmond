@@ -102,6 +102,8 @@ class OID(models.Model):
     name = models.CharField(max_length=256)
     aggregate = models.BooleanField(default = False)
     oid_type = models.ForeignKey(OIDType,db_column = "oidtypeid")
+    endpoint_alias = models.CharField(max_length=256, null=True, blank=True,
+        help_text="Optional endpoint alias (in, out, discard/out, etc)")
 
     class Meta:
         db_table = "oid"

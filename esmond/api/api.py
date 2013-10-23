@@ -104,8 +104,8 @@ OIDSET_INTERFACE_ENDPOINTS = {
         'out': 'ifHCOutOctets',
     },
     'InfFastPollHC': {
-        'in': 'gigeClientCtpPmRealInOctets',
-        'out': 'gigeClientCtpPmRealOutOctets',
+        'in': 'gigeClientCtpPmRealRxOctets',
+        'out': 'gigeClientCtpPmRealTxOctets',
     },
 }
 
