@@ -13,7 +13,6 @@ import time
 
 from optparse import OptionParser
 
-from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
 from esmond.api.client.snmp import ApiConnect, ApiFilters, BulkDataPayload
 
 SUMMARY_NS = 'summary'
@@ -55,13 +54,6 @@ def main():
         bin_point = time_point - (time_point % 30)
         filters.begin_time = filters.end_time = bin_point
 
-    valid_endpoints = []
-
-    for i in OIDSET_INTERFACE_ENDPOINTS.keys():
-        for ii in OIDSET_INTERFACE_ENDPOINTS[i].keys():
-            if ii not in valid_endpoints:
-                valid_endpoints.append(ii)
-
     if not options.ifdescr_pattern and not options.alias_pattern:
         # Don't grab *everthing*.
         print 'Specify an ifdescr or alias filter option.'
@@ -83,11 +75,6 @@ def main():
         parser.print_help()
         return -1
     else:
-        for ep in options.endpoint:
-            if ep not in valid_endpoints:
-                print 'Specify a valid endpoint of the form: {0}'.format(valid_endpoints)
-                parser.print_help()
-                return -1
         filters.endpoint = options.endpoint
         pass
 

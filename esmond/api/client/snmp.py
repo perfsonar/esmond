@@ -61,6 +61,7 @@ class InterfaceWarning(NodeInfoWarning): pass
 class EndpointWarning(NodeInfoWarning): pass
 class DataPayloadWarning(NodeInfoWarning): pass
 class BulkDataPayloadWarning(NodeInfoWarning): pass
+class ApiFiltersWarning(Warning): pass
 class ApiConnectWarning(Warning): pass
 
 # - Encapsulation classes for nodes (device, interface, etc).
@@ -438,6 +439,7 @@ class BulkDataRow(object):
 # - Query entry point and filtering.
 
 class ApiFilters(object):
+    wrn = ApiFiltersWarning
     """Class to hold filtering/query options.  This will be used by 
     ApiConnect and also passed to all the encapsulation objects."""
     def __init__(self):
@@ -457,9 +459,10 @@ class ApiFilters(object):
 
         # Values to use in POST requests, verbose flag, etc.
         self.verbose = False
-        self.endpoint = ['in']
         self.cf = 'average'
         self.agg = None
+        # This needs to be checked via property.
+        self._endpoint = ['in']
 
     def ts_epoch(self, time_prop):
         """Convert named property back to epoch.  Generally just for 
@@ -522,6 +525,20 @@ class ApiFilters(object):
         return locals()
     default_filters = property(**default_filters())
 
+    def endpoint():
+        doc = "The endpoint property."
+        def fget(self):
+            return self._endpoint
+        def fset(self, value):
+            if not value or not isinstance(value, list):
+                self.warn('The endpoint filter must be set to a non-empty list ("{0}" given), retaining current values {1}'.format(value,self.endpoint))
+                return
+            self._endpoint = value
+        def fdel(self):
+            del self._endpoint
+        return locals()
+    endpoint = property(**endpoint())
+
     def compose_filters(self, filters):
         """Compose filters using the defaults combined with local filters.
 
@@ -530,6 +547,9 @@ class ApiFilters(object):
 
         return dict(self.default_filters, **filters)
 
+    def warn(self, m):
+        warnings.warn(m, self.wrn, stacklevel=2)
+
 class ApiConnect(object):
     wrn = ApiConnectWarning
     """Core class to pull data from the rest api."""
@@ -537,6 +557,7 @@ class ApiConnect(object):
         super(ApiConnect, self).__init__()
         self.api_url = api_url.rstrip("/")
         self.filters = filters
+        self._valid_endpoints = []
 
     def get_devices(self, **filters):
         r = requests.get('{0}/v1/device/'.format(self.api_url),
@@ -581,6 +602,10 @@ class ApiConnect(object):
         return self._execute_get_interface_bulk_data(interfaces)
 
     def _execute_get_interface_bulk_data(self, interfaces=[]):
+
+        if not self._check_endpoints():
+            return BulkDataPayload()
+
         payload = { 
             'interfaces': interfaces, 
             'endpoint': self.filters.endpoint,
@@ -606,6 +631,25 @@ class ApiConnect(object):
             self.http_alert(r)
             return BulkDataPayload()
 
+    def _check_endpoints(self):
+        if not self._valid_endpoints:
+            r = requests.get('{0}/v1/oidsetmap/'.format(self.api_url))
+            if not r.status_code == 200:
+                self.warn('Could not retrieve oid set map from REST api.')
+                return False
+            data = json.loads(r.content)
+            for i in data.keys():
+                for ii in data[i].keys():
+                    if ii not in self._valid_endpoints:
+                        self._valid_endpoints.append(ii)
+
+        for ep in self.filters.endpoint:
+            if ep not in self._valid_endpoints:
+                self.warn('{0} is not a valid endpoint type - must be of the form {1} - cancelling query'.format(ep, self._valid_endpoints))
+                return False
+
+        return True
+
     def inspect_request(self, r):
         if self.filters.verbose:
             print '[url: {0}]'.format(r.url)
@@ -616,4 +660,7 @@ class ApiConnect(object):
         
     def http_alert(self, r):
         warnings.warn('Request for {0} got status: {1} - response: {2}'.format(r.url,r.status_code, r.content), self.wrn, stacklevel=2)
+
+    def warn(self, m):
+        warnings.warn(m, self.wrn, stacklevel=2)
 # ----
