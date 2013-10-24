@@ -13,7 +13,7 @@ class TimeseriesBase(object):
         that will be used (along with the freq arg) to construct the 
         cassandra row key.  See example above."""
         super(TimeseriesBase, self).__init__()
-        self.api_url = api_url
+        self.api_url = api_url.rstrip("/")
         self.path = path[:] # copy in case the path ref is reused
         self.freq = freq
 
@@ -40,7 +40,7 @@ class TimeseriesBase(object):
 
         self.path = QueryUtil.encode_datapath(self.path)
 
-        self.url = '{0}{1}/{2}/{3}/{4}'.format(self.api_url, 
+        self.url = '{0}/{1}/{2}/{3}/{4}'.format(self.api_url, 
             self._schema_root, self._p_type,
             '/'.join(self.path), self.freq)
 

@@ -14,6 +14,7 @@ import time
 from optparse import OptionParser
 
 from esmond.api.client.snmp import ApiConnect, ApiFilters, BulkDataPayload
+from esmond.api.client.timeseries import PostRawData, GetRawData
 
 SUMMARY_NS = 'summary'
 
@@ -86,6 +87,7 @@ def main():
 
     aggs = {}
 
+    # Aggregate the returned data by timestamp and endpoint alias.
     for row in data.data:
         # do something....
         if options.verbose: print ' *', row
@@ -98,14 +100,66 @@ def main():
                 aggs[data.ts_epoch][row.endpoint] += data.val
         pass
 
+    # And example of how the summary name is tied to a specific search
+    # option.
+    summary_type_map = {
+        'ifdescr' : {
+            'me0.0': 'TotalTrafficMe0.0'
+        },
+        'ifalias' : {
+            'intercloud' : 'TotalTrafficIntercloud'
+        }
+    }
+
+    summary_name = None
+
+    if interface_filters.get('ifDescr__contains', None):
+        summary_name = \
+            summary_type_map['ifdescr'].get(interface_filters['ifDescr__contains'], None)
+    elif interface_filters.get('ifAlias__contains', None):
+        summary_name = \
+            summary_type_map['ifalias'].get(interface_filters['ifAlias__contains'], None)
+    else:
+        print 'Could not find summary type for filter criteria {0}'.format(interface_filters.keys())
+        return
+
+    if not summary_name:
+        print 'Could not find summary type for search pattern {0}'.format(interface_filters.values())
+        return
+
     bin_steps = aggs.keys()[:]
     bin_steps.sort()
 
+    # Might be searching over a time period, so re-aggregate based on 
+    # path so that we only need to do one write per endpoint alias, rather
+    # than a write for every data point.
+
+    path_aggregation = {}
+
     for bin_ts in bin_steps:
-        print bin_ts
+        if options.verbose > 1: print bin_ts
         for endpoint in aggs[bin_ts].keys():
-            path = [ SUMMARY_NS, 'TotalTraffic' ] + endpoint.split('/')
-            print ' *', endpoint, ':', aggs[bin_ts][endpoint], path
+            path = (SUMMARY_NS, summary_name, endpoint)
+            if not path_aggregation.has_key(path):
+                path_aggregation[path] = []
+            if options.verbose > 1: print ' *', endpoint, ':', aggs[bin_ts][endpoint], path
+            path_aggregation[path].append({'ts': bin_ts*1000, 'val': aggs[bin_ts][endpoint]})
+
+    for k,v in path_aggregation.items():
+        args = {
+            'api_url': options.api_url, 'path': list(k), 'freq': 30000
+        }
+        p = PostRawData(**args)
+        p.set_payload(v)
+        p.send_data()
+        if options.verbose:
+            print 'verifying write'
+            g = GetRawData(**args)
+            payload = g.get_data()
+            print payload
+            for d in payload.data:
+                print '  *', d
+
 
     pass
 
