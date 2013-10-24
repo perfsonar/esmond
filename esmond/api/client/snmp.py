@@ -401,16 +401,7 @@ class BulkDataPayload(DataPayload):
 class BulkDataRow(object):
     """Class to encapsulate and differentiate data from different devices,
     interfaces and direction/traffic endpoints when getting data back from 
-    a bulk request for interface data.
-
-    Due to limitations in what sort of data can be serialized as json, 
-    the API pulls back a list of data for a given device/iface/endpoint, 
-    and then appends a dict to the end of it with explicit information 
-    about the source of the row of datapoints.
-
-    That is what is getting pop()'ed off in the constructor.  Not an 
-    optimal solution but better than trying to delimit and parse the 
-    data as a dict key because that way madness lies."""
+    a bulk request for interface data."""
     def __init__(self, row={}):
         super(BulkDataRow, self).__init__()
         self._info = row.get('path', {})
