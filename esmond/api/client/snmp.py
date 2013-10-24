@@ -411,10 +411,10 @@ class BulkDataRow(object):
     That is what is getting pop()'ed off in the constructor.  Not an 
     optimal solution but better than trying to delimit and parse the 
     data as a dict key because that way madness lies."""
-    def __init__(self, row=[{}]):
+    def __init__(self, row={}):
         super(BulkDataRow, self).__init__()
-        self._info = row.pop()
-        self._data = row
+        self._info = row.get('path', {})
+        self._data = row.get('data', [])
 
     @property
     def device(self):

@@ -886,15 +886,14 @@ class BulkRequestResource(Resource):
                 obj.cf = ret_obj.cf
                 obj.agg = ret_obj.agg
 
-                # Recycle existing query code for interface details
                 data = InterfaceDataResource()._execute_query(oidset, obj)
-                # There are limitations to what we can send back in json,
-                # so append a dict with information about this batch of
-                # data and pop() it off on the other end.  Sucks less 
-                # than trying to delimit and parse it. -mmg
-                data.data.append({'dev': device_name,'iface': iface_name,'endpoint': end_point})
 
-                ret_obj.data.append(data.data)
+                row = {
+                    'data': data.data,
+                    'path': {'dev': device_name,'iface': iface_name,'endpoint': end_point},
+                }
+
+                ret_obj.data.append(row)
 
         bundle.obj = ret_obj
         return bundle
