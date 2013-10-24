@@ -52,8 +52,8 @@ being done (hitting the api), that is done by a method prefixed with
 get_ (ex: get_interfaces()).
 """
 
-from esmond.util import max_datetime
-MAX_EPOCH = calendar.timegm(max_datetime.utctimetuple())
+MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
+MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())
 
 class NodeInfoWarning(Warning): pass
 class DeviceWarning(NodeInfoWarning): pass

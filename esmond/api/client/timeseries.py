@@ -2,7 +2,7 @@ import json
 import requests
 import warnings
 
-from esmond.api.api import QueryUtil
+from esmond.util import atencode
 from esmond.api.client.snmp import DataPayload
 
 class TimeseriesBase(object):
@@ -38,7 +38,7 @@ class TimeseriesBase(object):
         except ValueError:
             raise PostException('Arg freq must be an integer.')
 
-        self.path = QueryUtil.encode_datapath(self.path)
+        self.path = [ atencode(step) for step in self.path ]
 
         self.url = '{0}/{1}/{2}/{3}/{4}'.format(self.api_url, 
             self._schema_root, self._p_type,

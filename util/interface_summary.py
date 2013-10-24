@@ -40,6 +40,9 @@ def main():
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
+    parser.add_option('-P', '--post',
+            dest='post', action='store_true', default=False,
+            help='Switch to actually post data to the backend - otherwise it will just query and give output.')
     options, args = parser.parse_args()
     
     filters = ApiFilters()
@@ -144,6 +147,10 @@ def main():
                 path_aggregation[path] = []
             if options.verbose > 1: print ' *', endpoint, ':', aggs[bin_ts][endpoint], path
             path_aggregation[path].append({'ts': bin_ts*1000, 'val': aggs[bin_ts][endpoint]})
+
+    if not options.post:
+        print 'Not posting (use -P flag to write to backend).'
+        return
 
     for k,v in path_aggregation.items():
         args = {
