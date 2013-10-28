@@ -11,6 +11,8 @@ import requests
 import sys
 import time
 
+from optparse import OptionParser
+
 from esmond.api.client.timeseries import PostRawData, PostBaseRate, GetRawData, GetBaseRate
 from esmond.util import atencode
 
@@ -40,6 +42,15 @@ def read_insert(ts, p_type, path):
         print '  *', d
 
 def main():
+    usage = '%prog [ -u username | -a api_key ]'
+    parser = OptionParser(usage=usage)
+    parser.add_option('-u', '--user', metavar='USER',
+            type='string', dest='user', default='',
+            help='POST interface username.')
+    parser.add_option('-k', '--key', metavar='API_KEY',
+            type='string', dest='key', default='',
+            help='API key for post operation.')
+    options, args = parser.parse_args()
 
     ts = int(time.time()) * 1000
 
@@ -52,7 +63,8 @@ def main():
 
     path = ['rtr_test_post', 'FastPollHC', 'ifHCInOctets', 'interface_test/0/0.0']
 
-    p = PostRawData(api_url='http://localhost:8000/', path=path, freq=30000)
+    p = PostRawData(api_url='http://localhost:8000/', path=path, freq=30000,
+        username=options.user, api_key=options.key)
     # set_payload will completely replace the internal payload of the object.
     p.set_payload(payload)
     # add_to_payload will just add new items to internal payload.
@@ -65,9 +77,8 @@ def main():
 
     read_insert(ts, 'RawData', path)
 
-    # return
-
-    p = PostBaseRate(api_url='http://localhost:8000/', path=path, freq=30000)
+    p = PostBaseRate(api_url='http://localhost:8000/', path=path, freq=30000,
+        username=options.user, api_key=options.key)
     p.set_payload(payload)
     p.send_data()
 

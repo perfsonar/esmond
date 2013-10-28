@@ -4,6 +4,7 @@ import warnings
 
 from esmond.util import atencode
 from esmond.api.client.snmp import DataPayload
+from esmond.api.client.util import add_apikey_header
 
 class TimeseriesBase(object):
     """Base class for the GET and POST timeseries interaction objects."""
@@ -92,7 +93,8 @@ class PostData(TimeseriesBase):
     facility in the /timeseries/ REST interface namespace."""
     _wrn = PostWarning
 
-    def __init__(self, api_url='http://localhost/', path=[], freq=None):
+    def __init__(self, api_url='http://localhost/', path=[], freq=None,
+        username='', api_key=''):
         """Constructor - the path list arg is an ordered list of elements
         that will be used (along with the freq arg) to construct the 
         cassandra row key.  See example above."""
@@ -104,10 +106,14 @@ class PostData(TimeseriesBase):
         except AttributeError:
             raise PostException('Do not instantiate PostData base class, use appropriate subclass.')
 
+        if not username or not api_key:
+            raise PostException('PostData requires username and api_key for rest interface.')
+
         # Set up playload and headers.
 
         self.payload = []
-        self.headers = {'content-type': 'application/json'}
+        self.headers = { 'content-type': 'application/json' }
+        add_apikey_header(username, api_key, self.headers)
 
     def set_payload(self, payload):
         """Sets object payload to a complete list of dicts passed in. 
