@@ -43,6 +43,12 @@ def main():
     parser.add_option('-P', '--post',
             dest='post', action='store_true', default=False,
             help='Switch to actually post data to the backend - otherwise it will just query and give output.')
+    parser.add_option('-u', '--user', metavar='USER',
+            type='string', dest='user', default='',
+            help='POST interface username.')
+    parser.add_option('-k', '--key', metavar='API_KEY',
+            type='string', dest='key', default='',
+            help='API key for POST operation.')
     options, args = parser.parse_args()
     
     filters = ApiFilters()
@@ -148,6 +154,8 @@ def main():
             if options.verbose > 1: print ' *', endpoint, ':', aggs[bin_ts][endpoint], path
             path_aggregation[path].append({'ts': bin_ts*1000, 'val': aggs[bin_ts][endpoint]})
 
+
+
     if not options.post:
         print 'Not posting (use -P flag to write to backend).'
         return
@@ -156,7 +164,10 @@ def main():
         args = {
             'api_url': options.api_url, 'path': list(k), 'freq': 30000
         }
-        p = PostRawData(**args)
+
+        args_and_auth = dict({'username': options.user, 'api_key': options.key}, **args)
+        
+        p = PostRawData(**args_and_auth)
         p.set_payload(v)
         p.send_data()
         if options.verbose:
