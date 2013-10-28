@@ -29,24 +29,27 @@ class Command(BaseCommand):
             print 'User {0} exists'.format(user)
         except User.DoesNotExist:
             print 'User {0} does not exist - creating'.format(user)
-            new_user = User(username=user, is_staff=True)
-            new_user.save()
-            seeall = Permission.objects.get(codename="can_see_hidden_ifref")
-            new_user.user_permissions.add(seeall)
-            for resource in ['timeseries']:
-                for perm_name in ['view', 'add', 'change', 'delete']:
-                    perm = Permission.objects.get(
-                        codename="esmond_api.{0}_{1}".format(perm_name, resource))
-                    new_user.user_permissions.add(perm)
+            u = User(username=user, is_staff=True)
+            u.save()
 
-            new_user.save()
-            new_user_apikey = ApiKey(user=new_user)
-            new_user_apikey.key = new_user_apikey.generate_key()
-            new_user_apikey.save()
-            new_user.save()
+        print 'Setting timeseries permissions.'
+        for resource in ['timeseries']:
+            for perm_name in ['view', 'add', 'change', 'delete']:
+                perm = Permission.objects.get(
+                    codename="esmond_api.{0}_{1}".format(perm_name, resource))
+                u.user_permissions.add(perm)
 
-        if not u:
-            u = User.objects.get(username=user)
+        u.save()
+            
+        try:
+            key = ApiKey.objects.get(user=u)
+            print 'User {0} already has api key, skipping creation'.format(user)
+        except ApiKey.DoesNotExist:
+            print 'User {0} does not have an api key - creating'.format(user)
+            u_apikey = ApiKey(user=u)
+            u_apikey.key = u_apikey.generate_key()
+            u_apikey.save()
+            u.save()
 
         key = ApiKey.objects.get(user=u)
 
