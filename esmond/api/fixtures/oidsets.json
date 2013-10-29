@@ -145,7 +145,8 @@
         "fields": {
             "aggregate": true,
             "name": "ifHCInOctets",
-            "oid_type": 2
+            "oid_type": 2,
+            "endpoint_alias": "in"
         }
     },
     {
@@ -154,7 +155,8 @@
         "fields": {
             "aggregate": true,
             "name": "ifHCOutOctets",
-            "oid_type": 2
+            "oid_type": 2,
+            "endpoint_alias": "out"
         }
     },
     {
@@ -163,7 +165,8 @@
         "fields": {
             "aggregate": true,
             "name": "ifInErrors",
-            "oid_type": 1
+            "oid_type": 1,
+            "endpoint_alias": "error/in"
         }
     },
     {
@@ -172,7 +175,8 @@
         "fields": {
             "aggregate": true,
             "name": "ifOutErrors",
-            "oid_type": 1
+            "oid_type": 1,
+            "endpoint_alias": "error/out"
         }
     },
     {
@@ -181,7 +185,8 @@
         "fields": {
             "aggregate": true,
             "name": "ifInDiscards",
-            "oid_type": 1
+            "oid_type": 1,
+            "endpoint_alias": "discard/in"
         }
     },
     {
@@ -190,7 +195,8 @@
         "fields": {
             "aggregate": true,
             "name": "ifOutDiscards",
-            "oid_type": 1
+            "oid_type": 1,
+            "endpoint_alias": "discard/out"
         }
     },
     {
@@ -199,7 +205,8 @@
         "fields": {
             "aggregate": true,
             "name": "gigeClientCtpPmRealRxOctets",
-            "oid_type": 2
+            "oid_type": 2,
+            "endpoint_alias": "in"
         }
     },
     {
@@ -208,7 +215,8 @@
         "fields": {
             "aggregate": true,
             "name": "gigeClientCtpPmRealTxOctets",
-            "oid_type": 2
+            "oid_type": 2,
+            "endpoint_alias": "out"
         }
     },
     {
