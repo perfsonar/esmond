@@ -7,6 +7,7 @@ summary tools.
 
 import datetime
 import os
+import os.path
 import requests
 import sys
 import time
@@ -17,6 +18,41 @@ from esmond.api.client.snmp import ApiConnect, ApiFilters, BulkDataPayload
 from esmond.api.client.timeseries import PostRawData, GetRawData
 
 SUMMARY_NS = 'summary'
+
+import ConfigParser
+
+class ConfigException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class ConfigWarning(Warning): pass
+
+def get_config():
+    c_path = os.path.abspath(sys.argv[0])
+    if c_path.endswith('.py'):
+        c_path = c_path.replace('.py', '.conf')
+    else:
+        c_path = c_path + '.conf'
+    if not os.path.exists(c_path):
+        raise ConfigException('Could not find configuration file {0}'.format(c_path))
+
+    config = ConfigParser.ConfigParser()
+    config.read(c_path)
+    return config
+
+def get_type_map():
+    type_map = {}
+
+    c = get_config()
+    for section in c.sections():
+        type_map[section] = {}
+        for items in c.items(section):
+            type_map[section][items[0]] = items[1]
+
+    return type_map
+
 
 def main():    
     usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
@@ -111,14 +147,8 @@ def main():
 
     # And example of how the summary name is tied to a specific search
     # option.
-    summary_type_map = {
-        'ifdescr' : {
-            'me0.0': 'TotalTrafficMe0.0'
-        },
-        'ifalias' : {
-            'intercloud' : 'TotalTrafficIntercloud'
-        }
-    }
+
+    summary_type_map = get_type_map()
 
     summary_name = None
 
