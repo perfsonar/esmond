@@ -12,6 +12,7 @@ def add_apikey_header(user, key, header_dict):
 # -- defines and config handling for summary scripts/code
 
 SUMMARY_NS = 'summary'
+MONTHLY_NS = 'monthly'
 
 class ConfigException(Exception):
     def __init__(self, value):
