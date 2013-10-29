@@ -14,7 +14,7 @@ import time
 
 from optparse import OptionParser
 
-from esmond.api.client.snmp import ApiConnect, ApiFilters, BulkDataPayload
+from esmond.api.client.snmp import ApiConnect, ApiFilters
 from esmond.api.client.timeseries import PostRawData, GetRawData
 
 SUMMARY_NS = 'summary'
