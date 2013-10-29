@@ -64,6 +64,25 @@ def get_summary_name(filterdict):
 
     return type_map[django_query_filter][filter_criteria]
 
+# -- aggregation functions
+
+def aggregate_to_ts_and_endpoint(data, verbosity):
+    aggs = {}
+
+    # Aggregate/sum the returned data by timestamp and endpoint alias.
+    for row in data.data:
+        if verbosity: print ' *', row
+        for data in row.data:
+            if verbosity > 1: print '  *', data
+            if not aggs.has_key(data.ts_epoch): aggs[data.ts_epoch] = {}
+            if not aggs[data.ts_epoch].has_key(row.endpoint): 
+                aggs[data.ts_epoch][row.endpoint] = 0
+            if data.val != None:
+                aggs[data.ts_epoch][row.endpoint] += data.val
+        pass
+
+    return aggs
+
 # -- atencode code for handling rest URIs
 
 _atencode_safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ012345689_.-'

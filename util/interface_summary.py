@@ -16,7 +16,8 @@ from optparse import OptionParser
 
 from esmond.api.client.snmp import ApiConnect, ApiFilters
 from esmond.api.client.timeseries import PostRawData, GetRawData
-from esmond.api.client.util import SUMMARY_NS, get_summary_name
+from esmond.api.client.util import SUMMARY_NS, get_summary_name, \
+    aggregate_to_ts_and_endpoint
 
 def main():    
     usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
@@ -86,20 +87,8 @@ def main():
 
     print data
 
-    aggs = {}
-
     # Aggregate/sum the returned data by timestamp and endpoint alias.
-    for row in data.data:
-        # do something....
-        if options.verbose: print ' *', row
-        for data in row.data:
-            if options.verbose > 1: print '  *', data
-            if not aggs.has_key(data.ts_epoch): aggs[data.ts_epoch] = {}
-            if not aggs[data.ts_epoch].has_key(row.endpoint): 
-                aggs[data.ts_epoch][row.endpoint] = 0
-            if data.val != None:
-                aggs[data.ts_epoch][row.endpoint] += data.val
-        pass
+    aggs = aggregate_to_ts_and_endpoint(data, options.verbose)
 
     # Might be searching over a time period, so re-aggregate based on 
     # path so that we only need to do one API write per endpoint alias, 
