@@ -356,6 +356,7 @@ class CassandraTestResults(object):
     agg_avg = 17
     agg_min = 0
     agg_max = 7500
+    agg_raw = 61680
 
     # Values from raw data tests
     raw_ts_first = 1343956814
@@ -615,6 +616,20 @@ class TestCassandraPollPersister(TestCase):
         self.assertEqual(ret[0]['cf'], 'average')
         self.assertEqual(ret[0]['val'], self.ctr.agg_avg)
         self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
+
+        ret = db.query_aggregation_timerange(
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
+            ts_min=start_time - 3600*1000,
+            ts_max=end_time,
+            freq=self.ctr.agg_freq*1000, # required!
+            cf='raw',  # raw - rarely used
+        )
+
+        self.assertEqual(ret[0]['cf'], 'raw')
+        self.assertEqual(ret[0]['val'], self.ctr.agg_raw)
+        self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
+
+        return
         
         ret = db.query_aggregation_timerange(
             path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],

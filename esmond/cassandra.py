@@ -516,11 +516,11 @@ class CASSANDRA_DB(object):
         depending on what value "cf" is set to.
         """
                 
-        if cf not in AGG_TYPES:
+        if cf not in AGG_TYPES and cf != 'raw':
             self.log.error('Not a valid option: %s - defaulting to average' % cf)
             cf = 'average'
         
-        if cf == 'average':
+        if cf == 'average' or cf == 'raw':
             ret_count = self.aggs._column_family.multiget_count(
                 self._get_row_keys(path,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
@@ -552,9 +552,11 @@ class CASSANDRA_DB(object):
                             base_freq = kkk
                             count = vv[kkk]
                     ab = AggregationBin(**{'ts': ts, 'val': val,'base_freq': int(base_freq), 'count': count, 'cf': cf})
-                    results.append(
-                        {'ts': ts, 'val': ab.average, 'cf': ab.cf}
-                    )
+                    if cf == 'average':
+                        datum = {'ts': ts, 'val': ab.average, 'cf': ab.cf}
+                    else:
+                        datum = {'ts': ts, 'val': ab.val, 'cf': ab.cf}
+                    results.append(datum)
         elif cf == 'min' or cf == 'max':
             ret_count = self.stat_agg._column_family.multiget_count(
                 self._get_row_keys(path,freq,ts_min,ts_max), 
