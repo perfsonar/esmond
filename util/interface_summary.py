@@ -54,6 +54,7 @@ def main():
     filters = ApiFilters()
 
     filters.verbose = options.verbose
+    filters.endpoint = options.endpoint
 
     if options.last:
         filters.begin_time = int(time.time() - (options.last*60))
@@ -78,14 +79,6 @@ def main():
             interface_filters = { 'ifDescr__contains': options.ifdescr_pattern }
         elif options.alias_pattern:
             interface_filters = { 'ifAlias__contains': options.alias_pattern }
-
-    if not options.endpoint:
-        print 'No endpoints specified: {0}'.format(valid_endpoints)
-        parser.print_help()
-        return -1
-    else:
-        filters.endpoint = options.endpoint
-        pass
 
     conn = ApiConnect(options.api_url, filters)
 
