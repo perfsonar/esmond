@@ -16,60 +16,7 @@ from optparse import OptionParser
 
 from esmond.api.client.snmp import ApiConnect, ApiFilters
 from esmond.api.client.timeseries import PostRawData, GetRawData
-
-SUMMARY_NS = 'summary'
-
-import ConfigParser
-
-class ConfigException(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
-class ConfigWarning(Warning): pass
-
-def get_config():
-    c_path = os.path.abspath(sys.argv[0])
-    if c_path.endswith('.py'):
-        c_path = c_path.replace('.py', '.conf')
-    else:
-        c_path = c_path + '.conf'
-    if not os.path.exists(c_path):
-        raise ConfigException('Could not find configuration file {0}'.format(c_path))
-
-    config = ConfigParser.ConfigParser()
-    config.read(c_path)
-    return config
-
-def get_type_map():
-    type_map = {}
-
-    c = get_config()
-    for section in c.sections():
-        type_map[section] = {}
-        for items in c.items(section):
-            type_map[section][items[0]] = items[1]
-
-    return type_map
-
-def get_summary_name(filterdict):
-    if not isinstance(filterdict, dict):
-        raise ConfigException('Arg needs to be a dict of the form: {{django_query_filter: filter_criteria}} - got {0}.'.format(filterdict))
-    elif len(filterdict.keys()) > 1:
-        raise ConfigException('Dict must contain a single key/value pair of the form: {{django_query_filter: filter_criteria}} - got {0}.'.format(filterdict))
-
-    django_query_filter = filterdict.keys()[0]
-    filter_criteria = filterdict[django_query_filter]
-
-    type_map = get_type_map()
-
-    if not type_map.has_key(django_query_filter):
-        raise ConfigException('Config file did does not contain a section for {0} - has: {1}'.format(django_query_filter, type_map.keys()))
-    elif not type_map[django_query_filter].has_key(filter_criteria):
-        raise ConfigException('Config section for {0} does not contain an key/entry for {1} - has: {2}'.format(django_query_filter, filter_criteria, type_map[django_query_filter].keys()))
-
-    return type_map[django_query_filter][filter_criteria]
+from esmond.api.client.util import SUMMARY_NS, get_summary_name
 
 def main():    
     usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
@@ -123,7 +70,6 @@ def main():
         parser.print_help()
         return -1
     elif options.ifdescr_pattern and options.alias_pattern:
-        # Keep it simple for now, flesh this out later.
         print 'Specify only one filter option.'
         parser.print_help()
         return -1
