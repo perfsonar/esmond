@@ -474,8 +474,7 @@ class CASSANDRA_DB(object):
             ts_min=None, ts_max=None, cf='average'):
         """
         Query interface method to retrieve the base rates (generally average 
-        but could be delta as well).  Could return the values programmatically,
-        but generally returns formatted json from the FormattedOutput module.
+        but could be delta as well).
         """
         ret_count = self.rates._column_family.multiget_count(
                 self._get_row_keys(path,freq,ts_min,ts_max), 
@@ -514,9 +513,7 @@ class CASSANDRA_DB(object):
         """
         Query interface method to retrieve the aggregation rollups - could
         be average/min/max.  Different column families will be queried 
-        depending on what value "cf" is set to.  Could return the values 
-        programmatically, but generally returns formatted json from 
-        the FormattedOutput module.
+        depending on what value "cf" is set to.
         """
                 
         if cf not in AGG_TYPES:
@@ -588,9 +585,7 @@ class CASSANDRA_DB(object):
     def query_raw_data(self, path=None, freq=None,
                 ts_min=None, ts_max=None):
         """
-        Query interface to query the raw data.  Could return the values 
-        programmatically, but generally returns formatted json from 
-        the FormattedOutput module.
+        Query interface to query the raw data.
         """        
         ret_count = self.raw_data._column_family.multiget_count(
                 self._get_row_keys(path,freq,ts_min,ts_max), 
