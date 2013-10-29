@@ -160,6 +160,10 @@ def main():
         print 'Not posting (use -P flag to write to backend).'
         return
 
+    if not options.user or not options.key:
+        print 'user and key args must be supplied to POST summary data.'
+        return
+
     for k,v in path_aggregation.items():
         args = {
             'api_url': options.api_url, 'path': list(k), 'freq': 30000

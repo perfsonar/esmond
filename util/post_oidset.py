@@ -12,11 +12,23 @@ import os
 import requests
 import sys
 
+from optparse import OptionParser
+
 from esmond.api.client.snmp import ApiConnect
 
 def main():
+    usage = '%prog [ -u username | -a api_key ]'
+    parser = OptionParser(usage=usage)
+    parser.add_option('-u', '--user', metavar='USER',
+            type='string', dest='user', default='',
+            help='POST interface username.')
+    parser.add_option('-k', '--key', metavar='API_KEY',
+            type='string', dest='key', default='',
+            help='API key for post operation.')
+    options, args = parser.parse_args()
 
-    conn = ApiConnect(api_url='http://localhost:8000')
+    conn = ApiConnect(api_url='http://localhost:8000', 
+        username=options.user, api_key=options.key)
 
     d1 = list(conn.get_devices(**{'name': 'lbl-mr2'}))[0]
 

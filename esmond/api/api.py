@@ -287,9 +287,7 @@ class DeviceResource(ModelResource):
         filtering = {
             'name': ALL,
         }
-        # authentication = AnonymousGetElseApiAuthentication()
-        # XXX(mmg): this needs to be done away with!
-        authorization = Authorization()
+        authentication = AnonymousGetElseApiAuthentication()
 
     def dehydrate_begin_time(self, bundle):
         # return int(time.mktime(bundle.data['begin_time'].timetuple()))

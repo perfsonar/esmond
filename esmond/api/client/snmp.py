@@ -6,6 +6,8 @@ import requests
 import time
 import warnings
 
+from esmond.api.client.util import add_apikey_header
+
 """
 Library to fetch data from 'simplified' API /v1/snmp/ namespace.
 
@@ -205,6 +207,10 @@ class Device(NodeInfo):
             self.warn('oidsets arg must be a non-empty list')
             return
 
+        if not self.filters.auth_username or not self.filters.auth_apikey:
+            self.warn('Must supply username and api key args to alter oidsets for a device.')
+            return
+
         r = requests.get('{0}/v1/oidset/'.format(self.api_url))
         if r.status_code != 200:
             self.warn('Could not get a list of valid oidsets from {0}/v1/oidset/ - aborting'.format(self.api_url) )
@@ -218,12 +224,16 @@ class Device(NodeInfo):
         self._data['oidsets'] = oidsets
 
         headers = {'content-type': 'application/json'}
+        
+        add_apikey_header(self.filters.auth_username, 
+            self.filters.auth_apikey, headers)
 
         p = requests.put('{0}{1}'.format(self.api_url, self.resource_uri), 
             data=json.dumps(self._data), headers=headers)
 
         if p.status_code != 204:
-           self.http_alert(r)
+            self.warn('Did not successfully change oidsets - might be an auth problem.')
+            self.http_alert(r)
 
 
 
@@ -455,6 +465,9 @@ class ApiFilters(object):
         # This needs to be checked via property.
         self._endpoint = ['in']
 
+        self.auth_username = ''
+        self.auth_apikey = ''
+
     def ts_epoch(self, time_prop):
         """Convert named property back to epoch.  Generally just for 
         sending cgi params to the api."""
@@ -544,10 +557,12 @@ class ApiFilters(object):
 class ApiConnect(object):
     wrn = ApiConnectWarning
     """Core class to pull data from the rest api."""
-    def __init__(self, api_url, filters=ApiFilters()):
+    def __init__(self, api_url, filters=ApiFilters(), username='', api_key=''):
         super(ApiConnect, self).__init__()
         self.api_url = api_url.rstrip("/")
         self.filters = filters
+        self.filters.auth_username = username
+        self.filters.auth_apikey = api_key
         self._valid_endpoints = []
 
     def get_devices(self, **filters):
@@ -654,4 +669,5 @@ class ApiConnect(object):
 
     def warn(self, m):
         warnings.warn(m, self.wrn, stacklevel=2)
-# ----
+
+
