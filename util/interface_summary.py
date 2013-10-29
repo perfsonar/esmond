@@ -53,6 +53,23 @@ def get_type_map():
 
     return type_map
 
+def get_summary_name(filterdict):
+    if not isinstance(filterdict, dict):
+        raise ConfigException('Arg needs to be a dict of the form: {{django_query_filter: filter_criteria}} - got {0}.'.format(filterdict))
+    elif len(filterdict.keys()) > 1:
+        raise ConfigException('Dict must contain a single key/value pair of the form: {{django_query_filter: filter_criteria}} - got {0}.'.format(filterdict))
+
+    django_query_filter = filterdict.keys()[0]
+    filter_criteria = filterdict[django_query_filter]
+
+    type_map = get_type_map()
+
+    if not type_map.has_key(django_query_filter):
+        raise ConfigException('Config file did does not contain a section for {0} - has: {1}'.format(django_query_filter, type_map.keys()))
+    elif not type_map[django_query_filter].has_key(filter_criteria):
+        raise ConfigException('Config section for {0} does not contain an key/entry for {1} - has: {2}'.format(django_query_filter, filter_criteria, type_map[django_query_filter].keys()))
+
+    return type_map[django_query_filter][filter_criteria]
 
 def main():    
     usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
@@ -132,7 +149,7 @@ def main():
 
     aggs = {}
 
-    # Aggregate the returned data by timestamp and endpoint alias.
+    # Aggregate/sum the returned data by timestamp and endpoint alias.
     for row in data.data:
         # do something....
         if options.verbose: print ' *', row
@@ -145,33 +162,14 @@ def main():
                 aggs[data.ts_epoch][row.endpoint] += data.val
         pass
 
-    # And example of how the summary name is tied to a specific search
-    # option.
-
-    summary_type_map = get_type_map()
-
-    summary_name = None
-
-    if interface_filters.get('ifDescr__contains', None):
-        summary_name = \
-            summary_type_map['ifdescr'].get(interface_filters['ifDescr__contains'], None)
-    elif interface_filters.get('ifAlias__contains', None):
-        summary_name = \
-            summary_type_map['ifalias'].get(interface_filters['ifAlias__contains'], None)
-    else:
-        print 'Could not find summary type for filter criteria {0}'.format(interface_filters.keys())
-        return
-
-    if not summary_name:
-        print 'Could not find summary type for search pattern {0}'.format(interface_filters.values())
-        return
+    # Might be searching over a time period, so re-aggregate based on 
+    # path so that we only need to do one API write per endpoint alias, 
+    # rather than a write for every data point.
 
     bin_steps = aggs.keys()[:]
     bin_steps.sort()
 
-    # Might be searching over a time period, so re-aggregate based on 
-    # path so that we only need to do one write per endpoint alias, rather
-    # than a write for every data point.
+    summary_name = get_summary_name(interface_filters)
 
     path_aggregation = {}
 
@@ -183,8 +181,6 @@ def main():
                 path_aggregation[path] = []
             if options.verbose > 1: print ' *', endpoint, ':', aggs[bin_ts][endpoint], path
             path_aggregation[path].append({'ts': bin_ts*1000, 'val': aggs[bin_ts][endpoint]})
-
-
 
     if not options.post:
         print 'Not posting (use -P flag to write to backend).'
