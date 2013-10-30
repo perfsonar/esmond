@@ -4,7 +4,6 @@
 Quick one off to query interface data from API.  Starter sketch for 
 summary tools.
 """
-
 import datetime
 import os
 import os.path
@@ -17,7 +16,13 @@ from optparse import OptionParser
 from esmond.api.client.snmp import ApiConnect, ApiFilters
 from esmond.api.client.timeseries import PostRawData, GetRawData
 from esmond.api.client.util import MONTHLY_NS, get_summary_name, \
-    aggregate_to_ts_and_endpoint
+    aggregate_to_device_interface_endpoint, lastmonth, \
+    get_month_start_and_end
+
+# Chosen because there isn't a seconds value for a month, so using
+# the aggregation value for a day because the monthly summaries
+# are derived from daily rollups.
+AGG_FREQUENCY = 86400
 
 def main():    
     usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
@@ -35,9 +40,9 @@ def main():
     parser.add_option('-e', '--endpoint', metavar='ENDPOINT',
             dest='endpoint', action='append', default=[],
             help='Endpoint type to query (required) - can specify more than one.')
-    parser.add_option('-l', '--last', metavar='LAST',
-            type='int', dest='last', default=1,
-            help='Last n months of data to query (default=%default).')
+    parser.add_option('-m', '--month', metavar='MONTH',
+            type='string', dest='month', default='',
+            help='Specify month in YYYY-MM format.')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
@@ -51,15 +56,39 @@ def main():
             type='string', dest='key', default='',
             help='API key for POST operation.')
     options, args = parser.parse_args()
+
+    if not options.month:
+        print 'No -m arg, defaulting to last month'
+        now = datetime.datetime.utcnow()
+        start_year, start_month = lastmonth((now.year,now.month))
+        start_point = datetime.datetime.strptime('{0}-{1}'.format(start_year, start_month),
+            '%Y-%m')
+    else:
+        print 'Parsing -m input {0}'.format(options.month)
+        try:
+            start_point = datetime.datetime.strptime(options.month, '%Y-%m')
+        except ValueError:
+            print 'Unable to parse -m arg {0} - expecting YYYY-MM format'.format(options.month)
+            return -1
+
+    print 'Generating monthly summary starting on: {0}'.format(start_point)
+
+    start, end = get_month_start_and_end(start_point)
+
+    if options.verbose: print 'Scanning from {0} to {1}'.format(
+        datetime.datetime.utcfromtimestamp(start), 
+        datetime.datetime.utcfromtimestamp(end)
+    )
     
     filters = ApiFilters()
 
     filters.verbose = options.verbose
     filters.endpoint = options.endpoint
-    filters.agg = 86400
+    filters.agg = AGG_FREQUENCY
     filters.cf = 'raw'
 
-    filters.begin_time = int(time.time() - datetime.timedelta(days=30*options.last).total_seconds())
+    filters.begin_time = start
+    filters.end_time = end
 
     if not options.ifdescr_pattern and not options.alias_pattern:
         # Don't grab *everthing*.
@@ -82,30 +111,38 @@ def main():
 
     print data
 
-    # Aggregate/sum the returned data by timestamp and endpoint alias.
-    aggs = aggregate_to_ts_and_endpoint(data, options.verbose)
+    aggs = aggregate_to_device_interface_endpoint(data, options.verbose)
 
-    return
+    # Generate the grand total
+    total_aggs = {}
 
-    # Might be searching over a time period, so re-aggregate based on 
-    # path so that we only need to do one API write per endpoint alias, 
-    # rather than a write for every data point.
+    for device in aggs.keys():
+        for interface in aggs[device].keys():
+            for endpoint,val in aggs[device][interface].items():
+                if not total_aggs.has_key(endpoint): total_aggs[endpoint] = 0
+                total_aggs[endpoint] += val
 
-    bin_steps = aggs.keys()[:]
-    bin_steps.sort()
+    if options.verbose: print 'Grand total:', total_aggs
 
+    # Roll everything up before posting
     summary_name = get_summary_name(interface_filters)
 
-    path_aggregation = {}
+    post_data = {}
 
-    for bin_ts in bin_steps:
-        if options.verbose > 1: print bin_ts
-        for endpoint in aggs[bin_ts].keys():
-            path = (MONTHLY_NS, summary_name, endpoint)
-            if not path_aggregation.has_key(path):
-                path_aggregation[path] = []
-            if options.verbose > 1: print ' *', endpoint, ':', aggs[bin_ts][endpoint], path
-            path_aggregation[path].append({'ts': bin_ts*1000, 'val': aggs[bin_ts][endpoint]})
+    for device in aggs.keys():
+        for interface in aggs[device].keys():
+            for endpoint,val in aggs[device][interface].items():
+                path = (MONTHLY_NS, summary_name, device, interface, endpoint)
+                payload = { 'ts': start*1000, 'val': val }
+                if options.verbose > 1: print path, '\n\t', payload
+                post_data[path] = payload
+                
+
+    for endpoint, val in total_aggs.items():
+        path = (MONTHLY_NS, summary_name, endpoint)
+        payload = { 'ts': start*1000, 'val': val }
+        if options.verbose > 1: print path, '\n\t', payload
+        post_data[path] = payload
 
     if not options.post:
         print 'Not posting (use -P flag to write to backend).'
@@ -115,26 +152,25 @@ def main():
         print 'user and key args must be supplied to POST summary data.'
         return
 
-    for k,v in path_aggregation.items():
+    for path, payload in post_data.items():
         args = {
-            'api_url': options.api_url, 'path': list(k), 'freq': 30000
+            'api_url': options.api_url, 
+            'path': list(path), 
+            'freq': AGG_FREQUENCY*1000
         }
-
-        args_and_auth = dict({'username': options.user, 'api_key': options.key}, **args)
         
-        p = PostRawData(**args_and_auth)
-        p.set_payload(v)
+        p = PostRawData(username=options.user, api_key=options.key, **args)
+        p.add_to_payload(payload)
         p.send_data()
+
         if options.verbose:
-            print 'verifying write'
-            g = GetRawData(**args)
-            payload = g.get_data()
-            print payload
-            for d in payload.data:
-                print '  *', d
+            print 'verifying write for', path
+            p = { 'begin': start*1000, 'end': start*1000 }
+            g = GetRawData(params=p, **args)
+            result = g.get_data()
+            print result, '\n\t', result.data[0]
 
-
-    pass
+    return
 
 if __name__ == '__main__':
     main()

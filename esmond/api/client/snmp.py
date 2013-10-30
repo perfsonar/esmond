@@ -601,7 +601,7 @@ class ApiConnect(object):
         interfaces = []
 
         for i in self.get_interfaces(**filters):
-            if self.filters.verbose: print i
+            if self.filters.verbose > 1: print i
             interfaces.append({'device': i.device, 'iface': i.ifDescr})
             # if self.filters.verbose > 1: print i.dump
 

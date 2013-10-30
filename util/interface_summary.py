@@ -122,12 +122,11 @@ def main():
         args = {
             'api_url': options.api_url, 'path': list(k), 'freq': 30000
         }
-
-        args_and_auth = dict({'username': options.user, 'api_key': options.key}, **args)
-        
-        p = PostRawData(**args_and_auth)
+            
+        p = PostRawData(username=options.user, api_key=options.key, **args)
         p.set_payload(v)
         p.send_data()
+        
         if options.verbose:
             print 'verifying write'
             g = GetRawData(**args)

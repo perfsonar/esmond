@@ -1,3 +1,4 @@
+import calendar
 import os.path
 import sys
 
@@ -66,7 +67,7 @@ def get_summary_name(filterdict):
 
 # -- aggregation functions
 
-def aggregate_to_ts_and_endpoint(data, verbosity):
+def aggregate_to_ts_and_endpoint(data, verbosity=False):
     aggs = {}
 
     # Aggregate/sum the returned data by timestamp and endpoint alias.
@@ -82,6 +83,40 @@ def aggregate_to_ts_and_endpoint(data, verbosity):
         pass
 
     return aggs
+
+def aggregate_to_device_interface_endpoint(data, verbosity=False):
+    aggs = {}
+
+    # Aggregate/sum the returned data to device/interface/endpoint alias.
+    for row in data.data:
+        if verbosity: print ' *', row
+        if not aggs.has_key(row.device): aggs[row.device] = {}
+        if not aggs[row.device].has_key(row.interface): 
+            aggs[row.device][row.interface] = {}
+        if not aggs[row.device][row.interface].has_key(row.endpoint): 
+            aggs[row.device][row.interface][row.endpoint] = 0
+        for data in row.data:
+            if verbosity > 1: print '  *', data
+            aggs[row.device][row.interface][row.endpoint] += data.val
+
+    return aggs
+
+
+# -- timehandling code for summary scripts
+
+lastmonth = lambda (yr,mo): [(y,m+1) for y,m in (divmod((yr*12+mo-2), 12),)][0]
+nextmonth = lambda (yr,mo): (yr+mo/12,mo%12+1)
+
+def get_month_start_and_end(start_point):
+
+    start = calendar.timegm((start_point.year, start_point.month, 1, 0,0,0,0,0,-1))
+
+    n_mo_yr, n_mo = nextmonth((start_point.year, start_point.month))
+
+    end = calendar.timegm((n_mo_yr, n_mo, 1, 0,0,0,0,0,-1)) - 1
+
+    return start, end
+
 
 # -- atencode code for handling rest URIs
 
