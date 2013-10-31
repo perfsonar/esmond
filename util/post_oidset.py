@@ -48,7 +48,7 @@ def main():
     # refresh the result just to make sure.
 
     d2 = list(conn.get_devices(**{'name': 'lbl-mr2'}))[0]
-    print 'result:', d2
+    print 'Checking result:', d2
     print d2.oidsets
 
     if (d1.begin_time != d2.begin_time) or \

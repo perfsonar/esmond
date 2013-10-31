@@ -13,7 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from tastypie.resources import ModelResource, Resource, ALL, ALL_WITH_RELATIONS
 from tastypie.api import Api
 from tastypie.authentication import ApiKeyAuthentication
-from tastypie.authorization import Authorization
+from tastypie.authorization import Authorization, DjangoAuthorization
 from tastypie.serializers import Serializer
 from tastypie.bundle import Bundle
 from tastypie import fields
@@ -288,6 +288,7 @@ class DeviceResource(ModelResource):
             'name': ALL,
         }
         authentication = AnonymousGetElseApiAuthentication()
+        authorization = DjangoAuthorization()
 
     def dehydrate_begin_time(self, bundle):
         # return int(time.mktime(bundle.data['begin_time'].timetuple()))
@@ -807,6 +808,10 @@ class BulkRequestResource(Resource):
         always_return_data = True
         object_class = BulkRequestDataObject
         serializer = DeviceSerializer()
+        # This implements a POST but functions like a GET so
+        # let it through.  Can change this later if we want to
+        # limit bulk requests.
+        # authentication = AnonymousGetElseApiAuthentication()
 
     def obj_create(self, bundle, **kwargs):
         if bundle.request.META.get('CONTENT_TYPE') != 'application/json':
