@@ -1,8 +1,97 @@
 #!/usr/bin/env python
 
 """
-Quick one off to query interface data from API.  Starter sketch for 
-summary tools.
+Program to generate interface summaries for a specific set of interfaces 
+aggregated on the sort of endpoint (in, out, discard/in, etc).  These
+aggregations are performed on the 30 second base rate values and are 
+written to the same 30 second timestamps.
+
+Usage and args:
+
+-U : the url to the REST interface of the form: http://host, http://host:port,
+etc.  This is required - defaults to http://localhost.
+
+-a or -i : specifies a search patter for either an interface alias (-a) or 
+an interface name/ifdescr (-i).  One or the other is required.  This is used
+to perform a django filtering search to generate a group of interfaces. A 
+django '__contains' (ifDescr__contains, etc) query on the interfaces.
+
+-e : specifies an endpoint type (in, out, error/in, discard/out, etc) to 
+retrieve and aggregate data for.  This option may be specified more than 
+once (-e in -e out) to include more than one endpoint alias in the generated
+aggregations.  This is "optional" as the query library default to just 'in.'
+
+-l : last n minutes of of data to query.  If this optional args it not 
+specified, it defaults to one minute ago, rounded back to the closest
+30 second rate bin timestamp.  Otherwise it will go back n minutes ago
+and search up to the current time.
+
+-P : a boolean flag indicated that the generated aggregations are POSTed 
+and stored in the cassandra backend.  This does not need to be specified 
+if the user just wants to generate an look at the generated objects and 
+values (generally in conjunction with the -v flag) for debugging or 
+edification.
+
+-u and -k : user name and api key string - these will need to be specified 
+if the -P flag is invoked to store the generated aggregations as the 
+/timeseries POSTs are protected with api key authorization.
+
+-v and -vv : produce increasingly noisy output.
+
+Aggregation: the filtering search is performed to pull back the data
+from the matched interfaces, the values from each endpoint alias type 
+(in, out, etc) are summed together for every 30 second rate bin for a 
+given endpoint alias.
+
+Storage: the aggregated values are written to the "raw_data" column 
+family in the esmond cassandra backend.  The keys are of the following
+format:
+
+summary:TotalTrafficIntercloud:out:30000:2013
+
+The first 'summary' segment is just a 'namespace' that prefixes all of the 
+keys of the summary data (as opposed to the 'snmp' namespace that) the 
+live data is written to.  The second segment (TotalTrafficIntercloud in 
+this case) is the 'summary name' that is mapped to a given query (see next
+section).  The third segment is the endpoint alias being aggregated.  The
+30000 frequency (30 sec in ms) matches that this has been derived from
+thirty second data.  The trailing year segment is automatically generated 
+by the cassandra.py module logic.
+
+The way the data are written, all of the aggregations are idempotent, so 
+running the same search over the same time period will yield the same 
+results being stored (unless the base rate data has been updated in the 
+meantime).
+
+All of the values in a given row are just 30-second bin timestamps and 
+the summed value.
+
+Summary name: the summary name segment is an operator-specified string that 
+maps to a specific search criteria.  It is important that this value not be 
+overloaded because if it is, aggs from one query will over-write previously
+generated aggregations.  To better illustrate how this mapping works, and 
+to show the way that the users can manage this, all of the these have 
+been put in a configuration file (see: interface_summary.conf).  Example
+entries:
+
+# Mappings for ifdescr filters
+[ifDescr__contains]
+me0.0: TotalTrafficMe0.0
+
+# Mappings for ifalias filters
+[ifAlias__contains]
+intercloud: TotalTrafficIntercloud
+
+The [sections] correspond to the filtering query that is being performed, 
+the key of a given entry is the actual search criteria used in the filter, 
+and the value of a given entry is the summary name that is used when 
+formulating the row key.  So this row key:
+
+summary:TotalTrafficMe0.0:in:30000:2013
+
+contains the aggregations for the 'in' endpoints on all the interfaces 
+returned by the query "ifDescr__contains=me0.0".
+
 """
 
 import datetime
