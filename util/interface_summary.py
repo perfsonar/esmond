@@ -92,6 +92,18 @@ summary:TotalTrafficMe0.0:in:30000:2013
 contains the aggregations for the 'in' endpoints on all the interfaces 
 returned by the query "ifDescr__contains=me0.0".
 
+Retrieval:
+
+The /timeseries rest namespace exposes the functionaly to retrieve arbitrary
+data from the backend given the correctly formulated URI.  These aggregates 
+can be retrieved with queries of the following form:
+
+GET /v1/timeseries/RawData/summary/TotalTrafficMe0.0/out/30000
+
+If the begin and end args are not given (in ms), the backend will give back
+the last hour of data. Running this code with -v will verify the writes 
+and show how the paths/args can be constructed to use the GetRawData() 
+class at the end of the program.
 """
 
 import datetime

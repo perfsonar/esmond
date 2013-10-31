@@ -114,6 +114,24 @@ monthly:TotalTrafficMe0.0:aofa-asw1:me0.0:in:86400000:2013
 
 contains the aggregations for one of the device/iface/endpoints ('in' in 
 this case) returned by the query "ifDescr__contains=me0.0".
+
+Retrieval:
+
+The /timeseries rest namespace exposes the functionaly to retrieve arbitrary
+data from the backend given the correctly formulated URI.  These aggregates 
+can be retrieved with queries of the following (general) form:
+
+GET /v1/timeseries/RawData/monthly/TotalTrafficMe0.0/aofa-asw1/me0.0/in/86400000?begin=1377993600000&end=1377993600000
+
+for the device/interface/endpoint aggs or 
+
+GET /v1/timeseries/RawData/monthly/TotalTrafficMe0.0/out/86400000?begin=1377993600000&end=1377993600000
+
+for the grand total aggs.  The appropriate begin and end times are expressed
+in ms.  Running this code with -v will verify the writes and show 
+how the paths/args can be constructed to use the GetRawData() class at 
+the end of the program.
+
 """
 import datetime
 import os
