@@ -101,6 +101,12 @@ def aggregate_to_device_interface_endpoint(data, verbosity=False):
 
     return aggs
 
+def iterate_device_interface_endpoint(aggs, verbosity=False):
+    for device in aggs.keys():
+        for interface in aggs[device].keys():
+            for endpoint,val in aggs[device][interface].items():
+                yield device, interface, endpoint, val
+
 
 # -- timehandling code for summary scripts
 
