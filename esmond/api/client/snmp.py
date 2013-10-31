@@ -208,7 +208,7 @@ class Device(NodeInfo):
             return
 
         if not self.filters.auth_username or not self.filters.auth_apikey:
-            self.warn('Must supply username and api key args to alter oidsets for a device.')
+            self.warn('Must supply username and api key args to alter oidsets for a device - aborting set_oidsets().')
             return
 
         r = requests.get('{0}/v1/oidset/'.format(self.api_url))
@@ -233,7 +233,7 @@ class Device(NodeInfo):
 
         if p.status_code != 204:
             self.warn('Did not successfully change oidsets - might be an auth problem.')
-            self.http_alert(r)
+            self.http_alert(p)
 
 
 
