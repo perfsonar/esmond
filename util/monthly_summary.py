@@ -17,7 +17,7 @@ from esmond.api.client.snmp import ApiConnect, ApiFilters
 from esmond.api.client.timeseries import PostRawData, GetRawData
 from esmond.api.client.util import MONTHLY_NS, get_summary_name, \
     aggregate_to_device_interface_endpoint, lastmonth, \
-    get_month_start_and_end
+    get_month_start_and_end, iterate_device_interface_endpoint
 
 # Chosen because there isn't a seconds value for a month, so using
 # the aggregation value for a day because the monthly summaries
@@ -116,11 +116,9 @@ def main():
     # Generate the grand total
     total_aggs = {}
 
-    for device in aggs.keys():
-        for interface in aggs[device].keys():
-            for endpoint,val in aggs[device][interface].items():
-                if not total_aggs.has_key(endpoint): total_aggs[endpoint] = 0
-                total_aggs[endpoint] += val
+    for d, i, endpoint, val in iterate_device_interface_endpoint(aggs):
+        if not total_aggs.has_key(endpoint): total_aggs[endpoint] = 0
+        total_aggs[endpoint] += val
 
     if options.verbose: print 'Grand total:', total_aggs
 
@@ -129,14 +127,11 @@ def main():
 
     post_data = {}
 
-    for device in aggs.keys():
-        for interface in aggs[device].keys():
-            for endpoint,val in aggs[device][interface].items():
-                path = (MONTHLY_NS, summary_name, device, interface, endpoint)
-                payload = { 'ts': start*1000, 'val': val }
-                if options.verbose > 1: print path, '\n\t', payload
-                post_data[path] = payload
-                
+    for device, interface, endpoint, val in iterate_device_interface_endpoint(aggs):
+        path = (MONTHLY_NS, summary_name, device, interface, endpoint)
+        payload = { 'ts': start*1000, 'val': val }
+        if options.verbose > 1: print path, '\n\t', payload
+        post_data[path] = payload                
 
     for endpoint, val in total_aggs.items():
         path = (MONTHLY_NS, summary_name, endpoint)
