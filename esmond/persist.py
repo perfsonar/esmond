@@ -546,7 +546,7 @@ class CassandraPollPersister(PollPersister):
             raw_data = RawRateData(path=var_path, ts=result.timestamp * 1000,
                     val=val, freq=oidset.frequency_ms)
 
-            self.db.set_raw_data(raw_data)
+            self.db.set_raw_data(raw_data, ttl=oidset.ttl)
 
             # Generate aggregations if apropos.
             if oid.aggregate:

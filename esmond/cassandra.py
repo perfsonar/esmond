@@ -255,7 +255,7 @@ class CASSANDRA_DB(object):
         self.log.debug('Close/dispose called')
         self.pool.dispose()
         
-    def set_raw_data(self, raw_data):
+    def set_raw_data(self, raw_data, ttl=None):
         """
         Called by the persister.  Writes the raw incoming data to the appropriate
         column family.  The optional TTL option is passed in self.raw_opts and 
@@ -264,10 +264,14 @@ class CASSANDRA_DB(object):
         The raw_data arg passes in is an instance of the RawData class defined
         in this module.
         """
+        _kw = {}
+        if ttl: 
+            _kw['ttl'] = ttl
+
         t = time.time()
         # Standard column family update.
         self.raw_data.insert(raw_data.get_key(), 
-            {raw_data.ts_to_jstime(): json.dumps(raw_data.val)})
+            {raw_data.ts_to_jstime(): json.dumps(raw_data.val)}, **_kw)
         
         if self.profiling: self.stats.raw_insert(time.time() - t)
         

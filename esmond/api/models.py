@@ -146,6 +146,17 @@ class OIDSet(models.Model):
         return aggs
 
     @property
+    def ttl(self):
+        ttl = None
+        if self.poller_args:
+            for i in self.poller_args.split(" "):
+                k,v = i.split("=")
+                if k == "ttl":
+                    ttl = int(v)
+                    break
+        return ttl
+
+    @property
     def frequency_ms(self):
         return self.frequency * 1000
 
