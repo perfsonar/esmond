@@ -184,6 +184,54 @@ class AnonymousGetElseApiAuthentication(ApiKeyAuthentication):
             return super(AnonymousGetElseApiAuthentication,
                     self).get_identifier(request)
 
+class AnonymousBulkLimitElseApiAuthentication(ApiKeyAuthentication):
+    """For bulk data retrieval interface.  If user has valid Api Key,
+    allow unthrottled access.  Otherwise, check the size of the 
+    quantity of interfaces/endpoints requested and """
+    _anonymous_limit = 30
+    def is_authenticated(self, request, **kwargs):
+        authenticated = super(AnonymousBulkLimitElseApiAuthentication, self).is_authenticated(
+                request, **kwargs)
+
+        # If they are username/api key authenticated, just
+        # let the request go.
+        if authenticated == True:
+            return authenticated
+
+        # Otherwise, look at the size of the request (ie: number of 
+        # endpoints requested) and react accordingly.
+
+        if request.body and request.META.get('CONTENT_TYPE') == 'application/json':
+            post_payload = json.loads(request.body)
+        else:
+            raise BadRequest('Did not receive json payload for bulk POST request.')
+
+        if not post_payload.has_key('interfaces') or \
+            not post_payload.has_key('endpoint'):
+            raise BadRequest('JSON payload must have endpoint and interfaces keys.')  
+
+        if not isinstance(post_payload['interfaces'], list) or \
+            not isinstance(post_payload['endpoint'], list):
+            raise BadRequest('Both endpoint and interfaces keys must be a list')
+
+        request_queries = len(post_payload.get('interfaces')) * \
+            len(post_payload.get('endpoint'))
+
+        if request_queries <= self._anonymous_limit:
+            return True
+        else:
+            authenticated.content = \
+                'Request for {0} endpoints exceeds the unauthenticated limit of {1}'.format(request_queries, self._anonymous_limit)
+
+        return authenticated
+
+    def get_identifier(self, request):
+        if request.user.is_anonymous():
+            return 'AnonymousUser'
+        else:
+            return super(AnonymousBulkLimitElseApiAuthentication,
+                    self).get_identifier(request)
+
 class EsmondAuthorization(Authorization):
     """
     Uses a custom set of ``django.contrib.auth`` permissions to manage
@@ -808,10 +856,7 @@ class BulkRequestResource(Resource):
         always_return_data = True
         object_class = BulkRequestDataObject
         serializer = DeviceSerializer()
-        # This implements a POST but functions like a GET so
-        # let it through.  Can change this later if we want to
-        # limit bulk requests.
-        # authentication = AnonymousGetElseApiAuthentication()
+        authentication = AnonymousBulkLimitElseApiAuthentication()
 
     def obj_create(self, bundle, **kwargs):
         if bundle.request.META.get('CONTENT_TYPE') != 'application/json':

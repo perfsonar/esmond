@@ -624,6 +624,10 @@ class ApiConnect(object):
 
         headers = { 'content-type': 'application/json' }
 
+        if self.filters.auth_username and self.filters.auth_apikey:
+            add_apikey_header(self.filters.auth_username, 
+                self.filters.auth_apikey, headers)
+
         r = requests.post('{0}/v1/bulk/'.format(self.api_url), 
             headers=headers, data=json.dumps(payload))
 

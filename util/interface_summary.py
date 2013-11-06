@@ -182,7 +182,7 @@ def main():
         elif options.alias_pattern:
             interface_filters = { 'ifAlias__contains': options.alias_pattern }
 
-    conn = ApiConnect(options.api_url, filters)
+    conn = ApiConnect(options.api_url, filters, options.user, options.key)
 
     data = conn.get_interface_bulk_data(**interface_filters)
 
