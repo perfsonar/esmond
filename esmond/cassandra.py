@@ -233,11 +233,6 @@ class CASSANDRA_DB(object):
         self.stats = DatabaseMetrics(profiling=self.profiling)
         
         # Class members
-        # Set up expiration args for raw data if set in the config file.
-        self.raw_opts = {}
-        self.raw_expire = config.cassandra_raw_expire
-        if self.raw_expire:
-            self.raw_opts['ttl'] = int(self.raw_expire)
         # Just the dict for the metadata cache.
         self.metadata_cache = {}
         
@@ -272,7 +267,7 @@ class CASSANDRA_DB(object):
         t = time.time()
         # Standard column family update.
         self.raw_data.insert(raw_data.get_key(), 
-            {raw_data.ts_to_jstime(): json.dumps(raw_data.val)}, **self.raw_opts)
+            {raw_data.ts_to_jstime(): json.dumps(raw_data.val)})
         
         if self.profiling: self.stats.raw_insert(time.time() - t)
         
