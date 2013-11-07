@@ -45,6 +45,7 @@ class EsmondConfig(object):
         self.file = file
 
         self.agg_tsdb_root = None
+        self.api_anon_limit = None
         self.cassandra_pass = None
         self.cassandra_servers = []
         self.cassandra_user = None
@@ -96,6 +97,7 @@ class EsmondConfig(object):
         config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in (
                 'agg_tsdb_root',
+                'api_anon_limit',
                 'cassandra_pass',
                 'cassandra_servers',
                 'cassandra_user',
@@ -174,6 +176,8 @@ class EsmondConfig(object):
             self.poll_retries = int(self.poll_retries)
         if self.reload_interval:
             self.reload_interval = int(self.reload_interval)
+        if self.api_anon_limit:
+            self.api_anon_limit = int(self.api_anon_limit)
 
 
         if self.error_email_to is not None \

@@ -82,6 +82,10 @@ about specifc subsets of interfaces.
 
 SNMP_NAMESPACE = 'snmp'
 
+# Anon limit configurable in conf/sane default if unset.
+alim = lambda x: x.api_anon_limit if x.api_anon_limit else 30
+ANON_LIMIT = alim(get_config(get_config_path()))
+
 def generate_endpoint_map():
     payload = {}
     for oidset in OIDSet.objects.all().order_by('name'):
@@ -188,7 +192,7 @@ class AnonymousBulkLimitElseApiAuthentication(ApiKeyAuthentication):
     """For bulk data retrieval interface.  If user has valid Api Key,
     allow unthrottled access.  Otherwise, check the size of the 
     quantity of interfaces/endpoints requested and """
-    _anonymous_limit = 30
+    _anonymous_limit = ANON_LIMIT
     def is_authenticated(self, request, **kwargs):
         authenticated = super(AnonymousBulkLimitElseApiAuthentication, self).is_authenticated(
                 request, **kwargs)
