@@ -11,7 +11,7 @@ class Command(BaseCommand):
     help = 'Drop esmond keyspace in cassandra and re-initialize. Will blow away all existing data.'
 
     def handle(self, *args, **options):
-        print 'Initializing cassandra esmond keyspace'
+        print 'Dropping and re-initializing cassandra esmond keyspace'
         config = get_config(get_config_path())
         config.db_clear_on_testing = True
         db = CASSANDRA_DB(config)
