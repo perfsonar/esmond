@@ -89,7 +89,7 @@ class CASSANDRA_DB(object):
     
     _queue_size = 200
     
-    def __init__(self, config, qname=None, clear_on_test=False):
+    def __init__(self, config, qname=None):
         """
         Class contains all the relevent cassandra logic.  This includes:
         
@@ -129,8 +129,10 @@ class CASSANDRA_DB(object):
                 "at %s - %s" % (config.cassandra_servers[0], e))
         
         # Blow everything away if we're testing - be aware of this and use
-        # with care.
-        if clear_on_test and os.environ.get("ESMOND_TESTING", False):
+        # with care.  Currently just being explictly set in test harness
+        # code but no longer set as a config file option since there could
+        # be unfortunate side effects.
+        if config.db_clear_on_testing:
             self.log.info('Dropping keyspace %s' % self.keyspace)
             if self.keyspace in sysman.list_keyspaces():
                 sysman.drop_keyspace(self.keyspace)

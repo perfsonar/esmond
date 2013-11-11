@@ -493,8 +493,7 @@ class CassandraPollPersister(PollPersister):
         # testing env var is set will result in the target keyspace
         # and all of its data being deleted and rebuilt.
         self.log.debug("connecting to cassandra")
-        self.db = CASSANDRA_DB(config, qname=qname, 
-                                clear_on_test=config.db_clear_on_testing)
+        self.db = CASSANDRA_DB(config, qname=qname)
         self.log.debug("connected to cassandra")
 
         self.tsdb = tsdb.TSDB(self.config.tsdb_root)

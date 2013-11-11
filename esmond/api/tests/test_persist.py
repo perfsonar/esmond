@@ -461,6 +461,8 @@ class TestCassandraPollPersister(TestCase):
                         full_paths[full_path] = 1
 
         ts_db = tsdb.TSDB(config.tsdb_root)
+        
+        config.db_clear_on_testing = False
         db = CASSANDRA_DB(config)
 
         rates = ColumnFamily(db.pool, db.rate_cf)

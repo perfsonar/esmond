@@ -49,7 +49,9 @@ class EsmondConfig(object):
         self.cassandra_pass = None
         self.cassandra_servers = []
         self.cassandra_user = None
-        self.db_clear_on_testing = None
+        # Leave this here so testing code can explicitly set but remove
+        # from config file parsing.
+        self.db_clear_on_testing = False
         self.db_profile_on_testing = None
         self.error_email_from = None
         self.error_email_subject = None
@@ -100,7 +102,6 @@ class EsmondConfig(object):
                 'cassandra_pass',
                 'cassandra_servers',
                 'cassandra_user',
-                'db_clear_on_testing',
                 'db_profile_on_testing',
                 'db_uri',
                 'error_email_from',
@@ -134,7 +135,7 @@ class EsmondConfig(object):
                 setattr(self, opt, cfg.get("main", opt))
 
         for key, val in cfg.items('main'):
-            if key == 'db_clear_on_testing' or key == 'db_profile_on_testing':
+            if key == 'db_profile_on_testing':
                 setattr(self, key, cfg.getboolean('main', key))
         
         self.persist_map = {}
