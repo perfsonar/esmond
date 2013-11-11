@@ -50,6 +50,10 @@ Here is an example ``esmond.conf`` file::
     espersistd_uri = 127.0.0.1:11211
     espoll_persist_uri = MemcachedPersistHandler:127.0.0.1:11211
     htpasswd_file = /data/esmond/etc/htpasswd
+    cassandra_servers = localhost:9160
+    cassandra_user =
+    cassandra_pass =
+    api_anon_limit = 35
     [persist_map]
     FastPollHC = tsdb
     FastPoll = tsdb
@@ -68,6 +72,16 @@ sql_db_*
 
 sql_db_engine, sql_db_host, sql_db_port, sql_db_user, sql_db_password,
 sql_db_name are the same as their Django counterparts.
+
+cassandra_*
+-----------
+Connection string info for cassandra backend.  cassandra_servers can be a 
+comma-delimited list of servers if using a ring.
+
+api_anon_limit
+--------------
+Limits the number of queries a non-authenticated client can request from the 
+REST api /bulk/ data endpoint.
 
 espoll_persist_uri
 ------------------
