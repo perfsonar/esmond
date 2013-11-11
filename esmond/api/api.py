@@ -31,7 +31,7 @@ except ConnectionException, e:
     # Check the stack before raising an error - if test_api is 
     # the calling code, we won't need a running db instance.
     mod = inspect.getmodule(inspect.stack()[1][0])
-    if mod.__name__ == 'api.tests.test_api':
+    if mod and mod.__name__ == 'api.tests.test_api' or 'sphinx.ext.autodoc':
         print '\nUnable to connect - presuming stand-alone testing mode...'
         db = None
     else:
