@@ -49,7 +49,6 @@ class EsmondConfig(object):
         self.cassandra_pass = None
         self.cassandra_servers = []
         self.cassandra_user = None
-        self.cassandra_raw_expire = None
         self.db_clear_on_testing = None
         self.db_profile_on_testing = None
         self.error_email_from = None
@@ -101,7 +100,6 @@ class EsmondConfig(object):
                 'cassandra_pass',
                 'cassandra_servers',
                 'cassandra_user',
-                'cassandra_raw_expire',
                 'db_clear_on_testing',
                 'db_profile_on_testing',
                 'db_uri',
@@ -166,8 +164,6 @@ class EsmondConfig(object):
 
         if self.mibs:
             self.mibs = map(str.strip, self.mibs.split(','))
-        if self.cassandra_raw_expire:
-            self.cassandra_raw_expire = int(self.cassandra_raw_expire)
         if self.cassandra_servers:
             self.cassandra_servers = map(str.strip, self.cassandra_servers.split(','))
         if self.poll_timeout:
