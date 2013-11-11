@@ -37,8 +37,10 @@ except ConnectionException, e:
     else:
         raise ConnectionException(str(e))
 
-"""
-Namespace to retrieve traffic data with a simplfied helper syntax.
+snmp_ns_doc = """
+REST namespace documentation:
+
+**/v1/device/** - Namespace to retrieve traffic data with a simplfied helper syntax.
 
 /v1/device/
 /v1/device/$DEVICE/
@@ -59,18 +61,14 @@ This namespace is 'browsable' - /v1/device/ will return a list of devices,
 A full 'detail' URI with a defined endpoing data set (as outlined in the 
 OIDSET_INTERFACE_ENDPOINTS just below) will return the data.
 
-Namespace to retrive a list of valid oidsets.
-
-/v1/oidset/
+**/v1/oidset/** - Namespace to retrive a list of valid oidsets.
 
 This endpoint is not 'browsable' and it takes no GET arguments.  It merely 
 return a list of valid oidsets from the metadata database for user 
 reference.
 
-Namespace to retrieve information about discrete interfaces without 
-having to "go through" information about a specific device.
-
-/v1/interface/
+**/v1/interface/** - Namespace to retrieve information about discrete interfaces 
+without having to "go through" information about a specific device.
 
 This endpoint is not 'browsable.'  It takes common GET arguments that 
 would apply like begin and end to filter active interfaces.  Additionally, 
@@ -809,12 +807,10 @@ class InterfaceDataResource(Resource):
 
 # ---
 
-"""
-Namespace to retrive bulk traffic data from multiple interfaces without 
-needing to make multiple round trip http requests via the main 
+bulk_ns_doc = """
+**/v1/bulk/** - Namespace to retrive bulk traffic data from multiple interfaces 
+without needing to make multiple round trip http requests via the main 
 device/interface/endpoint namespace documented at the top of the module.
-
-/v1/bulk/
 
 This namespace is not 'browsable,' and while it runs counter to typical 
 REST semantics/verbs, it implements the POST verb.  This is to get around 
@@ -851,7 +847,7 @@ class BulkRequestResource(Resource):
         'endpoint': 'in',
         other usual args (begin/end/cf...)
     }
-
+    
     """
 
     class Meta:
@@ -963,17 +959,21 @@ class BulkRequestResource(Resource):
 
 # ---
 
-"""
-Namespace to retrive data with explicit Cassandra schema-like syntax.  
+ts_ns_doc = """
+**/v1/timeseries/** - Namespace to retrive data with explicit Cassandra 
+schema-like syntax.
 
 /v1/timeseries/
-/v1/timeseries/$TYPE/ (where $TYPE is RawData, BaseRate or Aggs)
-/v1/timeseries/$TYPE/$NS/ (this is actually just a prefix/construct of the cassandra keys)
+/v1/timeseries/$TYPE/
+/v1/timeseries/$TYPE/$NS/
 /v1/timeseries/$TYPE/$NS/$DEVICE/
 /v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/
 /v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/
 /v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/
 /v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/$FREQUENCY
+
+$TYPE: is RawData, BaseRate or Aggs
+$NS: is just a prefix/key construct
 
 Params for get: begin, end, and cf where appropriate.
 Params for put: JSON list of dicts with keys 'val' and 'ts' sent as POST 
@@ -1339,3 +1339,5 @@ v1_api.register(OidsetResource())
 v1_api.register(InterfaceResource())
 v1_api.register(BulkRequestResource())
 v1_api.register(OidsetEndpointResource())
+
+__doc__ = '\n\n'.join([snmp_ns_doc, bulk_ns_doc, ts_ns_doc])

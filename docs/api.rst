@@ -31,6 +31,3 @@ Subpackages
 .. toctree::
 
     api.client
-    api.management
-    api.tests
-
