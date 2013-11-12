@@ -597,6 +597,157 @@ class CassandraPollPersister(PollPersister):
             data.ts == metadata.last_update:
             return
 
+        # We've retrieved valid previous vals/ts from metadata, so calculate
+        # the value and time delta, and the fractional slots that the data
+        # will (usually) be split between.
+        delta_t = data.ts_to_jstime() - metadata.ts_to_jstime('last_update')
+        delta_v = data.val - metadata.last_val
+
+        prev_slot = (metadata.ts_to_jstime('last_update') / data.freq) * data.freq
+        curr_slot = (data.ts_to_jstime() / data.freq) * data.freq
+
+        rate = float(delta_v) / float(delta_t)
+        # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
+        max_rate = int(110e9)
+
+        # Reality check the current rate and make sure the delta is
+        # equal to or greater than zero.  Log errors but still update
+        # the metadata cache with the most recently seen raw value/ts 
+        # then stop processing.
+        if rate > max_rate:
+            self.log.error('max_rate_exceeded - %s - %s - %s' \
+                % (rate, metadata.last_val, data.val))
+            metadata.refresh_from_raw(data)
+            return
+
+        if delta_v < 0:
+            self.log.error('delta_v < 0: %s vals: %s - %s path: %s' % \
+                (delta_v,data.val,metadata.last_val,data.get_meta_key()))
+            metadata.refresh_from_raw(data)
+            return
+            
+        # Things look good so generate the fractional deltas to distribute
+        # between the bins.
+
+        prev_frac = int( floor(
+                delta_v * (prev_slot + data.freq - metadata.ts_to_jstime('last_update'))
+                / float(delta_t)
+                ))
+
+        curr_frac = int( ceil(
+                    delta_v * (data.ts_to_jstime() - curr_slot)
+                    / float(delta_t)
+                ))
+
+        # This re-implements old "hearbeat" logic.  If the current time
+        # delta is greater than HEARTBEAT_FREQ_MULTIPLIER (3), write
+        # zero-value non-valid bins in the gap.  These MAY be updated
+        # later with valid values or backfill.  Then update only
+        # the current bin, update metadata with current slot info
+        # and return the delta.
+        if delta_t > data.freq * HEARTBEAT_FREQ_MULTIPLIER:
+            if delta_t < SEEK_BACK_THRESHOLD:
+                # Only execute the invalid value backfill if delta_t is
+                # less than 30 days.
+                for slot in range(prev_slot, curr_slot, data.freq):
+                    bad_bin = BaseRateBin(ts=slot, freq=data.freq, val=0, 
+                        is_valid=0, path=data.path)
+                    self.db.update_rate_bin(bad_bin)
+            # Update only the "current" bin and return.
+            curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
+                path=data.path)
+            self.db.update_rate_bin(curr_bin)
+            
+            metadata.refresh_from_raw(data)
+            self.db.update_metadata(data.get_meta_key(), metadata)
+
+            return
+            
+                
+        # Now, write the new valid data between the appropriate bins.
+
+        prev_bin = BaseRateBin(ts=prev_slot, freq=data.freq, val=prev_frac,
+                path=data.path)
+        curr_bin = BaseRateBin(ts=curr_slot, freq=data.freq, val=curr_frac,
+                path=data.path)
+
+        self.db.update_rate_bin(prev_bin)
+        self.db.update_rate_bin(curr_bin)
+
+        # Original backfill logic from the tsdb.aggregator
+        # This has been slightly modified from the orignial.
+        
+        # The backfill code is invoked if there is a gap in the data (ie: 
+        # the slot times are greater than the frequency), but not so big so
+        # as to require the 'heartbeat' code to be invoked.
+
+        if (curr_slot - prev_slot) > data.freq: # New condition - missing bins?
+            missed_slots = range(prev_slot+data.freq, curr_slot, data.freq)
+            if not missed_slots:
+                missed_slots = [curr_slot]
+            missed = delta_v - (curr_frac + prev_frac)
+            if missed > 0:
+                # Presume valid data (old logic)
+                missed_frac = missed / len(missed_slots)
+                missed_rem = missed % (missed_frac * len(missed_slots))
+                for slot in missed_slots:
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=missed_frac,
+                            path=data.path)
+                    self.db.update_rate_bin(miss_bin)
+
+                    for i in range(missed_rem):
+                        dist_bin = BaseRateBin(ts=missed_slots[i], freq=data.freq,
+                            val=1, path=data.path)
+                        self.db.update_rate_bin(dist_bin)
+            else:
+                # Presume invalid data (new logic) and fill gap/slots
+                # with invalid values.
+                for slot in missed_slots:
+                    miss_bin = BaseRateBin(ts=slot, freq=data.freq, val=0,
+                            is_valid=0, path=data.path)
+                    self.db.update_rate_bin(miss_bin)
+
+        # Gotten to the final success condition, so update the metadata
+        # cache with values from the current data input and return the 
+        # valid delta to the calling code.
+        metadata.refresh_from_raw(data)
+        self.db.update_metadata(data.get_meta_key(), metadata)
+        
+        return delta_v
+
+    def _broken_aggregate_base_rate(self, data):
+        """
+        Given incoming data that is meant for aggregation, generate and 
+        store the base rate deltas, update the metadata cache, and if a valid 
+        delta (delta_v) is generated, return to calling code to generate
+        higher-level rollup aggregations.
+        
+        The data arg passed in is a RawData encapsulation object as
+        defined in the cassandra.py module.  
+        
+        All of this logic is copied/adapted from the TSDB aggregator.py
+        module.
+        """
+
+        metadata = self.db.get_metadata(data)
+        last_update = metadata.ts_to_jstime('last_update')
+
+        if data.min_last_update and data.min_last_update > last_update:
+            last_update = data.min_last_update
+
+        min_ts = metadata.ts_to_jstime('min_ts')
+
+        if min_ts > last_update:
+            last_update = min_ts
+            metatdata.last_update = last_update
+
+        # This mimics logic in the tsdb persister - skip any further 
+        # processing of the rate aggregate if this is the first value
+
+        if data.val == metadata.last_val and \
+            data.ts == metadata.last_update:
+            return
+
         last_data_ts = metadata.ts_to_jstime('last_update')
         curr_data_ts = data.ts_to_jstime()
 
