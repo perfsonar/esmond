@@ -2,6 +2,12 @@
 
 """
 Generate bogus data to put into a memcached persist queue for testing.
+
+The approximate math on how many data points will be generated:
+
+options.loop * options.routers * options.interfaces * (options.oidsets * 2)
+
+as most of the oidsets being pulled have 2 oids.
 """
 
 import json
@@ -63,7 +69,7 @@ class TestQueues(object):
         q = self._get_device_queue(pr)
         if not self.write:
             print 'Noop to: {0}'.format(q)
-            if self.verbose: print pr.json()
+            if self.verbose > 1: print pr.json()
         else:
             self._queues[q].put(pr)
 
@@ -132,8 +138,7 @@ def main():
                         data=data,
                         metadata={'tsdb_flags': 1}
                         )
-                if options.verbose == 1: print pr.json()
-                elif options.verbose > 1: print json.dumps(json.loads(pr.json()), indent=4)
+                if options.verbose > 1: print pr.json()
                 qs.put(pr)
         ts += 30
         val += 50
