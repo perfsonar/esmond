@@ -10,8 +10,9 @@ import sys
 
 from optparse import OptionParser
 
-from esmond.persist import PollResult
 from esmond.api.models import OIDSet
+from esmond.config import get_config, get_config_path
+from esmond.persist import PollResult, MemcachedPersistQueue
 
 def main():
     usage = '%prog [ -f filename | -r NUM | -i NUM | -v ]'
@@ -29,6 +30,10 @@ def main():
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
     options, args = parser.parse_args()
+
+    config = get_config(get_config_path())
+
+    persistq = MemcachedPersistQueue('test_data', config.espersistd_uri)
 
     oidset_oid = []
 
