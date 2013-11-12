@@ -97,6 +97,10 @@ def main():
                 help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
 
+    if options.routers > 26:
+        print 'There is an upper bound of 26 fake routers.'
+        return -1
+
     config = get_config(get_config_path())
 
     qs = TestQueues(config, options.write, options.verbose)
