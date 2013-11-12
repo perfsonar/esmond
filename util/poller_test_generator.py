@@ -19,6 +19,55 @@ from esmond.persist import PollResult, MemcachedPersistQueue
 
 pp = pprint.PrettyPrinter(indent=2)
 
+class TestQueuesException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class TestQueuesWarning(Warning): pass
+
+class TestQueues(object):
+    """Manage the test queues"""
+    def __init__(self, config, write, verbose):
+        super(TestQueues, self).__init__()
+        self.config = config
+        self.write = write
+        self.verbose = verbose
+
+        self._queues = {}
+        self._device_map = {}
+        self._next_q = 1
+
+        if not config.persist_queues.has_key('cassandra'):
+            raise TestQueuesException('Config does not have cassandra persist_queues defined.')
+
+        self._cassandra_queues = config.persist_queues['cassandra'][1]
+
+        for i in xrange(1,self._cassandra_queues+1):
+            qname = 'cassandra_{0}'.format(i)
+            self._queues[qname] = MemcachedPersistQueue(qname, config.espersistd_uri)
+            print self._queues[qname]
+
+    def _get_device_queue(self, pr):
+        if not self._device_map.has_key(pr.device_name):
+            self._device_map[pr.device_name] = self._next_q
+            if self._next_q < self._cassandra_queues:
+                self._next_q += 1
+            else:
+                self._next_q = 1
+
+        return 'cassandra_{0}'.format(self._device_map[pr.device_name])
+
+    def put(self, pr):
+        q = self._get_device_queue(pr)
+        if not self.write:
+            print 'Noop to: {0}'.format(q)
+            if self.verbose: print pr.json()
+        else:
+            self._queues[q].put(pr)
+
+
 def main():
     usage = '%prog [ -f filename | -r NUM | -i NUM | -v ]'
     parser = OptionParser(usage=usage)
@@ -34,6 +83,9 @@ def main():
     parser.add_option('-l', '--loop', metavar='NUM_LOOPS',
             type='int', dest='loop', default=1,
             help='Number of times to send data for each "device."')
+    parser.add_option('-W', '--write',
+            dest='write', action='store_true', default=False,
+            help='Actually write the data to the memcache queue.')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
@@ -41,7 +93,7 @@ def main():
 
     config = get_config(get_config_path())
 
-    persistq = MemcachedPersistQueue('test_data', config.espersistd_uri)
+    qs = TestQueues(config, options.write, options.verbose)
 
     oidset_oid = {}
     oid_count = 0
@@ -64,12 +116,12 @@ def main():
 
     for iteration in xrange(options.loop):
         for dn in string.lowercase[0:options.routers]:
-            device_name = 'test_rtr_{0}'.format(dn)
+            device_name = 'fake_rtr_{0}'.format(dn)
             for oidset in oidset_oid.keys():
                 data = []
                 for oid in oidset_oid[oidset]:
                     for i in xrange(options.interfaces):
-                        interface_name = 'iface_{0}'.format(i)
+                        interface_name = 'fake_iface_{0}'.format(i)
                         datum = [[oid, interface_name], val]
                         data.append(datum)
                 pr = PollResult(
@@ -82,10 +134,9 @@ def main():
                         )
                 if options.verbose == 1: print pr.json()
                 elif options.verbose > 1: print json.dumps(json.loads(pr.json()), indent=4)
+                qs.put(pr)
         ts += 30
         val += 50
-
-
     pass
 
 if __name__ == '__main__':

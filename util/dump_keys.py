@@ -32,7 +32,7 @@ def main():
 
     config = get_config(get_config_path())
 
-    db = CASSANDRA_DB(config, clear_on_test=False)
+    db = CASSANDRA_DB(config)
 
     col_fams = {
         'raw': db.raw_data,
