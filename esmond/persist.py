@@ -864,6 +864,11 @@ class CassandraPollPersister(PollPersister):
                                 
         if stat_updated:
             self.db.stat_agg.send()
+
+    def stop(self, x, y):
+        self.log.debug("flushing and stopping cassandra poll persister")
+        self.db.flush()
+        self.running = False
             
         
 
