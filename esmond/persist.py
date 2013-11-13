@@ -618,6 +618,9 @@ class CassandraPollPersister(PollPersister):
             self.log.error('max_rate_exceeded - %s - %s - %s' \
                 % (rate, metadata.last_val, data.val))
             metadata.refresh_from_raw(data)
+            # XXX(jdugan): probably need to do something like:
+            # self.db.update_metadata(data.get_meta_key(), metadata)
+            # but needs tests and more thought
             return
 
         if delta_v < 0:
