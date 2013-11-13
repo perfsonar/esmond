@@ -75,7 +75,8 @@ class TestQueues(object):
 
 
 def main():
-    usage = '%prog [ -f filename | -r NUM | -i NUM | -v ]'
+    usage = '%prog [ -r NUM | -i NUM | -o NUM | -l NUM | -v ]'
+    usage += '\n\tAmount of data generated ~= r * i * (o * 2) * l'
     parser = OptionParser(usage=usage)
     parser.add_option('-r', '--routers', metavar='NUM_ROUTERS',
             type='int', dest='routers', default=1,
