@@ -109,6 +109,7 @@ class PollPersister(object):
         self.config = config
         self.qname = qname
         self.running = False
+        self.sleeping = False
 
         if persistq:
             self.persistq = persistq
@@ -154,7 +155,12 @@ class PollPersister(object):
                     self.data_count = 0
                     self.last_stats = now
                 del task
+                self.sleeping = False
             else:
+                if not self.sleeping:
+                    if hasattr(self, 'db') and hasattr(self.db, 'flush'):
+                        self.db.flush()
+                    self.sleeping = True
                 time.sleep(PERSIST_SLEEP_TIME)
 
 
