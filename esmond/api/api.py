@@ -1263,6 +1263,7 @@ class QueryUtil(object):
 
     _timerange_limits = {
         30: datetime.timedelta(days=30),
+        60: datetime.timedelta(days=30),
         300: datetime.timedelta(days=30),
         3600: datetime.timedelta(days=365),
         86400: datetime.timedelta(days=365*10),
