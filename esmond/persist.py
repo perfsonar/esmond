@@ -624,6 +624,7 @@ class CassandraPollPersister(PollPersister):
             self.log.error('delta_v < 0: %s vals: %s - %s path: %s' % \
                 (delta_v,data.val,metadata.last_val,data.get_meta_key()))
             metadata.refresh_from_raw(data)
+            self.db.update_metadata(data.get_meta_key(), metadata)
             return
             
         # Things look good so generate the fractional deltas to distribute
@@ -715,7 +716,7 @@ class CassandraPollPersister(PollPersister):
         # valid delta to the calling code.
         metadata.refresh_from_raw(data)
         self.db.update_metadata(data.get_meta_key(), metadata)
-        
+
         return delta_v
 
     def _broken_aggregate_base_rate(self, data):

@@ -334,6 +334,83 @@ sys_uptime_test_data = """
 ]
 """
 
+backwards_counters_test_data = """
+[
+    {
+        "oidset_name": "FastPollHC",
+        "device_name": "rtr_d",
+        "timestamp": 1384371885,
+        "oid_name": "ifHCOutOctets",
+        "data": [
+            [
+                ["ifHCOutOctets", "GigabitEthernet0/1"],
+                3983656138
+            ]
+        ]
+    },
+    {
+        "oidset_name": "FastPollHC",
+        "device_name": "rtr_d",
+        "timestamp": 1384371914,
+        "oid_name": "ifHCOutOctets",
+        "data": [
+            [
+                ["ifHCOutOctets", "GigabitEthernet0/1"],
+                3984242432
+            ]
+        ]
+    },
+    {
+        "oidset_name": "FastPollHC",
+        "device_name": "rtr_d",
+        "timestamp": 1384371945,
+        "oid_name": "ifHCOutOctets",
+        "data": [
+            [
+                ["ifHCOutOctets", "GigabitEthernet0/1"],
+                3985220546
+            ]
+        ]
+    },
+    {
+        "oidset_name": "FastPollHC",
+        "device_name": "rtr_d",
+        "timestamp": 1384371974,
+        "oid_name": "ifHCOutOctets",
+        "data": [
+            [
+                ["ifHCOutOctets", "GigabitEthernet0/1"],
+                3892978381
+            ]
+        ]
+    },
+    {
+        "oidset_name": "FastPollHC",
+        "device_name": "rtr_d",
+        "timestamp": 1384372005,
+        "oid_name": "ifHCOutOctets",
+        "data": [
+            [
+                ["ifHCOutOctets", "GigabitEthernet0/1"],
+                3893271099
+            ]
+        ]
+    },
+    {
+        "oidset_name": "FastPollHC",
+        "device_name": "rtr_d",
+        "timestamp": 1384372034,
+        "oid_name": "ifHCOutOctets",
+        "data": [
+            [
+                ["ifHCOutOctets", "GigabitEthernet0/1"],
+                3893650623
+            ]
+        ]
+    }
+]
+"""
+
 
 class CassandraTestResults(object):
     """
@@ -417,6 +494,58 @@ class TestCassandraPollPersister(TestCase):
         p.run()
         p.db.close()
         p.db.stats.report('all')
+
+    def test_persister_backwards_counters(self):
+        """Test for counters going backwards.
+
+        Although this isn't supposed to happen, sometimes it does.
+        The example data is real data from conf-rtr.sc13.org."""
+        
+        config = get_config(get_config_path())
+        test_data = json.loads(backwards_counters_test_data)
+
+        config.db_clear_on_testing = True
+        q = TestPersistQueue(test_data)
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+        p.db.flush()
+        p.db.close()
+        p.db.stats.report('all')
+        config.db_clear_on_testing = False
+
+        t0 = 1384371885
+        t1 = 1384372034
+        freq = 30
+        b0 = t0 - (t0 % freq)
+        b1 = t1 - (t1 % freq)
+        b0 *= 1000
+        b1 *= 1000
+
+        key = '%s:%s:%s:%s:%s:%s:%s'  % (
+                SNMP_NAMESPACE,
+                'rtr_d',
+                'FastPollHC',
+                'ifHCOutOctets',
+                'GigabitEthernet0/1',
+                freq*1000,
+                datetime.datetime.utcfromtimestamp(t0).year
+        )
+
+        db = CASSANDRA_DB(config)
+        rates = ColumnFamily(db.pool, db.rate_cf)
+        data = rates.get(key, column_start=b0, column_finish=b1)
+
+        self.assertEqual(len(data), 6)
+
+        for k,v in data.iteritems():
+            # due to the bad data only two datapoints have full data, eg is_valid == 2
+            if k in (1384371900000, 1384371990000):
+                self.assertEqual(v['is_valid'], 2)
+            else:
+                self.assertEqual(v['is_valid'], 1)
+
+            #print k,v
+
 
     def test_persister_long(self):
         """Make sure the tsdb and cassandra data match"""
