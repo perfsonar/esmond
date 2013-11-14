@@ -38,12 +38,15 @@ except Exception, e:
 
 """
 Example apache httpd.conf directives:
+Make sure that WSGIPassAuthorization is on when using the tastypie/django 
+level auth or mod_wsgi will munch the auth headers.
 
 WSGIScriptAlias / /services/esmond/esmond/wsgi.py
 WSGIPythonPath /services/esmond/esmond:/services/esmond/venv/lib/python2.7/site-packages
 WSGIPythonHome /services/esmond/venv
+WSGIPassAuthorization On
 
-WSGIDaemonProcess www python-path=/services/esmond/esmond:/services/esmond/venv/lib/python2.7/site-packages home=/services/esmond
+WSGIDaemonProcess www python-path=/services/esmond/esmond:/services/esmond/venv/lib/python2.7/site-packages home=/services/esmond processes=3 threads=15
 WSGIProcessGroup www
 
 <Directory /services/esmond/esmond>
