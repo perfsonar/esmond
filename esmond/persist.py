@@ -122,6 +122,11 @@ class PollPersister(object):
     def store(self, result):
         pass
 
+    def flush(self):
+        """Can be overridden in subclasses if one wishes to perform
+        some maintenance during a sleep state."""
+        pass
+
     def stop(self, x, y):
         self.log.debug("stop")
         self.running = False
@@ -158,8 +163,7 @@ class PollPersister(object):
                 self.sleeping = False
             else:
                 if not self.sleeping:
-                    if hasattr(self, 'db') and hasattr(self.db, 'flush'):
-                        self.db.flush()
+                    self.flush()
                     self.sleeping = True
                 time.sleep(PERSIST_SLEEP_TIME)
 
@@ -523,6 +527,10 @@ class CassandraPollPersister(PollPersister):
 
             for oid in oidset.oids.all():
                 self.oids[oid.name] = oid
+
+    def flush(self):
+        self.log.debug('flush state called.')
+        self.db.flush()
 
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]
