@@ -2,8 +2,8 @@
 
 """
 Quick one off to dump keys from a column family in an esmond 
-cassandra instance.  Use optional -c (contains) flag to limit 
-the output.
+cassandra instance.  Use optional -p (pattern) flag to look for
+a specific string pattern using python string.find().
 
 Generally used for debugging.
 """
