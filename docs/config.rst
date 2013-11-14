@@ -38,7 +38,9 @@ variable allows overriding the location of the config file.  The value of
 Here is an example ``esmond.conf`` file::
 
     [main]
-    db_uri =  postgres://snmp:SOMEPASS@localhost/esmond
+    sql_db_engine = django.db.backends.postgresql_psycopg2
+    sql_db_name = esmond
+    sql_db_user = snmp
     tsdb_root = /ssd/esmond/data
     tsdb_chunk_prefixes = /ssd/esmond/data,/data/esmond/data
     mib_dirs = %(ESMOND_ROOT)s/etc/mibs
@@ -170,9 +172,10 @@ default config::
 
 Creating the SQL Database
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+The database defined by the sql_db_* directives need to be loaded with the 
+schema defined by the django models in esmond/api/models.py.
 
-The database defined in db_uri needs to be created and loaded with the schema
-in src/sql/esmond.sql.
+python esmond/manage.py syncdb
 
 Configuring Collection
 ~~~~~~~~~~~~~~~~~~~~~~
