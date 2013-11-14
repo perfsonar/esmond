@@ -15,7 +15,12 @@ class TestData(object):
     pass
 
 def load_test_data(name):
+    # Path for development mode/env from mkdevenv
     path = os.path.join(settings.ESMOND_ROOT, "..", "test_data", name)
+    if not os.path.exists(path):
+        # If not, reset to esmond root
+        path = os.path.join(settings.ESMOND_ROOT, "test_data", name)
+
     d = json.loads(open(path).read())
     return d
 
