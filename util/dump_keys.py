@@ -23,7 +23,7 @@ def main():
             type='string', dest='column_family',  default='raw',
             help='Column family to dump [raw|rate|aggs|stat] (default=%default).')
     parser.add_option('-p', '--pattern', metavar='PATTERN',
-            type='string', dest='pattern', 
+            type='string', dest='pattern', default="",
             help='Optional pattern to look for in keys (uses python string.find()).')
     parser.add_option('-l', '--limit', metavar='LIMIT',
             type='int', dest='limit', default=25,
