@@ -227,7 +227,7 @@ class Device(NodeInfo):
     def get_device_collection(self, name):
         for child in self._data.get('children'):
             if child['name'] == name:
-                return DeviceCollection(self, name)
+                return DeviceCollection(self, name, self.filters)
 
         raise DeviceCollectionNotFound(name)
 
@@ -292,9 +292,10 @@ class Device(NodeInfo):
         return '<Device/{0}: uri:{1}>'.format(self.name, self.resource_uri)
 
 class DeviceCollection(object):
-    def __init__(self, device, name):
+    def __init__(self, device, name, filters):
         self.device = device
         self.name = name
+        self.filters = filters
 
     @property
     def leaf(self):
@@ -562,8 +563,6 @@ class ApiFilters(object):
         # user defined dict of filtering args (agg, cf) and django
         # filtering options and passed as args to the GET query.
         self._default_filters = {
-            'begin': self.ts_epoch('begin_time'),
-            'end': self.ts_epoch('end_time'),
             'limit': 0,
         }
 
