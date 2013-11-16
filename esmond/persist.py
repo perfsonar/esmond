@@ -1572,7 +1572,7 @@ def espersistd():
         try:
             PersistManager(name, config, opts).run()
         except Exception, e:
-            log.error("Problem with manager module: %s" % e, ecv_info=True)
+            log.error("Problem with manager module: %s" % e, exc_info=True)
             raise
             sys.exit(1)
     elif opts.role == 'worker':
