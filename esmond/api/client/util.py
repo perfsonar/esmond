@@ -136,14 +136,22 @@ _atencode_map_minimal = {}
 for i, c in (zip(xrange(256), str(bytearray(xrange(256))))):
     _atencode_map_minimal[c] = c if (i > 31 and i < 128 and c not in _atencode_unsafe) else '@{:02X}'.format(i)
 
+_atencode_safe_graphite = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ012345689_-'
+_atencode_map_graphite = {}
+for i, c in (zip(xrange(256), str(bytearray(xrange(256))))):
+    _atencode_map_graphite[c] = c if c in _atencode_safe_graphite else '@{:02X}'.format(i)
+
 _atdecode_map = {}
+
 for i in xrange(256):
     _atdecode_map['{:02X}'.format(i)] = chr(i)
     _atdecode_map['{:02x}'.format(i)] = chr(i)
 
-def atencode(s, minimal=False):
+def atencode(s, minimal=False, graphite=False):
     if minimal:
         return ''.join(map(_atencode_map_minimal.__getitem__, s))
+    elif graphite:
+        return ''.join(map(_atencode_map_graphite.__getitem__, s))
     else:
         return ''.join(map(_atencode_map.__getitem__, s))
 

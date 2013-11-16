@@ -65,6 +65,11 @@ class DataPayloadWarning(NodeInfoWarning): pass
 class BulkDataPayloadWarning(NodeInfoWarning): pass
 class ApiFiltersWarning(Warning): pass
 class ApiConnectWarning(Warning): pass
+class ApiNotFound(Exception): pass
+class DeviceNotFound(ApiNotFound): pass
+class DeviceCollectionNotFound(ApiNotFound): pass
+class InterfaceNotFound(ApiNotFound): pass
+class EndpointNotFound(ApiNotFound): pass
 
 # - Encapsulation classes for nodes (device, interface, etc).
 
@@ -134,6 +139,14 @@ class NodeInfo(object):
     def resource_uri(self):
         return self._data.get('resource_uri', None)
 
+    @property
+    def children(self):
+        children = []
+        for child in self._data.get('children'):
+            children.append(dict(name=child.get('name'), label=child.get('name'), leaf=child.get('leaf')))
+
+        return children
+
     # Utility properties
     @property
     def dump(self):
@@ -183,11 +196,11 @@ class Device(NodeInfo):
         uri = None
         for c in self._data['children']:
             if c['name'] == 'interface':
-                uri = c['uri']
+                uri = c['uri'].replace("/esmond","")
                 break
 
         if uri:
-            r = requests.get('{0}{1}'.format(self.api_url, uri),
+            r = requests.get('{0}{1}/'.format(self.api_url, uri),
                 params=self.filters.compose_filters(filters))
 
             self.inspect_request(r)
@@ -201,6 +214,44 @@ class Device(NodeInfo):
                 self.http_alert(r)
                 return
                 yield
+
+    def get_interface(self, ifDescr):
+        ifaces = list(self.get_interfaces(ifDescr=ifDescr))
+        if len(ifaces) == 0:
+            if self.filters.verbose > 1:
+                print "[bad interface: {0}]".format(ifDescr)
+            raise InterfaceNotFound()
+
+        return ifaces[0]
+
+    def get_device_collection(self, name):
+        for child in self._data.get('children'):
+            if child['name'] == name:
+                return DeviceCollection(self, name)
+
+        raise DeviceCollectionNotFound(name)
+
+    @property
+    def children(self):
+        return [dict(name='interface', label='interface', leaf=False)]
+
+    def get_child(self, args, path=[]):
+        name = args[0]
+        args = args[1:]
+
+        if self.filters.verbose > 1:
+            print "[Device.get_child {0} {1} {2}]".format(name, args, path)
+
+        try:
+            collection = self.get_device_collection(name)
+        except DeviceCollectionNotFound:
+            return None
+
+        path.append(name)
+        if args:
+            return collection.get_child(args, path=path)
+        else:
+            return collection
 
     def set_oidsets(self, oidsets):
         if not oidsets or not isinstance(oidsets, list):
@@ -239,6 +290,40 @@ class Device(NodeInfo):
 
     def __repr__(self):
         return '<Device/{0}: uri:{1}>'.format(self.name, self.resource_uri)
+
+class DeviceCollection(object):
+    def __init__(self, device, name):
+        self.device = device
+        self.name = name
+
+    @property
+    def leaf(self):
+        return False
+
+    @property
+    def children(self):
+        if self.name == "interface":
+            return [ dict(path="", name=i.ifDescr, label="%s %s" % (i.ifDescr, i.ifAlias)) for i in self.device.get_interfaces() ]
+        else:
+            return []
+
+    def get_child(self, args, path=[]):
+        name = args[0]
+        args = args[1:]
+
+        if self.filters.verbose > 1:
+            print "[DeviceCollection.get_child {0} {1} {2}]".format(name, args, path)
+
+        try:
+            interface = self.device.get_interface(ifDescr=name)
+        except InterfaceNotFound:
+            return None
+
+        path.append(name)
+        if len(args):
+            return interface.get_child(args, path=path)
+        else:
+            return interface
 
 class Interface(NodeInfo):
     wrn = InterfaceWarning
@@ -308,6 +393,30 @@ class Interface(NodeInfo):
         for i in self._data['children']:
             yield Endpoint(i, self.api_url, self.filters)
 
+    def get_endpoint(self, name):
+        endpoints = filter(lambda x: x.name == name, self.get_endpoints())
+
+        if len(endpoints) == 0:
+            return EndpointNotFound()
+            # XXX warn if more than one endpoint?
+
+        return endpoints[0]
+
+    def get_child(self, args, path=[]):
+        name = args[0]
+        args = args[1:]
+
+        if self.filters.verbose > 1:
+            print "[Interface.get_child {0} {1} {2}]".format(name, args, path)
+
+        try:
+            endpoint = self.get_endpoint(name)
+        except EndpointNotFound:
+            return None
+
+        endpoint._data['leaf'] = True
+        return endpoint
+
     def __repr__(self):
         return '<Interface/{0}: uri:{1}>'.format(self.ifDescr, self.resource_uri)
 
@@ -333,7 +442,7 @@ class Endpoint(NodeInfo):
         empty object.
         """
 
-        r = requests.get('{0}{1}'.format(self.api_url, self.uri),
+        r = requests.get('{0}{1}'.format(self.api_url, self.uri.replace("/esmond", "")),
             params=self.filters.compose_filters(filters))
 
         self.inspect_request(r)
@@ -581,6 +690,36 @@ class ApiConnect(object):
             return
             yield
 
+    def get_device(self, name):
+        devices = list(self.get_devices(name=name))
+
+        if len(devices) == 0:
+            raise DeviceNotFound()
+
+        return devices[0]
+        
+    @property
+    def children(self):
+        return [ device.name for device in self.get_devices() ]
+
+    def get_child(self, args, path=[]):
+        name = args[0]
+        args = args[1:]
+
+        if self.filters.verbose > 1:
+            print "[ApiConnect.get_child {0} {1} {2}]".format(name, args, path)
+
+        try:
+            device = self.get_device(name)
+        except DeviceNotFound:
+            return None
+
+        path.append(name)
+        if args:
+            return device.get_child(args, path=path)
+        else:
+            return device
+
     def get_interfaces(self, **filters):
         r = requests.get('{0}/v1/interface/'.format(self.api_url),
                 params=self.filters.compose_filters(filters))
@@ -673,5 +812,6 @@ class ApiConnect(object):
 
     def warn(self, m):
         warnings.warn(m, self.wrn, stacklevel=2)
+
 
 
