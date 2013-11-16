@@ -94,6 +94,11 @@ def generate_endpoint_map():
                 payload[oidset.name][oid.endpoint_alias] = oid.name
     return payload
 
+# XXX(jdugan): temporary hack to deal with ALUFastPollHC
+OIDSET_NAME_TRANSFORM = {
+    'ALUFastPollHC': 'FastPollHC',
+}
+
 if db:
     OIDSET_INTERFACE_ENDPOINTS = generate_endpoint_map()
     print 'generated endpoint map'
@@ -739,6 +744,8 @@ class InterfaceDataResource(Resource):
 
         obj = InterfaceDataObject()
         obj.datapath = endpoint_map[iface_dataset]
+        # XXX(jdugan): temporary hack to deal with ALUFastPollHC
+        obj.datapath[2] = OIDSET_NAME_TRANSFORM.get(obj.datapath[2], obj.datapath[2])
         obj.iface_dataset = iface_dataset
         obj.iface = iface
 
@@ -773,6 +780,7 @@ class InterfaceDataResource(Resource):
         aggregation was requested and checks/limits the time range), and
         then make calls to cassandra backend.
         """
+
         # If no aggregate level defined in request, set to the frequency, 
         # otherwise, check if the requested aggregate level is valid.
         if not obj.agg:
