@@ -78,6 +78,29 @@ class IndexCorrelator(PollCorrelator):
     def lookup(self, oid, var):
         return [oid.name, var[len(oid.name)+1:]]
 
+class EmersonPollCorrelator(PollCorrelator):
+    """correlates entries from the Emerson LMS Analog table"""
+    def _table_parse(self, data):
+        d = {}
+        for (var, val) in data:
+            d[tuple(var.split('.')[1:])] = val.replace(' ','_')
+        return d
+
+    oids = ['analogChannelName',]
+
+    def setup(self, data):
+        self.xlate = self._table_parse(filter_data('analogChannelName', data))
+
+    def lookup(self, oid, var):
+        try:
+            r = self.xlate[tuple(var.split('.')[1:])]
+            if r:
+                return [oid.name, r]
+            else:
+                return None
+        except KeyError:
+            raise PollUnknownIfIndex(var)
+
 class IfDescrCorrelator(PollCorrelator):
     """correlates an IfIndex to an it's IfDescr"""
 
@@ -291,6 +314,35 @@ class CiscoCPUCorrelator(PollCorrelator):
             n = 'CPU'
         return [oid.name, n]
 
+class PollTranslator(object):
+    """polling translators are used to perform any needed transforms
+    on the gathered data before it is sent to the persister. In simple
+    cases it might just be doing simple type or formatting changes. In
+    advanced cases it might synthesize all new data to be stored."""
+
+    def __init__(self):
+        pass
+
+    def translate(self, data):
+        raise NotImplementedError
+
+class StringToIntTranslator(PollTranslator):
+    """A simple translator which converts string inputs into integers. It
+    just rounds any decimal portion. """
+
+    def translate(self, data):
+        tdata = [(x,int(float(y))) for (x,y) in data]
+        return tdata
+
+class SummarizeValueTranslator(PollTranslator):
+    """Summarize the number of times each unique value appears
+    in the data."""
+    def translate(self, data):
+        results={}
+        for var,val in data:
+            k=(var[0],str(val))
+            results[k]=results.get(k,0)+1
+        return [(list(k),results[k]) for k in results.keys()]
 
 class PersistThread(threading.Thread):
     INIT = 0
@@ -671,6 +723,49 @@ class CorrelatedPoller(Poller):
         self.log.debug("grabbed %d vars in %f seconds" %
                         (len(data), time.time() - self.begin_time))
 
+class TranslatedPoller(Poller):
+    """Handles polling of an OIDSet for a device and uses a correlator to
+    determine the name of the variable to use to store values. Also uses
+    a translator to perform any needed translation of the values."""
+    def __init__(self, config, device, oidset, poller, persistq):
+        Poller.__init__(self, config, device, oidset, poller, persistq)
+
+        self.translator = eval(self.poller_args['translator'])()
+        self.correlator = eval(self.poller_args['correlator'])()
+        self.poll_oids.extend(self.correlator.oids)
+
+        self.results = {}
+
+    def begin(self):
+        pass
+
+    def finish(self, data):
+        self.correlator.setup(data)
+        ts = time.time()
+        metadata = dict(tsdb_flags=tsdb.ROW_VALID)
+        for oid in self.oidset.oids.all():
+            correlated_data = []
+            # qualified names are returned unqualified
+            if "::" in oid.name:
+                oid.name = oid.name.split("::")[-1]
+            for var, val in filter_data(oid.name, data):
+                try:
+                    varname = self.correlator.lookup(oid, var)
+                except PollUnknownIfIndex:
+                    self.log.error("unknown ifIndex: %s %s" % (var, str(val)))
+                    continue
+                if varname:
+                    correlated_data.append((varname, val))
+                else:
+                    if val != 0:
+                        pass
+                        #self.log.warning("ignoring: %s %s" % (var, str(val)))
+            dataout = self.translator.translate(correlated_data)
+            pr = PollResult(self.oidset.name, self.device.name, oid.name,
+                    ts, dataout, metadata)
+            self.save(pr)
+        self.log.debug("grabbed %d saved %d vars in %f seconds" %
+                        (len(data), len(dataout), time.time() - self.begin_time))
 
 class UncorrelatedPoller(Poller):
     """Polls all OIDS and creates an PollResult to be passed to the persistence

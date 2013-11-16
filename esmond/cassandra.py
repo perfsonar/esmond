@@ -497,7 +497,7 @@ class CASSANDRA_DB(object):
         
         # Divisors to return either the average or a delta.
         # XXX(mmg): double check this is right?  It probably isn't - revisit.
-        value_divisors = { 'average': int(freq), 'delta': 1 }
+        value_divisors = { 'average': int(freq/1000), 'delta': 1 }
         
         # Just return the results and format elsewhere.
         results = []
