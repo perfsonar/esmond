@@ -196,7 +196,7 @@ class Device(NodeInfo):
         uri = None
         for c in self._data['children']:
             if c['name'] == 'interface':
-                uri = c['uri'].replace("/esmond","")
+                uri = c['uri']
                 break
 
         if uri:
@@ -443,7 +443,7 @@ class Endpoint(NodeInfo):
         empty object.
         """
 
-        r = requests.get('{0}{1}'.format(self.api_url, self.uri.replace("/esmond", "")),
+        r = requests.get('{0}{1}'.format(self.api_url, self.uri),
             params=self.filters.compose_filters(filters))
 
         self.inspect_request(r)
