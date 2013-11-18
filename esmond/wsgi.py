@@ -6,35 +6,27 @@ import site
 import sys
 
 # ESMOND_ROOT should be defined via SetEnv in your Apache configuration.
-# to the directory esmond is installed in.
-if not os.environ.has_key('ESMOND_ROOT'):
-    print >>sys.stderr, "Please define ESMOND_ROOT in your Apache configuration"
-    exit()
-rootpath=os.environ['ESMOND_ROOT'] 
-# This will make Django run in a virtual env
-# Remember original sys.path.
-prev_sys_path = list(sys.path)
-
-# Add each new site-packages directory.
-site.addsitedir(rootpath+'/venv/lib/python2.7/site-packages')
-
-# Reorder sys.path so new directories at the front.
-new_sys_path = [] 
-for item in list(sys.path): 
-    if item not in prev_sys_path: 
-        new_sys_path.append(item) 
-        sys.path.remove(item) 
-sys.path[:0] = new_sys_path
-
+# It needs to point to the directory esmond is installed in.
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esmond.settings'
 
 print >>sys.stderr, "path=", sys.path
 try:
     import django.core.handlers.wsgi
-    application = django.core.handlers.wsgi.WSGIHandler()
+    _application = django.core.handlers.wsgi.WSGIHandler()
 except Exception, e:
     print >>sys.stderr,"exception:",e
+
+# This fixes the hitch that mod_wsgi does not pass Apache SetEnv 
+# directives into os.environ.
+
+def application(environ, start_response):
+    if not environ.has_key('ESMOND_ROOT'):
+        print >>sys.stderr, "Please define ESMOND_ROOT in your Apache configuration"
+        exit()
+    esmond_root = environ['ESMOND_ROOT']
+    os.environ['ESMOND_ROOT'] = esmond_root
+    return _application(environ, start_response)
 
 """
 Example apache httpd.conf directives:
