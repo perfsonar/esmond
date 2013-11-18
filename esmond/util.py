@@ -356,7 +356,7 @@ def remove_metachars(name):
         name = name.replace(char, repl)
     return name
 
-_atencode_safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ012345689_.-'
+_atencode_safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ0123456789_.-'
 _atencode_map = {}
 for i, c in (zip(xrange(256), str(bytearray(xrange(256))))):
     _atencode_map[c] = c if c in _atencode_safe else '@{:02X}'.format(i)

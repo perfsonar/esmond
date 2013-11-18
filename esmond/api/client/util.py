@@ -126,7 +126,7 @@ def get_month_start_and_end(start_point):
 
 # -- atencode code for handling rest URIs
 
-_atencode_safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ012345689_.-'
+_atencode_safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ0123456789_.-'
 _atencode_map = {}
 for i, c in (zip(xrange(256), str(bytearray(xrange(256))))):
     _atencode_map[c] = c if c in _atencode_safe else '@{:02X}'.format(i)
