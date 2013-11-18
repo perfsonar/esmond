@@ -16,7 +16,7 @@ from optparse import OptionParser
 from esmond.api.client.timeseries import PostRawData, PostBaseRate, GetRawData, GetBaseRate
 from esmond.util import atencode
 
-def read_insert(ts, p_type, path):
+def read_insert(api_url, ts, p_type, path):
     params = {
         'begin': ts-90000, 'end': ts+1000
     }
@@ -24,7 +24,7 @@ def read_insert(ts, p_type, path):
     get = None
 
     args = {
-        'api_url': 'http://localhost:8000/', 
+        'api_url': api_url, 
         'path': path, 
         'freq': 30000,
         'params': params,
@@ -44,6 +44,10 @@ def read_insert(ts, p_type, path):
 def main():
     usage = '%prog [ -u username | -a api_key ]'
     parser = OptionParser(usage=usage)
+    parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
+            type='string', dest='api_url', 
+            help='URL for the REST API (default=%default) - required.',
+            default='http://localhost')
     parser.add_option('-u', '--user', metavar='USER',
             type='string', dest='user', default='',
             help='POST interface username.')
@@ -63,7 +67,7 @@ def main():
 
     path = ['rtr_test_post', 'FastPollHC', 'ifHCInOctets', 'interface_test/0/0.0']
 
-    p = PostRawData(api_url='http://localhost:8000/', path=path, freq=30000,
+    p = PostRawData(api_url=options.api_url, path=path, freq=30000,
         username=options.user, api_key=options.key)
     # set_payload will completely replace the internal payload of the object.
     p.set_payload(payload)
@@ -75,14 +79,14 @@ def main():
     # clear the internal payload.
     p.send_data()
 
-    read_insert(ts, 'RawData', path)
+    read_insert(options.api_url, ts, 'RawData', path)
 
-    p = PostBaseRate(api_url='http://localhost:8000/', path=path, freq=30000,
+    p = PostBaseRate(api_url=options.api_url, path=path, freq=30000,
         username=options.user, api_key=options.key)
     p.set_payload(payload)
     p.send_data()
 
-    read_insert(ts, 'BaseRate', path)
+    read_insert(options.api_url, ts, 'BaseRate', path)
 
 
 
