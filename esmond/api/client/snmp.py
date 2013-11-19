@@ -487,6 +487,7 @@ class DataPayload(NodeInfo):
             len(self.data), self.begin_time, self.end_time)
 
 class DataPoint(object):
+    __slots__ = ['ts', 'val']
     """Class to encapsulate the returned data points."""
     def __init__(self, ts, val):
         super(DataPoint, self).__init__()
