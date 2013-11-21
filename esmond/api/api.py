@@ -19,6 +19,7 @@ from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.http import HttpCreated
+from tastypie.throttle import CacheDBThrottle
 
 from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
@@ -83,6 +84,16 @@ SNMP_NAMESPACE = 'snmp'
 # Anon limit configurable in conf/sane default if unset.
 alim = lambda x: x.api_anon_limit if x.api_anon_limit else 30
 ANON_LIMIT = alim(get_config(get_config_path()))
+
+def get_throttle_args(config):
+    args = {
+        'throttle_at': config.api_throttle_at,
+        'timeframe': config.api_throttle_timeframe,
+        'expiration': config.api_throttle_expiration
+    }
+    return args
+
+THROTTLE_ARGS = get_throttle_args(get_config(get_config_path()))
 
 def generate_endpoint_map():
     payload = {}
@@ -169,6 +180,9 @@ def build_time_filters(filters, orm_filters):
 
     return orm_filters
 
+def anonymous_username(request):
+    return 'AnonymousUser_{0}'.format(request.META.get('REMOTE_ADDR', 'noaddr'))
+
 class AnonymousGetElseApiAuthentication(ApiKeyAuthentication):
     """Allow GET without authentication, rely on API keys for all else"""
     def is_authenticated(self, request, **kwargs):
@@ -186,7 +200,7 @@ class AnonymousGetElseApiAuthentication(ApiKeyAuthentication):
 
     def get_identifier(self, request):
         if request.user.is_anonymous():
-            return 'AnonymousUser'
+            return anonymous_username(request)
         else:
             return super(AnonymousGetElseApiAuthentication,
                     self).get_identifier(request)
@@ -195,7 +209,6 @@ class AnonymousBulkLimitElseApiAuthentication(ApiKeyAuthentication):
     """For bulk data retrieval interface.  If user has valid Api Key,
     allow unthrottled access.  Otherwise, check the size of the 
     quantity of interfaces/endpoints requested and """
-    _anonymous_limit = ANON_LIMIT
     def is_authenticated(self, request, **kwargs):
         authenticated = super(AnonymousBulkLimitElseApiAuthentication, self).is_authenticated(
                 request, **kwargs)
@@ -224,7 +237,7 @@ class AnonymousBulkLimitElseApiAuthentication(ApiKeyAuthentication):
         request_queries = len(post_payload.get('interfaces')) * \
             len(post_payload.get('endpoint'))
 
-        if request_queries <= self._anonymous_limit:
+        if request_queries <= ANON_LIMIT:
             return True
         else:
             authenticated.content = \
@@ -234,7 +247,7 @@ class AnonymousBulkLimitElseApiAuthentication(ApiKeyAuthentication):
 
     def get_identifier(self, request):
         if request.user.is_anonymous():
-            return 'AnonymousUser'
+            return anonymous_username(request)
         else:
             return super(AnonymousBulkLimitElseApiAuthentication,
                     self).get_identifier(request)
@@ -243,11 +256,10 @@ class AnonymousTimeseriesBulkLimitElseApiAuthentication(ApiKeyAuthentication):
     """For bulk data retrieval interface.  If user has valid Api Key,
     allow unthrottled access.  Otherwise, check the size of the 
     quantity of interfaces/endpoints requested and """
-    _anonymous_limit = ANON_LIMIT
     def is_authenticated(self, request, **kwargs):
         authenticated = super(AnonymousTimeseriesBulkLimitElseApiAuthentication, self).is_authenticated(
                 request, **kwargs)
-
+        
         # If they are username/api key authenticated, just
         # let the request go.
         if authenticated == True:
@@ -265,7 +277,7 @@ class AnonymousTimeseriesBulkLimitElseApiAuthentication(ApiKeyAuthentication):
             not isinstance(post_payload['paths'], list):
             raise BadRequest('Payload must contain the element paths and that element must be a list.')
 
-        if len(post_payload['paths']) <= self._anonymous_limit:
+        if len(post_payload['paths']) <= ANON_LIMIT:
             return True
         else:
             authenticated.content = \
@@ -275,10 +287,26 @@ class AnonymousTimeseriesBulkLimitElseApiAuthentication(ApiKeyAuthentication):
 
     def get_identifier(self, request):
         if request.user.is_anonymous():
-            return 'AnonymousUser'
+            return anonymous_username(request)
         else:
             return super(AnonymousTimeseriesBulkLimitElseApiAuthentication,
                     self).get_identifier(request)
+
+class AnonymousThrottle(CacheDBThrottle):
+    def __init__(self, **kwargs):
+        # Parse incoming args from config, let superclass defaults
+        # ride if not set.
+        _kw = {}
+        for k,v in kwargs.items():
+            if v:
+                _kw[k] = v
+        super(AnonymousThrottle, self).__init__(**_kw)
+
+    def should_be_throttled(self, identifier, **kwargs):
+        if not identifier.startswith('AnonymousUser'):
+            return False
+
+        return super(AnonymousThrottle, self).should_be_throttled(identifier, **kwargs)
 
 class EsmondAuthorization(Authorization):
     """
@@ -385,6 +413,7 @@ class DeviceResource(ModelResource):
         }
         authentication = AnonymousGetElseApiAuthentication()
         authorization = DjangoAuthorization()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
 
     def dehydrate_begin_time(self, bundle):
         # return int(time.mktime(bundle.data['begin_time'].timetuple()))
@@ -516,6 +545,7 @@ class OidsetResource(ModelResource):
         queryset = OIDSet.objects.all()
         authentication = AnonymousGetElseApiAuthentication()
         excludes = ['id', 'poller_args', 'frequency']
+        # This one doesn't really need to be throttled.
 
     def get_object_list(self, request):
         qs = self._meta.queryset._clone()
@@ -600,6 +630,7 @@ class InterfaceResource(ModelResource):
             'ifAlias': ALL,
         }
         authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
 
     def obj_get(self, bundle, **kwargs):
         """
@@ -723,6 +754,7 @@ class InterfaceDataResource(Resource):
         allowed_methods = ['get']
         object_class = InterfaceDataObject
         authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
 
     def get_object_list(self, request):
         qs = self._meta.queryset._clone()
@@ -869,7 +901,8 @@ class BulkDispatch(Resource):
         resource_name = 'bulk'
         serializer = DeviceSerializer()
         allowed_methods = ['get', 'post']
-        authentication = AnonymousGetElseApiAuthentication()
+        # This just dispatches, so let the actual resources work it out.
+        # authentication = AnonymousGetElseApiAuthentication()
 
     def prepend_urls(self):
         return [
@@ -948,6 +981,7 @@ class InterfaceBulkRequestResource(Resource):
         object_class = InterfaceBulkRequestDataObject
         serializer = DeviceSerializer()
         authentication = AnonymousBulkLimitElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
 
     def obj_create(self, bundle, **kwargs):
         if bundle.request.META.get('CONTENT_TYPE') != 'application/json':
@@ -1118,6 +1152,7 @@ class TimeseriesResource(Resource):
         serializer = DeviceSerializer()
         authentication = AnonymousGetElseApiAuthentication()
         authorization = EsmondAuthorization('timeseries')
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
 
     def prepend_urls(self):
         """
@@ -1405,6 +1440,7 @@ class TimeseriesBulkRequestResource(Resource):
         object_class = TimeseriesBulkRequestDataObject
         serializer = DeviceSerializer()
         authentication = AnonymousTimeseriesBulkLimitElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
 
     def obj_create(self, bundle, **kwargs):
 

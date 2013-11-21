@@ -8,7 +8,8 @@ from esmond.api.client.util import add_apikey_header, atencode
 class TimeseriesBase(object):
     """Base class for the GET and POST timeseries interaction objects."""
     _schema_root = 'v1/timeseries'
-    def __init__(self, api_url='http://localhost/', path=[], freq=None):
+    def __init__(self, api_url='http://localhost/', path=[], freq=None,
+        username='', api_key=''):
         """Constructor - the path list arg is an ordered list of elements
         that will be used (along with the freq arg) to construct the 
         cassandra row key.  See example above."""
@@ -16,6 +17,8 @@ class TimeseriesBase(object):
         self.api_url = api_url.rstrip("/")
         self.path = path[:] # copy in case the path ref is reused
         self.freq = freq
+        self.username = username
+        self.api_key = api_key
 
         # Make sure we're not using the base class
         try:
@@ -97,7 +100,7 @@ class PostData(TimeseriesBase):
         """Constructor - the path list arg is an ordered list of elements
         that will be used (along with the freq arg) to construct the 
         cassandra row key.  See example above."""
-        super(PostData, self).__init__(api_url, path, freq)
+        super(PostData, self).__init__(api_url, path, freq, username, api_key)
 
         # Make sure we're not using an intermediate base class.
         try:
@@ -105,14 +108,14 @@ class PostData(TimeseriesBase):
         except AttributeError:
             raise PostException('Do not instantiate PostData base class, use appropriate subclass.')
 
-        if not username or not api_key:
+        if not self.username or not self.api_key:
             raise PostException('PostData requires username and api_key for rest interface.')
 
         # Set up playload and headers.
 
         self.payload = []
         self.headers = { 'content-type': 'application/json' }
-        add_apikey_header(username, api_key, self.headers)
+        add_apikey_header(self.username, self.api_key, self.headers)
 
     def set_payload(self, payload):
         """Sets object payload to a complete list of dicts passed in. 
@@ -237,11 +240,12 @@ class GetData(TimeseriesBase):
     """Base class for API write objects - writes data to the Get 
     facility in the /timeseries/ REST interface namespace."""
     _wrn = GetWarning
-    def __init__(self, api_url='http://localhost/', path=[], freq=None, params={}):
+    def __init__(self, api_url='http://localhost/', path=[], freq=None, 
+        username='', api_key='', params={}):
         """Constructor - the path list arg is an ordered list of elements
         that will be used (along with the freq arg) to construct the 
         cassandra row key.  See example above."""
-        super(GetData, self).__init__(api_url, path, freq)
+        super(GetData, self).__init__(api_url, path, freq, username, api_key)
 
         self._params = params
 
@@ -251,8 +255,12 @@ class GetData(TimeseriesBase):
         except AttributeError:
             raise PostException('Do not instantiate GetData base class, use appropriate subclass.')
 
+        self.headers = {}
+        if self.username and self.api_key:
+            add_apikey_header(self.username, self.api_key, self.headers)
+
     def get_data(self):
-        r = requests.get(self.url, params=self._params)
+        r = requests.get(self.url, params=self._params, headers=self.headers)
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.content)

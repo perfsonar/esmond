@@ -46,6 +46,9 @@ class EsmondConfig(object):
 
         self.agg_tsdb_root = None
         self.api_anon_limit = None
+        self.api_throttle_at = None
+        self.api_throttle_timeframe = None
+        self.api_throttle_expiration = None
         self.cassandra_pass = None
         self.cassandra_servers = []
         self.cassandra_user = None
@@ -99,6 +102,9 @@ class EsmondConfig(object):
         for opt in (
                 'agg_tsdb_root',
                 'api_anon_limit',
+                'api_throttle_at',
+                'api_throttle_timeframe',
+                'api_throttle_expiration',
                 'cassandra_pass',
                 'cassandra_servers',
                 'cassandra_user',
@@ -175,6 +181,13 @@ class EsmondConfig(object):
             self.reload_interval = int(self.reload_interval)
         if self.api_anon_limit:
             self.api_anon_limit = int(self.api_anon_limit)
+        if self.api_throttle_at:
+             self.api_throttle_at = int(self.api_throttle_at)
+        if self.api_throttle_timeframe:
+            self.api_throttle_timeframe = int(self.api_throttle_timeframe)
+        if self.api_throttle_expiration:
+            self.api_throttle_expiration = int(self.api_throttle_expiration)
+
 
 
         if self.error_email_to is not None \

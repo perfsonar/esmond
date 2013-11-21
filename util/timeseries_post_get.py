@@ -16,7 +16,7 @@ from optparse import OptionParser
 from esmond.api.client.timeseries import PostRawData, PostBaseRate, GetRawData, GetBaseRate
 from esmond.util import atencode
 
-def read_insert(api_url, ts, p_type, path):
+def read_insert(api_url, ts, p_type, path, username, key):
     params = {
         'begin': ts-90000, 'end': ts+1000
     }
@@ -28,6 +28,8 @@ def read_insert(api_url, ts, p_type, path):
         'path': path, 
         'freq': 30000,
         'params': params,
+        'username': username,
+        'api_key': key
     }
 
     if p_type == 'RawData':
@@ -79,14 +81,16 @@ def main():
     # clear the internal payload.
     p.send_data()
 
-    read_insert(options.api_url, ts, 'RawData', path)
+    read_insert(options.api_url, ts, 'RawData', path, options.user, 
+        options.key)
 
     p = PostBaseRate(api_url=options.api_url, path=path, freq=30000,
         username=options.user, api_key=options.key)
     p.set_payload(payload)
     p.send_data()
 
-    read_insert(options.api_url, ts, 'BaseRate', path)
+    read_insert(options.api_url, ts, 'BaseRate', path, options.user,
+        options.key)
 
 
 
