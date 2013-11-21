@@ -271,6 +271,105 @@ class GetBaseRate(GetData):
     _p_type = 'BaseRate'
     _wrn = GetBaseRateWarning
 
+"""
+Classes to make bulk data requests.
+"""
+
+class GetBulkWarning(Warning): pass
+class GetBulkRawDataWarning(GetWarning): pass
+class GetBulkBaseRateWarning(GetWarning): pass
+
+class BulkException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class GetBulkData(object):
+    _wrn = GetBulkWarning
+    _schema_root = 'v1/bulk/timeseries'
+    def __init__(self, api_url='http://localhost', username='', api_key=''):
+        super(GetBulkData, self).__init__()
+        self.api_url = api_url.rstrip("/")
+        self.username = username
+        self.api_key = api_key
+
+        # Make sure we're not using the base class
+        try:
+            getattr(self, '_p_type')
+        except AttributeError:
+            raise BulkException('Do not instantiate GetBulkData base class, use appropriate subclass.')
+
+        # Validate args
+        if not self.api_url:
+            raise BulkException('The arg api_url must be set.')
+
+        self.headers = { 'content-type': 'application/json' }
+        if self.username and self.api_key:
+            add_apikey_header(self.username, self.api_key, self.headers)
+        self.url = '{0}/{1}/'.format(self.api_url, self._schema_root)
+
+    def get_data(self, paths, begin=None, end=None):
+
+        self._validate_paths(paths)
+        self._validate_args(begin=begin, end=end)
+
+        payload = {
+            'type': self._p_type,
+            'paths': paths,
+        }
+
+        if begin: payload['begin'] = begin
+        if end: payload['end'] = end
+
+        r = requests.post(self.url, data=json.dumps(payload), headers=self.headers)
+
+        if r.status_code == 201 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.content)
+            return TimeSeriesBulkDataPayload(data)
+        else:
+            self._issue_warning('GET error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            return TimeSeriesBulkDataPayload()
+
+    def _validate_paths(self, paths):
+        if not isinstance(paths, list):
+            raise BulkException('Paths argument must be a list.')
+
+        if not len(paths):
+            raise BulkException('Paths list contains no elements.')
+
+        for path in paths:
+            if not path:
+                raise BulkException('Path elements must contain data.')
+            try:
+                int(path[-1])
+            except ValueError:
+                raise BulkException('Final element of path lists must be a valid integer/frequency, got {0}'.format(path[-1]))
+
+    def _validate_args(self, **kwargs):
+        for k,v in kwargs.items():
+            if v:
+                try:
+                    int(float(v))
+                except ValueError:
+                    raise BulkException('The args begin and end must be valid timestamp/numeric values - got: {0}'.format({k:v}))
+
+    def _issue_warning(self, message):
+        """Use to issue a subclass-specific warning."""
+        warnings.warn(message, self._wrn, stacklevel=2)
+
+
+class GetBulkRawData(GetBulkData):
+    """Class to Get raw data to rest api."""
+    _p_type = 'RawData'
+    _wrn = GetRawDataWarning
+
+class GetBulkBaseRate(GetBulkData):
+    """Class to Get base rate deltas to rest api."""
+    _p_type = 'BaseRate'
+    _wrn = GetBaseRateWarning
+
 """Encapsulation objects for the returned data.  Subclasses the sibling
 classes in the api.client.snmp module and overrides to get rid of the 
 utc timestamp coersion since this is all in ms."""
@@ -294,6 +393,7 @@ class TimeSeriesDataPayload(DataPayload):
 
 class TimeSeriesDataPoint(object):
     """Class to encapsulate the returned data points."""
+    __slots__ = ['ts', 'val']
     def __init__(self, ts, val):
         super(TimeSeriesDataPoint, self).__init__()
         self.ts = ts
@@ -301,4 +401,52 @@ class TimeSeriesDataPoint(object):
 
     def __repr__(self):
         return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
+
+class TimeSeriesBulkDataPayload(object):
+    def __init__(self, data={'data':[]}):
+        super(TimeSeriesBulkDataPayload, self).__init__()
+        self._data = data
+
+    @property
+    def begin_time(self):
+        return self._data.get('begin_time', None)
+
+    @property
+    def end_time(self):
+        return self._data.get('end_time', None)
+
+    @property
+    def cf(self):
+        return self._data.get('cf', None)
+
+    @property
+    def data(self):
+        return [TimeSeriesBulkDataRow(x) for x in self._data.get('data', [])]
+
+    def __repr__(self):
+        return '<TimeSeriesBulkDataPayload paths:{0} b:{1} e:{2}>'.format(
+            len(self._data.get('data', [])), self.begin_time, self.end_time)
+
+class TimeSeriesBulkDataRow(object):
+    """docstring for TimeSeriesBulkDataRow"""
+    def __init__(self, row={}):
+        super(TimeSeriesBulkDataRow, self).__init__()
+        self._path = row.get('path', [])
+        self._data = row.get('data', [])
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def data(self):
+        return [TimeSeriesDataPoint(x[0],x[1]) for x in self._data]
+
+    def __repr__(self):
+        return '<TimeSeriesBulkDataRow: path:{0} len:{1}>'.format(self.path, len(self._data))
+        
+
+
+
+
 

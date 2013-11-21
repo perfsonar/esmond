@@ -239,6 +239,47 @@ class AnonymousBulkLimitElseApiAuthentication(ApiKeyAuthentication):
             return super(AnonymousBulkLimitElseApiAuthentication,
                     self).get_identifier(request)
 
+class AnonymousTimeseriesBulkLimitElseApiAuthentication(ApiKeyAuthentication):
+    """For bulk data retrieval interface.  If user has valid Api Key,
+    allow unthrottled access.  Otherwise, check the size of the 
+    quantity of interfaces/endpoints requested and """
+    _anonymous_limit = ANON_LIMIT
+    def is_authenticated(self, request, **kwargs):
+        authenticated = super(AnonymousTimeseriesBulkLimitElseApiAuthentication, self).is_authenticated(
+                request, **kwargs)
+
+        # If they are username/api key authenticated, just
+        # let the request go.
+        if authenticated == True:
+            return authenticated
+
+        # Otherwise, look at the size of the request (ie: number of 
+        # paths requested) and react accordingly.
+
+        if request.body and request.META.get('CONTENT_TYPE') == 'application/json':
+            post_payload = json.loads(request.body)
+        else:
+            raise BadRequest('Did not receive json payload for bulk POST request.')
+
+        if not post_payload.has_key('paths') or \
+            not isinstance(post_payload['paths'], list):
+            raise BadRequest('Payload must contain the element paths and that element must be a list.')
+
+        if len(post_payload['paths']) <= self._anonymous_limit:
+            return True
+        else:
+            authenticated.content = \
+                'Request for {0} paths exceeds the unauthenticated limit of {1}'.format(len(post_payload['paths']), self._anonymous_limit)
+
+        return authenticated
+
+    def get_identifier(self, request):
+        if request.user.is_anonymous():
+            return 'AnonymousUser'
+        else:
+            return super(AnonymousTimeseriesBulkLimitElseApiAuthentication,
+                    self).get_identifier(request)
+
 class EsmondAuthorization(Authorization):
     """
     Uses a custom set of ``django.contrib.auth`` permissions to manage
@@ -816,9 +857,51 @@ class InterfaceDataResource(Resource):
 # ---
 
 bulk_ns_doc = """
-**/v1/bulk/** - Namespace to retrive bulk traffic data from multiple interfaces 
-without needing to make multiple round trip http requests via the main 
-device/interface/endpoint namespace documented at the top of the module.
+**/v1/bulk/** - Not a true namespace.  The /bulk/ ns node will dispatch URIs
+like /bulk/interface/ or /bulk/timeseries/ to the appropriate classes.
+"""
+
+class BulkDispatch(Resource):
+    """
+    Class to dispatch the /v1/bulk namespace to other bulk resources.
+    """
+    class Meta:
+        resource_name = 'bulk'
+        serializer = DeviceSerializer()
+        allowed_methods = ['get', 'post']
+        authentication = AnonymousGetElseApiAuthentication()
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/$" % \
+                self._meta.resource_name, 
+                self.wrap_view('dispatch_namespace_root'), 
+                name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/(?P<r_type>[\w\d_.-]+)/$" % \
+                self._meta.resource_name, 
+                self.wrap_view('dispatch_query_type'), 
+                name="api_dispatch_detail"),
+        ]
+
+    def dispatch_namespace_root(self, request, **kwargs):
+        """Incomplete path: /v1/bulk/"""
+        raise BadRequest('Must supply bulk node: /v1/bulk/{0}'.format('|'.join(QueryUtil.bulk_request_types)))
+
+    def dispatch_query_type(self, request, **kwargs):
+        r_type = kwargs.get('r_type')
+
+        if r_type == 'timeseries':
+            return TimeseriesBulkRequestResource().dispatch_list(request, **kwargs)
+        elif r_type == 'interface':
+            return InterfaceBulkRequestResource().dispatch_list(request, **kwargs)
+        else:
+            raise BadRequest('Bulk node must be one of the following: /v1/bulk/{0}'.format('|'.join(QueryUtil.bulk_request_types)))
+
+bulk_interface_ns_doc = """
+**/v1/bulk/interface/** - Namespace to retrive bulk traffic data from 
+multiple interfaces without needing to make multiple round trip http 
+requests via the main device/interface/endpoint namespace documented 
+at the top of the module.
 
 This namespace is not 'browsable,' and while it runs counter to typical 
 REST semantics/verbs, it implements the POST verb.  This is to get around 
@@ -839,11 +922,11 @@ discard/out, etc) are passed in as a list and data for each sort of
 endpoint will be returned for each interface.
 """
 
-class BulkRequestDataObject(DataObject):
+class InterfaceBulkRequestDataObject(DataObject):
     """Data encapsulation."""
     pass
 
-class BulkRequestResource(Resource):
+class InterfaceBulkRequestResource(Resource):
     """
     Resource to make a series of requests to the cassandra backend
     to avoid a bunch of round trip http requests to the REST interface.
@@ -859,10 +942,10 @@ class BulkRequestResource(Resource):
     """
 
     class Meta:
-        resource_name = 'bulk'
+        resource_name = 'bulkinterface' # handled by BulkDispatch.
         allowed_methods = ['post']
         always_return_data = True
-        object_class = BulkRequestDataObject
+        object_class = InterfaceBulkRequestDataObject
         serializer = DeviceSerializer()
         authentication = AnonymousBulkLimitElseApiAuthentication()
 
@@ -877,7 +960,7 @@ class BulkRequestResource(Resource):
             bundle.data.has_key('endpoint'):
             raise BadRequest('Payload must contain keys interfaces and endpoint.')
 
-        ret_obj = BulkRequestDataObject()
+        ret_obj = InterfaceBulkRequestDataObject()
         ret_obj.iface_dataset = bundle.data['endpoint']
         ret_obj.data = []
         ret_obj.device_names = []
@@ -932,7 +1015,7 @@ class BulkRequestResource(Resource):
 
                 oidset = device.oidsets.get(name=endpoint_map[end_point][2])
 
-                obj = BulkRequestDataObject()
+                obj = InterfaceBulkRequestDataObject()
                 obj.datapath = endpoint_map[end_point]
                 obj.iface_dataset = end_point
                 obj.iface = iface_name
@@ -1198,7 +1281,7 @@ class TimeseriesResource(Resource):
 
             # Currently only doing raw and base.
             if obj.r_type not in [ 'RawData', 'BaseRate' ]:
-                raise BadRequest('Only POSTing RawData currently supported.')
+                raise BadRequest('Only POSTing RawData or BaseRate currently supported.')
 
             objs.append(obj)
 
@@ -1217,7 +1300,7 @@ class TimeseriesResource(Resource):
         if not QueryUtil.valid_timerange(obj, in_ms=True):
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
-
+        
         data = []
 
         if obj.r_type == 'BaseRate':
@@ -1265,6 +1348,132 @@ class TimeseriesResource(Resource):
 
         return True
 
+# ---
+
+bulk_namespace_ns_doc = """
+**/v1/bulk/timeseries/** - Namespace to retrive bulk traffic data from 
+multiple paths without needing to make multiple round trip http 
+requests via the /timeseries/ namespace.
+
+This namespace is not 'browsable,' and while it runs counter to typical 
+REST semantics/verbs, it implements the POST verb.  This is to get around 
+potential limitations in how many arguments/length of said that can be 
+sent in a GET request.  The request information is sent as a json blob:
+
+{
+    'paths': [
+        ['snmp', 'lbl-mr2', 'FastPollHC', 'ifHCInOctets', 'xe-9/3/0.202', '30000'], 
+        ['snmp', 'anl-mr2', 'FastPollHC', 'ifHCOutOctets', 'xe-7/0/0.1808', '30000']
+    ], 
+    'begin': 1384976511773, 
+    'end': 1384980111773, 
+    'type': 'RawData'
+}
+
+Data are requested as a list of paths per the /timeseries namespace with
+the addition of a frequency (in ms) at the end of the path dict mimicing
+the cassandra row keys.
+"""
+
+class TimeseriesBulkRequestDataObject(DataObject):
+    """Data encapsulation."""
+    pass
+
+class TimeseriesBulkRequestResource(Resource):
+    """
+    Resource to make a series of requests to the cassandra backend
+    to avoid a bunch of round trip http requests to the REST interface.
+    Takes a POST verb to get around around limitations in passing 
+    lots of args to GET requests.  Incoming payload looks like this:
+
+    {
+    'paths': [
+        ['snmp', 'lbl-mr2', 'FastPollHC', 'ifHCInOctets', 'xe-9/3/0.202', '30000'], 
+        ['snmp', 'anl-mr2', 'FastPollHC', 'ifHCOutOctets', 'xe-7/0/0.1808', '30000']
+    ], 
+    'begin': 1384976511773, 
+    'end': 1384980111773, 
+    'type': 'RawData'
+    }
+    
+    """
+
+    class Meta:
+        resource_name = 'timeseriesbulk' # handled by BulkDispatch
+        allowed_methods = ['post']
+        always_return_data = True
+        object_class = TimeseriesBulkRequestDataObject
+        serializer = DeviceSerializer()
+        authentication = AnonymousTimeseriesBulkLimitElseApiAuthentication()
+
+    def obj_create(self, bundle, **kwargs):
+
+        if bundle.request.META.get('CONTENT_TYPE') != 'application/json':
+            raise BadRequest('Must post content-type: application/json header and json-formatted payload.')
+
+        if not bundle.data:
+            raise BadRequest('No data payload POSTed.')
+
+        if not bundle.data.has_key('paths') or not \
+            bundle.data.has_key('type'):
+            raise BadRequest('Payload must contain keys paths and type.')
+
+        if not isinstance(bundle.data['paths'], list):
+            raise BadRequest('Payload paths element must be a list - got: {0}'.format(bundle.data['lists']))
+
+        ret_obj = TimeseriesBulkRequestDataObject()
+
+        if bundle.data['type'] == 'RawData':
+            ret_obj.cf = 'raw'
+        else:
+            ret_obj.cf = 'average'
+
+        ret_obj.data = []
+
+        if bundle.data.has_key('begin'):
+            ret_obj.begin_time = int(float(bundle.data['begin']))
+        else:
+            ret_obj.begin_time = int(time.time() - 3600) * 1000
+
+        if bundle.data.has_key('end'):
+            ret_obj.end_time = int(float(bundle.data['end']))
+        else:
+            ret_obj.end_time = int(time.time()) * 1000
+
+        for p in bundle.data['paths']:
+            obj = TimeseriesBulkRequestDataObject()
+            obj.r_type = bundle.data['type']
+            obj.cf = ret_obj.cf
+            obj.begin_time = ret_obj.begin_time
+            obj.end_time = ret_obj.end_time
+            obj.datapath = p
+            obj.agg = int(obj.datapath.pop())
+
+            obj = TimeseriesResource()._execute_query(obj)
+
+            row = {
+                'data': obj.data,
+                'path': obj.datapath + [obj.agg]
+            }
+
+            ret_obj.data.append(row)
+
+        bundle.obj = ret_obj
+        return bundle
+
+    def alter_detail_data_to_serialize(self, request, data):
+        return data.obj.to_dict()
+
+    def detail_uri_kwargs(self, bundle_or_obj):
+        kwargs = {}
+        if isinstance(bundle_or_obj, Bundle):
+            pass
+        else:
+            pass
+        return kwargs
+
+# ---
+
 class QueryUtil(object):
     """Class holding common query methods used by multiple resources 
     and data structures to validate incoming request elements."""
@@ -1278,6 +1487,7 @@ class QueryUtil(object):
     }
 
     timeseries_request_types = ['RawData', 'BaseRate', 'Aggs']
+    bulk_request_types = ['timeseries', 'interface']
 
     @staticmethod
     def decode_datapath(datapath):
@@ -1301,7 +1511,7 @@ class QueryUtil(object):
         else:
             s = datetime.timedelta(seconds=obj.begin_time)
             e = datetime.timedelta(seconds=obj.end_time)
-
+        
         divs = { False: 1, True: 1000 }
 
         try:
@@ -1346,7 +1556,7 @@ v1_api.register(DeviceResource())
 v1_api.register(TimeseriesResource())
 v1_api.register(OidsetResource())
 v1_api.register(InterfaceResource())
-v1_api.register(BulkRequestResource())
 v1_api.register(OidsetEndpointResource())
+v1_api.register(BulkDispatch())
 
-__doc__ = '\n\n'.join([snmp_ns_doc, bulk_ns_doc, ts_ns_doc])
+__doc__ = '\n\n'.join([snmp_ns_doc, bulk_ns_doc, bulk_interface_ns_doc, ts_ns_doc, bulk_namespace_ns_doc])
