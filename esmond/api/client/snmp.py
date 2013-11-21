@@ -84,9 +84,14 @@ class NodeInfo(object):
             self.api_url = api_url.rstrip("/")
         self.filters = filters
 
+        self.request_headers = {}
+
         # Default rest parameters for all objects
         if self.filters:
             self._default_filters = self.filters.default_filters
+            if self.filters.auth_username and self.filters.auth_apikey:
+                add_apikey_header(self.filters.auth_username, 
+                    self.filters.auth_apikey, self.request_headers)
 
         self.pp = pprint.PrettyPrinter(indent=4)
 
@@ -201,7 +206,8 @@ class Device(NodeInfo):
 
         if uri:
             r = requests.get('{0}{1}/'.format(self.api_url, uri),
-                params=self.filters.compose_filters(filters))
+                params=self.filters.compose_filters(filters),
+                headers=self.request_headers)
 
             self.inspect_request(r)
 
@@ -262,7 +268,8 @@ class Device(NodeInfo):
             self.warn('Must supply username and api key args to alter oidsets for a device - aborting set_oidsets().')
             return
 
-        r = requests.get('{0}/v1/oidset/'.format(self.api_url))
+        r = requests.get('{0}/v1/oidset/'.format(self.api_url),
+            headers=self.request_headers)
         if r.status_code != 200:
             self.warn('Could not get a list of valid oidsets from {0}/v1/oidset/ - aborting'.format(self.api_url) )
             return
@@ -274,13 +281,10 @@ class Device(NodeInfo):
 
         self._data['oidsets'] = oidsets
 
-        headers = {'content-type': 'application/json'}
-        
-        add_apikey_header(self.filters.auth_username, 
-            self.filters.auth_apikey, headers)
+        self.request_headers['content-type'] = 'application/json'
 
         p = requests.put('{0}{1}'.format(self.api_url, self.resource_uri), 
-            data=json.dumps(self._data), headers=headers)
+            data=json.dumps(self._data), headers=self.request_headers)
 
         if p.status_code != 204:
             self.warn('Did not successfully change oidsets - might be an auth problem.')
@@ -444,7 +448,8 @@ class Endpoint(NodeInfo):
         """
 
         r = requests.get('{0}{1}'.format(self.api_url, self.uri),
-            params=self.filters.compose_filters(filters))
+            params=self.filters.compose_filters(filters),
+            headers=self.request_headers)
 
         self.inspect_request(r)
 
@@ -674,9 +679,16 @@ class ApiConnect(object):
         self.filters.auth_apikey = api_key
         self._valid_endpoints = []
 
+        self.request_headers = {}
+        if self.filters.auth_username and self.filters.auth_apikey:
+            add_apikey_header(self.filters.auth_username, 
+                self.filters.auth_apikey, self.request_headers)
+
     def get_devices(self, **filters):
+        print self.request_headers
         r = requests.get('{0}/v1/device/'.format(self.api_url),
-            params=self.filters.compose_filters(filters))
+            params=self.filters.compose_filters(filters),
+            headers=self.request_headers)
 
         self.inspect_request(r)
         
@@ -722,7 +734,8 @@ class ApiConnect(object):
 
     def get_interfaces(self, **filters):
         r = requests.get('{0}/v1/interface/'.format(self.api_url),
-                params=self.filters.compose_filters(filters))
+                params=self.filters.compose_filters(filters),
+                headers=self.request_headers)
 
         self.inspect_request(r)
 
@@ -761,14 +774,10 @@ class ApiConnect(object):
 
         if self.filters.agg: payload['agg'] = self.filters.agg
 
-        headers = { 'content-type': 'application/json' }
-
-        if self.filters.auth_username and self.filters.auth_apikey:
-            add_apikey_header(self.filters.auth_username, 
-                self.filters.auth_apikey, headers)
+        self.request_headers['content-type'] = 'application/json'
 
         r = requests.post('{0}/v1/bulk/interface/'.format(self.api_url), 
-            headers=headers, data=json.dumps(payload))
+            headers=self.request_headers, data=json.dumps(payload))
 
         self.inspect_request(r)
         self.inspect_payload(payload)
@@ -782,7 +791,8 @@ class ApiConnect(object):
 
     def _check_endpoints(self):
         if not self._valid_endpoints:
-            r = requests.get('{0}/v1/oidsetmap/'.format(self.api_url))
+            r = requests.get('{0}/v1/oidsetmap/'.format(self.api_url),
+                headers=self.request_headers)
             if not r.status_code == 200:
                 self.warn('Could not retrieve oid set map from REST api.')
                 return False

@@ -37,6 +37,12 @@ def main():
     parser.add_option('-i', '--interface', metavar='INTERFACE',
             type='string', dest='interface',
             help='Interface name to filter - can also be a pattern (ex: lo.')
+    parser.add_option('-u', '--user', metavar='USER',
+            type='string', dest='user', default='',
+            help='POST interface username.')
+    parser.add_option('-k', '--key', metavar='API_KEY',
+            type='string', dest='key', default='',
+            help='API key for post operation.')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
@@ -59,7 +65,8 @@ def main():
     else:
         interface_filters = {}
 
-    conn = ApiConnect(options.api_url, filters)
+    conn = ApiConnect(options.api_url, filters, username=options.user,
+        api_key=options.key)
 
     # return 1
 
