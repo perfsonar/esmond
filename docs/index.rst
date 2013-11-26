@@ -14,6 +14,7 @@ Contents:
    intro
    install
    config
+   deployment_cookbook
 
    architecture
    hacking

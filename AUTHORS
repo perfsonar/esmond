@@ -1,3 +1,15 @@
 Jon M. Dugan <jdugan@es.net> 
 
-  * Initial design and implementation
+  * Design and original implementation
+
+Monte Goode <mmgoode@lbl.gov>
+
+  * Cassandra implementation and documentation
+
+Patrick Dorn <dorn@es.net>
+
+  * Code review and architecutral suggestions
+
+David Mitchell <mitchell@es.net>
+
+  * Bugfixes, code review and architecutral suggestions
