@@ -19,6 +19,7 @@ begin = 1343955600000-10 # real start
 end   = 1343957400000+10
 
 def expected_bin_count(start_bin, end_bin, freq):
+    """Get expected number of bins in a given range of bins."""
     # XXX(mmg): optmize this
     # Should be ((end_bin - start_bin) / freq) + 1  ??
     return ((end_bin - start_bin) / freq) + 1
@@ -30,6 +31,8 @@ def expected_bin_count(start_bin, end_bin, freq):
     # return bincount
 
 def get_expected_first_bin(begin, freq):
+    """Get the first bin of a given frequency based on the begin ts
+    of a timeseries query."""
     # Determine the first bin in the series based on the begin
     # timestamp in the timeseries request.
     #
@@ -51,6 +54,8 @@ def get_expected_first_bin(begin, freq):
         raise RuntimeError
 
 def get_bin_alignment(begin, end, freq):
+    """Generate a few values needed for checking and filling a series if 
+    need be."""
     start_bin = get_expected_first_bin(begin,freq)
     end_bin = (end/freq)*freq
     expected_bins = expected_bin_count(start_bin, end_bin, freq)
@@ -58,6 +63,11 @@ def get_bin_alignment(begin, end, freq):
     return start_bin, end_bin, expected_bins
 
 def generate_filled_series(start_bin, end_bin, freq, data):
+    """Genrate a new 'filled' series if the returned series has unexpected
+    gaps.  Initialize a new range based in the requested time range as
+    an OrderedDict, then iterate through original series to retain original
+    values.
+    """
     # Generate the empty "proper" timerange
     filled_range = []
     s = start_bin + 0 # copy it
@@ -78,6 +88,9 @@ def generate_filled_series(start_bin, end_bin, freq, data):
         yield list(i)
 
 def verify_fill(begin, end, freq, data):
+    """Top-level function to inspect a returned series for gaps.
+    Returns the original series of the count is correct, else will
+    return a new filled series."""
     start_bin,end_bin,expected_bins = get_bin_alignment(begin, end, freq)
     if len(data) == expected_bin_count(start_bin,end_bin,freq):
         print 'verify: not filling'
