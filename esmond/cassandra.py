@@ -224,6 +224,14 @@ class CASSANDRA_DB(object):
         self.rates    = ColumnFamily(self.pool, self.rate_cf).batch(self._queue_size)
         self.aggs     = ColumnFamily(self.pool, self.agg_cf).batch(self._queue_size)
         self.stat_agg = ColumnFamily(self.pool, self.stat_cf).batch(self._queue_size)
+
+        # Used when a cf needs to be selected on the fly.
+        self.cf_map = {
+            'raw': self.raw_data,
+            'rate': self.rates,
+            'aggs': self.aggs,
+            'stat': self.stat_agg
+        }
         
         # Timing - this turns the database call profiling code on and off.
         # This is not really meant to be used in production and generally 
@@ -470,6 +478,29 @@ class CASSANDRA_DB(object):
         else:
             key_range.append(get_rowkey(path, freq=freq, year=year_start))
         return key_range
+
+    def check_for_valid_keys(self, path=None, freq=None, 
+            ts_min=None, ts_max=None, col_fam='rate'):
+        """
+        Utility function used to discrete key/set of keys exists.  Used 
+        by api/etc see if an invalid key is the reason no data is returned.
+        """
+
+        found = False
+
+        keys = self._get_row_keys(path,freq,ts_min,ts_max)
+
+        for key in keys:
+            try:
+                self.cf_map[col_fam]._column_family.get(key, column_count=1)
+            except NotFoundException:
+                # Key was not found.
+                pass
+            else:
+                # Key was found so mark boolean as good - revisit?
+                found = True
+
+        return found
         
     def query_baserate_timerange(self, path=None, freq=None, 
             ts_min=None, ts_max=None, cf='average'):
