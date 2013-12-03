@@ -424,8 +424,8 @@ class CassandraTestResults(object):
     expected_results = 21
 
     # Values for base rate tests
-    base_rate_val_first = 0.020266666666666665
-    base_rate_val_last  = 0.026533333333333332
+    base_rate_val_first = 20.266666666666665
+    base_rate_val_last  = 26.533333333333335
 
     # Values for aggregation tests
     agg_ts = 1343955600
@@ -1097,7 +1097,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['data'][-1][0], params['ts'])
         # Base rate read will return the delta divided by the frequency,
         # not just the value inserted!
-        self.assertEquals(data['data'][-1][1], float(params['val'])/30000)
+        self.assertEquals(data['data'][-1][1], float(params['val'])/30)
         self.assertEquals(data['cf'], 'average')
 
 
