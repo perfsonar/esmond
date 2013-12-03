@@ -8,15 +8,15 @@ import json
 import os
 import sys
 
+import requests
+
 from collections import OrderedDict
 from optparse import OptionParser
 
 from esmond.api.client.timeseries import GetBaseRate
 from esmond.util import atencode
 
-begin = 1343955600000-10 # real start
-# begin = 1343955540000-10 # backtrack to make leading gap
-end   = 1343957400000+10
+
 
 def expected_bin_count(start_bin, end_bin, freq):
     """Get expected number of bins in a given range of bins."""
@@ -114,7 +114,22 @@ def main():
     parser.add_option('-k', '--key', metavar='API_KEY',
             type='string', dest='key', default='',
             help='API key for post operation.')
+    parser.add_option('-g', '--gap',
+            dest='gap', action='store_true', default=False,
+            help='Force gaps.')
+    parser.add_option('-v', '--verbose',
+                dest='verbose', action='count', default=False,
+                help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
+
+    begin = 1343955600000-10 # real start
+    # begin = 1343955540000-10 # backtrack to make leading gap
+    end   = 1343957400000+10
+
+    if options.gap:
+        begin = begin - 60000
+
+    print begin
 
     path=['snmp','rtr_d','FastPollHC','ifHCInOctets','fxp0.0']
     #key = 'snmp:rtr_d:FastPollHC:ifHCInOctets:fxp0.0:30000:2012'
@@ -132,18 +147,18 @@ def main():
         'api_key': options.key
     }
 
-    if False:
+    if True:
         get = GetBaseRate(**args)
 
         payload = get.get_data()
-        print json.dumps(payload._data)
+        data_pack = json.dumps(payload._data)
 
         print payload
         for d in payload.data:
             #print '  *', d
             pass
-
-    data_pack = """
+    else:
+        data_pack = """
     {"agg": "30000", "cf": "average", "end_time": 1343957400000, "begin_time": 1343955540000, "data": [[1343955600000, 4.0], [1343955630000, 22.4], [1343955660000, 27.533333333333335], [1343955690000, 11.4], [1343955720000, 21.5], [1343955750000, 28.0], [1343955780000, 20.366666666666667], [1343955810000, 10.8], [1343955840000, 1.3333333333333333], [1343955870000, 19.033333333333335], [1343955900000, 6.166666666666667], [1343955930000, 15.8], [1343955960000, 9.666666666666666], [1343955990000, null], [1343956020000, 1.9333333333333333], [1343956050000, 9.1], [1343956080000, 10.266666666666667], [1343956110000, 17.666666666666668], [1343956140000, 13.733333333333333], [1343956170000, 10.8], [1343956200000, 19.533333333333335], [1343956230000, 10.6], [1343956260000, 3.966666666666667], [1343956290000, 7.966666666666667], [1343956320000, 10.266666666666667], [1343956350000, 2.1666666666666665], [1343956380000, 9.1], [1343956410000, 10.066666666666666], [1343956440000, 2.8333333333333335], [1343956470000, 6.866666666666666], [1343956500000, 4.5], [1343956530000, 13.733333333333333], [1343956560000, 13.433333333333334], [1343956590000, 3.466666666666667], [1343956620000, 6.333333333333333], [1343956650000, 22.033333333333335], [1343956680000, 24.833333333333332], [1343956710000, 20.4], [1343956740000, 8.4], [1343956770000, 12.033333333333333], [1343956800000, 20.266666666666666], [1343956830000, 29.033333333333335], [1343956860000, 20.666666666666668], [1343956890000, 5.6], [1343956920000, 11.8], [1343956950000, 6.6], [1343956980000, 21.8], [1343957010000, 40.6], [1343957040000, 23.333333333333332], [1343957070000, 18.4], [1343957100000, 13.4], [1343957130000, 13.8], [1343957160000, 15.933333333333334], [1343957190000, 7.533333333333333], [1343957220000, 11.2], [1343957250000, 5.8], [1343957280000, 14.7], [1343957310000, 1.5], [1343957340000, 4.5], [1343957370000, 20.3], [1343957400000, 26.533333333333335]], "resource_uri": "/v1/timeseries/BaseRate/snmp/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000"}
     """
     freq = args['freq']
@@ -166,9 +181,9 @@ def main():
 
     count = 1
     for dp in d['data']:
-        # print count, dp
+        if options.verbose:
+            print count, dp
         count += 1
-
     pass
 
 if __name__ == '__main__':
