@@ -288,6 +288,15 @@ class MockCASSANDRA_DB(object):
         self._test_incoming_args(path, freq, ts_min, ts_max)
         if path[0] not in [SNMP_NAMESPACE] : return []
         if path[1] not in ['rtr_a', 'rtr_b', 'rtr_inf'] : return []
+        s_bin = (ts_min/freq)*freq
+        if s_bin < ts_min:
+            s_bin += freq
+        return [
+            {'is_valid': 2, 'ts': s_bin, 'val': 10},
+            {'is_valid': 2, 'ts': s_bin+freq, 'val': 20},
+            {'is_valid': 2, 'ts': s_bin+(freq*2), 'val': 40},
+            {'is_valid': 0, 'ts': s_bin+(freq*3), 'val': 80}
+        ]
         return [
             {'is_valid': 2, 'ts': 0*1000, 'val': 10},
             {'is_valid': 2, 'ts': 30*1000, 'val': 20},
@@ -300,23 +309,26 @@ class MockCASSANDRA_DB(object):
 
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
         self._test_incoming_args(path, freq, ts_min, ts_max, cf)
+        s_bin = (ts_min/freq)*freq
+        if s_bin < ts_min:
+            s_bin += freq
         if cf == 'average':
             return [
-                {'ts': 0, 'val': 60, 'cf': 'average'},
-                {'ts': freq, 'val': 120, 'cf': 'average'},
-                {'ts': freq*2, 'val': 240, 'cf': 'average'},
+                {'ts': s_bin, 'val': 60, 'cf': 'average'},
+                {'ts': s_bin+freq, 'val': 120, 'cf': 'average'},
+                {'ts': s_bin+(freq*2), 'val': 240, 'cf': 'average'},
             ]
         elif cf == 'min':
             return [
-                {'ts': 0, 'val': 0, 'cf': 'min'},
-                {'ts': freq, 'val': 10, 'cf': 'min'},
-                {'ts': freq*2,'val': 20, 'cf': 'min'},
+                {'ts': s_bin, 'val': 0, 'cf': 'min'},
+                {'ts': s_bin+freq, 'val': 10, 'cf': 'min'},
+                {'ts': s_bin+(freq*2),'val': 20, 'cf': 'min'},
             ]
         elif cf == 'max':
             return [
-                {'ts': 0, 'val': 75, 'cf': 'max'},
-                {'ts': freq, 'val': 150, 'cf': 'max'},
-                {'ts': freq*2, 'val': 300, 'cf': 'max'},
+                {'ts': s_bin, 'val': 75, 'cf': 'max'},
+                {'ts': s_bin+freq, 'val': 150, 'cf': 'max'},
+                {'ts': s_bin+(freq*2), 'val': 300, 'cf': 'max'},
             ]
         else:
             pass
@@ -338,6 +350,15 @@ class MockCASSANDRA_DB(object):
 
     def flush(self):
         pass
+
+class APIDataTestResults(object):
+    @staticmethod
+    def get_agg_range(agg, in_ms=False):
+        end = 1386090000
+        if in_ms: end = end*1000
+        begin = end - (agg*3)
+        params = {'begin': begin, 'end': end, 'agg': agg}
+        return params
 
 
 class DeviceAPIDataTests(DeviceAPITestsBase):
@@ -393,7 +414,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(int(data['agg']), 30)
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][1][0], 30)
+        self.assertEquals(data['data'][1][0], data['data'][0][0]+30)
         self.assertEquals(data['data'][1][1], 20)
 
         url = '/v1/device/rtr_inf/interface/xe-3@2F0@2F0/out'
@@ -408,7 +429,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(int(data['agg']), 30)
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][2][0], 60)
+        self.assertEquals(data['data'][2][0], data['data'][0][0]+60)
         self.assertEquals(data['data'][2][1], 40)
 
         # make sure it works with a trailing slash too
@@ -422,7 +443,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(int(data['agg']), 30)
         self.assertEquals(data['resource_uri'], url.rstrip("/"))
-        self.assertEquals(data['data'][2][0], 60)
+        self.assertEquals(data['data'][2][0], data['data'][0][0]+60)
         self.assertEquals(data['data'][2][1], 40)
 
         # test for interfaces with multiple IfRefs
@@ -441,7 +462,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(int(data['agg']), 30)
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][1][0], 30)
+        self.assertEquals(data['data'][1][0], data['data'][0][0]+30)
         self.assertEquals(data['data'][1][1], 20)
 
 
@@ -477,7 +498,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_get_device_interface_data_aggs(self):
         url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
-        params = {'agg': '3600'}
+        params = { 'agg': '3600' }
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -489,7 +510,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(data['agg'], params['agg'])
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][2][0], int(params['agg'])*2)
+        self.assertEquals(data['data'][2][0], data['data'][0][0]+int(params['agg'])*2)
         self.assertEquals(data['data'][2][1], 240)
 
         # try the same agg, different cf
@@ -503,7 +524,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'min')
         self.assertEquals(data['agg'], params['agg'])
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][2][0], int(params['agg'])*2)
+        self.assertEquals(data['data'][2][0], data['data'][0][0]+int(params['agg'])*2)
         self.assertEquals(data['data'][2][1], 20)
 
         # and the last cf
@@ -517,7 +538,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'max')
         self.assertEquals(data['agg'], params['agg'])
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][2][0], int(params['agg'])*2)
+        self.assertEquals(data['data'][2][0], data['data'][0][0]+int(params['agg'])*2)
         self.assertEquals(data['data'][2][1], 300)
 
     def test_get_device_errors(self):
@@ -629,10 +650,11 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
     def test_timeseries_data_detail(self):
         agg = 30000
+        params = APIDataTestResults.get_agg_range(agg, in_ms=True)
 
         url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
-        response = self.client.get(url)
+        response = self.client.get(url, params)
         data = json.loads(response.content)
 
         # print json.dumps(data, indent=4)
@@ -640,27 +662,37 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(int(data['agg']), agg)
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][1][0], agg)
+        self.assertEquals(data['data'][1][0], params['begin']+agg)
         self.assertEquals(data['data'][1][1], 20)
-
-        # make sure it works with a trailing slash too
+        self.assertEquals(len(data['data']), 4)
+        
+        # make sure it works with a trailing slash too and check the 
+        # padding/fill as well.
         url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}/'.format(agg)
 
-        response = self.client.get(url)
+        params['begin'] -= agg*2
+
+        response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
 
+        # print json.dumps(data, indent=4)
+
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(int(data['agg']), agg)
         self.assertEquals(data['resource_uri'], url.rstrip("/"))
-        self.assertEquals(data['data'][2][0], agg*2)
+        self.assertEquals(data['data'][2][0], params['begin']+(agg*2))
         self.assertEquals(data['data'][2][1], 40)
+        self.assertEquals(len(data['data']), 6)
+        self.assertEquals(data['data'][-1][1], None)
+        self.assertEquals(data['data'][-2][1], None)
+        self.assertEquals(data['data'][-3][1], None)
 
         # Raw data as well.
         url = '/v1/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
-        response = self.client.get(url)
+        response = self.client.get(url, params)
         data = json.loads(response.content)
 
         # print json.dumps(data, indent=4)
@@ -668,15 +700,18 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'raw')
         self.assertEquals(int(data['agg']), agg)
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][1][0], agg)
+        self.assertEquals(data['data'][1][0], params['begin']+agg)
         self.assertEquals(data['data'][1][1], 20)
 
     def test_timeseries_data_aggs(self):
+
         agg = 3600000
+
+        params = APIDataTestResults.get_agg_range(agg, in_ms=True)
 
         url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
-        response = self.client.get(url)
+        response = self.client.get(url, params)
         data = json.loads(response.content)
 
         # print json.dumps(data, indent=4)
@@ -684,21 +719,29 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(data['agg'], str(agg))
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][2][0], agg*2)
+        self.assertEquals(data['data'][2][0], params['begin']+agg*2)
         self.assertEquals(data['data'][2][1], 240)
+        # check padding
+        self.assertEquals(data['data'][3][0] - data['data'][2][0], agg)
+        self.assertEquals(data['data'][3][1], None)
 
-        params = { 'cf': 'min' }
+        params['cf'] = 'min'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
 
+        # print json.dumps(data, indent=4)
+
         self.assertEquals(data['cf'], 'min')
         self.assertEquals(data['agg'], str(agg))
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][2][0], agg*2)
+        self.assertEquals(data['data'][2][0], params['begin']+agg*2)
         self.assertEquals(data['data'][2][1], 20)
+        # check padding
+        self.assertEquals(data['data'][3][0] - data['data'][2][0], agg)
+        self.assertEquals(data['data'][3][1], None)
 
         params['cf'] = 'max'
 
@@ -710,7 +753,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['cf'], 'max')
         self.assertEquals(data['agg'], str(agg))
         self.assertEquals(data['resource_uri'], url)
-        self.assertEquals(data['data'][2][0], agg*2)
+        self.assertEquals(data['data'][2][0], params['begin']+agg*2)
         self.assertEquals(data['data'][2][1], 300)
 
     def test_timeseries_bad_aggregations(self):
