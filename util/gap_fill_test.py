@@ -4,6 +4,7 @@
 A sketch script with bin filling logic.  Based on api.tests test data. 
 Should most likely be removed when logic implemented.
 """
+import datetime
 import json
 import os
 import sys
@@ -15,6 +16,7 @@ from optparse import OptionParser
 
 from esmond.api.client.timeseries import GetBaseRate
 from esmond.util import atencode
+from esmond.api.client.snmp import ApiConnect, ApiFilters
 
 
 
@@ -91,7 +93,10 @@ def verify_fill(begin, end, freq, data):
     """Top-level function to inspect a returned series for gaps.
     Returns the original series of the count is correct, else will
     return a new filled series."""
+    begin, end, freq = int(begin), int(end), int(freq)
     start_bin,end_bin,expected_bins = get_bin_alignment(begin, end, freq)
+    print 'got :', len(data)
+    print 'need:', expected_bin_count(start_bin,end_bin,freq)
     if len(data) == expected_bin_count(start_bin,end_bin,freq):
         print 'verify: not filling'
         return data
@@ -117,22 +122,41 @@ def main():
     parser.add_option('-g', '--gap',
             dest='gap', action='store_true', default=False,
             help='Force gaps.')
+    parser.add_option('-e', '--empty',
+            dest='empty', action='store_true', default=False,
+            help='Force query to miss data range.')
+    parser.add_option('-b', '--bogus',
+            dest='bogus', action='store_true', default=False,
+            help='Force bogus path.')
     parser.add_option('-v', '--verbose',
                 dest='verbose', action='count', default=False,
                 help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
 
-    begin = 1343955600000-10 # real start
-    # begin = 1343955540000-10 # backtrack to make leading gap
-    end   = 1343957400000+10
+    if False:
+        path=['snmp','rtr_d','FastPollHC','ifHCInOctets','fxp0.0']
+        begin = 1343955600000-10 # real start
+        # begin = 1343955540000-10 # backtrack to make leading gap
+        end   = 1343957400000+10
+    else:
+        path = ['snmp','fake_rtr_a','FastPoll','ifInOctets','fake_iface_1']
+        # key = 'snmp:fake_rtr_a:FastPoll:ifInOctets:fake_iface_1:30000:2013'
+        begin = 1384369830000
+        end = 1384377810000
+
 
     if options.gap:
+        # Mess with timestamp and force a leading gap
         begin = begin - 60000
 
-    print begin
+    if options.empty:
+        # Mess with timestamp to force missing the data in a valid row.
+        begin += 60000000
+        end += 60000000
+        # print datetime.datetime.utcfromtimestamp(begin/1000)
 
-    path=['snmp','rtr_d','FastPollHC','ifHCInOctets','fxp0.0']
-    #key = 'snmp:rtr_d:FastPollHC:ifHCInOctets:fxp0.0:30000:2012'
+    if options.bogus:
+        path.append('bogus')
 
     params = {
         'begin': begin, 'end': end
@@ -153,10 +177,10 @@ def main():
         payload = get.get_data()
         data_pack = json.dumps(payload._data)
 
-        print payload
+        # print payload
         for d in payload.data:
-            #print '  *', d
-            pass
+            if options.verbose > 1:
+                print '  *', d
     else:
         data_pack = """
     {"agg": "30000", "cf": "average", "end_time": 1343957400000, "begin_time": 1343955540000, "data": [[1343955600000, 4.0], [1343955630000, 22.4], [1343955660000, 27.533333333333335], [1343955690000, 11.4], [1343955720000, 21.5], [1343955750000, 28.0], [1343955780000, 20.366666666666667], [1343955810000, 10.8], [1343955840000, 1.3333333333333333], [1343955870000, 19.033333333333335], [1343955900000, 6.166666666666667], [1343955930000, 15.8], [1343955960000, 9.666666666666666], [1343955990000, null], [1343956020000, 1.9333333333333333], [1343956050000, 9.1], [1343956080000, 10.266666666666667], [1343956110000, 17.666666666666668], [1343956140000, 13.733333333333333], [1343956170000, 10.8], [1343956200000, 19.533333333333335], [1343956230000, 10.6], [1343956260000, 3.966666666666667], [1343956290000, 7.966666666666667], [1343956320000, 10.266666666666667], [1343956350000, 2.1666666666666665], [1343956380000, 9.1], [1343956410000, 10.066666666666666], [1343956440000, 2.8333333333333335], [1343956470000, 6.866666666666666], [1343956500000, 4.5], [1343956530000, 13.733333333333333], [1343956560000, 13.433333333333334], [1343956590000, 3.466666666666667], [1343956620000, 6.333333333333333], [1343956650000, 22.033333333333335], [1343956680000, 24.833333333333332], [1343956710000, 20.4], [1343956740000, 8.4], [1343956770000, 12.033333333333333], [1343956800000, 20.266666666666666], [1343956830000, 29.033333333333335], [1343956860000, 20.666666666666668], [1343956890000, 5.6], [1343956920000, 11.8], [1343956950000, 6.6], [1343956980000, 21.8], [1343957010000, 40.6], [1343957040000, 23.333333333333332], [1343957070000, 18.4], [1343957100000, 13.4], [1343957130000, 13.8], [1343957160000, 15.933333333333334], [1343957190000, 7.533333333333333], [1343957220000, 11.2], [1343957250000, 5.8], [1343957280000, 14.7], [1343957310000, 1.5], [1343957340000, 4.5], [1343957370000, 20.3], [1343957400000, 26.533333333333335]], "resource_uri": "/v1/timeseries/BaseRate/snmp/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000"}
@@ -172,19 +196,55 @@ def main():
     print 'start bin', start_bin
     
     print 'finis bin', end_bin
-    print 'first val', d['data'][0][0]
-    print 'finis val', d['data'][-1][0]
+    if len(d['data']):
+        print 'first val', d['data'][0][0]
+        print 'finis val', d['data'][-1][0]
+    else:
+        print 'no data'
     print 'number of vals', len(d['data'])
     print 'expected  vals', expected_bins
 
     d['data'] = verify_fill(begin, end, freq, d['data'])
 
-    count = 1
-    for dp in d['data']:
-        if options.verbose:
-            print count, dp
-        count += 1
-    pass
+    # count = 1
+    # for dp in d['data']:
+    #     if options.verbose:
+    #         #print count, dp
+    #         pass
+    #     #count += 1
+    #     pass
+    # pass
+
+    return
+
+    filters = ApiFilters()
+
+    filters.verbose = options.verbose
+
+    conn = ApiConnect(options.api_url, filters, username=options.user,
+        api_key=options.key)
+
+    for d in conn.get_devices(name='lbl-mr2'):
+        print d
+        for i in d.get_interfaces(ifDescr='ge-9/0/0'):
+            print i, i.ifDescr
+            for e in i.get_endpoints():
+                if e.name != 'out':
+                    continue
+                print '   *', e
+                # print e.get_data()._data
+                payload = e.get_data()._data
+                # print payload
+                if options.gap:
+                    del payload['data'][-6]
+                    del payload['data'][-7]
+                dt = verify_fill(payload['begin_time'], payload['end_time'],
+                    payload['agg'], payload['data'])
+                for dp in dt:
+                    print dp
+                # print '     +', e.get_data().dump
+
+
 
 if __name__ == '__main__':
     main()
