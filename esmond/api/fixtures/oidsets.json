@@ -729,7 +729,7 @@
             "poller": 1,
             "frequency": 30,
             "name": "ALUFastPollHC",
-            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUIfDescrCorrelator set_name=FastPollHC"
+            "poller_args": "chunk_mapper=tsdb.YYYYMMChunkMapper correlator=ALUIfDescrCorrelator aggregates=3600,86400 set_name=FastPollHC"
         }
     },
     {
