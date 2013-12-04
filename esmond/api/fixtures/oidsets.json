@@ -669,7 +669,7 @@
             "poller": 2,
             "frequency": 60,
             "name": "IfRefPoll",
-            "poller_args": null
+            "poller_args": "translator=IfRefTranslator"
         }
     },
     {
@@ -689,7 +689,7 @@
             "poller": 2,
             "frequency": 60,
             "name": "InfIfRefPoll",
-            "poller_args": null
+            "poller_args": "translator=IfRefTranslator"
         }
     },
     {
@@ -719,7 +719,7 @@
             "poller": 2,
             "frequency": 60,
             "name": "ALUIfRefPoll",
-            "poller_args": ""
+            "poller_args": "translator=IfRefTranslator"
         }
     },
     {
