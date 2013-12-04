@@ -1000,11 +1000,6 @@ class IfRefPollPersister(HistoryTablePersister):
             for name, val in self.data[oid]:
                 if oid in self.int_oids:
                     val = int(val)
-                if oid == 'ifPhysAddress':
-                    if val != '':
-                        val = ":".join(["%02x" % ord(i) for i in val])
-                    else:
-                        val = None
                 foo, ifIndex = name.split('.')
                 ifIndex = int(ifIndex)
                 ifref_objs[ifIndex_map[ifIndex]][oid] = val
