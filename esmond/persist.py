@@ -1163,12 +1163,21 @@ class PersistQueue(object):
         pass
 
     def serialize(self, val):
-        return pickle.dumps(val)
-        # return val.json() # .dumps() is being called in the PollResult method
+        # return pickle.dumps(val)
+        try:
+            return val.json() # .dumps() is being called in the PollResult method
+        except Exception as e:
+            m = 'Poll Result {0} could not be serialized: {1}'.format(val, e)
+            if hasattr(self, 'log'):
+                self.log.error(m)
+            # Not sure if the logger for this class is working and 
+            # we want an error in other cases anyways.
+            print >>sys.stderr, m
+            return None
 
     def deserialize(self, val):
-        return pickle.loads(val)
-        # return json.loads(val)
+        # return pickle.loads(val)
+        return json.loads(val)
 
 class JsonSerializer(object):
     """This is passed to memcache.Client() to replace default use of 
@@ -1203,9 +1212,9 @@ class MemcachedPersistQueue(PersistQueue):
 
         self.log = get_logger("MemcachedPersistQueue_%s" % self.qname)
 
-        self.mc = memcache.Client([memcached_uri])
-        # self.mc = memcache.Client([memcached_uri],
-        #     pickler=JsonSerializer, unpickler=JsonSerializer)
+        # self.mc = memcache.Client([memcached_uri])
+        self.mc = memcache.Client([memcached_uri],
+            pickler=JsonSerializer, unpickler=JsonSerializer)
 
         self.last_added = '%s_%s_last_added' % (self.PREFIX, self.qname)
         la = self.mc.get(self.last_added)
@@ -1247,8 +1256,8 @@ class MemcachedPersistQueue(PersistQueue):
                 if errors:
                     self.log.error("missing data: %d items missing (qids %d-%d)" %
                             (errors, qid-errors, qid-1))
-                return self.deserialize(val)
-                # return PollResult(**self.deserialize(val))
+                # return self.deserialize(val)
+                return PollResult(**self.deserialize(val))
 
             errors += 1
 

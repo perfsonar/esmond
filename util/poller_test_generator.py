@@ -80,16 +80,16 @@ def main():
     parser = OptionParser(usage=usage)
     parser.add_option('-r', '--routers', metavar='NUM_ROUTERS',
             type='int', dest='routers', default=1,
-            help='Number of test "routers" to generate.')
+            help='Number of test "routers" to generate (default=%default).')
     parser.add_option('-i', '--interfaces', metavar='NUM_INTERFACES',
             type='int', dest='interfaces', default=2,
-            help='Number of test interfaces to generate on each test router.')
+            help='Number of test interfaces to generate on each test router (default=%default).')
     parser.add_option('-o', '--oidsets', metavar='NUM_OIDSETS',
             type='int', dest='oidsets', default=2,
-            help='Number of oidsets to assign to each fake device/router.')
+            help='Number of oidsets to assign to each fake device/router (default=%default).')
     parser.add_option('-l', '--loop', metavar='NUM_LOOPS',
             type='int', dest='loop', default=1,
-            help='Number of times to send data for each "device."')
+            help='Number of times to send data for each "device (default=%default)."')
     parser.add_option('-W', '--write',
             dest='write', action='store_true', default=False,
             help='Actually write the data to the memcache queue.')
