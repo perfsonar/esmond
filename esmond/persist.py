@@ -442,6 +442,13 @@ def fit_to_bins(freq, ts_prev, val_prev, ts_curr, val_curr):
     delta_t = ts_curr - ts_prev
     delta_v = val_curr - val_prev
 
+    # if samples are less than freq apart and both in the same bin
+    # all of the data goes into the same bin
+    if bin_curr == bin_prev:
+        return {bin_prev: delta_v}
+
+    assert bin_prev < bin_mid <= bin_curr
+
     frac_prev = (bin_mid - ts_prev)/float(delta_t)
     frac_curr = (ts_curr - bin_curr)/float(delta_t)
 
@@ -578,7 +585,7 @@ class CassandraPollPersister(PollPersister):
         self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
             time.time() - t0, result))
 
-    def aggregate_base_rate(self, data):
+    def _old_aggregate_base_rate(self, data):
         """
         Given incoming data that is meant for aggregation, generate and 
         store the base rate deltas, update the metadata cache, and if a valid 
@@ -736,7 +743,7 @@ class CassandraPollPersister(PollPersister):
 
         return delta_v
 
-    def _broken_aggregate_base_rate(self, data):
+    def aggregate_base_rate(self, data):
         """
         Given incoming data that is meant for aggregation, generate and 
         store the base rate deltas, update the metadata cache, and if a valid 

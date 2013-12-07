@@ -23,7 +23,8 @@ from tastypie.test import ResourceTestCase
 from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
 
 from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
-     PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister
+     PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister, \
+     fit_to_bins
 from esmond.config import get_config, get_config_path
 from esmond.cassandra import CASSANDRA_DB, SEEK_BACK_THRESHOLD
 from esmond.util import max_datetime
@@ -1100,6 +1101,27 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['data'][-1][1], float(params['val'])/30)
         self.assertEquals(data['cf'], 'average')
 
+class TestFitToBins(TestCase):
+    def test_fit_to_bins(self):
+        # tests from fit_to_bins docstring
+        r = fit_to_bins(30, 0, 0, 30, 100)
+        self.assertEqual({0: 100, 30: 0}, r)
+
+        r = fit_to_bins(30, 31, 100, 62, 213)
+        self.assertEqual({60: 7, 30: 106}, r)
+
+        r = fit_to_bins(30, 90, 100, 121, 200)
+        self.assertEqual({120: 3, 90: 97}, r)
+
+        r = fit_to_bins(30, 89, 100, 181, 200)
+        self.assertEqual({120: 33, 180: 1, 90: 33, 60: 0, 150: 33}, r)
+
+        # test from real world extreme slowdown
+        t0 = time.time()
+        r = fit_to_bins(30000, 1386369693000, 141368641534364, 1386369719000, 141368891281597)
+        self.assertEqual({1386369690000: 249747233}, r)
+        self.assertLess(time.time()-t0, 0.5)
+       
 
 if False:
     class TestTSDBPollPersister(TestCase):
