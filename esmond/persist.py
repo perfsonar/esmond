@@ -1453,7 +1453,7 @@ def stats(name, config, opts):
             vals = stats[k].get_stats()
             print "%14s % 8d % 8d % 8d % 8d % 14d" % vals
             total = map(sum, zip(total, vals[1:-1]))
-        total.insert(0, "total")
+        total.insert(0, "TOTAL")
         print "%14s % 8d % 8d % 8d % 8d" % tuple(total)
         print ""
         time.sleep(5)
