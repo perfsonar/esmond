@@ -1415,10 +1415,15 @@ class QueueStats:
                 break
 
     def get_stats(self):
+        pending = self.last_added[0] - self.last_read[0]
+        new = self.last_added[0] - self.last_added[1]
+        done = self.last_read[0] - self.last_read[1]
+        delta = new - done
         return (self.qname,
-                self.last_added[0] - self.last_read[0],
-                self.last_added[0] - self.last_added[1],
-                self.last_read[0] - self.last_read[1],
+                pending,
+                new,
+                done,
+                delta,
                 self.last_added[0])
 
 
@@ -1440,13 +1445,18 @@ def stats(name, config, opts):
     keys = stats.keys()
     keys.sort()
     while True:
-        print "%10s %8s %8s %8s %8s" % (
-                "queue", "pending", "new", "done", "max")
+        total = [0,0,0,0]
+        print "%14s %8s %8s %8s %8s %14s" % (
+                "queue", "pending", "new", "done", "delta", "max")
         for k in keys:
             stats[k].update_stats()
-            print "%10s % 8d % 8d % 8d % 8d" % stats[k].get_stats()
+            vals = stats[k].get_stats()
+            print "%14s % 8d % 8d % 8d % 8d % 14d" % vals
+            total = map(sum, zip(total, vals[1:-1]))
+        total.insert(0, "total")
+        print "%14s % 8d % 8d % 8d % 8d" % tuple(total)
         print ""
-        time.sleep(15)
+        time.sleep(5)
 
 
 def worker(name, config, opts):
