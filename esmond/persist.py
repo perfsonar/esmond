@@ -1307,27 +1307,31 @@ class MultiWorkerQueue(object):
         self.qprefix = qprefix
         self.qtype = qtype
         self.num_workers = num_workers
-        self.cur_worker = 1
         self.queues = {}
         self.worker_map = {}
         self.log = get_logger('MultiWorkerQueue')
+        self.worker_load = []
 
         for i in range(1, num_workers + 1):
             name = "%s_%d" % (qprefix, i)
             self.queues[name] = qtype(name, uri)
+            self.worker_load.append([i, 0])
 
     def get_worker(self, result):
         k = ":".join((result.oidset_name, result.device_name))
         try:
             w = self.worker_map[k]
         except KeyError:
-            w = self.cur_worker
+            work_size = len(result.data)
+            w = self.worker_load[0][0]
             self.worker_map[k] = w
-            self.cur_worker += 1
-            self.log.debug("worker assigned: %s %d" % (k, w))
 
-            if self.cur_worker > self.num_workers:
-                self.cur_worker = 1
+            self.worker_load[0][1] += work_size
+
+            self.log.debug("worker assigned: %s %d load=%d" % (k, w,
+                self.worker_load[0][1]))
+
+            self.worker_load.sort(key=lambda x: x[1])
 
         return '%s_%d' % (self.qprefix, w)
 
