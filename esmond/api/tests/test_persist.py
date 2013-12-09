@@ -426,7 +426,7 @@ class CassandraTestResults(object):
 
     # Values for base rate tests
     base_rate_val_first = 20.266666666666665
-    base_rate_val_last  = 26.533333333333335
+    base_rate_val_last  = 26.566666666666666
 
     # Values for aggregation tests
     agg_ts = 1343955600
@@ -849,6 +849,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
