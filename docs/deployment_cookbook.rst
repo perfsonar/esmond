@@ -176,3 +176,17 @@ Test REST api
       + <DataPoint: ts:1384804758000 val:166.666666667> 
 
 * If so, the authentication is set up properly (the PostRawDataWarning is there on purpose and does not indicate an error state.
+
+Initial Cassandra Tuning
+========================
+
+The main thing is to tune the Java heap size and newgen memory.  The rule 
+of thumb on this is for a system with more than 4G memory, allocate 1/4 
+the system memory but with a cap of 8G.  Then set the newgen memory at 
+25-30% of that.
+
+Setting the key cache to around 512M should be more than enough cache 
+for the keys.  The timeseries rows are not great candidates for row 
+caching.
+
+More info: http://www.datastax.com/docs/1.1/operations/tuning
