@@ -119,8 +119,10 @@ def main():
         print 'Using following oidsets/oids for fake devices:'
         pp.pprint(oidset_oid)
     
+    loopcount = 0
     ts = int(time.time())
     val = 100
+    # 43200 - 12 hrs.  1440 loops - 1/2 day of data
 
     print 'Generating {0} data points.'.format(
         options.loop*options.routers*options.interfaces*oid_count)
@@ -147,6 +149,7 @@ def main():
                 qs.put(pr)
         ts += 30
         val += 50
+        loopcount += 1
     pass
 
 if __name__ == '__main__':
