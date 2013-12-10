@@ -33,7 +33,7 @@ from pycassa.columnfamily import ColumnFamily
 
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
      build_metadata_from_test_data, load_test_data
-from esmond.api.api import check_connection, SNMP_NAMESPACE
+from esmond.api.api import check_connection, SNMP_NAMESPACE, ANON_LIMIT
 from esmond.util import atencode
 
 try:
@@ -1067,7 +1067,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             authentication=authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
-        response = self.client.get(url)
+        response = self.client.get(url, authentication=authn)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
@@ -1087,7 +1087,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             authentication=authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
-        response = self.client.get(url)
+        response = self.client.get(url, authentication=authn)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
@@ -1101,6 +1101,258 @@ class TestCassandraApiQueries(ResourceTestCase):
         # not just the value inserted!
         self.assertEquals(data['data'][-1][1], float(params['val'])/30)
         self.assertEquals(data['cf'], 'average')
+
+    def test_interface_bulk_get(self):
+        """Test bulk interface: /bulk/interface/"""
+
+        ifaces = ['xe-7/0/0.0', 'ge-9/1/0']
+
+        devs = []
+
+        for i in ifaces:
+            devs.append({'device': 'rtr_d', 'iface': i})
+
+        payload = { 
+            'interfaces': devs, 
+            'endpoint': ['in'],
+            'cf': 'average',
+            'begin': self.ctr.begin,
+            'end': self.ctr.end
+        }
+
+        response = self.api_client.post('/v1/bulk/interface/', data=payload,
+            format='json')
+        self.assertEquals(response.status_code, 201) # not 200!
+
+        data = json.loads(response.content)
+        self.assertEquals(len(data['data']), 2)
+        self.assertEquals(data['data'][0]['path']['iface'], ifaces[0])
+        self.assertEquals(len(data['data'][0]['data']), 21)
+        self.assertEquals(data['end_time'], self.ctr.end)
+        self.assertEquals(data['begin_time'], self.ctr.begin)
+
+    def test_timeseries_bulk_get(self):
+        """Test bulk interface: /bulk/timeseries/"""
+        # Last/frequency element not quoted since json is going to return
+        # it as a number in the same list and we want to assess the return
+        # values.
+        paths = [
+            ['snmp','rtr_d','FastPollHC','ifHCInOctets','xe-7/0/0.0', 30000],
+            ['snmp','rtr_d','FastPollHC','ifHCInOctets','ge-9/1/0', 30000]
+        ]
+
+        payload = {
+            'type': 'BaseRate',
+            'paths': paths,
+            'begin': self.ctr.begin*1000,
+            'end': self.ctr.end*1000
+        }
+
+        response = self.api_client.post('/v1/bulk/timeseries/', data=payload,
+            format='json')
+        self.assertEquals(response.status_code, 201) # not 200!
+
+        data = json.loads(response.content)
+        self.assertEquals(len(data['data']), 2)
+        self.assertEquals(data['data'][0]['path'], paths[0])
+        self.assertEquals(data['data'][1]['path'], paths[1])
+        self.assertEquals(len(data['data'][0]['data']), 21)
+        self.assertEquals(data['end_time'], payload['end'])
+        self.assertEquals(data['begin_time'], payload['begin'])
+
+    def test_device_info(self):
+        response = self.api_client.get('/v1/device/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertEquals(len(payload), 1)
+
+        data = payload[0]
+
+        self.assertEquals(data['resource_uri'], '/v1/device/rtr_d/')
+        self.assertEquals(data['id'], 1)
+        self.assertEquals(data['name'], 'rtr_d')
+
+        ifaces = None
+
+        for c in data['children']:
+            if c['name'] == 'interface':
+                ifaces = c['uri']
+
+        self.assertTrue(ifaces)
+
+        ifaces += '?limit=0'
+
+        response = self.api_client.get(ifaces)
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(len(data['children']))
+        self.assertEquals(len(data['children']), data['meta']['total_count'])
+
+    def test_interface_info(self):
+        response = self.api_client.get('/v1/interface/?limit=0&ifDescr__contains=fxp')
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(len(data['children']))
+        self.assertEquals(data['children'][0]['ifDescr'], 'fxp0.0')
+        self.assertEquals(len(data['children']), data['meta']['total_count'])
+
+    def test_oidset_info(self):
+        response = self.api_client.get('/v1/oidset/')
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        
+        self.assertEquals(len(data), 16)
+
+    def test_z_throttle(self):
+        ifaces = [
+            'xe-7/0/0.0',
+            'ge-9/1/0',
+            'xe-1/3/0.911',
+            'ge-9/1/1.337',
+            'ge-9/1/2.0',
+            'xe-1/1/0.65',
+            'ge-9/0/8',
+            'xe-0/1/0.0',
+            'ge-9/1/0.909',
+            'ge-9/0/5',
+            'lo0.0',
+            'ge-9/1/9',
+            'ge-9/0/2.0',
+            'ge-9/1/3.0',
+            'xe-1/2/0',
+            'xe-0/1/0',
+            'ge-9/0/2',
+            'xe-1/3/0',
+            'ge-9/1/5.0',
+            'ge-9/1/9.0',
+            'irb.0',
+            'ge-9/0/9.1116',
+            'ge-9/0/7.0',
+            'ge-9/0/5.0',
+            'ge-9/0/4.0',
+            'xe-9/3/0.912',
+            'ge-9/0/8.0',
+            'ge-9/0/9.1114',
+            'xe-0/2/0.16',
+            'ge-9/1/6',
+            'ge-9/0/1.0',
+            'xe-1/1/0',
+            'ge-9/0/0.66',
+            'ge-9/1/5',
+            'ge-9/0/1',
+            'xe-7/1/0',
+            'ge-9/1/2',
+            'xe-0/0/0',
+            'ge-9/1/1.3003',
+            'fxp0.0',
+            'ge-9/0/0',
+            'lo0',
+            'ge-9/0/0.44',
+            'xe-1/2/0.41',
+            'ge-9/1/1.332',
+            'ge-9/1/8',
+            'xe-1/0/0.0',
+            'xe-9/3/0.916',
+            'ge-9/1/6.0',
+            'ge-9/1/4.0',
+            'ge-9/0/3',
+            'ge-9/1/1.336',
+            'ge-9/0/4',
+            'ge-9/1/1.333',
+            'xe-1/0/0',
+            'xe-1/3/0.915',
+            'xe-8/0/0',
+            'ge-9/1/0.913',
+            'ge-9/1/3',
+            'ge-9/0/6.0',
+            'ge-9/0/3.0',
+            'ge-9/1/8.0',
+            'xe-0/2/0',
+            'xe-8/0/0.0',
+            'xe-7/0/0',
+            'ge-9/0/9',
+            'ge-9/0/6',
+            'xe-0/0/0.0',
+            'ge-9/0/7',
+            'ge-9/1/1',
+            'xe-1/1/0.45',
+            'xe-9/3/0',
+            'ge-9/1/4',
+        ]
+
+        devs = []
+
+        for i in ifaces:
+            devs.append({'device': 'rtr_d', 'iface': i})
+
+        payload = { 
+            'interfaces': devs, 
+            'endpoint': ['in', 'out'],
+            'cf': 'average',
+            'begin': self.ctr.begin,
+            'end': self.ctr.end
+        }
+
+        config = get_config(get_config_path())
+        # This assertion will trigger if the api_anon_limit is set 
+        # higher than the number of requests that are about to be
+        # generated.  The default is usually around 30 and this will
+        # generate somewhere in the neighborhood of 150 different
+        # queries and should trigger the throttling.
+        self.assertLessEqual(ANON_LIMIT, len(ifaces)*len(payload['endpoint']))
+
+        # Make a request the bulk endpoint will throttle for too many 
+        # queries w/out auth.
+
+        response = self.api_client.post('/v1/bulk/interface/', data=payload,
+            format='json')
+        self.assertEquals(response.status_code, 401)
+
+        # Make the same request with authentication.
+
+        authn = self.create_apikey(self.td.user_admin.username, 
+            self.td.user_admin_apikey.key)
+        response = self.api_client.post('/v1/bulk/interface/', data=payload,
+            format='json', authentication=authn)
+        self.assertEquals(response.status_code, 201) # not 200!
+
+        # Make a bunch of requests to make sure that the throttling
+        # code kicks in.
+
+        params = {
+            'begin': self.ctr.begin-3600, # back an hour to get agg bin.
+            'end': self.ctr.end,
+            'agg': self.ctr.agg_freq
+        }
+
+        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+
+        response = self.client.get(url, params)
+
+        loops = 5 # leave a little overhead
+
+        if not config.api_throttle_at:
+            loops += 150 # tastypie default
+        else:
+            loops += config.api_throttle_at
+
+        # Make looping requests looking for the 429 throttle return code.
+        # Leave a couple of extra loops as margin of error, but break
+        # out if no 429 received so it doesn't go into the loop of death.
+
+        rcount = 1
+        got_429 = False
+
+        while rcount < loops:
+            response = self.client.get(url, params)
+            if response.status_code == 429:
+                got_429 = True
+                break
+            rcount += 1
+
+        self.assertEqual(got_429, True)
+
+        pass
 
 class TestFitToBins(TestCase):
     def test_fit_to_bins(self):
