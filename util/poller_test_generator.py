@@ -137,6 +137,7 @@ def main():
         options.loop*options.routers*options.interfaces*oid_count)
 
     for iteration in xrange(options.loop):
+        if options.verbose: print 'Loop {0}/{1}'.format(iteration, options.loop)
         for dn in router_names[0:options.routers]:
             device_name = '{0}_rtr_{1}'.format(options.prefix, dn)
             for oidset in oidset_oid.keys():
