@@ -818,10 +818,13 @@ class CassandraPollPersister(PollPersister):
             if delta_t < SEEK_BACK_THRESHOLD:
                 # Only execute the invalid value backfill if delta_t is
                 # less than 30 days.
+                fill_count = 0
                 for bin_name in range(prev_slot, curr_slot, data.freq):
                     bad_bin = BaseRateBin(ts=bin_name, freq=data.freq, val=0,
                         is_valid=0, path=data.path)
                     self.db.update_rate_bin(bad_bin)
+                    fill_count += 1
+                self.log.error('Backfilled {0} slots.'.format(fill_count))
 
             curr_frac = int(delta_v * ((curr_data_ts - curr_slot)/float(delta_t)))
             # Update only the "current" bin and return.
