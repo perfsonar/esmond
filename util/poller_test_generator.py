@@ -98,8 +98,14 @@ def main():
                 help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
 
-    if options.routers > 26:
-        print 'There is an upper bound of 26 fake routers.'
+    router_names = []
+
+    for i in range(1,5):
+        for c in string.lowercase:
+            router_names.append(c*i)
+
+    if options.routers > 26*4:
+        print 'There is an upper bound of {0} fake routers.'.format(26*4)
         return -1
 
     config = get_config(get_config_path())
@@ -128,7 +134,7 @@ def main():
         options.loop*options.routers*options.interfaces*oid_count)
 
     for iteration in xrange(options.loop):
-        for dn in string.lowercase[0:options.routers]:
+        for dn in router_names[0:options.routers]:
             device_name = 'fake_rtr_{0}'.format(dn)
             for oidset in oidset_oid.keys():
                 data = []
