@@ -139,7 +139,6 @@ def main():
     for iteration in xrange(options.loop):
         for dn in router_names[0:options.routers]:
             device_name = '{0}_rtr_{1}'.format(options.prefix, dn)
-            print device_name
             for oidset in oidset_oid.keys():
                 data = []
                 for oid in oidset_oid[oidset]:
