@@ -94,3 +94,35 @@ But sizable blocks of code (something like: 1104-1119) are candidates for
 inspection to see if additional tests need to be formulated to execute 
 that block.
 
+Profiling the persister
+-----------------------
+
+To profile the persister, set the "profile_persister = no" line in the config 
+file to "yes."  Then run the persister for a while - do note that the 
+profiler does put some drag on the processes.  After 20 minutes or so (or less depending on what you're checking), wait for the queues to drain from
+whatever method you used to fill them (poller, data generatation script) and 
+issue a clean shutdown signal to the persister.
+
+Individual files with the cProfile information will be created in the 
+directory indicated by the "traceback_dir" entry in the config file.  They 
+will be of the following format::
+
+    aluifref-1386882414.34.prof
+    alusapref-1386882414.54.prof
+    cassandra_1-1386882414.63.prof
+    cassandra_2-1386882414.68.prof
+    cassandra_3-1386882414.73.prof
+    cassandra_4-1386882414.78.prof
+    cassandra_5-1386882414.83.prof
+    cassandra_6-1386882414.88.prof
+    cassandra_7-1386882414.93.prof
+    cassandra_8-1386882414.98.prof
+    cassandra_9-1386882415.04.prof
+    ifref-1386882414.45.prof
+    infifref-1386882414.43.prof
+
+They are named by the qname of the persister process that generated them and 
+just a time.time() stamp to make the names unique over subsequent runs.
+
+Don't forget to turn profiling back to "no" when you are done.
+
