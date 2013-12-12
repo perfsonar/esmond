@@ -15,7 +15,7 @@ import time
 
 from collections import namedtuple
 
-from django.test import TestCase, LiveServerTestCase
+from django.test import TestCase
 from django.conf import settings
 
 from tastypie.test import ResourceTestCase
@@ -34,7 +34,6 @@ from pycassa.columnfamily import ColumnFamily
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
      build_metadata_from_test_data, load_test_data
 from esmond.api.api import check_connection, SNMP_NAMESPACE, ANON_LIMIT
-from esmond.api.client.snmp import ApiConnect, ApiFilters
 from esmond.util import atencode
 
 try:
@@ -1375,111 +1374,6 @@ class TestFitToBins(TestCase):
         r = fit_to_bins(30000, 1386369693000, 141368641534364, 1386369719000, 141368891281597)
         self.assertEqual({1386369690000: 249747233}, r)
         self.assertLess(time.time()-t0, 0.5)
-
-class TestClientLibs(LiveServerTestCase):
-    fixtures = ['oidsets.json']
-
-    def setUp(self):
-        self.td = build_rtr_d_metadata()
-        test_data = load_test_data("rtr_d_ifhcin_long.json")
-        build_metadata_from_test_data(test_data)
-
-        self.ctr = CassandraTestResults()
-
-    def test_snmp_device_hierarchy(self):
-        filters = ApiFilters()
-
-        filters.begin_time = self.ctr.begin
-        filters.end_time = self.ctr.end
-
-        conn = ApiConnect('http://localhost:8081', filters)
-        d = list(conn.get_devices())
-        self.assertEquals(len(d), 1)
-        device = d[0]
-        self.assertEquals(device.name, 'rtr_d')
-
-        self.assertTrue(device.begin_time)
-        self.assertTrue(device.end_time)
-        self.assertTrue(device.id)
-        self.assertFalse(device.leaf)
-        self.assertTrue(device.resource_uri)
-        self.assertTrue(device.children)
-        self.assertTrue(device.active)
-        self.assertTrue(device.oidsets)
-
-        ifaces = list(device.get_interfaces())
-
-        interface = ifaces[0]
-
-        self.assertEquals(interface.device, '/v1/device/rtr_d/')
-        self.assertEquals(interface.ifDescr, 'fxp0.0')
-
-        endpoints = list(interface.get_endpoints())
-        self.assertEquals(len(endpoints), 2)
-        self.assertEquals(endpoints[0].name, 'out')
-        self.assertEquals(endpoints[1].name, 'in')
-
-        payload = endpoints[1].get_data()
-        self.assertTrue(payload.agg)
-        self.assertTrue(payload.cf)
-
-        datapoints = payload.data
-
-        self.assertEquals(datapoints[0].val, self.ctr.base_rate_val_first)
-        self.assertEquals(datapoints[-1].val, self.ctr.base_rate_val_last)
-
-    def test_snmp_interfaces(self):
-        filters = ApiFilters()
-
-        filters.begin_time = self.ctr.begin
-        filters.end_time = self.ctr.end
-
-        conn = ApiConnect('http://localhost:8081', filters)
-
-        iface_filt = {'ifDescr__contains': 'fxp0.0'}
-
-        i = list(conn.get_interfaces(**iface_filt))
-        self.assertEquals(len(i), 1)
-
-        interface = i[0]
-
-        self.assertEquals(interface.device, '/v1/device/rtr_d/')
-        self.assertEquals(interface.ifDescr, 'fxp0.0')
-
-        self.assertTrue(interface.device)
-        self.assertTrue(interface.ifAdminStatus)
-        self.assertTrue(interface.ifAlias)
-        self.assertTrue(interface.ifDescr)
-        self.assertTrue(interface.ifHighSpeed)
-        self.assertTrue(interface.ifIndex)
-        self.assertTrue(interface.ifMtu)
-        self.assertTrue(interface.ifOperStatus)
-        self.assertTrue(interface.ifPhysAddress)
-        self.assertTrue(interface.ifSpeed)
-        self.assertFalse(interface.ifType)
-        self.assertTrue(interface.ipAddr)
-        self.assertTrue(interface.uri)
-
-    def test_snmp_bulk_get(self):
-        filters = ApiFilters()
-
-        filters.begin_time = self.ctr.begin
-        filters.end_time = self.ctr.end
-
-        conn = ApiConnect('http://localhost:8081', filters)
-
-        iface_filt = {'ifDescr__contains': 'xe-'}
-
-        data = conn.get_interface_bulk_data(**iface_filt)
-        self.assertEquals(len(data.data), 24)
-
-        for d in data.data:
-            self.assertEquals(d.interface[0:3], 'xe-')
-            self.assertEquals(len(d.data), 21)
-            for dd in d.data:
-                self.assertNotEquals(dd.val, None)
-
-        pass
        
 
 if False:
