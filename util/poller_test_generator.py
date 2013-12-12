@@ -90,6 +90,9 @@ def main():
     parser.add_option('-l', '--loop', metavar='NUM_LOOPS',
             type='int', dest='loop', default=1,
             help='Number of times to send data for each "device (default=%default)."')
+    parser.add_option('-p', '--prefix', metavar='PREFIX',
+            type='string', dest='prefix', default='fake',
+            help='Device name prefix - make new names (default=%default).')
     parser.add_option('-W', '--write',
             dest='write', action='store_true', default=False,
             help='Actually write the data to the memcache queue.')
@@ -134,8 +137,9 @@ def main():
         options.loop*options.routers*options.interfaces*oid_count)
 
     for iteration in xrange(options.loop):
+        if options.verbose: print 'Loop {0}/{1}'.format(iteration, options.loop)
         for dn in router_names[0:options.routers]:
-            device_name = 'fake_rtr_{0}'.format(dn)
+            device_name = '{0}_rtr_{1}'.format(options.prefix, dn)
             for oidset in oidset_oid.keys():
                 data = []
                 for oid in oidset_oid[oidset]:

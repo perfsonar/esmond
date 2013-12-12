@@ -803,6 +803,7 @@ class CassandraPollPersister(PollPersister):
             self.log.error('delta_v < 0: %s vals: %s - %s path: %s' % \
                 (delta_v,data.val,metadata.last_val,data.get_meta_key()))
             metadata.refresh_from_raw(data)
+            self.db.update_metadata(data.get_meta_key(), metadata)
             return
             
         # This re-implements old "hearbeat" logic.  If the current time
