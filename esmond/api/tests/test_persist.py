@@ -552,7 +552,7 @@ class TestCassandraPollPersister(TestCase):
         """Make sure the tsdb and cassandra data match"""
         config = get_config(get_config_path())
         test_data = load_test_data("rtr_d_ifhcin_long.json")
-        #return
+        # return
         config.db_clear_on_testing = True
         config.db_profile_on_testing = True
 
@@ -562,7 +562,7 @@ class TestCassandraPollPersister(TestCase):
         p.db.flush()
         p.db.close()
         p.db.stats.report('all')
-        
+        return
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = TSDBPollPersister(config, "test", persistq=q)
