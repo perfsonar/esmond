@@ -126,3 +126,7 @@ just a time.time() stamp to make the names unique over subsequent runs.
 
 Don't forget to turn profiling back to "no" when you are done.
 
+Be aware that unless you perfectly killed the persister at the precice moment 
+it was done consuming things, the top process reported might be {time.sleep}. 
+This is because of a tight loop when a persister process has nothing to do.
+
