@@ -8,6 +8,8 @@ import time
 import signal
 import errno
 import datetime
+import cProfile
+import pstats
 import __main__
 
 from math import floor, ceil
@@ -137,6 +139,10 @@ class PollPersister(object):
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
 
+        if self.config.profile_persister:
+            pr = cProfile.Profile()
+            pr.enable()
+
         while self.running:
             try:
                 task = self.persistq.get()
@@ -166,6 +172,15 @@ class PollPersister(object):
                     self.flush()
                     self.sleeping = True
                 time.sleep(PERSIST_SLEEP_TIME)
+
+        if self.config.profile_persister:
+            pr.disable()
+            pfile = '{0}-{1}.prof'.format(self.qname, time.time())
+            ppath = self.config.traceback_dir + '/' + pfile
+            fh = open(ppath, 'a')
+            sortby = 'cumulative'
+            pstats.Stats(pr, stream=fh).strip_dirs().sort_stats(sortby).print_stats()
+            fh.close()
 
 
 class StreamingPollPersister(PollPersister):
