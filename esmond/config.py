@@ -68,6 +68,7 @@ class EsmondConfig(object):
         self.pid_dir = None
         self.poll_retries = 5
         self.poll_timeout = 2
+        self.profile_persister = False
         self.reload_interval = 1*10
         self.rrd_path = None
         self.send_error_email = False
@@ -122,6 +123,7 @@ class EsmondConfig(object):
                 'pid_dir',
                 'poll_retries',
                 'poll_timeout',
+                'profile_persister',
                 'reload_interval',
                 'rrd_path',
                 'sql_db_engine',
@@ -141,7 +143,8 @@ class EsmondConfig(object):
                 setattr(self, opt, cfg.get("main", opt))
 
         for key, val in cfg.items('main'):
-            if key == 'db_profile_on_testing':
+            if key == 'db_profile_on_testing' or \
+                key == 'profile_persister':
                 setattr(self, key, cfg.getboolean('main', key))
         
         self.persist_map = {}

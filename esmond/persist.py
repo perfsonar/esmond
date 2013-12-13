@@ -8,6 +8,8 @@ import time
 import signal
 import errno
 import datetime
+import cProfile
+import pstats
 import __main__
 
 from math import floor, ceil
@@ -137,6 +139,10 @@ class PollPersister(object):
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
 
+        if self.config.profile_persister:
+            pr = cProfile.Profile()
+            pr.enable()
+
         while self.running:
             try:
                 task = self.persistq.get()
@@ -166,6 +172,15 @@ class PollPersister(object):
                     self.flush()
                     self.sleeping = True
                 time.sleep(PERSIST_SLEEP_TIME)
+
+        if self.config.profile_persister:
+            pr.disable()
+            pfile = '{0}-{1}.prof'.format(self.qname, time.time())
+            ppath = self.config.traceback_dir + '/' + pfile
+            fh = open(ppath, 'a')
+            sortby = 'cumulative'
+            pstats.Stats(pr, stream=fh).strip_dirs().sort_stats(sortby).print_stats()
+            fh.close()
 
 
 class StreamingPollPersister(PollPersister):
@@ -442,6 +457,13 @@ def fit_to_bins(freq, ts_prev, val_prev, ts_curr, val_curr):
     delta_t = ts_curr - ts_prev
     delta_v = val_curr - val_prev
 
+    # if samples are less than freq apart and both in the same bin
+    # all of the data goes into the same bin
+    if bin_curr == bin_prev:
+        return {bin_prev: delta_v}
+
+    assert bin_prev < bin_mid <= bin_curr
+
     frac_prev = (bin_mid - ts_prev)/float(delta_t)
     frac_curr = (ts_curr - bin_curr)/float(delta_t)
 
@@ -578,7 +600,7 @@ class CassandraPollPersister(PollPersister):
         self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
             time.time() - t0, result))
 
-    def aggregate_base_rate(self, data):
+    def _old_aggregate_base_rate(self, data):
         """
         Given incoming data that is meant for aggregation, generate and 
         store the base rate deltas, update the metadata cache, and if a valid 
@@ -736,7 +758,7 @@ class CassandraPollPersister(PollPersister):
 
         return delta_v
 
-    def _broken_aggregate_base_rate(self, data):
+    def aggregate_base_rate(self, data):
         """
         Given incoming data that is meant for aggregation, generate and 
         store the base rate deltas, update the metadata cache, and if a valid 
@@ -796,6 +818,7 @@ class CassandraPollPersister(PollPersister):
             self.log.error('delta_v < 0: %s vals: %s - %s path: %s' % \
                 (delta_v,data.val,metadata.last_val,data.get_meta_key()))
             metadata.refresh_from_raw(data)
+            self.db.update_metadata(data.get_meta_key(), metadata)
             return
             
         # This re-implements old "hearbeat" logic.  If the current time
@@ -811,10 +834,13 @@ class CassandraPollPersister(PollPersister):
             if delta_t < SEEK_BACK_THRESHOLD:
                 # Only execute the invalid value backfill if delta_t is
                 # less than 30 days.
+                fill_count = 0
                 for bin_name in range(prev_slot, curr_slot, data.freq):
                     bad_bin = BaseRateBin(ts=bin_name, freq=data.freq, val=0,
                         is_valid=0, path=data.path)
                     self.db.update_rate_bin(bad_bin)
+                    fill_count += 1
+                self.log.error('Backfilled {0} slots.'.format(fill_count))
 
             curr_frac = int(delta_v * ((curr_data_ts - curr_slot)/float(delta_t)))
             # Update only the "current" bin and return.
@@ -1000,11 +1026,6 @@ class IfRefPollPersister(HistoryTablePersister):
             for name, val in self.data[oid]:
                 if oid in self.int_oids:
                     val = int(val)
-                if oid == 'ifPhysAddress':
-                    if val != '':
-                        val = ":".join(["%02x" % ord(i) for i in val])
-                    else:
-                        val = None
                 foo, ifIndex = name.split('.')
                 ifIndex = int(ifIndex)
                 ifref_objs[ifIndex_map[ifIndex]][oid] = val
@@ -1168,12 +1189,21 @@ class PersistQueue(object):
         pass
 
     def serialize(self, val):
-        return pickle.dumps(val)
-        # return val.json() # .dumps() is being called in the PollResult method
+        # return pickle.dumps(val)
+        try:
+            return val.json() # .dumps() is being called in the PollResult method
+        except Exception as e:
+            m = 'Poll Result {0} could not be serialized: {1}'.format(val, e)
+            if hasattr(self, 'log'):
+                self.log.error(m)
+            # Not sure if the logger for this class is working and 
+            # we want an error in other cases anyways.
+            print >>sys.stderr, m
+            return None
 
     def deserialize(self, val):
-        return pickle.loads(val)
-        # return json.loads(val)
+        # return pickle.loads(val)
+        return json.loads(val)
 
 class JsonSerializer(object):
     """This is passed to memcache.Client() to replace default use of 
@@ -1208,9 +1238,9 @@ class MemcachedPersistQueue(PersistQueue):
 
         self.log = get_logger("MemcachedPersistQueue_%s" % self.qname)
 
-        self.mc = memcache.Client([memcached_uri])
-        # self.mc = memcache.Client([memcached_uri],
-        #     pickler=JsonSerializer, unpickler=JsonSerializer)
+        # self.mc = memcache.Client([memcached_uri])
+        self.mc = memcache.Client([memcached_uri],
+            pickler=JsonSerializer, unpickler=JsonSerializer)
 
         self.last_added = '%s_%s_last_added' % (self.PREFIX, self.qname)
         la = self.mc.get(self.last_added)
@@ -1252,8 +1282,8 @@ class MemcachedPersistQueue(PersistQueue):
                 if errors:
                     self.log.error("missing data: %d items missing (qids %d-%d)" %
                             (errors, qid-errors, qid-1))
-                return self.deserialize(val)
-                # return PollResult(**self.deserialize(val))
+                # return self.deserialize(val)
+                return PollResult(**self.deserialize(val))
 
             errors += 1
 
@@ -1296,27 +1326,31 @@ class MultiWorkerQueue(object):
         self.qprefix = qprefix
         self.qtype = qtype
         self.num_workers = num_workers
-        self.cur_worker = 1
         self.queues = {}
         self.worker_map = {}
         self.log = get_logger('MultiWorkerQueue')
+        self.worker_load = []
 
         for i in range(1, num_workers + 1):
             name = "%s_%d" % (qprefix, i)
             self.queues[name] = qtype(name, uri)
+            self.worker_load.append([i, 0])
 
     def get_worker(self, result):
         k = ":".join((result.oidset_name, result.device_name))
         try:
             w = self.worker_map[k]
         except KeyError:
-            w = self.cur_worker
+            work_size = len(result.data)
+            w = self.worker_load[0][0]
             self.worker_map[k] = w
-            self.cur_worker += 1
-            self.log.debug("worker assigned: %s %d" % (k, w))
 
-            if self.cur_worker > self.num_workers:
-                self.cur_worker = 1
+            self.worker_load[0][1] += work_size
+
+            self.log.debug("worker assigned: %s %d load=%d" % (k, w,
+                self.worker_load[0][1]))
+
+            self.worker_load.sort(key=lambda x: x[1])
 
         return '%s_%d' % (self.qprefix, w)
 
@@ -1404,10 +1438,15 @@ class QueueStats:
                 break
 
     def get_stats(self):
+        pending = self.last_added[0] - self.last_read[0]
+        new = self.last_added[0] - self.last_added[1]
+        done = self.last_read[0] - self.last_read[1]
+        delta = new - done
         return (self.qname,
-                self.last_added[0] - self.last_read[0],
-                self.last_added[0] - self.last_added[1],
-                self.last_read[0] - self.last_read[1],
+                pending,
+                new,
+                done,
+                delta,
                 self.last_added[0])
 
 
@@ -1429,13 +1468,18 @@ def stats(name, config, opts):
     keys = stats.keys()
     keys.sort()
     while True:
-        print "%10s %8s %8s %8s %8s" % (
-                "queue", "pending", "new", "done", "max")
+        total = [0,0,0,0]
+        print "%14s %8s %8s %8s %8s %14s" % (
+                "queue", "pending", "new", "done", "delta", "max")
         for k in keys:
             stats[k].update_stats()
-            print "%10s % 8d % 8d % 8d % 8d" % stats[k].get_stats()
+            vals = stats[k].get_stats()
+            print "%14s % 8d % 8d % 8d % 8d % 14d" % vals
+            total = map(sum, zip(total, vals[1:-1]))
+        total.insert(0, "TOTAL")
+        print "%14s % 8d % 8d % 8d % 8d" % tuple(total)
         print ""
-        time.sleep(15)
+        time.sleep(5)
 
 
 def worker(name, config, opts):

@@ -80,16 +80,19 @@ def main():
     parser = OptionParser(usage=usage)
     parser.add_option('-r', '--routers', metavar='NUM_ROUTERS',
             type='int', dest='routers', default=1,
-            help='Number of test "routers" to generate.')
+            help='Number of test "routers" to generate (default=%default).')
     parser.add_option('-i', '--interfaces', metavar='NUM_INTERFACES',
             type='int', dest='interfaces', default=2,
-            help='Number of test interfaces to generate on each test router.')
+            help='Number of test interfaces to generate on each test router (default=%default).')
     parser.add_option('-o', '--oidsets', metavar='NUM_OIDSETS',
             type='int', dest='oidsets', default=2,
-            help='Number of oidsets to assign to each fake device/router.')
+            help='Number of oidsets to assign to each fake device/router (default=%default).')
     parser.add_option('-l', '--loop', metavar='NUM_LOOPS',
             type='int', dest='loop', default=1,
-            help='Number of times to send data for each "device."')
+            help='Number of times to send data for each "device (default=%default)."')
+    parser.add_option('-p', '--prefix', metavar='PREFIX',
+            type='string', dest='prefix', default='fake',
+            help='Device name prefix - make new names (default=%default).')
     parser.add_option('-W', '--write',
             dest='write', action='store_true', default=False,
             help='Actually write the data to the memcache queue.')
@@ -98,8 +101,14 @@ def main():
                 help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
 
-    if options.routers > 26:
-        print 'There is an upper bound of 26 fake routers.'
+    router_names = []
+
+    for i in range(1,5):
+        for c in string.lowercase:
+            router_names.append(c*i)
+
+    if options.routers > 26*4:
+        print 'There is an upper bound of {0} fake routers.'.format(26*4)
         return -1
 
     config = get_config(get_config_path())
@@ -119,15 +128,18 @@ def main():
         print 'Using following oidsets/oids for fake devices:'
         pp.pprint(oidset_oid)
     
+    loopcount = 0
     ts = int(time.time())
     val = 100
+    # 43200 - 12 hrs.  1440 loops - 1/2 day of data
 
     print 'Generating {0} data points.'.format(
         options.loop*options.routers*options.interfaces*oid_count)
 
     for iteration in xrange(options.loop):
-        for dn in string.lowercase[0:options.routers]:
-            device_name = 'fake_rtr_{0}'.format(dn)
+        if options.verbose: print 'Loop {0}/{1}'.format(iteration, options.loop)
+        for dn in router_names[0:options.routers]:
+            device_name = '{0}_rtr_{1}'.format(options.prefix, dn)
             for oidset in oidset_oid.keys():
                 data = []
                 for oid in oidset_oid[oidset]:
@@ -147,6 +159,7 @@ def main():
                 qs.put(pr)
         ts += 30
         val += 50
+        loopcount += 1
     pass
 
 if __name__ == '__main__':

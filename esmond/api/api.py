@@ -243,7 +243,7 @@ class AnonymousBulkLimitElseApiAuthentication(ApiKeyAuthentication):
             return True
         else:
             authenticated.content = \
-                'Request for {0} endpoints exceeds the unauthenticated limit of {1}'.format(request_queries, self._anonymous_limit)
+                'Request for {0} endpoints exceeds the unauthenticated limit of {1}'.format(request_queries, ANON_LIMIT)
 
         return authenticated
 
@@ -283,7 +283,7 @@ class AnonymousTimeseriesBulkLimitElseApiAuthentication(ApiKeyAuthentication):
             return True
         else:
             authenticated.content = \
-                'Request for {0} paths exceeds the unauthenticated limit of {1}'.format(len(post_payload['paths']), self._anonymous_limit)
+                'Request for {0} paths exceeds the unauthenticated limit of {1}'.format(len(post_payload['paths']), ANON_LIMIT)
 
         return authenticated
 

@@ -97,7 +97,8 @@ def aggregate_to_device_interface_endpoint(data, verbosity=False):
             aggs[row.device][row.interface][row.endpoint] = 0
         for data in row.data:
             if verbosity > 1: print '  *', data
-            aggs[row.device][row.interface][row.endpoint] += data.val
+            if data.val != None:
+                aggs[row.device][row.interface][row.endpoint] += data.val
 
     return aggs
 

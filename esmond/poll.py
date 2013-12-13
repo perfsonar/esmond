@@ -344,6 +344,24 @@ class SummarizeValueTranslator(PollTranslator):
             results[k]=results.get(k,0)+1
         return [(list(k),results[k]) for k in results.keys()]
 
+class IfRefTranslator(PollTranslator):
+    """Clean up IfRef responses.
+
+    ifPhysAddress is returned as raw bytes which is not JSON serializable.
+    This converts those raw bytes into an ASCII representation."""
+
+    def translate(self, data):
+        dataout = []
+        for var, val in data:
+            if var.startswith('ifPhysAddress.'):
+                if val != '':
+                    val = ":".join(["%02x" % ord(i) for i in val])
+                else:
+                    val = None
+            dataout.append((var, val))
+
+        return dataout
+
 class PersistThread(threading.Thread):
     INIT = 0
     RUN = 1
@@ -773,6 +791,10 @@ class UncorrelatedPoller(Poller):
 
     def __init__(self, config, device, oidset, poller, persistq):
         Poller.__init__(self, config, device, oidset, poller, persistq)
+        if 'translator' in self.poller_args:
+            self.translator = eval(self.poller_args['translator'])()
+        else:
+            self.translator = None
 
     def begin(self):
         pass
@@ -781,6 +803,8 @@ class UncorrelatedPoller(Poller):
         dataout = {}
         for oid in self.oidset.oids.all():
             dataout[oid.name] = filter_data(oid.name, data)
+            if self.translator:
+                dataout[oid.name] = self.translator.translate(dataout[oid.name])
 
         pr = PollResult(self.oidset.name, self.device.name, "",
                 time.time(), dataout, {})
