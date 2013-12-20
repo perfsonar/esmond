@@ -372,6 +372,6 @@ class PSMetadataParameters(models.Model):
     parameter_value = models.TextField()
     
     class Meta:
-        db_table = "ps_metadata"
+        db_table = "ps_metadata_parameters"
     
     
