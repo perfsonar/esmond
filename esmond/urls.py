@@ -17,6 +17,5 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
-    (r'^perfsonar/', include(perfsonar_api.urls)),
-    (r'', include(v1_api.urls)),
+    (r'', include(v1_api.urls + perfsonar_api.urls)),
 )

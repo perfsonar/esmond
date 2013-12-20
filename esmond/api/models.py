@@ -336,6 +336,10 @@ class APIPermission(Permission):
         self.content_type = ct
         super(APIPermission, self).save(*args, **kwargs)
 
+class PSMetadataManager(models.Manager):
+    def search():
+        return []
+    
 class PSMetadata(models.Model):
     metadata_key = models.SlugField(max_length=128, db_index=True, unique=True )
     subject_type = models.CharField(max_length=128)
@@ -343,10 +347,6 @@ class PSMetadata(models.Model):
     
     class Meta:
         db_table = "ps_metadata"
-
-class PSMetadataManager(models.ModelManager):
-    def search():
-        return []
     
 class PSPointToPointSubject(models.Model):
     metadata = models.ForeignKey(PSMetadata)
