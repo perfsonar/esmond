@@ -5,6 +5,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 from esmond.api.api import v1_api
+from esmond.api.perfsonar import perfsonar_api
 
 urlpatterns = patterns('',
     # Example:
@@ -16,5 +17,6 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
+    (r'^perfsonar/', include(perfsonar_api.urls)),
     (r'', include(v1_api.urls)),
 )
