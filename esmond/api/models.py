@@ -335,3 +335,43 @@ class APIPermission(Permission):
         )
         self.content_type = ct
         super(APIPermission, self).save(*args, **kwargs)
+
+class PSMetadata(models.Model):
+    metadata_key = models.SlugField(max_length=128, db_index=True, unique=True )
+    subject_type = models.CharField(max_length=128)
+    
+    class Meta:
+        db_table = "ps_metadata"
+        
+class PSPointToPointSubject(models.Model):
+    metadata = models.ForeignKey(PSMetadata)
+    tool_name = models.CharField(max_length=128)
+    source = models.GenericIPAddressField(db_index=True)
+    destination = models.GenericIPAddressField(db_index=True)
+    measurement_agent = models.GenericIPAddressField()
+    input_source = models.CharField(max_length=128)
+    input_destination = models.CharField(max_length=128)
+    
+    class Meta:
+        db_table = "ps_p2p_subject"
+        ordering = ["source","destination"]
+
+class PSEventTypes(models.Model):
+    metadata = models.ForeignKey(PSMetadata)
+    event_type =  models.CharField(max_length=128, db_index=True)
+    summary_type =  models.CharField(max_length=128)
+    summary_window =  models.BigIntegerField()
+    
+    class Meta:
+        db_table = "ps_event_types"
+        ordering = ["metadata","event_type", "summary_type", "summary_window"]
+
+class PSMetadataParameters(models.Model):
+    metadata = models.ForeignKey(PSMetadata)
+    parameter_key = models.CharField(max_length=128, db_index=True)
+    parameter_value = models.TextField()
+    
+    class Meta:
+        db_table = "ps_metadata"
+    
+    
