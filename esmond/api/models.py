@@ -10,7 +10,7 @@ from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, at
 class DeviceTag(models.Model):
     """A tag for a :py:class:`.Device.`"""
 
-    name = models.CharField(max_length = 256, unique=True)
+    name = models.CharField(max_length = 255, unique=True)
 
     class Meta:
         db_table = "devicetag"
