@@ -380,6 +380,9 @@ class PSEventTypes(models.Model):
     def __unicode__(self):
         return "%s:%s:%d" % (self.event_type, self.summary_type, self.summary_window)
     
+    def encoded_event_type(self):
+        return atencode(self.event_type)
+    
     def encoded_summary_type(self):
         return atencode(self.summary_type)
     

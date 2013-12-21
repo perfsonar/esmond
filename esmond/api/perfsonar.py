@@ -37,12 +37,45 @@ class PSEventTypesResource(ModelResource):
         allowed_methods = ['get']
         excludes = ['id']
         filtering = {
-            "summary_type": ['exact']    
+            "event_type": ['exact'],  
+            "summary_type": ['exact'],
+            "summary_window": ['exact']    
         }
-        
+    
+    @staticmethod
+    def format_summary_obj(event_type):
+        summary_obj = {}
+        summary_obj['uri'] = event_type['resource_uri']
+        summary_obj['summary-type'] = event_type['summary_type']
+        summary_obj['summary-window'] = event_type['summary_window']
+        return summary_obj
+    
+    @staticmethod
+    def format_event_types(event_types):
+        formatted_event_type_map = {}
+        for event_type_bundle in event_types:
+            event_type = event_type_bundle.data
+            #Build new or use existing
+            formatted_event_type = {}
+            if(event_type['event_type'] in formatted_event_type_map):
+                formatted_event_type = formatted_event_type_map[event_type['event_type']]
+            else:
+                formatted_event_type['event-type'] = event_type['event_type']
+                formatted_event_type['base-uri'] = ""
+                formatted_event_type['summaries'] = []
+                formatted_event_type_map[event_type['event_type']] = formatted_event_type
+             
+            #Determine summary type and update accordingly   
+            if(event_type['summary_type'] == 'base'):
+                formatted_event_type['base-uri'] = event_type['resource_uri']
+            else:
+                summary_obj = PSEventTypesResource.format_summary_obj(event_type)
+                formatted_event_type['summaries'].append(summary_obj) 
+                
+        return formatted_event_type_map.values()
+    
     def alter_list_data_to_serialize(self, request, data):
-        formatted_objs = format_list_keys(data)
-        return formatted_objs
+        return PSEventTypesResource.format_event_types(data['objects'])
     
     def get_resource_uri(self, bundle_or_obj=None):
         if isinstance(bundle_or_obj, Bundle):
@@ -51,8 +84,9 @@ class PSEventTypesResource(ModelResource):
             obj = bundle_or_obj
 
         if obj:
-            uri = "%s%s" % (
+            uri = "%s%s/%s" % (
                 PSArchiveResource().get_resource_uri(obj.metadata),
+                obj.encoded_event_type(),
                 obj.encoded_summary_type())
             if obj.summary_type != 'base':
                 uri = "%s/%d" % (uri, obj.summary_window)
@@ -60,6 +94,25 @@ class PSEventTypesResource(ModelResource):
             uri = ''
 
         return uri
+
+class PSEventTypeSummaryResource(PSEventTypesResource):
+    class Meta:
+        queryset=PSEventTypes.objects.all()
+        resource_name = 'summary'
+        allowed_methods = ['get']
+        excludes = ['id']
+        filtering = {
+            "event_type": ['exact'],  
+            "summary_type": ['exact']    
+        }
+    
+    def alter_list_data_to_serialize(self, request, data):
+        formatted_summary_objs = []
+        for event_type in data['objects']:
+             formatted_summary_obj = PSEventTypesResource.format_summary_obj(event_type.data)
+             formatted_summary_objs.append(formatted_summary_obj)
+             
+        return formatted_summary_objs
 
 class PSPointToPointSubjectResource(ModelResource):
     class Meta:
@@ -109,31 +162,9 @@ class PSArchiveResource(ModelResource):
                 del obj[subj_field]
                 break
         
-        #Format event types
-        formatted_event_type_map = {}
-        for event_type_bundle in obj['event-types']:
-            event_type = event_type_bundle.data
-            #Build new or use existing
-            formatted_event_type = {}
-            if(event_type['event_type'] in formatted_event_type_map):
-                formatted_event_type = formatted_event_type_map[event_type['event_type']]
-            else:
-                formatted_event_type['event-type'] = event_type['event_type']
-                formatted_event_type['base-uri'] = ""
-                formatted_event_type['summaries'] = []
-                formatted_event_type_map[event_type['event_type']] = formatted_event_type
-             
-            #Determine summary type and update accordingly   
-            if(event_type['summary_type'] == 'base'):
-                formatted_event_type['base-uri'] = event_type['resource_uri']
-            else:
-                summary_obj = {}
-                summary_obj['uri'] = event_type['resource_uri']
-                summary_obj['summary-type'] = event_type['summary_type']
-                summary_obj['summary-window'] = event_type['summary_window']
-                formatted_event_type['summaries'].append(summary_obj)           
-        obj['event-types'] = formatted_event_type_map.values()
-        
+        #Format event types          
+        obj['event-types'] = PSEventTypesResource.format_event_types(obj['event-types'])
+      
         #Format parameters
         for md_param in obj['md-parameters']:
             obj[md_param.data['parameter_key']] = md_param.data['parameter_value']
@@ -167,23 +198,31 @@ class PSArchiveResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/$" \
                 % self._meta.resource_name, self.wrap_view('dispatch_detail'),
                   name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/base/?$"
+            url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_event_type_detail'),
+                name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/base/?$"
                 % (self._meta.resource_name,),
                 self.wrap_view('dispatch_base_data'),
                 name="api_get_children"),
-            url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/?$"
+            url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/?$"
                 % (self._meta.resource_name,),
-                self.wrap_view('dispatch_summary_descriptor'),
+                self.wrap_view('dispatch_summary_detail'),
                 name="api_get_children"),
-            url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/(?P<summary_window>[\w\d_.\-@]+)/?$"
+            url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/(?P<summary_window>[\w\d_.\-@]+)/?$"
                 % (self._meta.resource_name,),
                 self.wrap_view('dispatch_summary_data'),
                 name="api_get_children"),
                 ]
-     
-    def dispatch_summary_descriptor(self, request, **kwargs):
+    
+    def dispatch_event_type_detail(self, request, **kwargs):
         return PSEventTypesResource().dispatch_list(request,
-                metadata__metadata_key=kwargs['metadata_key'], summary_type=kwargs['summary_type'] )
+                metadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'] )
+    
+    def dispatch_summary_detail(self, request, **kwargs):
+        return PSEventTypeSummaryResource().dispatch_list(request,
+                metadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'], summary_type=kwargs['summary_type'] )
     
     def dispatch_summary_data(self, request, **kwargs):
         pass
