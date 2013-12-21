@@ -1,4 +1,4 @@
-from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes
+from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
 from django.conf.urls.defaults import url
 from tastypie import fields
 from tastypie.api import Api
@@ -75,10 +75,18 @@ class PSPointToPointSubjectResource(ModelResource):
     def alter_list_data_to_serialize(self, request, data):
         formatted_objs = format_list_keys(data)
         return formatted_objs
+
+class PSMetadataParametersResource(ModelResource):
+    class Meta:
+        queryset=PSMetadataParameters.objects.all()
+        resource_name = 'metadata-parameters'
+        allowed_methods = ['get']
+        excludes = ['id']
         
 class PSArchiveResource(ModelResource):
     event_types = fields.ToManyField(PSEventTypesResource, 'pseventtypes_set', full=True)
     p2p_subject = fields.ToOneField(PSPointToPointSubjectResource, 'pspointtopointsubject', full=True)
+    md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters_set', full=True)
     
     class Meta:
         queryset=PSMetadata.objects.all()
@@ -127,9 +135,13 @@ class PSArchiveResource(ModelResource):
                     summary_obj['uri'] = event_type['resource_uri']
                     summary_obj['summary-type'] = event_type['summary_type']
                     summary_obj['summary-window'] = event_type['summary_window']
-                    formatted_event_type['summaries'].append(summary_obj)
-                    
+                    formatted_event_type['summaries'].append(summary_obj)           
             obj['event-types'] = formatted_event_type_map.values()
+            
+            #Format parameters
+            for md_param in obj['md-parameters']:
+                obj[md_param.data['parameter_key']] = md_param.data['parameter_value']
+            del obj['md-parameters']
             
         return formatted_objs
     
