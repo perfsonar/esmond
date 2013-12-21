@@ -29,3 +29,8 @@ admin.site.register(Poller)
 admin.site.register(IfRef,IfRefAdmin)
 admin.site.register(Device,DeviceAdmin)
 admin.site.register(OIDSet,OIDSetAdmin)
+admin.site.register(PSMetadata)
+admin.site.register(PSPointToPointSubject)
+admin.site.register(PSEventTypes)
+admin.site.register(PSMetadataParameters)
+
