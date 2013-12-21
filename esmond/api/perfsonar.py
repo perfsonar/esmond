@@ -95,53 +95,70 @@ class PSArchiveResource(ModelResource):
         allowed_methods = ['get']
         excludes = ['id']
     
-    def alter_list_data_to_serialize(self, request, data):
-        formatted_objs = format_list_keys(data)
+    def format_metadata_obj(self, obj, formatted_subj_fields):
+        # format keys
+        obj = format_detail_keys(obj)
+        # Format subject
+        for subj_field in formatted_subj_fields:
+            if subj_field in obj.keys():
+                subj_obj = format_detail_keys(obj[subj_field])
+                for subj_k in subj_obj:
+                    if subj_k == 'uri':
+                        continue
+                    obj[subj_k] =  subj_obj[subj_k]
+                del obj[subj_field]
+                break
+        
+        #Format event types
+        formatted_event_type_map = {}
+        for event_type_bundle in obj['event-types']:
+            event_type = event_type_bundle.data
+            #Build new or use existing
+            formatted_event_type = {}
+            if(event_type['event_type'] in formatted_event_type_map):
+                formatted_event_type = formatted_event_type_map[event_type['event_type']]
+            else:
+                formatted_event_type['event-type'] = event_type['event_type']
+                formatted_event_type['base-uri'] = ""
+                formatted_event_type['summaries'] = []
+                formatted_event_type_map[event_type['event_type']] = formatted_event_type
+             
+            #Determine summary type and update accordingly   
+            if(event_type['summary_type'] == 'base'):
+                formatted_event_type['base-uri'] = event_type['resource_uri']
+            else:
+                summary_obj = {}
+                summary_obj['uri'] = event_type['resource_uri']
+                summary_obj['summary-type'] = event_type['summary_type']
+                summary_obj['summary-window'] = event_type['summary_window']
+                formatted_event_type['summaries'].append(summary_obj)           
+        obj['event-types'] = formatted_event_type_map.values()
+        
+        #Format parameters
+        for md_param in obj['md-parameters']:
+            obj[md_param.data['parameter_key']] = md_param.data['parameter_value']
+        del obj['md-parameters']
+        
+        return obj
+    
+    def alter_detail_data_to_serialize(self, request, data):
         formatted_subj_fields = []
         for subj_field in SUBJECT_FIELDS:
             formatted_subj_fields.append(format_key(subj_field))
-      
-        for obj in formatted_objs:
-            # Format subject
-            for subj_field in formatted_subj_fields:
-                if subj_field in obj.keys():
-                    subj_obj = format_detail_keys(obj[subj_field])
-                    for subj_k in subj_obj:
-                        if subj_k == 'uri':
-                            continue
-                        obj[subj_k] =  subj_obj[subj_k]
-                    del obj[subj_field]
-                    break
+        
+        formatted_obj = self.format_metadata_obj(data, formatted_subj_fields)
             
-            #Format event types
-            formatted_event_type_map = {}
-            for event_type_bundle in obj['event-types']:
-                event_type = event_type_bundle.data
-                #Build new or use existing
-                formatted_event_type = {}
-                if(event_type['event_type'] in formatted_event_type_map):
-                    formatted_event_type = formatted_event_type_map[event_type['event_type']]
-                else:
-                    formatted_event_type['event-type'] = event_type['event_type']
-                    formatted_event_type['base-uri'] = ""
-                    formatted_event_type['summaries'] = []
-                    formatted_event_type_map[event_type['event_type']] = formatted_event_type
-                 
-                #Determine summary type and update accordingly   
-                if(event_type['summary_type'] == 'base'):
-                    formatted_event_type['base-uri'] = event_type['resource_uri']
-                else:
-                    summary_obj = {}
-                    summary_obj['uri'] = event_type['resource_uri']
-                    summary_obj['summary-type'] = event_type['summary_type']
-                    summary_obj['summary-window'] = event_type['summary_window']
-                    formatted_event_type['summaries'].append(summary_obj)           
-            obj['event-types'] = formatted_event_type_map.values()
-            
-            #Format parameters
-            for md_param in obj['md-parameters']:
-                obj[md_param.data['parameter_key']] = md_param.data['parameter_value']
-            del obj['md-parameters']
+        return formatted_obj
+    
+    def alter_list_data_to_serialize(self, request, data):
+        formatted_subj_fields = []
+        for subj_field in SUBJECT_FIELDS:
+            formatted_subj_fields.append(format_key(subj_field))
+        
+        formatted_objs = []
+        for obj in data['objects']:
+            formatted_obj = self.format_metadata_obj(obj, formatted_subj_fields)
+            formatted_objs.append(formatted_obj)
             
         return formatted_objs
     
