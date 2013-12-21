@@ -348,8 +348,11 @@ class PSMetadata(models.Model):
     class Meta:
         db_table = "ps_metadata"
     
+    def __unicode__(self):
+        return self.metadata_key
+    
 class PSPointToPointSubject(models.Model):
-    metadata = models.ForeignKey(PSMetadata)
+    metadata = models.OneToOneField(PSMetadata)
     tool_name = models.CharField(max_length=128)
     source = models.GenericIPAddressField(db_index=True)
     destination = models.GenericIPAddressField(db_index=True)
@@ -360,7 +363,10 @@ class PSPointToPointSubject(models.Model):
     class Meta:
         db_table = "ps_p2p_subject"
         ordering = ["source","destination"]
-
+    
+    def __unicode__(self):
+        return "%s-%s" % (self.source, self.destination)
+    
 class PSEventTypes(models.Model):
     metadata = models.ForeignKey(PSMetadata)
     event_type =  models.CharField(max_length=128, db_index=True)
@@ -370,7 +376,13 @@ class PSEventTypes(models.Model):
     class Meta:
         db_table = "ps_event_types"
         ordering = ["metadata","event_type", "summary_type", "summary_window"]
-
+    
+    def __unicode__(self):
+        return "%s:%s:%d" % (self.event_type, self.summary_type, self.summary_window)
+    
+    def encoded_summary_type(self):
+        return atencode(self.summary_type)
+    
 class PSMetadataParameters(models.Model):
     metadata = models.ForeignKey(PSMetadata)
     parameter_key = models.CharField(max_length=128, db_index=True)
@@ -378,5 +390,9 @@ class PSMetadataParameters(models.Model):
     
     class Meta:
         db_table = "ps_metadata_parameters"
+    
+    def __unicode__(self):
+        return "%s" % (self.parameter_key)
+    
     
     
