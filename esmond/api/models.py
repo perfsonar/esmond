@@ -368,7 +368,7 @@ class PSPointToPointSubject(models.Model):
         return "%s-%s" % (self.source, self.destination)
     
 class PSEventTypes(models.Model):
-    metadata = models.ForeignKey(PSMetadata)
+    metadata = models.ForeignKey(PSMetadata, related_name='pseventtypes')
     event_type =  models.CharField(max_length=128, db_index=True)
     summary_type =  models.CharField(max_length=128)
     summary_window =  models.BigIntegerField()
@@ -387,7 +387,7 @@ class PSEventTypes(models.Model):
         return atencode(self.summary_type)
     
 class PSMetadataParameters(models.Model):
-    metadata = models.ForeignKey(PSMetadata)
+    metadata = models.ForeignKey(PSMetadata, related_name='psmetadataparameters')
     parameter_key = models.CharField(max_length=128, db_index=True)
     parameter_value = models.TextField()
     
