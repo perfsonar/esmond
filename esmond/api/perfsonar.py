@@ -1,9 +1,12 @@
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
 from django.conf.urls.defaults import url
 from django.db.models import Q
+from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
+from string import join
 from tastypie import fields
 from tastypie.api import Api
 from tastypie.bundle import Bundle
+from tastypie.exceptions import BadRequest
 from tastypie.resources import ModelResource, ALL_WITH_RELATIONS
 
 SUBJECT_FIELDS = ['p2p_subject']
@@ -16,10 +19,17 @@ SUBJECT_FILTER_MAP = {
     "input-source": 'p2p_subject__input_source',
     "input-destination": 'p2p_subject__input_destination'
 }
+IP_FIELDS = ["source","destination","measurement-agent"]
 EVENT_TYPE_FILTER = "event-type"
 SUMMARY_TYPE_FILTER = "summary-type"
 SUMMARY_WINDOW_FILTER = "summary-window"
-RESERVED_GET_PARAMS = ["format"]
+DNS_MATCH_RULE_FILTER = "dns-match-rule"
+DNS_MATCH_PREFER_V6 = "prefer-v6"
+DNS_MATCH_PREFER_V4 = "prefer-v4"
+DNS_MATCH_ONLY_V6 = "only-v6"
+DNS_MATCH_ONLY_V4 = "only-v4"
+DNS_MATCH_V4_V6 = "v4v6"
+RESERVED_GET_PARAMS = ["format", DNS_MATCH_RULE_FILTER]
 
 def format_key(k):
     formatted_k = k.replace('_', '-')
@@ -144,10 +154,10 @@ class PSPointToPointSubjectResource(ModelResource):
         allowed_methods = ['get']
         excludes = ['id']
         filtering = {
-            "source": ['exact'],  
-            "destination": ['exact'],
+            "source": ['exact', 'in'],  
+            "destination": ['exact', 'in'],
             "tool_name": ['exact'],
-            "measurement_agent": ['exact'],
+            "measurement_agent": ['exact', 'in'],
             "input_source":['exact'],
             "input_destination": ['exact']
         }
@@ -267,7 +277,68 @@ class PSArchiveResource(ModelResource):
         #call dispatch_summary_data
         pass
     
+    def lookup_hostname(self, host, family):
+        """
+        Does a lookup of the IP for host in type family (i.e. AF_INET or AF_INET6)
+        """
+        addr = None
+        addr_info = None
+        try:
+            addr_info = getaddrinfo(host, 80, family, SOCK_STREAM, SOL_TCP)
+        except:
+            pass
+        if addr_info and len(addr_info) >= 1 and len(addr_info[0]) >= 5 and len(addr_info[0][4]) >= 1:
+            addr = addr_info[0][4][0]
+        return addr
+        
+    def prepare_ip(self, host, dns_match_rule):
+        """
+        Maps a given hostname to an IPv4 and/or IPv6 address. The addresses
+        it return are dependent on the dns_match_rule. teh default is to return
+        both v4 and v6 addresses found. Variations allow one or the other to be
+        preferred or even required. If an address is not found a BadRequest is
+        thrown.
+        """
+        #Set default match rule
+        if dns_match_rule is None:
+            dns_match_rule = DNS_MATCH_V4_V6
+        
+        #get IP address
+        addrs = []
+        addr4 = None
+        addr6 = None
+        if dns_match_rule == DNS_MATCH_ONLY_V6:
+            addr6 = self.lookup_hostname(host, AF_INET6)
+        elif dns_match_rule == DNS_MATCH_ONLY_V4:
+            addr4 = self.lookup_hostname(host, AF_INET)
+        elif dns_match_rule == DNS_MATCH_PREFER_V6:
+            addr6 = self.lookup_hostname(host, AF_INET6)
+            if addr6 is None:
+                addr4 = self.lookup_hostname(host, AF_INET)
+        elif dns_match_rule == DNS_MATCH_PREFER_V4:
+            addr4 = self.lookup_hostname(host, AF_INET)
+            if addr4 is None:
+                addr6 = self.lookup_hostname(host, AF_INET6)
+        elif dns_match_rule == DNS_MATCH_V4_V6:
+            addr6 = self.lookup_hostname(host, AF_INET6)
+            addr4 = self.lookup_hostname(host, AF_INET)
+        else:
+            raise BadRequest("Invalid %s parameter %s" % (DNS_MATCH_RULE_FILTER, dns_match_rule))
+        
+        #add results to list
+        if addr4: addrs.append(addr4)
+        if addr6: addrs.append(addr6)
+        if len(addrs) == 0:
+            raise BadRequest("Unable to find address for host %s" % host)
+        return addrs
+    
     def build_filters(self, filters=None):
+        """
+        This makes sure that GET parameters are mapped to the correct database
+        fields. It also does things like mapping hostnames to IP addresses. The
+        filters build by this method are not actually used until the 'apply_filter'
+        function.
+        """
         if filters is None:
             filters = {}
         
@@ -275,10 +346,22 @@ class PSArchiveResource(ModelResource):
         formatted_filters = {}
         event_type_qs = []
         parameter_qs = []
+        dns_match_rule = None
+        if DNS_MATCH_RULE_FILTER in filters:
+            #added join because given as array
+            dns_match_rule = join(filters.pop(DNS_MATCH_RULE_FILTER), "")
+            
         for filter in filters:
+            #organize into database filters
             if filter in SUBJECT_FILTER_MAP:
                 # map subject to subject field
-                formatted_filters[SUBJECT_FILTER_MAP[filter]] = filters[filter]
+                if filter in IP_FIELDS:
+                    filter_val = self.prepare_ip(filters[filter], dns_match_rule)
+                    filter_key = "%s__in" % SUBJECT_FILTER_MAP[filter]
+                    #call join because super expects comma-delimited string
+                    formatted_filters[filter_key] = join(filter_val, ',')
+                else:
+                    formatted_filters[SUBJECT_FILTER_MAP[filter]] = filters[filter]
             elif filter == EVENT_TYPE_FILTER:
                 event_type_qs.append(Q(pseventtypes__event_type=filters[filter]))
             elif filter == SUMMARY_TYPE_FILTER:
@@ -289,15 +372,23 @@ class PSArchiveResource(ModelResource):
                 # match metdadata table key
                 formatted_filters[deformat_key(filter)] = filters[filter]
             elif filter not in RESERVED_GET_PARAMS:
-                # map to ps_metadata_parameters
-                parameter_qs.append(Q(
+                if filter in IP_FIELDS:
+                    filter_val = self.prepare_ip(filters[filter], dns_match_rule)
+                    # map to ps_metadata_parameters
+                    parameter_qs.append(Q(
+                        psmetadataparameters__parameter_key=filter,
+                        #keep as list since this skips super build_filter
+                        psmetadataparameters__parameter_value__in=filter_val))
+                else:
+                    # map to ps_metadata_parameters
+                    parameter_qs.append(Q(
                     psmetadataparameters__parameter_key=filter,
                     psmetadataparameters__parameter_value=filters[filter]))
                 
         # Create standard ORM filters
         orm_filters = super(ModelResource, self).build_filters(formatted_filters)
         
-        #Add event type and parameters filters separatel for special processing in apply_filters
+        #Add event type and parameters filters separately for special processing in apply_filters
         orm_filters.update({'event_type_qs': event_type_qs})
         orm_filters.update({'parameter_qs': parameter_qs})
         
