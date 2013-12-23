@@ -126,7 +126,18 @@ class PSEventTypesResource(ModelResource):
             uri = ''
 
         return uri
-
+    
+    def build_filters(self, filters=None):
+        formatted_filters = {}
+        for filter in filters:
+            if deformat_key(filter) in self.fields:
+                # match metdadata table key
+                formatted_filters[deformat_key(filter)] = filters[filter]
+            else:
+                formatted_filters[filter] = filters[filter]
+                
+        return super(ModelResource, self).build_filters(formatted_filters)
+            
 class PSEventTypeSummaryResource(PSEventTypesResource):
     class Meta:
         queryset=PSEventTypes.objects.all()
