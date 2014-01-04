@@ -1,14 +1,77 @@
+from calendar import timegm
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
+from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
+from esmond.config import get_config_path, get_config
+from datetime import datetime
 from django.conf.urls.defaults import url
 from django.db.models import Q
+from django.utils.text import slugify
 from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
 from string import join
 from tastypie import fields
 from tastypie.api import Api
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest
-from tastypie.resources import ModelResource, ALL_WITH_RELATIONS
+from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS
+from time import time
 
+'''
+START MOVE TO CONFIG
+'''
+EVENT_TYPE_CONFIG = {
+    "failures": {
+        "type": "json",
+        "row_prefix": "ps:failures"
+    },
+    "histogram-owdelay": {
+        "type": "histogram",
+        "row_prefix": "ps:histogram_owdelay"
+    },
+    "histogram-rtt": {
+        "type": "histogram",
+        "row_prefix": "ps:histogram_rtt"
+    },
+    "histogram-ttl": {
+        "type": "histogram",
+        "row_prefix": "ps:histogram_ttl"
+    },
+    "packet-duplicates": {
+        "type": "integer",
+        "row_prefix": "ps:packet_duplicates"
+    },
+    "packet-loss-rate": {
+        "type": "rate",
+        "row_prefix": "ps:packet_loss_rate",
+        "numerator": "packet-count-lost",
+        "denominator": "packet-count-sent"
+    },
+    "packet-trace": {
+        "type": "json",
+        "row_prefix": "ps:packet_trace"
+    },
+    "packet-count-lost": {
+        "type": "integer",
+        "row_prefix": "ps:packet_count_lost"
+    },
+    "packet-count-sent": {
+        "type": "integer",
+        "row_prefix": "ps:packet_count_sent"
+    },
+    "throughput": {
+        "type": "integer",
+        "row_prefix": "ps:throughput"
+    },
+    "time-error-estimates": {
+        "type": "float",
+        "row_prefix": "ps:time_error_estimates"
+    }
+}
+SUMMARY_TYPES = {
+    "aggregations": "aggregation",
+    "composites": "composite",
+    "statistics": "statistics",
+    "subintervals": "subinterval"
+}
 SUBJECT_FIELDS = ['p2p_subject']
 SUBJECT_FILTER_MAP = {
     #point-to-point subject fields
@@ -21,6 +84,32 @@ SUBJECT_FILTER_MAP = {
 }
 IP_FIELDS = ["source","destination","measurement-agent"]
 EVENT_TYPE_FILTER = "event-type"
+'''
+END MOVE TO CONFIG
+'''
+
+#Get db connection
+try:
+    db = CASSANDRA_DB(get_config(get_config_path()))
+except ConnectionException, e:
+    # Check the stack before raising an error - if test_api is 
+    # the calling code, we won't need a running db instance.
+    mod = inspect.getmodule(inspect.stack()[1][0])
+    if mod and mod.__name__ == 'api.tests.test_api' or 'sphinx.ext.autodoc':
+        print '\nUnable to connect - presuming stand-alone testing mode...'
+        db = None
+    else:
+        raise ConnectionException(str(e))
+
+#set global constants    
+EVENT_TYPE_CF_MAP = {
+    'histogram': db.raw_cf,
+    'integer': db.rate_cf,
+    'json': db.raw_cf,
+    'rate': db.agg_cf,
+    'numeric': db.raw_cf
+
+}
 SUMMARY_TYPE_FILTER = "summary-type"
 SUMMARY_WINDOW_FILTER = "summary-window"
 DNS_MATCH_RULE_FILTER = "dns-match-rule"
@@ -31,6 +120,7 @@ DNS_MATCH_ONLY_V4 = "only-v4"
 DNS_MATCH_V4_V6 = "v4v6"
 RESERVED_GET_PARAMS = ["format", DNS_MATCH_RULE_FILTER]
 
+#global utility functions
 def format_key(k):
     formatted_k = k.replace('_', '-')
     return formatted_k
@@ -61,12 +151,13 @@ def format_list_keys(data):
         formatted_objs.append(format_detail_keys(obj))
     
     return formatted_objs
-    
+   
+# Resource classes 
 class PSEventTypesResource(ModelResource):
     class Meta:
         queryset=PSEventTypes.objects.all()
         resource_name = 'event-type'
-        allowed_methods = ['get']
+        allowed_methods = ['get', 'post']
         excludes = ['id']
         filtering = {
             "event_type": ['exact'],  
@@ -162,7 +253,7 @@ class PSPointToPointSubjectResource(ModelResource):
     class Meta:
         queryset=PSPointToPointSubject.objects.all()
         resource_name = 'event-type'
-        allowed_methods = ['get']
+        allowed_methods = ['get', 'post']
         excludes = ['id']
         filtering = {
             "source": ['exact', 'in'],  
@@ -185,7 +276,7 @@ class PSMetadataParametersResource(ModelResource):
     class Meta:
         queryset=PSMetadataParameters.objects.all()
         resource_name = 'metadata-parameters'
-        allowed_methods = ['get']
+        allowed_methods = ['get', 'post']
         excludes = ['id']
         
 class PSArchiveResource(ModelResource):
@@ -197,7 +288,7 @@ class PSArchiveResource(ModelResource):
         queryset=PSMetadata.objects.all()
         resource_name = 'archive'
         detail_uri_name = 'metadata_key'
-        allowed_methods = ['get']
+        allowed_methods = ['get', 'post']
         excludes = ['id']
         filtering = {
             "metadata_key": ['exact'],
@@ -250,6 +341,10 @@ class PSArchiveResource(ModelResource):
             
         return formatted_objs
     
+    def alter_deserialized_list_data(self, request, data):
+        print data    
+        raise BadRequest("Not yet implemented")
+    
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/$" \
@@ -282,11 +377,13 @@ class PSArchiveResource(ModelResource):
                 metadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'], summary_type=kwargs['summary_type'] )
     
     def dispatch_summary_data(self, request, **kwargs):
-        pass
+        return PSTimeSeriesResource().dispatch_list(request,
+                metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'],
+                summary_type=kwargs['summary_type'], summary_window=kwargs['summary_window'] )
     
     def dispatch_base_data(self, request, **kwargs):
-        #call dispatch_summary_data
-        pass
+        return PSTimeSeriesResource().dispatch_list(request,
+                metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'] )
     
     def lookup_hostname(self, host, family):
         """
@@ -426,6 +523,126 @@ class PSArchiveResource(ModelResource):
             query = query.filter(parameter_q)
             
         return query
+
+class PSTimeSeriesResource(Resource):
+    
+    class Meta:
+        resource_name = 'pstimeseries'
+        allowed_methods = ['get', 'post']
+        limit = 0
+    
+    def iso_to_ts(self, isotime):
+        ts = 0
+        try:
+            dt = datetime.strptime(isotime, "%Y%m%dT%H%M%S")
+            ts = timegm(dt.timetuple())
+            print ts
+        except ValueError:
+            raise BadRequest("Time parameter be in ISO8601 basic format YYYYMMDDThhmmss.")
+            
+        return ts
+    
+    def valid_time_range(self, tr):
+        try:
+            tr = int(tr)
+        except ValueError:
+            raise BadRequest("Time range parameter must be an integer")
+        return tr
+    
+    def valid_summary_window(self, sw):
+        try:
+            sw = int(sw)
+        except ValueError:
+            raise BadRequest("Summary window parameter must be an integer")
+        return sw
+    
+    def obj_get_list(self, bundle, **kwargs):
+        #format time GET parameters
+        filters = getattr(bundle.request, 'GET', {})
+        end_time = int(time())
+        begin_time = 0
+        if filters.has_key('time'):
+            begin_time = self.iso_to_ts(filters['time'])
+            end_time = begin_time
+        elif filters.has_key('time-start') and filters.has_key('time-end'):
+            begin_time = self.iso_to_ts(filters['time-start'])
+            end_time = self.iso_to_ts(filters['time-end'])
+        elif filters.has_key('time-start') and filters.has_key('time-range'):
+            begin_time = self.iso_to_ts(filters['time-start'])
+            end_time = begin_time + self.valid_time_range(filters['time-range'])
+        elif filters.has_key('time-end') and filters.has_key('time-range'):
+            end_time = self.iso_to_ts(filters['time-end'])
+            begin_time = end_time - self.valid_time_range(filters['time-range'])
+        elif filters.has_key('time-start'):
+           begin_time = self.iso_to_ts(filters['time-start'])
+        elif filters.has_key('time-end'):
+           end_time = self.iso_to_ts(filters['time-end'])
+        elif filters.has_key('time-range'):
+           begin_time = end_time - self.valid_time_range(filters['time-range'])
+        if(end_time < begin_time):
+            raise BadRequest("Requested start time must be less than end time")
+        
+        #build data path
+        datapath = []
+        if 'event_type' not in kwargs:
+            raise BadRequest("No event type specified for data query")
+        elif 'metadata_key' not in kwargs:
+            raise BadRequest("No metadata key specified for data query")
+        elif kwargs['event_type'] not in EVENT_TYPE_CONFIG:
+            raise BadRequest("Unsupported event type '%s' provided" % kwargs['event_type'])
+        elif "type" not in EVENT_TYPE_CONFIG[kwargs['event_type']]:
+            raise BadRequest("Misconfigured event type on server side. Missing 'type' field")
+        elif "row_prefix" not in EVENT_TYPE_CONFIG[kwargs['event_type']]:
+            raise BadRequest("Misconfigured event type on server side. Missing 'row_prefix' field")
+        event_type = kwargs['event_type']
+        metadata_key = slugify( kwargs['metadata_key'])
+        datapath = EVENT_TYPE_CONFIG[event_type]["row_prefix"].split(KEY_DELIMITER)
+        if 'summary_type' in kwargs:
+            summary_type = kwargs['summary_type']
+            if summary_type not in SUMMARY_TYPES:
+                raise BadRequest("Invalid summary type '%s'" % summary_type)
+            datapath.append(summary_type)
+        datapath.append(metadata_key)
+        freq = None
+        if 'summary_window' in kwargs:
+            freq = self.valid_summary_window(kwargs['summary_window'])
+
+        #send query
+        results = []
+        query_type = EVENT_TYPE_CONFIG[event_type]["type"]
+        if query_type not in EVENT_TYPE_CF_MAP:
+            raise BadRequest("Misconfigured event type on server side. Invalid 'type' %s" % query_type)
+        elif EVENT_TYPE_CF_MAP[query_type] == db.rate_cf:
+            results = db.query_baserate_timerange(path=datapath, freq=freq,
+                    cf='delta', ts_min=begin_time*1000, ts_max=end_time*1000)
+        elif EVENT_TYPE_CF_MAP[query_type] == db.raw_cf:
+            results = db.query_raw_data(path=datapath, freq=freq,
+                   ts_min=begin_time*1000, ts_max=end_time*1000)
+        elif EVENT_TYPE_CF_MAP[query_type] == db.agg_cf:
+            results = db.query_aggregation_timerange(path=datapath, freq=freq,
+                   cf='average', ts_min=begin_time*1000, ts_max=end_time*1000)
+        else:
+            raise BadRequest("Requested data does not map to a known column-family")
+            
+        return results
+    
+    def format_ts_obj(self, obj):
+        formatted_obj = {'time': None, 'value': None}
+        if obj.has_key('ts'):
+            dt = datetime.utcfromtimestamp(obj['ts'] / 1e3)
+            formatted_obj['time'] = dt.isoformat() + 'Z' #add timezone
+            
+        if obj.has_key('val'):
+            formatted_obj['value'] = obj['val']
+        
+        return formatted_obj
+    
+    def alter_list_data_to_serialize(self, request, data):
+        formatted_data = []
+        for obj in data['objects']:
+            formatted_data.append(self.format_ts_obj(obj.obj))
+            
+        return formatted_data
     
 perfsonar_api = Api(api_name='perfsonar')
 perfsonar_api.register(PSArchiveResource())
