@@ -32,7 +32,8 @@ from esmond.util import daemonize, setup_exc_handler, max_datetime
 from esmond.config import get_opt_parser, get_config, get_config_path
 from esmond.error import ConfigError
 
-from esmond.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus
+from esmond.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus, \
+                              OutletRef
 
 from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin, \
         SEEK_BACK_THRESHOLD
@@ -1176,6 +1177,56 @@ class InfIfRefPollPersister(IfRefPollPersister):
 
         IfRefPollPersister.store(self, result)
 
+class SentryOutletRefPollPersister(HistoryTablePersister):
+    """Save information about outlets for a Sentry PDU."""
+    int_oids = ('outletStatus', 'outletControlState')
+
+    def store(self, result):
+        self.data = result.data
+        t0 = time.time()
+
+        self.device = Device.objects.active().get(name=result.device_name)
+        self.old_data = OutletRef.objects.active().filter(device=self.device)
+
+        self.new_data = self._build_objs()
+        nvar = len(self.new_data)
+        self.key = 'outletID'
+
+        adds, changes, deletes = self.update_db()
+
+        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (
+            nvar, adds, changes, deletes, time.time() - t0, result))
+
+    def _new_row_from_obj(self, obj):
+        obj['device'] = self.device
+        obj['begin_time'] = now()
+        obj['end_time'] = max_datetime
+
+        return OutletRef(**obj)
+
+    def _build_objs(self):
+        objs = {}
+        outletID_map = {}
+
+        for k, val in self.data['outletID']:
+            var, index = k.split(1)
+            outletID_map[index] = val
+            objs[val] = dict(outletID=val)
+
+        for oid, entries in self.data.iteritems():
+            if oid == 'outletID':
+                continue
+
+            for k, val in entries:
+                _, index = k.split(1)
+                o = objs[index]
+
+                if oid in self.int_oids:
+                    val = int(val)
+
+                o[oid] = val
+
+        return objs
 
 class PersistQueue(object):
     """Abstract base class for a persistence queue."""

@@ -291,6 +291,35 @@ class ALUSAPRef(models.Model):
                 end_time=datetime_to_unixtime(self.end_time),
                 begin_time=datetime_to_unixtime(self.begin_time))
 
+class HistoryTableManager(models.Manager):
+    def active(self):
+        qs = super(OutletRefManager, self).get_query_set()
+        qs = qs.filter(end_time__gt=now())
+        return qs
+
+class OutletRef(models.Model):
+    device = models.ForeignKey(Device, db_column="deviceid")
+    outletID = models.CharField(max_length=128)
+    outletName = models.CharField(max_length=128)
+    outletStatus = models.IntegerField()
+    outletControlState = models.IntegerField(blank=True, null=True)
+
+    objects = HistoryTableManager()
+
+    class Meta:
+        db_table = "outletref"
+        ordering = ["device__name", "outletID"]
+
+    def __unicode__(self):
+        return "%s %s: %s" % (self.device, self.outletID, self.outletName)
+
+    def to_dict(self):
+        return dict(device=self.device.name, 
+                    outletID=self.outletID,
+                    outletName=self.outletName,
+                    outletStatus=self.outletStatus,
+                    outletControlState=self.outletControlState)
+
 class LSPOpStatus(models.Model):
     """Metadata about MPLS LSPs."""
     device = models.ForeignKey(Device, db_column="deviceid")
