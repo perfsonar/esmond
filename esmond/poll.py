@@ -142,7 +142,7 @@ class SentryCorrelator(object):
                 filter_data('tempHumidSensorID', data))
 
     def lookup(self, oid, var):
-        if oid.name == 'outletLoadValue':
+        if oid.name.startswith('outlet'):
             k = self.outlet[self._get_outlet_key(var)]
         else:
             k = self.sensor[self._get_sensor_key(var)]

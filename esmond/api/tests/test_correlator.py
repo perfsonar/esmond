@@ -71,6 +71,11 @@ class MockSession(object):
                     ('tempHumidSensorHumidValue.1.2','47',
                         ["tempHumidSensorHumidValue", "A2"]),
                     )
+        elif oid == 'outletName':
+            return (
+                    ('outletName.1.1.1', 'TowerA_InfeedA_Outlet1', ["outletName", "AA1"]),
+                    ('outletName.1.1.2', 'TowerA_InfeedA_Outlet2', ["outletName", "AA2"]),
+                   )
         elif oid == 'sapBaseStatsEgressQchipForwardedOutProfOctets':
             return (
                      ('sapBaseStatsEgressQchipForwardedOutProfOctets.834.102793216.834',
@@ -96,6 +101,7 @@ class TestCorrelators(TestCase):
             (SentryCorrelator, MockOID('outletLoadValue')),
             (SentryCorrelator, MockOID('tempHumidSensorTempValue')),
             (SentryCorrelator, MockOID('tempHumidSensorHumidValue')),
+            (SentryCorrelator, MockOID('outletName')),
             (ALUSAPCorrelator, MockOID('sapBaseStatsEgressQchipForwardedOutProfOctets')),
         ):
             s = MockSession()
