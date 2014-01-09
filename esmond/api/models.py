@@ -304,6 +304,9 @@ class OutletRef(models.Model):
     outletStatus = models.IntegerField()
     outletControlState = models.IntegerField(blank=True, null=True)
 
+    begin_time = models.DateTimeField()
+    end_time = models.DateTimeField(default=max_datetime)
+    
     objects = HistoryTableManager()
 
     class Meta:
