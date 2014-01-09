@@ -293,7 +293,7 @@ class ALUSAPRef(models.Model):
 
 class HistoryTableManager(models.Manager):
     def active(self):
-        qs = super(OutletRefManager, self).get_query_set()
+        qs = super(HistoryTableManager, self).get_query_set()
         qs = qs.filter(end_time__gt=now())
         return qs
 
