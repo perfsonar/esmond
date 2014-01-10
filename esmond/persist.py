@@ -1209,7 +1209,7 @@ class SentryOutletRefPollPersister(HistoryTablePersister):
         outletID_map = {}
 
         for k, val in self.data['outletID']:
-            var, index = k.split(1)
+            var, index = k.split('.', 1)
             outletID_map[index] = val
             objs[val] = dict(outletID=val)
 
@@ -1218,8 +1218,8 @@ class SentryOutletRefPollPersister(HistoryTablePersister):
                 continue
 
             for k, val in entries:
-                _, index = k.split(1)
-                o = objs[index]
+                _, index = k.split('.', 1)
+                o = objs[outletID_map[index]]
 
                 if oid in self.int_oids:
                     val = int(val)
