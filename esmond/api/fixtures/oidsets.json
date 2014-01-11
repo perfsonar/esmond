@@ -1337,5 +1337,78 @@
             "oid": 56,
             "oid_set": 16
         }
+    },
+    {
+        "pk": 59,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "endpoint_alias": null,
+            "name": "outletControlState",
+            "oid_type": 8
+        }
+    },
+    {
+        "pk": 57,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "endpoint_alias": null,
+            "name": "outletName",
+            "oid_type": 3
+        }
+    },
+    {
+        "pk": 58,
+        "model": "api.oid",
+        "fields": {
+            "aggregate": false,
+            "endpoint_alias": null,
+            "name": "outletStatus",
+            "oid_type": 8
+        }
+    },
+    {
+        "pk": 17,
+        "model": "api.oidset",
+        "fields": {
+            "poller_args": "",
+            "frequency": 300,
+            "poller": 2,
+            "name": "SentryOutletRefPoll"
+        }
+    },
+
+    {
+        "pk": 78,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 59,
+            "oid_set": 17
+        }
+    },
+    {
+        "pk": 75,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 32,
+            "oid_set": 17
+        }
+    },
+    {
+        "pk": 76,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 57,
+            "oid_set": 17
+        }
+    },
+    {
+        "pk": 77,
+        "model": "api.oidsetmember",
+        "fields": {
+            "oid": 58,
+            "oid_set": 17
+        }
     }
 ]
