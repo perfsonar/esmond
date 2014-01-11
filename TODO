@@ -2,6 +2,8 @@
 Near term
 ---------
 
+remove references to chunk mappers
+clean up oidset names
 Finish updating docs
 publish on PyPI
 revisit logging  config

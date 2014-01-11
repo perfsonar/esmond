@@ -10,7 +10,7 @@ from tastypie.test import ResourceTestCase
 
 from esmond.api.models import *
 from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
-from esmond.api.tests.example_data import build_default_metadata
+from esmond.api.tests.example_data import build_default_metadata, build_pdu_metadata
 from esmond.cassandra import AGG_TYPES
 from esmond.api.api import SNMP_NAMESPACE
 
@@ -895,14 +895,84 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 201) # not 200!
 
 
+class PDUAPITests(ResourceTestCase):
+    fixtures = ["oidsets.json"]
 
+    def setUp(self):
+        super(PDUAPITests, self).setUp()
 
+        self.td = build_pdu_metadata()
 
+    def test_get_pdu_list(self):
+        url = '/v1/pdu/'
 
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
 
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        self.assertEquals(len(data), 1)
+        self.assertEquals(data[0]["name"], "sentry_pdu")
 
+    def test_get_pdu(self):
+        url = '/v1/pdu/sentry_pdu/'
 
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
 
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        #print json.dumps(data, indent=4)
 
+        children = {}
+        for child in data['children']:
+            children[child['name']] = child
+            for field in ['leaf','name','uri']:
+                self.assertIn(field, child)
 
+        for child_name in ['outlet']:
+            self.assertIn(child_name, children)
+            child = children[child_name]
+            self.assertEqual(child['uri'], url + child_name)
 
+    def test_get_pdu_outlet_list(self):
+        url = '/v1/pdu/sentry_pdu/outlet/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        #print json.dumps(data, indent=4)
+
+        children = data['children']
+        self.assertEqual(len(children), 1)
+        self.assertEqual(children[0]['outletID'], 'AA')
+        self.assertEqual(children[0]['outletName'], 'rtr_a:PEM1:50A')
+
+    def test_search_outlet_names(self):
+        url = '/v1/outlet/?outletName__contains=rtr_a'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        #print json.dumps(data, indent=4)
+
+        children = data['children']
+        self.assertEqual(len(children), 1)
+        self.assertEqual(children[0]['outletID'], 'AA')
+        self.assertEqual(children[0]['outletName'], 'rtr_a:PEM1:50A')
+
+        url = '/v1/outlet/?outletName__contains=not_valid_query_string'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        #print json.dumps(data, indent=4)
+
+        children = data['children']
+        self.assertEqual(len(children), 0)

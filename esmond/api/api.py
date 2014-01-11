@@ -23,7 +23,7 @@ from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.http import HttpCreated
 from tastypie.throttle import CacheDBThrottle
 
-from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID
+from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import atdecode, atencode
@@ -1710,7 +1710,146 @@ class Fill(object):
         else:
             #print 'verify: filling'
             return list(Fill.generate_filled_series(start_bin,end_bin,freq,data))
-        
+
+class PDUResource(DeviceResource):
+    class Meta:
+        queryset = Device.objects.filter(pk__in=OutletRef.objects.values_list("device__pk")).distinct()
+        resource_name = 'pdu'
+        serializer = DeviceSerializer()
+        excludes = ['community',]
+        allowed_methods = ['get']
+        detail_uri_name = 'name'
+        filtering = {
+            'name': ALL,
+        }
+
+    def dehydrate_children(self, bundle):
+        children = ['outlet', ]
+
+        base_uri = self.get_resource_uri(bundle)
+        return [ dict(leaf=False, uri='%s%s' % (base_uri, x), name=x)
+                for x in children ]
+
+
+    def prepend_urls(self):
+        """
+        URL regex parsing for this REST schema.  The call to dispatch_detail
+        returns Device information the ORM, the other calls are dispatched to
+        the methods below.
+
+        This is connected to the django url schema by the call:
+
+        v1_api = Api(api_name='v1')
+        v1_api.register(DeviceResource())
+
+        at the bottom of the module.
+        """
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/$" \
+                % self._meta.resource_name, self.wrap_view('dispatch_detail'),
+                  name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/outlet/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_outlet_list'),
+                name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/outlet/(?P<outlet_id>[\w\d_.\-@]+)/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_outlet_detail'),
+                name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/outlet/(?P<outlet_id>[\w\d_.\-@]+)/(?P<outlet_dataset>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
+                self.wrap_view('dispatch_outlet_data'),
+                name="api_get_children"),
+                ]
+
+    """
+    The three following methods are invoked by the prepend_urls regex parsing. 
+    They invoke and return an the appropriate method call on an instance of 
+    one of the Interface* resorces below.
+    """
+
+    def dispatch_outlet_list(self, request, **kwargs):
+        return OutletResource().dispatch_list(request,
+                device__name=kwargs['name'])
+
+    def dispatch_outlet_detail(self, request, **kwargs):
+        return OutletResource().dispatch_detail(request,
+                device__name=kwargs['name'], outletID=kwargs['outlet_id'] )
+
+    def dispatch_outlet_data(self, request, **kwargs):
+        return OutletDataResource().dispatch_detail(request, **kwargs)
+
+class OutletResource(ModelResource):
+    """An outlet on a PDU.
+
+    Note: this resource is always nested under a PDUResource and is not bound
+    into the normal namespace for the API."""
+
+    pdu = fields.ToOneField(PDUResource, 'device')
+    children = fields.ListField()
+    leaf = fields.BooleanField()
+    device_uri = fields.CharField()
+    uri = fields.CharField()
+
+    class Meta:
+        resource_name = 'outlet'
+        queryset = OutletRef.objects.all()
+        allowed_methods = ['get']
+        detail_uri_name = 'outletID'
+        filtering = {
+            'device': ALL_WITH_RELATIONS,
+            'outletID': ALL,
+            'outletName': ALL,
+        }
+        authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
+
+    def obj_get(self, bunlder, **kwargs):
+        kwargs['outletID'] = atdecode(kwargs['outletID'])
+        kwargs = build_time_filters(bundle.request.GET, kwargs)
+
+        # XXX(jdugan): we might want to do something different here, such as
+        # return a reference to or a list of other valid IfRefs at this point.
+        object_list = self.get_object_list(bundle.request).filter(**kwargs)
+        if len(object_list) > 1:
+            kwargs['pk'] = object_list.order_by("-end_time")[0].pk
+
+        return super(OutletResource, self).obj_get(bundle, **kwargs)
+
+    def build_filters(self, filters=None):
+        if filters is None:
+            filters = {}
+        orm_filters = super(OutletResource, self).build_filters(filters)
+        orm_filters = build_time_filters(filters, orm_filters)
+
+        return orm_filters
+
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        Modify resource object default format before this is returned 
+        and serialized as json.
+        """
+        data['children'] = data['objects']
+        del data['objects']
+        return data
+
+    def get_resource_uri(self, bundle_or_obj=None):
+        """Generates the resource uri element that is returned in json payload."""
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+        if obj:
+            uri = "%s%s%s" % (
+                PDUResource().get_resource_uri(obj.device),
+                'outlet/',
+                obj.outletID)
+        else:
+            uri = ''
+
+        return uri
+
+
 """Connect the 'root' resources to the URL schema."""
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
@@ -1719,5 +1858,7 @@ v1_api.register(OidsetResource())
 v1_api.register(InterfaceResource())
 v1_api.register(OidsetEndpointResource())
 v1_api.register(BulkDispatch())
+v1_api.register(PDUResource())
+v1_api.register(OutletResource())
 
 __doc__ = '\n\n'.join([snmp_ns_doc, bulk_ns_doc, bulk_interface_ns_doc, ts_ns_doc, bulk_namespace_ns_doc])

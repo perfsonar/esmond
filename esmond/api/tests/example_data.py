@@ -281,3 +281,26 @@ def build_metadata_from_test_data(data):
                 end_time=max_datetime)
         ifr.save()
 
+def build_pdu_metadata():
+    td = TestData()
+
+    td.pdu_a, _ = Device.objects.get_or_create(
+            name="sentry_pdu",
+            community="public",
+            begin_time=now())
+
+    DeviceOIDSetMap(device=td.pdu_a,
+            oid_set=OIDSet.objects.get(name="SentryOutletRefPoll")).save()
+    DeviceOIDSetMap(device=td.pdu_a,
+            oid_set=OIDSet.objects.get(name="SentryPoll")).save()
+
+    OutletRef.objects.get_or_create(
+        device=td.pdu_a,
+        begin_time=td.pdu_a.begin_time,
+        outletID="AA",
+        outletName="rtr_a:PEM1:50A",
+        outletStatus=1,
+        outletControlState=1
+    )
+
+    return td
