@@ -1788,7 +1788,6 @@ class OutletResource(ModelResource):
     children = fields.ListField()
     leaf = fields.BooleanField()
     device_uri = fields.CharField()
-    uri = fields.CharField()
 
     class Meta:
         resource_name = 'outlet'
