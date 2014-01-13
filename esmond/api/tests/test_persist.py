@@ -1205,7 +1205,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         
-        self.assertEquals(len(data), 16)
+        self.assertEquals(len(data), 17)
 
     def test_z_throttle(self):
         ifaces = [
