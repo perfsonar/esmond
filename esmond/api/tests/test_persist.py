@@ -124,6 +124,10 @@ class TestPersistQueue(object):
         except IndexError:
             raise PersistQueueEmpty()
 
+class MockConfig(object):
+    def __init__(self):
+        self.profile_persister = False
+
 class SimpleTest(TestCase):
     def test_basic_addition(self):
         """
@@ -145,7 +149,7 @@ class TestIfRefPersister(TestCase):
         self.assertTrue(len(ifrefs) == 0)
 
         q = TestPersistQueue(json.loads(ifref_test_data))
-        p = IfRefPollPersister([], "test", persistq=q)
+        p = IfRefPollPersister(MockConfig(), "test", persistq=q)
         p.run()
 
         ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
@@ -159,7 +163,7 @@ class TestIfRefPersister(TestCase):
         self.assertTrue(ifrefs[1].ifAlias == "test two")
 
         q = TestPersistQueue(json.loads(empty_ifref_test_data))
-        p = IfRefPollPersister([], "test", persistq=q)
+        p = IfRefPollPersister(MockConfig(), "test", persistq=q)
         p.run()
 
         ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
@@ -234,7 +238,7 @@ class TestALUSAPRefPersister(TestCase):
         self.assertTrue(len(ifrefs) == 0)
 
         q = TestPersistQueue(json.loads(alu_sap_test_data))
-        p = ALUSAPRefPersister([], "test", persistq=q)
+        p = ALUSAPRefPersister(MockConfig(), "test", persistq=q)
         p.run()
 
         ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8/1/1-100")
@@ -247,7 +251,7 @@ class TestALUSAPRefPersister(TestCase):
         self.assertTrue(ifrefs[1].sapDescription == "two")
 
         q = TestPersistQueue(json.loads(empty_alu_sap_test_data))
-        p = ALUSAPRefPersister([], "test", persistq=q)
+        p = ALUSAPRefPersister(MockConfig(), "test", persistq=q)
         p.run()
 
         ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8/1/1-100")

@@ -811,7 +811,7 @@ class InterfaceDataResource(Resource):
                 ]
 
         iface_dataset = kwargs['iface_dataset'].rstrip("/")
-        
+
         if iface_dataset not in endpoint_map:
             raise BadRequest("no such dataset: %s" % iface_dataset)
 
