@@ -1849,6 +1849,14 @@ class OutletResource(ModelResource):
 
         return uri
 
+    def dehydrate_children(self, bundle):
+        children = ['load', ]
+
+        base_uri = self.get_resource_uri(bundle)
+        return [ dict(leaf=False, uri='%s%s' % (base_uri, x), name=x)
+                for x in children ]
+
+
 class OutletDataObject(DataObject):
     """Encapsulation for outlet data."""
     pass

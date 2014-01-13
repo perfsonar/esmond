@@ -955,6 +955,8 @@ class PDUAPITests(ResourceTestCase):
         self.assertEqual(len(children), 1)
         self.assertEqual(children[0]['outletID'], 'AA')
         self.assertEqual(children[0]['outletName'], 'rtr_a:PEM1:50A')
+        self.assertEqual(len(children[0]['children']), 1)
+        self.assertEqual(children[0]['children'][0]['name'], 'load')
 
     def test_search_outlet_names(self):
         url = '/v1/outlet/?outletName__contains=rtr_a'
