@@ -1803,7 +1803,7 @@ class OutletResource(ModelResource):
         authentication = AnonymousGetElseApiAuthentication()
         throttle = AnonymousThrottle(**THROTTLE_ARGS)
 
-    def obj_get(self, bunlder, **kwargs):
+    def obj_get(self, bundle, **kwargs):
         kwargs['outletID'] = atdecode(kwargs['outletID'])
         kwargs = build_time_filters(bundle.request.GET, kwargs)
 
@@ -1849,6 +1849,88 @@ class OutletResource(ModelResource):
 
         return uri
 
+class OutletDataObject(DataObject):
+    """Encapsulation for outlet data."""
+    pass
+
+class OutletDataResource(Resource):
+    """Data for an outlet on a PDU.
+
+    Note: this resource is always nested under a PDURessource and is not bound
+    into the normal namespace for the API."""
+
+    begin_time = fields.IntegerField(attribute="begin_time")
+    end_time = fields.IntegerField(attribute="end_time")
+    data = fields.ListField(attribute='data')
+
+    class Meta:
+        resource_name = 'outlet_data'
+        allowed_methods = ['get']
+        object_class = OutletDataObject
+        authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
+
+    def get_resource_uri(self, bundle_or_obj):
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+
+        uri = "%s/%s/" % (
+            OutletResource().get_resource_uri(obj.outlet),
+            obj.outlet_dataset)
+
+        return uri
+
+    def obj_get(self, bundle, **kwargs):
+        outlet_id = atdecode(kwargs['outlet_id'])
+        outlet_dataset = kwargs['outlet_dataset'].rstrip("/")
+
+        try:
+            outlet = OutletResource().obj_get(bundle,
+                device__name=kwargs['name'],
+                outletID=outlet_id)
+        except OutletRef.DoesNotExist:
+            raise BadRequest("no such device/oulet: dev: {0} outlet: {1}".format(kwargs['name'], outlet_id))
+
+        if outlet_dataset != 'load':
+            raise BadRequest("no such dataset: {0}".format(outlet_dataset))
+
+        oidset_name = 'SentryPoll'
+        datapath = [SNMP_NAMESPACE, outlet.device.name, oidset_name, 'outletLoadValue', outlet_id]
+
+        obj = OutletDataObject()
+        obj.outlet = outlet
+        obj.datapath = datapath
+        obj.outlet_dataset = outlet_dataset
+
+        oidset = outlet.device.oidsets.get(name=oidset_name)
+
+        filters = getattr(bundle.request, 'GET', {})
+
+        # Make sure incoming begin/end timestamps are ints
+        if filters.has_key('begin'):
+            obj.begin_time = int(float(filters['begin']))
+        else:
+            obj.begin_time = int(time.time() - 3600)
+
+        if filters.has_key('end'):
+            obj.end_time = int(float(filters['end']))
+        else:
+            obj.end_time = int(time.time())
+
+        return self._execute_query(oidset, obj)
+
+    def _execute_query(self, oidset, obj):
+        data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
+                                 obj.begin_time*1000, obj.end_time*1000)
+
+        obj.data = QueryUtil.format_data_payload(data)
+        obj.data = Fill.verify_fill(obj.begin_time, obj.end_time, oidset.frequency,
+                                    obj.data)
+
+        return obj
 
 """Connect the 'root' resources to the URL schema."""
 v1_api = Api(api_name='v1')

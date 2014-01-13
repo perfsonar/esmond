@@ -305,7 +305,13 @@ class MockCASSANDRA_DB(object):
         ]
 
     def query_raw_data(self, path=None, freq=None, ts_min=None, ts_max=None):
-        return self.query_baserate_timerange(path, freq, ts_min, ts_max)
+        if 'SentryPoll' in path:
+            s_bin = (ts_min/freq)*freq
+            e_bin = (ts_max/freq)*freq
+            n_bins = (e_bin - s_bin) / freq
+            return [ {'ts': s_bin+(i*freq), 'val': 1200} for i in range(n_bins) ]
+        else:
+            return self.query_baserate_timerange(path, freq, ts_min, ts_max)
 
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
         self._test_incoming_args(path, freq, ts_min, ts_max, cf)
@@ -976,3 +982,32 @@ class PDUAPITests(ResourceTestCase):
 
         children = data['children']
         self.assertEqual(len(children), 0)
+
+class PDUAPIDataTests(DeviceAPITestsBase):
+    def setUp(self):
+        super(PDUAPIDataTests, self).setUp()
+        # mock patches names where used/imported, not where defined
+        # This form will patch a class when it is instantiated by the executed code:
+        # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
+        # This form will patch a module-level class instance:
+        self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
+        self.patcher.start()
+        self.td = build_pdu_metadata()
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    def test_get_load(self):
+        url = '/v1/pdu/sentry_pdu/outlet/AA/load/'
+
+        params = { }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(len(data['data']), 60)
