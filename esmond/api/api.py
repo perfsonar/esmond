@@ -112,7 +112,11 @@ OIDSET_NAME_TRANSFORM = {
     'ALUFastPollHC': 'FastPollHC',
 }
 
-if db:
+testing = False
+mod = inspect.getmodule(inspect.stack()[1][0])
+if mod and mod.__name__.startswith('api.tests'): testing = True
+
+if db and not testing:
     OIDSET_INTERFACE_ENDPOINTS = generate_endpoint_map()
     print 'generated endpoint map'
 else:
