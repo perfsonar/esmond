@@ -328,7 +328,7 @@ class CASSANDRA_DB(object):
             if ret:
                 # A previous value was found in the raw data, so we can
                 # seed/return that.
-                key = ret.keys()[0]
+                key = ret.keys()[-1]
                 ts = ret[key].keys()[0]
                 val = json.loads(ret[key][ts])
                 meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
