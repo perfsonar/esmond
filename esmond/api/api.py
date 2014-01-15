@@ -97,60 +97,40 @@ def get_throttle_args(config):
 
 THROTTLE_ARGS = get_throttle_args(get_config(get_config_path()))
 
-def generate_endpoint_map():
-    payload = {}
-    for oidset in OIDSet.objects.all().order_by('name'):
-        for oid in oidset.oids.all().order_by('name'):
-            if oid.endpoint_alias:
-                if not payload.has_key(oidset.name):
-                    payload[oidset.name] = {}
-                payload[oidset.name][oid.endpoint_alias] = oid.name
-    return payload
-
 # XXX(jdugan): temporary hack to deal with ALUFastPollHC
 OIDSET_NAME_TRANSFORM = {
     'ALUFastPollHC': 'FastPollHC',
 }
 
-testing = False
-mod = inspect.getmodule(inspect.stack()[1][0])
-if mod and mod.__name__.startswith('api.tests'): testing = True
+class EndpointMap(object):
+    """
+    The dynamic endpoint map generation has been moved into 
+    this class to avoid the map being generated on module import.
+    That could cause conflicts with the test suite loading fixtures 
+    and allows getting rid of the old "failover" static dict.
+    Burying execution of the map generation until after the tests 
+    have set up the in-memory db makes things happy.
+    """
+    def __init__(self):
+        self.mapping = None
 
-if db and not testing:
-    OIDSET_INTERFACE_ENDPOINTS = generate_endpoint_map()
-    print 'generated endpoint map'
-else:
-    print 'using canned endpoint map'
-    # XXX(mmg): we should be dynamically generating this, per above, 
-    # but leaving original data structure in place if the db object 
-    # is not initialized until we determine how to represent this 
-    # data in the canned fixtures for unit testing.
-    OIDSET_INTERFACE_ENDPOINTS = {
-        'ALUErrors': {
-            'error/in': 'ifInErrors',
-            'error/out': 'ifOutErrors',
-            'discard/in': 'ifInDiscards',
-            'discard/out': 'ifOutDiscards',
-        },
-        'ALUFastPollHC': {
-            'in': 'ifHCInOctets',
-            'out': 'ifHCOutOctets',
-        },
-        'Errors': {
-            'error/in': 'ifInErrors',
-            'error/out': 'ifOutErrors',
-            'discard/in': 'ifInDiscards',
-            'discard/out': 'ifOutDiscards',
-        },
-        'FastPollHC': {
-            'in': 'ifHCInOctets',
-            'out': 'ifHCOutOctets',
-        },
-        'InfFastPollHC': {
-            'in': 'gigeClientCtpPmRealRxOctets',
-            'out': 'gigeClientCtpPmRealTxOctets',
-        },
-    }
+    def generate_endpoint_map(self):
+        payload = {}
+        for oidset in OIDSet.objects.all().order_by('name'):
+            for oid in oidset.oids.all().order_by('name'):
+                if oid.endpoint_alias:
+                    if not payload.has_key(oidset.name):
+                        payload[oidset.name] = {}
+                    payload[oidset.name][oid.endpoint_alias] = oid.name
+        return payload
+
+    @property
+    def endpoints(self):
+        if not self.mapping:
+            self.mapping = self.generate_endpoint_map()
+        return self.mapping
+
+OIDSET_INTERFACE_ENDPOINTS = EndpointMap()
 
 def check_connection():
     """Called by testing suite to produce consistent errors.  If no 
@@ -709,8 +689,8 @@ class InterfaceResource(ModelResource):
         children = []
 
         for oidset in bundle.obj.device.oidsets.all():
-            if oidset.name in OIDSET_INTERFACE_ENDPOINTS:
-                children.extend(OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys())
+            if oidset.name in OIDSET_INTERFACE_ENDPOINTS.endpoints:
+                children.extend(OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].keys())
 
         base_uri = self.get_resource_uri(bundle)
         return [ dict(leaf=True, uri='%s/%s' % (base_uri, x), name=x)
@@ -801,11 +781,11 @@ class InterfaceDataResource(Resource):
         oidsets = iface.device.oidsets.all()
         endpoint_map = {}
         for oidset in oidsets:
-            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
-                continue 
+            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
+                continue
 
             for endpoint, varname in \
-                    OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
+                    OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].iteritems():
                 endpoint_map[endpoint] = [
                     SNMP_NAMESPACE,
                     iface.device.name,
@@ -1041,10 +1021,10 @@ class InterfaceBulkRequestResource(Resource):
                 endpoint_map = {}
                 device = Device.objects.get(name=device_name)
                 for oidset in device.oidsets.all():
-                    if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
+                    if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
                         continue
                     for endpoint, varname in \
-                        OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
+                        OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].iteritems():
                         endpoint_map[endpoint] = [
                             SNMP_NAMESPACE,
                             device_name,

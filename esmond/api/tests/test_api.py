@@ -197,10 +197,10 @@ class DeviceAPITests(DeviceAPITestsBase):
                     self.assertIn(field, child)
 
             for oidset in Device.objects.get(name=device).oidsets.all():
-                if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
+                if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
                     continue
 
-                for child_name in OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys():
+                for child_name in OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].keys():
                     self.assertIn(child_name , children)
                     child = children[child_name]
                     self.assertEqual(child['uri'], url + child_name)
