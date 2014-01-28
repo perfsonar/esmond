@@ -149,10 +149,12 @@ class EsmondConfig(object):
         
         self.persist_map = {}
         for key, val in cfg.items("persist_map"):
+            if key == 'esmond_root': continue
             self.persist_map[key] = val.replace(" ", "").split(",")
 
         self.persist_queues = {}
         for key, val in cfg.items("persist_queues"):
+            if key == 'esmond_root': continue
             self.persist_queues[key] = val.split(':', 1)
             self.persist_queues[key][1] = int(self.persist_queues[key][1])
 
