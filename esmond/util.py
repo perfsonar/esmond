@@ -126,7 +126,7 @@ def init_logging(name, facility, level=logging.INFO,
 
     log = logging.getLogger()
     log.setLevel(level)
-    # XXX(jdugan): /dev/log appears to be more costly at least on FreeBSD
+    # NOTE: /dev/log appears to be more costly at least on FreeBSD
     if os.uname()[0] == 'FreeBSD':
         syslog = logging.handlers.SysLogHandler(('localhost', 514), facility=facility)
     elif os.uname()[0] == 'Darwin':
