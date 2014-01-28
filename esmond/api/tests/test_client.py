@@ -80,6 +80,9 @@ class TestClientLibs(LiveServerTestCase):
         self.assertEquals(endpoints[0].name, 'out')
         self.assertEquals(endpoints[1].name, 'in')
 
+        ep = interface.get_endpoint(endpoints[0].name)
+        self.assertEquals(ep.name, 'out')
+
         payload = endpoints[1].get_data()
         self.assertTrue(payload.agg)
         self.assertTrue(payload.cf)

@@ -403,7 +403,8 @@ class Interface(NodeInfo):
 
         if len(endpoints) == 0:
             return EndpointNotFound()
-            # XXX warn if more than one endpoint?
+        elif len(endpoints) > 1:
+            self.warn('Multiple endpoints found')
 
         return endpoints[0]
 
