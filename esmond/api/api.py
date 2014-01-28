@@ -485,16 +485,6 @@ class DeviceResource(ModelResource):
 
         return orm_filters
 
-    # XXX(jdugan): next steps
-    # data formatting
-    # time based limits on view
-    # decide to how represent -infinity/infinity timestamps
-    # figure out what we need from newdb.py
-    # add docs, start with stuff in newdb.py
-    #
-    # add mapping between oidset and REST API.  Something similar to declarative
-    # models/resources ala Django models
-
     """
     The three following methods are invoked by the prepend_urls regex parsing. 
     They invoke and return an the appropriate method call on an instance of 
@@ -632,8 +622,6 @@ class InterfaceResource(ModelResource):
         kwargs['ifDescr'] = atdecode(kwargs['ifDescr'])
         kwargs = build_time_filters(bundle.request.GET, kwargs)
 
-        # XXX(jdugan): we might want to do something different here, such as
-        # return a reference to or a list of other valid IfRefs at this point.
         object_list = self.get_object_list(bundle.request).filter(**kwargs)
         if len(object_list) > 1:
             kwargs['pk'] = object_list.order_by("-end_time")[0].pk
@@ -1609,15 +1597,7 @@ class Fill(object):
     @staticmethod
     def expected_bin_count(start_bin, end_bin, freq):
         """Get expected number of bins in a given range of bins."""
-        # XXX(mmg):
-        # Should be ((end_bin - start_bin) / freq) + 1  ??
         return ((end_bin - start_bin) / freq) + 1
-        # s = start_bin + 0 # making a copy
-        # bincount = 0
-        # while s <= end_bin:
-        #     bincount += 1
-        #     s += freq
-        # return bincount
 
     @staticmethod
     def get_expected_first_bin(begin, freq):
@@ -1789,9 +1769,7 @@ class OutletResource(ModelResource):
     def obj_get(self, bundle, **kwargs):
         kwargs['outletID'] = atdecode(kwargs['outletID'])
         kwargs = build_time_filters(bundle.request.GET, kwargs)
-
-        # XXX(jdugan): we might want to do something different here, such as
-        # return a reference to or a list of other valid IfRefs at this point.
+        
         object_list = self.get_object_list(bundle.request).filter(**kwargs)
         if len(object_list) > 1:
             kwargs['pk'] = object_list.order_by("-end_time")[0].pk
