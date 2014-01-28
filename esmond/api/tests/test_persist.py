@@ -260,8 +260,6 @@ class TestALUSAPRefPersister(TestCase):
 
         self.assertTrue(ifrefs[1].end_time < max_datetime)
 
-# XXX(jdugan): it would probably be better and easier in the long run to keep
-# these JSON blobs in files and define a small class to load them
 timeseries_test_data = """
 [
     {
@@ -625,8 +623,7 @@ class TestCassandraPollPersister(TestCase):
 
     def test_persister_heartbeat(self):
         """Test the hearbeat code"""
-        # XXX(jdugan): commented out until performance problem from r794 is fixed
-        return
+
         config = get_config(get_config_path())
 
         freq = 30
