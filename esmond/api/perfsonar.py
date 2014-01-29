@@ -597,15 +597,16 @@ class PSTimeSeriesResource(Resource):
         event_type = kwargs['event_type']
         metadata_key = slugify( kwargs['metadata_key'])
         datapath = EVENT_TYPE_CONFIG[event_type]["row_prefix"].split(KEY_DELIMITER)
+        datapath.append(metadata_key)
         if 'summary_type' in kwargs:
             summary_type = kwargs['summary_type']
             if summary_type not in SUMMARY_TYPES:
                 raise BadRequest("Invalid summary type '%s'" % summary_type)
             datapath.append(summary_type)
-        datapath.append(metadata_key)
         freq = None
         if 'summary_window' in kwargs:
             freq = self.valid_summary_window(kwargs['summary_window'])
+            datapath.append(freq)
 
         #send query
         results = []
