@@ -67,11 +67,13 @@ EVENT_TYPE_CONFIG = {
     }
 }
 SUMMARY_TYPES = {
+    "base": "base",
     "aggregations": "aggregation",
     "composites": "composite",
     "statistics": "statistics",
     "subintervals": "subinterval"
 }
+INVERSE_SUMMARY_TYPES = {v:k for k,v in SUMMARY_TYPES.items()}
 SUBJECT_FIELDS = ['p2p_subject']
 SUBJECT_FILTER_MAP = {
     #point-to-point subject fields
@@ -207,10 +209,12 @@ class PSEventTypesResource(ModelResource):
             obj = bundle_or_obj
 
         if obj:
+            if(obj.encoded_summary_type() not in INVERSE_SUMMARY_TYPES):
+                raise BadRequest("Invalid summary type %s" % obj.encoded_summary_type())
             uri = "%s%s/%s" % (
                 PSArchiveResource().get_resource_uri(obj.metadata),
                 obj.encoded_event_type(),
-                obj.encoded_summary_type())
+                INVERSE_SUMMARY_TYPES[obj.encoded_summary_type()])
             if obj.summary_type != 'base':
                 uri = "%s/%d" % (uri, obj.summary_window)
         else:
@@ -602,11 +606,10 @@ class PSTimeSeriesResource(Resource):
             summary_type = kwargs['summary_type']
             if summary_type not in SUMMARY_TYPES:
                 raise BadRequest("Invalid summary type '%s'" % summary_type)
-            datapath.append(summary_type)
+            datapath.append(SUMMARY_TYPES[summary_type])
         freq = None
         if 'summary_window' in kwargs:
             freq = self.valid_summary_window(kwargs['summary_window'])
-            datapath.append(freq)
 
         #send query
         results = []
