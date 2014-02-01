@@ -1548,19 +1548,28 @@ class QueryUtil(object):
         return True
 
     @staticmethod
-    def format_data_payload(data, in_ms=False):
+    def format_data_payload(data, in_ms=False, coerce_to_bins=None):
         """Massage results from cassandra for json return payload.
 
         The in_ms flag is set to true if a given resource (like the 
         /timeseries/ namespace) is doing business in milliseconds rather 
-        than seconds."""
+        than seconds.
+
+        If coerce_to_bins is not None, truncate the timestamp to the
+        the bins spaced coerce_to_bins ms apart. This is useful for 
+        fitting raw data to bin boundaries."""
 
         divs = { False: 1000, True: 1 }
 
         results = []
 
         for row in data:
-            d = [row['ts']/divs[in_ms], row['val']]
+            ts = row['ts']
+
+            if coerce_to_bins:
+                ts -= ts % coerce_to_bins
+
+            d = [ts/divs[in_ms], row['val']]
             
             # Further options for different data sets.
             if row.has_key('is_valid'): # Base rates
@@ -1895,7 +1904,7 @@ class OutletDataResource(Resource):
         data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
                                  obj.begin_time*1000, obj.end_time*1000)
 
-        obj.data = QueryUtil.format_data_payload(data)
+        obj.data = QueryUtil.format_data_payload(data, coerce_to_bins=oidset.frequency*1000)
         obj.data = Fill.verify_fill(obj.begin_time, obj.end_time, oidset.frequency,
                                     obj.data)
 
