@@ -12,7 +12,7 @@ from esmond.api.models import *
 from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
 from esmond.api.tests.example_data import build_default_metadata, build_pdu_metadata
 from esmond.cassandra import AGG_TYPES
-from esmond.api.api import SNMP_NAMESPACE
+from esmond.api.api import SNMP_NAMESPACE, QueryUtil
 
 def datetime_to_timestamp(dt):
     return calendar.timegm(dt.timetuple())
@@ -1013,3 +1013,26 @@ class PDUAPIDataTests(DeviceAPITestsBase):
 
         self.assertEquals(data['resource_uri'], url)
         self.assertEquals(len(data['data']), 60)
+
+class QueryUtilTests(TestCase):
+    def test_coerce_to_bins(self):
+        data_in = [
+            {
+                "ts": 1391216201000,
+                "val": 1100
+            },
+            {
+                "ts": 1391216262000,
+                "val": 1100
+            },
+            {
+                "ts": 1391216323000,
+                "val": 1100
+            }
+        ]
+
+        data_out = [[1391216160, 1100], [1391216220, 1100], [1391216280, 1100]]
+
+        data_check = QueryUtil.format_data_payload(data_in, coerce_to_bins=60000)
+
+        self.assertEquals(data_check, data_out)
