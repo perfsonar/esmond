@@ -1031,7 +1031,9 @@ class QueryUtilTests(TestCase):
         ]
 
         data_out = [[1391216160, 1100], [1391216220, 1100], [1391216280, 1100]]
-
         data_check = QueryUtil.format_data_payload(data_in, coerce_to_bins=60000)
-
         self.assertEquals(data_check, data_out)
+
+        data_out_nocoerce = [[1391216201, 1100], [1391216262, 1100], [1391216323, 1100]]
+        data_check = QueryUtil.format_data_payload(data_in)
+        self.assertEquals(data_check, data_out_nocoerce)
