@@ -1768,7 +1768,7 @@ class OutletResource(ModelResource):
         allowed_methods = ['get']
         detail_uri_name = 'outletID'
         filtering = {
-            'device': ALL_WITH_RELATIONS,
+            'pdu': ALL_WITH_RELATIONS,
             'outletID': ALL,
             'outletName': ALL,
         }
