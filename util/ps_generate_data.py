@@ -12,77 +12,46 @@ import uuid
 import datetime
 import random
 
-class CassandraTester:
-    #database settings
-    dbaddress = 'localhost:9160'  
-    cf_counter = 'base_rates'
-    cf_json = 'raw_data'
-    
-    def __init__(self, keyspace_name, savedb=True):
-        #initialize db
-        self.keyspace_name = keyspace_name
-        self.create_column_families(savedb)
-        
-        #create connection pool
-        self.pool = ConnectionPool(self.keyspace_name, [self.dbaddress])
+from esmond.config import get_config, get_config_path
+from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin
 
-    def create_column_families(self, savedb=False):
-        #create system manager for checking schema
-        try:
-            sysman = SystemManager(self.dbaddress)                              
-        except TTransportException, e:
-            raise ConnectionException("System Manager can't connect to Cassandra "
-                "at %s - %s" % (self.dbaddress, e))
-        
-        #clear database if desired
+PERFSONAR_NAMESPACE = 'ps'
+
+class CassandraTester:
+    def __init__(self, keyspace_name, savedb=True):
+        config = get_config(get_config_path())
         if not savedb:
-            if self.keyspace_name in sysman.list_keyspaces():
-                sysman.drop_keyspace(self.keyspace_name)
-                
-        #check if keyspace exists
-        if not self.keyspace_name in sysman.list_keyspaces():
-            sysman.create_keyspace(self.keyspace_name, SIMPLE_STRATEGY, 
-                {'replication_factor': '1'})
-        
-        #check for column families
-        if not sysman.get_keyspace_column_families(self.keyspace_name).has_key(self.cf_counter):
-            sysman.create_column_family(self.keyspace_name, self.cf_counter, super=True, 
-                    comparator_type=LONG_TYPE, 
-                    default_validation_class=COUNTER_COLUMN_TYPE,
-                    key_validation_class=UTF8_TYPE)
-        
-        
-        if not sysman.get_keyspace_column_families(self.keyspace_name).has_key(self.cf_json):
-            sysman.create_column_family(self.keyspace_name, self.cf_json, super=False, 
-                    comparator_type=LONG_TYPE, 
-                    default_validation_class=UTF8_TYPE,
-                    key_validation_class=UTF8_TYPE)
+            config.db_clear_on_testing = True
+
+        self.db = CASSANDRA_DB(config)
     
     def generate_int_data(self, key_prefix, metatdata_key, num_rows, start_ts, end_ts, summary_type, time_int, min_val, max_val):    
-        cf = ColumnFamily(self.pool, self.cf_counter)
         row_keys = []
+        # data = []
         for n in range(num_rows):
             if metatdata_key is None:
                 metatdata_key, = uuid.uuid4().hex
-            key = "%s:%s" % (key_prefix, metatdata_key)
+            path = [ PERFSONAR_NAMESPACE, key_prefix, metatdata_key ]
             if summary_type and summary_type != 'base':
-                key += ":%s:%d" % (summary_type, time_int)
-            row_keys.append(key.lower())
+                path = path + [ summary_type, str(time_int) ]
+            row_keys.append(BaseRateBin(path=path, ts=1).get_meta_key().lower())
             for ts in range(start_ts, end_ts, time_int):
-                millis = ts * 1000
-                cf.insert(self.gen_key(key, ts), {millis : {'val': random.randint(min_val, max_val), 'is_valid': 1}})
+                br = BaseRateBin(path=path, ts=ts*1000, val=random.randint(min_val, max_val), is_valid=1)
+                # data.append({'path': path, 'ts':ts*1000, 'val':random.randint(min_val, max_val), 'is_valid':1})
+                self.db.update_rate_bin(br)
+        self.db.flush()
         return row_keys
     
     def generate_histogram_data(self, key_prefix, metatdata_key, num_rows, start_ts, end_ts, summary_type, summ_window, sample_size, bucket_min, bucket_max):    
-        cf = ColumnFamily(self.pool, self.cf_json)
         row_keys = []
+        data = []
         for n in range(num_rows):
             if metatdata_key is None:
                 metatdata_key, = uuid.uuid4().hex
-            key = "%s:%s" % (key_prefix, metatdata_key)
+            path = [ PERFSONAR_NAMESPACE, key_prefix, metatdata_key ]
             if summary_type and summary_type != 'base':
-                key += ":%s:%d" % (summary_type, summ_window)
-            row_keys.append(key.lower())
+                path = path + [ summary_type, str(summ_window) ]
+            row_keys.append(RawRateData(path=path, ts=1).get_meta_key().lower())
             for ts in range(start_ts, end_ts, summ_window):
                 histogram = {}
                 sample = sample_size
@@ -94,8 +63,10 @@ class CassandraTester:
                     else:
                         histogram[str(bucket)] += val
                     sample -= val
-                millis = ts * 1000
-                cf.insert(self.gen_key(key, ts), {millis : json.dumps(histogram)})
+                rr = RawRateData(path=path, ts=ts*1000, val=json.dumps(histogram))
+                # data.append({'path':path, 'ts':ts*1000, 'val':json.dumps(histogram)})
+                self.db.set_raw_data(rr)
+        self.db.flush()
         return row_keys
     
     def get_data(self, cf_name, key, start_time, end_time, output_json=False):
