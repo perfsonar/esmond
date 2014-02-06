@@ -43,6 +43,7 @@ Requires:		openssl-devel
 Requires:		ncurses-devel
 Requires:		readline-devel
 Requires:		tk-devel
+Requires:		memcached
  
 %description
 Esmond is a system for collecting and storing large sets of SNMP data. Esmond
