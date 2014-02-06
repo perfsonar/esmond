@@ -44,6 +44,28 @@ Requires:		ncurses-devel
 Requires:		readline-devel
 Requires:		tk-devel
 Requires:		memcached
+Requires:		autoconf
+Requires:		automake
+Requires:		bison
+Requires:		byacc
+Requires:		cscope
+Requires:		ctags
+Requires:		diffstat
+Requires:		doxygen
+Requires:		flex
+Requires:		gcc-c++
+Requires:		gcc-gfortran
+Requires:		git
+Requires:		indent
+Requires:		intltool
+Requires:		libtool
+Requires:		patchutils
+Requires:		rcs
+Requires:		redhat-rpm-config
+Requires:		subversion
+Requires:		swig
+Requires:		systemtap
+
  
 %description
 Esmond is a system for collecting and storing large sets of SNMP data. Esmond
@@ -103,7 +125,7 @@ done
 # Check for modern python and set up environment.
 easy_install pip
 pip install virtualenv
-yum -y groupinstall "Development Tools"
+# yum -y groupinstall "Development Tools"
 mkdir -p /usr/local/src
 if ! [ -a /usr/local/bin/python2.7 ] && 
 	! [ -a /usr/bin/python2.7 ];
