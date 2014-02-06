@@ -100,6 +100,37 @@ done
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
 
 %post
+# Check for modern python and set up environment.
+easy_install pip
+pip install virtualenv
+yum -y groupinstall "Development Tools"
+mkdir -p /usr/local/src
+if ! [ -a /usr/local/bin/python2.7 ] && 
+	! [ -a /usr/bin/python2.7 ];
+then
+	echo "Installing alt python2.7"
+	cd /usr/local/src
+	wget http://python.org/ftp/python/2.7.6/Python-2.7.6.tgz
+	tar zxvf Python-2.7.6.tgz
+	cd /usr/local/src/Python-2.7.6
+	./configure --prefix=/usr/local
+	make && make altinstall
+else
+	echo "Python2.7 exists"
+fi
+
+cd %{install_base}
+if [ -a /usr/local/bin/python2.7 ];
+then
+	virtualenv --prompt="(esmond)" --python=/usr/local/bin/python2.7 .
+else
+	virtualenv --prompt="(esmond)" --python=/usr/bin/python2.7 .
+fi
+. bin/activate
+pip install -r requirements.txt
+mkdir -p tsdb-data
+touch tsdb-data/TSDB
+
 # Create the 'esmond' user
 /usr/sbin/groupadd esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
