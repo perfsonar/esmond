@@ -501,8 +501,11 @@ class PSArchiveResource(ModelResource):
                 metadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'] )
     
     def dispatch_summary_detail(self, request, **kwargs):
+        #verify summary type
+        if(kwargs['summary_type'] not in SUMMARY_TYPES):
+            raise BadRequest("Invalid sumamry type in URL '%s'" % kwargs['summary_type'])
         return PSEventTypeSummaryResource().dispatch_list(request,
-                metadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'], summary_type=kwargs['summary_type'] )
+                metadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'], summary_type=SUMMARY_TYPES[kwargs['summary_type']] )
     
     def dispatch_summary_data(self, request, **kwargs):
         return PSTimeSeriesResource().dispatch_list(request,
