@@ -237,6 +237,29 @@ class PSEventTypesResource(ModelResource):
                 'summary_window': '0'})
             
             #Build summaries
+            if 'summaries' in event_type:
+                for summary in event_type['summaries']:
+                    # Validate summary
+                    if 'summary-type' not in summary:
+                        raise BadRequest("Summary must contain summary-type")
+                    elif summary['summary-type'] not in INVERSE_SUMMARY_TYPES:
+                        raise BadRequest("Invalid summary type '%s'" % summary['summary-type'])
+                    elif summary['summary-type'] == 'base':
+                        continue
+                    elif 'summary-window' not in summary:
+                        raise BadRequest("Summary must contain summary-window")
+                    
+                    #Verify summary window is an integer
+                    try:
+                        int(summary['summary-window'])
+                    except ValueError:
+                        raise BadRequest("Summary window must be an integer")
+                    
+                    #Everything looks good so add summary
+                    deserialized_event_types.append({
+                        'event_type': event_type[EVENT_TYPE_FILTER],
+                        'summary_type': summary['summary-type'],
+                        'summary_window': summary['summary-window']})
             
         return deserialized_event_types
     
