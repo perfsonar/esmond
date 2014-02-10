@@ -166,7 +166,7 @@ def format_list_keys(data):
    
 # Resource classes 
 class PSEventTypesResource(ModelResource):
-    psmetadata_resource = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+    psmetadata = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
      
     class Meta:
         queryset=PSEventTypes.objects.all()
@@ -177,7 +177,8 @@ class PSEventTypesResource(ModelResource):
         filtering = {
             "event_type": ['exact'],  
             "summary_type": ['exact'],
-            "summary_window": ['exact']    
+            "summary_window": ['exact'],
+            "psmetadata": ALL_WITH_RELATIONS
         }
     
     @staticmethod
@@ -306,7 +307,8 @@ class PSEventTypeSummaryResource(PSEventTypesResource):
         filtering = {
             "event_type": ['exact'],  
             "summary_type": ['exact'],
-            "summary_window": ['exact']
+            "summary_window": ['exact'],
+            "psmetadata": ALL_WITH_RELATIONS
         }
     
     def alter_list_data_to_serialize(self, request, data):
@@ -318,7 +320,7 @@ class PSEventTypeSummaryResource(PSEventTypesResource):
         return formatted_summary_objs
 
 class PSPointToPointSubjectResource(ModelResource):
-    psmetadata_resource = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+    psmetadata = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
     
     class Meta:
         queryset=PSPointToPointSubject.objects.all()
@@ -344,7 +346,7 @@ class PSPointToPointSubjectResource(ModelResource):
         return formatted_objs
 
 class PSMetadataParametersResource(ModelResource):
-    psmetadata_resource = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+    psmetadata = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
     
     class Meta:
         queryset=PSMetadataParameters.objects.all()
@@ -354,9 +356,9 @@ class PSMetadataParametersResource(ModelResource):
         excludes = ['id']
         
 class PSArchiveResource(ModelResource):
-    event_types = fields.ToManyField(PSEventTypesResource, 'pseventtypes', related_name='psmetadata_resource', full=True, null=True, blank=True)
-    p2p_subject = fields.ToOneField(PSPointToPointSubjectResource, 'pspointtopointsubject', related_name='psmetadata_resource', full=True, null=True, blank=True)
-    md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters', related_name='psmetadata_resource', full=True, null=True, blank=True)
+    event_types = fields.ToManyField(PSEventTypesResource, 'pseventtypes', related_name='psmetadata', full=True, null=True, blank=True)
+    p2p_subject = fields.ToOneField(PSPointToPointSubjectResource, 'pspointtopointsubject', related_name='psmetadata', full=True, null=True, blank=True)
+    md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters', related_name='psmetadata', full=True, null=True, blank=True)
     
     class Meta:
         queryset=PSMetadata.objects.all()
@@ -393,7 +395,7 @@ class PSArchiveResource(ModelResource):
             if subj_field in obj.keys():
                 subj_obj = format_detail_keys(obj[subj_field])
                 for subj_k in subj_obj:
-                    if subj_k == 'uri' or subj_k=='psmetadata-resource':
+                    if subj_k == 'uri' or subj_k=='psmetadata':
                         continue
                     obj[subj_k] =  subj_obj[subj_k]
                 del obj[subj_field]
@@ -498,14 +500,14 @@ class PSArchiveResource(ModelResource):
     
     def dispatch_event_type_detail(self, request, **kwargs):
         return PSEventTypesResource().dispatch_list(request,
-                metadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'] )
+                psmetadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'] )
     
     def dispatch_summary_detail(self, request, **kwargs):
         #verify summary type
         if(kwargs['summary_type'] not in SUMMARY_TYPES):
             raise BadRequest("Invalid sumamry type in URL '%s'" % kwargs['summary_type'])
         return PSEventTypeSummaryResource().dispatch_list(request,
-                metadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'], summary_type=SUMMARY_TYPES[kwargs['summary_type']] )
+                psmetadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'], summary_type=SUMMARY_TYPES[kwargs['summary_type']] )
     
     def dispatch_summary_data(self, request, **kwargs):
         return PSTimeSeriesResource().dispatch_list(request,
