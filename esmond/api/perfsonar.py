@@ -321,16 +321,19 @@ class PSPointToPointSubjectResource(ModelResource):
         return formatted_objs
 
 class PSMetadataParametersResource(ModelResource):
+    psmetadata_resource = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+    
     class Meta:
         queryset=PSMetadataParameters.objects.all()
         resource_name = 'metadata-parameters'
         allowed_methods = ['get', 'post']
+        authorization = Authorization() #todo replace this
         excludes = ['id']
         
 class PSArchiveResource(ModelResource):
     event_types = fields.ToManyField(PSEventTypesResource, 'pseventtypes', related_name='psmetadata_resource', full=True, null=True, blank=True)
     p2p_subject = fields.ToOneField(PSPointToPointSubjectResource, 'pspointtopointsubject', related_name='psmetadata_resource', full=True, null=True, blank=True)
-    md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters', full=True, null=True, blank=True)
+    md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters', related_name='psmetadata_resource', full=True, null=True, blank=True)
     
     class Meta:
         queryset=PSMetadata.objects.all()
@@ -410,6 +413,10 @@ class PSArchiveResource(ModelResource):
         if 'subject-type' not in data:
             raise BadRequest("Missing subject-type field in request")
         
+        #Verify event types provided
+        if 'event-types' not in data:
+            raise BadRequest("Missing event-types field in request")
+        
         if data['subject-type'] not in SUBJECT_TYPE_MAP:
             raise BadRequest("Invalid subject type %s" % data['subject-type'])
         
@@ -417,11 +424,12 @@ class PSArchiveResource(ModelResource):
         if 'metadata-key' in data:
             raise BadRequest("metadata-key is not allowed to be specified")
         
+        #Build deserialized object
         subject_model = SUBJECT_TYPE_MAP[data['subject-type']]
         formatted_data = {}
         formatted_data[subject_model] = {}
+        formatted_data['md_parameters'] = []
         subject_prefix = "%s__" % subject_model
-        #format keys
         for k in data:
             if k == 'subject-type':
                 formatted_data[deformat_key(k)] = data[k]
@@ -430,6 +438,11 @@ class PSArchiveResource(ModelResource):
             elif k in SUBJECT_FILTER_MAP and SUBJECT_FILTER_MAP[k].startswith(subject_prefix):
                 subj_k = SUBJECT_FILTER_MAP[k].replace(subject_prefix, '', 1)
                 formatted_data[subject_model][subj_k] = data[k]
+            else:
+                formatted_data['md_parameters'].append({
+                    'parameter_key': k,
+                    'parameter_value': data[k]
+                    })
         
         #set metatadatakey
         formatted_data['metadata_key'] = slugify(unicode(uuid.uuid4().hex))
