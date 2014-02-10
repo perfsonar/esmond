@@ -362,6 +362,7 @@ class PSArchiveResource(ModelResource):
     
     class Meta:
         queryset=PSMetadata.objects.all()
+        always_return_data = True
         resource_name = 'archive'
         detail_uri_name = 'metadata_key'
         allowed_methods = ['get', 'post']
