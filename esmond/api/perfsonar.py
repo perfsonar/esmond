@@ -10,10 +10,12 @@ from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
 from string import join
 from tastypie import fields
 from tastypie.api import Api
+from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest
 from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS
 from time import time
+import uuid
 
 '''
 START MOVE TO CONFIG
@@ -75,6 +77,14 @@ SUMMARY_TYPES = {
 }
 INVERSE_SUMMARY_TYPES = {v:k for k,v in SUMMARY_TYPES.items()}
 SUBJECT_FIELDS = ['p2p_subject']
+SUBJECT_TYPE_MAP = {
+    "point-to-point": "p2p_subject"
+    
+}
+SUBJECT_MODEL_MAP = {
+    "point-to-point": "pspointtopointsubject"
+    
+}
 SUBJECT_FILTER_MAP = {
     #point-to-point subject fields
     "source": 'p2p_subject__source',
@@ -156,10 +166,13 @@ def format_list_keys(data):
    
 # Resource classes 
 class PSEventTypesResource(ModelResource):
+    psmetadata_resource = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+     
     class Meta:
         queryset=PSEventTypes.objects.all()
         resource_name = 'event-type'
         allowed_methods = ['get', 'post']
+        authorization = Authorization() #todo replace this
         excludes = ['id']
         filtering = {
             "event_type": ['exact'],  
@@ -176,7 +189,7 @@ class PSEventTypesResource(ModelResource):
         return summary_obj
     
     @staticmethod
-    def format_event_types(event_types):
+    def serialize_event_types(event_types):
         formatted_event_type_map = {}
         for event_type_bundle in event_types:
             event_type = event_type_bundle.data
@@ -199,8 +212,36 @@ class PSEventTypesResource(ModelResource):
                 
         return formatted_event_type_map.values()
     
+    @staticmethod
+    def deserialize_event_types(event_types):
+        if event_types is None:
+            return []
+        
+        if not isinstance(event_types, list):
+            raise BadRequest("event_types must be a list")
+        
+        deserialized_event_types = []
+        for event_type in event_types:
+            #Validate object
+            if EVENT_TYPE_FILTER not in event_type:
+                #verify event-type defined
+                raise BadRequest("No event-type defined")
+            elif event_type[EVENT_TYPE_FILTER] not in EVENT_TYPE_CONFIG:
+                #verify valid event-type
+                raise BadRequest("Invalid event-type %s" % str(event_type[EVENT_TYPE_FILTER]))
+            
+            #Create base object
+            deserialized_event_types.append({
+                'event_type': event_type[EVENT_TYPE_FILTER],
+                'summary_type': 'base',
+                'summary_window': '0'})
+            
+            #Build summaries
+            
+        return deserialized_event_types
+    
     def alter_list_data_to_serialize(self, request, data):
-        return PSEventTypesResource.format_event_types(data['objects'])
+        return PSEventTypesResource.serialize_event_types(data['objects'])
     
     def get_resource_uri(self, bundle_or_obj=None):
         if isinstance(bundle_or_obj, Bundle):
@@ -254,10 +295,13 @@ class PSEventTypeSummaryResource(PSEventTypesResource):
         return formatted_summary_objs
 
 class PSPointToPointSubjectResource(ModelResource):
+    psmetadata_resource = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+    
     class Meta:
         queryset=PSPointToPointSubject.objects.all()
-        resource_name = 'event-type'
+        resource_name = 'p2p_subject'
         allowed_methods = ['get', 'post']
+        authorization = Authorization() #todo replace this
         excludes = ['id']
         filtering = {
             "source": ['exact', 'in'],  
@@ -284,8 +328,8 @@ class PSMetadataParametersResource(ModelResource):
         excludes = ['id']
         
 class PSArchiveResource(ModelResource):
-    event_types = fields.ToManyField(PSEventTypesResource, 'pseventtypes', full=True, null=True, blank=True)
-    p2p_subject = fields.ToOneField(PSPointToPointSubjectResource, 'pspointtopointsubject', full=True)
+    event_types = fields.ToManyField(PSEventTypesResource, 'pseventtypes', related_name='psmetadata_resource', full=True, null=True, blank=True)
+    p2p_subject = fields.ToOneField(PSPointToPointSubjectResource, 'pspointtopointsubject', related_name='psmetadata_resource', full=True, null=True, blank=True)
     md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters', full=True, null=True, blank=True)
     
     class Meta:
@@ -294,12 +338,27 @@ class PSArchiveResource(ModelResource):
         detail_uri_name = 'metadata_key'
         allowed_methods = ['get', 'post']
         excludes = ['id']
+        authorization = Authorization() #todo replace this
         filtering = {
             "metadata_key": ['exact'],
             "subject_type": ['exact'],
             "event_types" : ALL_WITH_RELATIONS,
             "p2p_subject" : ALL_WITH_RELATIONS
         }
+    
+    def save_related(self, bundle):
+        #don't save subject foreign keys because this is called before metadata has ID
+        return 
+    
+    def save_m2m(self, bundle):
+        #Save OneToOneField now that object has been created
+        subject_type = SUBJECT_MODEL_MAP[bundle.obj.subject_type]
+        subject_obj = bundle.related_objects_to_save.get(subject_type, None)
+        if subject_obj is not None:
+            subject_obj.metadata_id = bundle.obj.id
+        super(ModelResource, self).save_related(bundle)
+        
+        return super(ModelResource, self).save_m2m(bundle)
     
     def format_metadata_obj(self, obj, formatted_subj_fields):     
         obj = format_detail_keys(obj)
@@ -308,14 +367,14 @@ class PSArchiveResource(ModelResource):
             if subj_field in obj.keys():
                 subj_obj = format_detail_keys(obj[subj_field])
                 for subj_k in subj_obj:
-                    if subj_k == 'uri':
+                    if subj_k == 'uri' or subj_k=='psmetadata-resource':
                         continue
                     obj[subj_k] =  subj_obj[subj_k]
                 del obj[subj_field]
                 break
         
         #Format event types          
-        obj['event-types'] = PSEventTypesResource.format_event_types(obj['event-types'])
+        obj['event-types'] = PSEventTypesResource.serialize_event_types(obj['event-types'])
       
         #Format parameters
         for md_param in obj['md-parameters']:
@@ -325,6 +384,7 @@ class PSArchiveResource(ModelResource):
         return obj
     
     def alter_detail_data_to_serialize(self, request, data):
+        print data
         formatted_subj_fields = []
         for subj_field in SUBJECT_FIELDS:
             formatted_subj_fields.append(format_key(subj_field))
@@ -345,9 +405,37 @@ class PSArchiveResource(ModelResource):
             
         return formatted_objs
     
-    def alter_deserialized_list_data(self, request, data):
-        print data    
-        raise BadRequest("Not yet implemented")
+    def alter_deserialized_detail_data(self, request, data):
+        #Verify subject information provided
+        if 'subject-type' not in data:
+            raise BadRequest("Missing subject-type field in request")
+        
+        if data['subject-type'] not in SUBJECT_TYPE_MAP:
+            raise BadRequest("Invalid subject type %s" % data['subject-type'])
+        
+        #Don't allow metadata key to be specified
+        if 'metadata-key' in data:
+            raise BadRequest("metadata-key is not allowed to be specified")
+        
+        subject_model = SUBJECT_TYPE_MAP[data['subject-type']]
+        formatted_data = {}
+        formatted_data[subject_model] = {}
+        subject_prefix = "%s__" % subject_model
+        #format keys
+        for k in data:
+            if k == 'subject-type':
+                formatted_data[deformat_key(k)] = data[k]
+            elif k == 'event-types':
+                formatted_data[deformat_key(k)] = PSEventTypesResource.deserialize_event_types(data[k])
+            elif k in SUBJECT_FILTER_MAP and SUBJECT_FILTER_MAP[k].startswith(subject_prefix):
+                subj_k = SUBJECT_FILTER_MAP[k].replace(subject_prefix, '', 1)
+                formatted_data[subject_model][subj_k] = data[k]
+        
+        #set metatadatakey
+        formatted_data['metadata_key'] = slugify(unicode(uuid.uuid4().hex))
+        
+        print formatted_data
+        return super(ModelResource, self).alter_deserialized_detail_data(request, formatted_data)
     
     def prepend_urls(self):
         return [
