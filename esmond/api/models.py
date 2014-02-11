@@ -343,6 +343,7 @@ class PSMetadataManager(models.Manager):
 class PSMetadata(models.Model):
     metadata_key = models.SlugField(max_length=128, db_index=True, unique=True )
     subject_type = models.CharField(max_length=128)
+    checksum = models.CharField(max_length=128, db_index=True, unique=True)
     objects = PSMetadataManager()
     
     class Meta:

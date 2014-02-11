@@ -15,6 +15,7 @@ from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest
 from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS
 from time import time
+import hashlib
 import uuid
 
 '''
@@ -151,6 +152,8 @@ def format_detail_keys(obj):
         formatted_k = ""
         if k == "resource_uri":
             formatted_k = "uri"
+        elif k == "checksum":
+            continue
         else:
             formatted_k = format_key(k)
         formatted_data[formatted_k] = obj.data[k]
@@ -375,6 +378,16 @@ class PSArchiveResource(ModelResource):
             "p2p_subject" : ALL_WITH_RELATIONS
         }
     
+    def obj_create(self, bundle, **kwargs):
+        #check if medata already exists. if it does, return existing object
+        existing_md = PSMetadata.objects.filter(checksum=bundle.data["checksum"])
+        if existing_md.count() > 0:
+            bundle.obj = existing_md[0]
+        else:
+            bundle = super(ModelResource, self).obj_create(bundle, **kwargs)
+            
+        return bundle
+    
     def save_related(self, bundle):
         #don't save subject foreign keys because this is called before metadata has ID
         return 
@@ -413,7 +426,6 @@ class PSArchiveResource(ModelResource):
         return obj
     
     def alter_detail_data_to_serialize(self, request, data):
-        print data
         formatted_subj_fields = []
         for subj_field in SUBJECT_FIELDS:
             formatted_subj_fields.append(format_key(subj_field))
@@ -470,12 +482,28 @@ class PSArchiveResource(ModelResource):
                     'parameter_value': data[k]
                     })
         
+        #calculate checksum
+        formatted_data['checksum'] = self.calculate_checksum(formatted_data, subject_model)
+        
         #set metatadatakey
         formatted_data['metadata_key'] = slugify(unicode(uuid.uuid4().hex))
         
-        print formatted_data
         return super(ModelResource, self).alter_deserialized_detail_data(request, formatted_data)
     
+    def calculate_checksum(self, data, subject_field):
+        data['md_parameters'] = sorted(data['md_parameters'], key=lambda md_param: md_param["parameter_key"])
+        data['event_types'] = sorted(data['event_types'], key=lambda et:(et["event_type"], et["summary_type"], et["summary_window"]))
+        checksum = hashlib.sha256()
+        checksum.update("subject-type::%s" %   data['subject_type'].lower())
+        for subj_param in sorted(data[subject_field]):
+            checksum.update(",%s::%s" % (str(subj_param).lower(), str(data[subject_field][subj_param]).lower()))
+        for md_param in data['md_parameters']:
+            checksum.update(",%s::%s" % (str(md_param['parameter_key']).lower(), str(md_param['parameter_value']).lower()))
+        for et in data['event_types']:
+            checksum.update(",%s::%s::%s" % (str(et['event_type']).lower(), str(et['summary_type']).lower(), str(et['summary_window']).lower()))
+
+        return checksum.hexdigest()
+        
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<metadata_key>[\w\d_.-]+)/$" \
