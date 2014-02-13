@@ -12,7 +12,7 @@ from tastypie import fields
 from tastypie.api import Api
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
-from tastypie.exceptions import BadRequest
+from tastypie.exceptions import BadRequest, NotFound
 from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS
 from time import time
 import hashlib
@@ -96,7 +96,6 @@ SUBJECT_FILTER_MAP = {
     "input-destination": 'p2p_subject__input_destination'
 }
 IP_FIELDS = ["source","destination","measurement-agent"]
-EVENT_TYPE_FILTER = "event-type"
 '''
 END MOVE TO CONFIG
 '''
@@ -121,8 +120,8 @@ EVENT_TYPE_CF_MAP = {
     'json': db.raw_cf,
     'rate': db.agg_cf,
     'numeric': db.raw_cf
-
 }
+EVENT_TYPE_FILTER = "event-type"
 SUMMARY_TYPE_FILTER = "summary-type"
 SUMMARY_WINDOW_FILTER = "summary-window"
 DNS_MATCH_RULE_FILTER = "dns-match-rule"
@@ -534,7 +533,7 @@ class PSArchiveResource(ModelResource):
     def dispatch_summary_detail(self, request, **kwargs):
         #verify summary type
         if(kwargs['summary_type'] not in SUMMARY_TYPES):
-            raise BadRequest("Invalid sumamry type in URL '%s'" % kwargs['summary_type'])
+            raise BadRequest("Invalid summary type in URL '%s'" % kwargs['summary_type'])
         return PSEventTypeSummaryResource().dispatch_list(request,
                 psmetadata__metadata_key=kwargs['metadata_key'], event_type=kwargs['event_type'], summary_type=SUMMARY_TYPES[kwargs['summary_type']] )
     
@@ -686,11 +685,24 @@ class PSArchiveResource(ModelResource):
             
         return query
 
+class PSTimeSeriesObject(object):
+    def __init__(self, ts, value, metadata_key, event_type=None, summary_type='base', summary_window=0):
+        self.time = ts
+        self.value = value
+        self.metadata_key = metadata_key
+        self.event_type = event_type
+        self.summary_type = summary_type
+        self.summary_window = summary_window
+    
+    def get_datetime(self):
+        return datetime.utcfromtimestamp(float(self.time))
+        
 class PSTimeSeriesResource(Resource):
     
     class Meta:
         resource_name = 'pstimeseries'
         allowed_methods = ['get', 'post']
+        object_class = PSTimeSeriesObject
         limit = 0
     
     def iso_to_ts(self, isotime):
@@ -805,6 +817,103 @@ class PSTimeSeriesResource(Resource):
             formatted_data.append(self.format_ts_obj(obj.obj))
             
         return formatted_data
+    
+    def get_resource_uri(self, bundle_or_obj=None):
+        return None
+    
+    def obj_create(self, bundle, **kwargs):
+        print "Write data"
+        if bundle.data is None:
+            raise BadRequest("Empty request body provided")
+        if "time" not in bundle.data:
+            raise BadRequest("Required field 'time' not provided in request")
+        try:
+            long(bundle.data["time"])
+        except:
+            raise BadRequest("Time must be a unix timestamp")
+        if "value" not in bundle.data:
+            raise BadRequest("Required field 'value' not provided in request")
+        if "metadata_key" not in kwargs:
+            raise BadRequest("No metadata key provided in URL")
+        if "event_type" not in kwargs:
+            raise BadRequest("event_type must be defined in URL.")
+        if kwargs["event_type"] not in EVENT_TYPE_CONFIG:
+            raise BadRequest("Invalid event_type %s" % kwargs["event_type"])
+        if "summary_type" in kwargs and kwargs["summary_type"] not in SUMMARY_TYPES:
+            raise BadRequest("Invalid summary type %s" % kwargs["summary_type"])
+            
+        # create object
+        bundle.obj = PSTimeSeriesObject(bundle.data["time"], bundle.data["value"], kwargs["metadata_key"])
+        bundle.obj.event_type =  kwargs["event_type"] 
+        if "summary_type" in kwargs:
+            bundle.obj.summary_type =  kwargs["summary_type"]
+        if "summary_window" in kwargs:
+            bundle.obj.summary_window =  kwargs["summary_window"]
+        
+        #check that this event_type is defined
+        event_types = PSEventTypes.objects.filter(
+            metadata__metadata_key=bundle.obj.metadata_key,
+            event_type=bundle.obj.event_type,
+            summary_type=bundle.obj.summary_type,
+            summary_window=bundle.obj.summary_window)
+        if(event_types.count() == 0):
+            raise NotFound("Given event type does not exist for metadata key")
+        
+        #Insert into cassandra
+        if bundle.obj.summary_type == "base":
+            et_to_update = PSEventTypes.objects.filter(
+                metadata__metadata_key=bundle.obj.metadata_key,
+                event_type=bundle.obj.event_type)
+            for et in et_to_update:
+                ts_obj = PSTimeSeriesObject(bundle.obj.time,
+                                                bundle.obj.value,
+                                                bundle.obj.metadata_key,
+                                                event_type=bundle.obj.event_type,
+                                                summary_type=et.summary_type,
+                                                summary_window=et.summary_window
+                                                )
+                self.handle_data_create(ts_obj)
+        else:
+            self.handle_data_create(bundle.obj)
+        
+        return bundle
+    
+    def handle_data_create(self, ts_obj):
+        # data type and target column family
+        data_type = EVENT_TYPE_CONFIG[ts_obj.event_type]["type"]
+        col_family = EVENT_TYPE_CF_MAP[data_type]
+    
+        #build datapath
+        datapath = EVENT_TYPE_CONFIG[ts_obj.event_type]["row_prefix"].split(KEY_DELIMITER)
+        datapath.append(ts_obj.metadata_key)
+        if ts_obj.summary_type != "base":
+            datapath.append(ts_obj.summary_type)
+        freq = None
+        if ts_obj.summary_window > 0:
+            freq = ts_obj.summary_window
+        
+        #figure out how to insert the data
+        if ts_obj.summary_type == "base":
+            print "Base"
+            if col_family == db.rate_cf:
+                try:
+                    ts_obj.value = long(ts_obj.value)
+                except ValueError:
+                    raise BadRequest("Value must be an integer")
+                ratebin = BaseRateBin(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
+                db.update_rate_bin(ratebin)
+                #Write data to database if everything succeeded
+                db.flush()
+            elif col_family == db.agg_cf:
+                raise NotImplemented("Not yet implemented")
+            elif col_family == db.raw_cf:
+                raise NotImplemented("Not yet implemented")
+        elif ts_obj.summary_type == "aggregation":
+            raise NotImplemented("Not yet implemented")
+        elif ts_obj.summary_type == "statistics":
+            raise NotImplemented("Not yet implemented")
+        elif ts_obj.summary_type == "subinterval":
+            raise NotImplemented("Not yet implemented")
     
 perfsonar_api = Api(api_name='perfsonar')
 perfsonar_api.register(PSArchiveResource())
