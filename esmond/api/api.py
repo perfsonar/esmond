@@ -97,11 +97,6 @@ def get_throttle_args(config):
 
 THROTTLE_ARGS = get_throttle_args(get_config(get_config_path()))
 
-# XXX(jdugan): temporary hack to deal with ALUFastPollHC
-OIDSET_NAME_TRANSFORM = {
-    'ALUFastPollHC': 'FastPollHC',
-}
-
 class EndpointMap(object):
     """
     The dynamic endpoint map generation has been moved into 
@@ -791,8 +786,7 @@ class InterfaceDataResource(Resource):
 
         obj = InterfaceDataObject()
         obj.datapath = endpoint_map[iface_dataset]
-        # XXX(jdugan): temporary hack to deal with ALUFastPollHC
-        obj.datapath[2] = OIDSET_NAME_TRANSFORM.get(obj.datapath[2], obj.datapath[2])
+        obj.datapath[2] = oidset.set_name  # set_name defaults to oidset.name, but can be overidden in poller_args
         obj.iface_dataset = iface_dataset
         obj.iface = iface
 

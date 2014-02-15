@@ -160,7 +160,18 @@ class OIDSet(models.Model):
     def frequency_ms(self):
         return self.frequency * 1000
 
+    @property
+    def set_name(self):
+        set_name = self.name
+        if self.poller_args:
+            for i in self.poller_args.split(" "):
+                k, v = i.split("=")
+                if k == "set_name":
+                    set_name = v
+                    break
 
+        return set_name
+    
 class OIDSetMember(models.Model):
     """Associate :py:class:`.OID`s with :py:class:`.OIDSets`"""
 
