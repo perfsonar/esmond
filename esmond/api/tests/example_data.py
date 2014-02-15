@@ -245,6 +245,29 @@ def build_rtr_d_metadata():
 
     return td
 
+
+def build_rtr_alu_metadata():
+    """Creates rtr_d, to be used for larger dataset testing
+
+    The following devices are created:
+
+    rtr_alu -- FastPollHC, currently active router with IfRefs
+
+    """
+
+    td = TestData()
+
+    td.rtr_alu, _ = Device.objects.get_or_create(
+            name="rtr_alu",
+            community= "community_string",
+            active=True,
+            begin_time=make_aware(datetime.datetime(2011,11,14), utc),
+            end_time=max_datetime)
+
+    users_testdata(td)
+
+    return td
+
 def build_metadata_from_test_data(data):
     """Inserts OIDSetMap entries and IfRef data to allow API access to test data.
 
