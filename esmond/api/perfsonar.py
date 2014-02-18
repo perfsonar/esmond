@@ -768,7 +768,7 @@ class PSTimeSeriesResource(Resource):
         elif "row_prefix" not in EVENT_TYPE_CONFIG[kwargs['event_type']]:
             raise BadRequest("Misconfigured event type on server side. Missing 'row_prefix' field")
         event_type = kwargs['event_type']
-        metadata_key = slugify( kwargs['metadata_key'])
+        metadata_key = kwargs['metadata_key']
         datapath = EVENT_TYPE_CONFIG[event_type]["row_prefix"].split(KEY_DELIMITER)
         datapath.append(metadata_key)
         if 'summary_type' in kwargs:
