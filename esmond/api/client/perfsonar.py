@@ -7,6 +7,8 @@ import time
 import warnings
 
 from esmond.api.client.util import add_apikey_header
+# XXX(mmg) - change this import when data moves
+from esmond.api.perfsonar import EVENT_TYPE_CONFIG
 
 MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
 MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())
@@ -17,6 +19,7 @@ class EventTypeWarning(NodeInfoWarning): pass
 class SummaryWarning(NodeInfoWarning): pass
 class DataPayloadWarning(NodeInfoWarning): pass
 class DataPointWarning(NodeInfoWarning): pass
+class DataHistogramWarning(NodeInfoWarning): pass
 class ApiFiltersWarning(Warning): pass
 class ApiConnectWarning(Warning): pass
 
@@ -48,13 +51,14 @@ class NodeInfo(object):
 
         if not t:
             # presume ISO
-            t = datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%S.%f")
+            # XXX(mmg) - this should go after api converts to time()
+            t = datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%SZ")
 
         return t
 
     @property
     def dump(self):
-        return self._pp.pformat('something TBA')
+        return self._pp.pformat(self._data)
 
     def http_alert(self, r):
         """
@@ -65,6 +69,10 @@ class NodeInfo(object):
 
     def warn(self, m):
         warnings.warn(m, self.wrn, stacklevel=2)
+
+    def inspect_request(self, r):
+        if self.filters.verbose:
+            print '[url: {0}]'.format(r.url)
 
 class Metadata(NodeInfo):
     wrn = MetadataWarning
@@ -160,9 +168,29 @@ class EventType(NodeInfo):
     def event_type(self):
         return self._data.get('event-type', None)
 
+    @property
+    def data_type(self):
+        return EVENT_TYPE_CONFIG[self.event_type]['type']
+
     def get_summaries(self):
         for s in self._data.get('summaries', []):
             yield Summary(s, self.api_url, self.filters)
+
+    def get_data(self):
+        r = requests.get('{0}{1}'.format(self.api_url, self.base_uri),
+            params={}, # XXX(mmg) time filtering here after change
+            headers=self.request_headers)
+
+        self.inspect_request(r)
+
+        if r.status_code == 200 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            return DataPayload(data, self.data_type)
+        else:
+            self.http_alert(r)
+            return DataPayload([], self.data_type)
+
 
     def __repr__(self):
         return '<EventType/{0}: uri:{1}>'.format(self.event_type, self.base_uri)
@@ -192,22 +220,49 @@ class Summary(NodeInfo):
 class DataPayload(NodeInfo):
     wrn = DataPayloadWarning
     """Class to encapsulate returned data payload"""
-    def __init__(self, data={'data': []}): # XXX(mmg) most likely change data arg default
-        super(EventType, self).__init__(data, None, None)
+    def __init__(self, data=[], data_type=None):
+        super(DataPayload, self).__init__(data, None, None)
+        self._data_type = data_type
+
+    @property
+    def data_type(self):
+        return self._data_type
+
+    @property
+    def data(self):
+        if self.data_type == 'histogram':
+            return [DataHistogram(x) for x in self._data]
+        else:
+            return [DataPoint(x) for x in self._data]
+
+    @property
+    def dump(self):
+        return self._pp.pformat(self._data)
 
     def __repr__(self):
-        return '<DataPayload: len:{0} b:{1} e:{2}>'.format(
-            len(self.data), 'self.begin_time', 'self.end_time')
+        return '<DataPayload: len:{0} type:{1}>'.format(len(self._data), self.data_type)
 
-class DataPoint(object):
+class DataPoint(NodeInfo):
     wrn = DataPointWarning
     """Class to encapsulate the data points"""
-    def __init__(self, ts, val): # XXX(mmg) change args when see data
-        self.ts = datetime.datetime.utcfromtimestamp(ts)
-        self.val = val
+    def __init__(self, data={}):
+        super(DataPoint, self).__init__(data, None, None)
+        self.ts = self._convert_to_datetime(data.get('time', None))
+        self.val = data.get('value', None)
 
     def __repr__(self):
         return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
+
+class DataHistogram(NodeInfo):
+    wrn = DataHistogramWarning
+    """Class to encapsulate the data histograms"""
+    def __init__(self, data={}):
+        super(DataHistogram, self).__init__(data, None, None)
+        self.ts = self._convert_to_datetime(data.get('time', None))
+        self.histogram = json.loads(data.get('value', u'{}'))
+
+    def __repr__(self):
+        return '<DataHistogram: ts:{0} len:{1}>'.format(self.ts, len(self.histogram.keys()))
 
 class ApiFilters(object):
     wrn = ApiFiltersWarning
