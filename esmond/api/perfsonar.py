@@ -703,6 +703,7 @@ class PSTimeSeriesResource(Resource):
         resource_name = 'pstimeseries'
         allowed_methods = ['get', 'post']
         limit = 0
+        max_limit = 0
     
     def iso_to_ts(self, isotime):
         ts = 0
