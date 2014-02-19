@@ -24,7 +24,7 @@ def main():
     for md in conn.get_metadata():
         print md
         # print md.destination
-        # print md.event_types # a list of event type names
+        print md.event_types # a list of event type names
         # print md.input_destination
         # print md.input_source
         # print md.ip_packet_interval
@@ -36,12 +36,24 @@ def main():
         # print md.time_duration
         # print md.tool_name
         # print md.uri
-        for et in md.get_event_types():
-            print '  * ', et
+        et = md.get_event_type('packet-count-sent')
+        print '  * ', et
+        dpay = et.get_data()
+        print '   * ', dpay
+        for dp in dpay.data:
+            print dp
+        # for et in md.get_all_event_types():
+        #     if not et.data_type.startswith('histogram'):
+        #         continue
+        #     print '  * ', et
+        #     dpay = et.get_data()
+        #     print '   * ', dpay
+        #     for dp in dpay.data:
+        #         print '    * ', dp
             # print et.base_uri
             # print et.event_type
-            for summ in et.get_summaries():
-                print '    * ', summ
+            # for summ in et.get_summaries():
+            #     print '    * ', summ
                 # print summ.summary_type
                 # print summ.summary_window
                 # print summ.uri

@@ -147,9 +147,15 @@ class Metadata(NodeInfo):
     def uri(self):
         return self._data.get('uri', None)
 
-    def get_event_types(self):
+    def get_all_event_types(self):
         for et in self._data.get('event-types', []):
             yield EventType(et, self.api_url, self.filters)
+
+    def get_event_type(self, event_type):
+        for et in self._data.get('event-types', []):
+            if et['event-type'] == event_type:
+                return EventType(et, self.api_url, self.filters)
+        return None
 
     def __repr__(self):
         return '<Metadata/{0}: uri:{1}>'.format(self.metadata_key, self.uri)
