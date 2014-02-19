@@ -83,7 +83,8 @@ class TestResults(object):
     h_owd_min_end_ts = 1388707167000
     h_owd_min_end_val = u'{"628": 21, "696": 331, "842": 2, "896": 244, "96": 2}'
 
-    h_owd_day_path = ['ps','histogram_owdelay','0CB19291FB6D40EAA1955376772BF5D2','aggregation','86400']
+    h_owd_day_path = ['ps','histogram_owdelay','0CB19291FB6D40EAA1955376772BF5D2','aggregation']
+    h_owd_day_freq = 86400
     h_owd_day_len = 4
     h_owd_day_start_ts = 1388442475000
     h_owd_day_start_val = u'{"623": 104154, "606": 309, "310": 8, "333": 16, "395": 8195, "493": 20719, "189": 13374, "348": 139554, "409": 1608, "501": 110346, "754": 34602, "564": 7, "76": 166, "72": 1, "485": 3129, "92": 780, "11": 414275, "782": 14, "946": 6945, "37": 129, "53": 5336, "352": 324, "293": 9}'
@@ -150,7 +151,8 @@ class DataTest(TestCase):
         self.assertEqual(ret[-1]['val'], self.tr.h_owd_min_end_val)
 
         ret = db.query_raw_data( path=self.tr.h_owd_day_path,
-            ts_min=self.tr.q_start, ts_max=self.tr.q_end
+            ts_min=self.tr.q_start, ts_max=self.tr.q_end,
+            freq=self.tr.h_owd_day_freq
         )
 
         self.assertEqual(len(ret), self.tr.h_owd_day_len)
