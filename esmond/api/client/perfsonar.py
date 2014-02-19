@@ -35,10 +35,22 @@ class NodeInfo(object):
         self._pp = pprint.PrettyPrinter(indent=4)
 
     def _convert_to_datetime(self, d):
-        if int(d) > MAX_EPOCH:
-            return MAX_DATETIME
-        else:
-            return datetime.datetime.utcfromtimestamp(i)
+        t = None
+
+        try:
+            if int(d) > MAX_EPOCH:
+                t = MAX_DATETIME
+            else:
+                t = datetime.datetime.utcfromtimestamp(int(d))
+        except ValueError:
+            # not epoch
+            pass
+
+        if not t:
+            # presume ISO
+            t = datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%S.%f")
+
+        return t
 
     @property
     def dump(self):
