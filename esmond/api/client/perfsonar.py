@@ -236,6 +236,7 @@ class DataPayload(NodeInfo):
         return '<DataPayload: len:{0} type:{1}>'.format(len(self._data), self.data_type)
 
 class DataPoint(NodeInfo):
+    __slots__ = ['ts', 'val']
     wrn = DataPointWarning
     """Class to encapsulate the data points"""
     def __init__(self, data={}):
@@ -247,6 +248,7 @@ class DataPoint(NodeInfo):
         return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
 
 class DataHistogram(NodeInfo):
+    __slots__ = ['ts', 'histogram']
     wrn = DataHistogramWarning
     """Class to encapsulate the data histograms"""
     def __init__(self, data={}):
