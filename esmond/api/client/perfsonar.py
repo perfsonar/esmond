@@ -244,6 +244,10 @@ class DataPoint(NodeInfo):
         self.ts = self._convert_to_datetime(data.get('ts', None))
         self.val = data.get('val', None)
 
+    @property
+    def ts_epoch(self):
+        return calendar.timegm(self.ts.utctimetuple())
+
     def __repr__(self):
         return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
 
@@ -255,6 +259,10 @@ class DataHistogram(NodeInfo):
         super(DataHistogram, self).__init__(data, None, None)
         self.ts = self._convert_to_datetime(data.get('ts', None))
         self.histogram = json.loads(data.get('val', u'{}'))
+
+    @property
+    def ts_epoch(self):
+        return calendar.timegm(self.ts.utctimetuple())
 
     def __repr__(self):
         return '<DataHistogram: ts:{0} len:{1}>'.format(self.ts, len(self.histogram.keys()))
