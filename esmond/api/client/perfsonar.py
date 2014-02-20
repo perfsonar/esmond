@@ -165,13 +165,20 @@ class EventType(NodeInfo):
     def data_type(self):
         return EVENT_TYPE_CONFIG[self.event_type]['type']
 
+    @property
+    def summaries(self):
+        s_t = []
+        for s in self._data.get('summaries', []):
+            s_t.append(s['summary-type'])
+        return s_t
+
     def get_summaries(self):
         for s in self._data.get('summaries', []):
-            yield Summary(s, self.api_url, self.filters)
+            yield Summary(s, self.api_url, self.filters, self.data_type)
 
     def get_data(self):
         r = requests.get('{0}{1}'.format(self.api_url, self.base_uri),
-            params={}, # XXX(mmg) time filtering here after change
+            params=self.filters.time_filters,
             headers=self.request_headers)
 
         self.inspect_request(r)
@@ -191,8 +198,13 @@ class EventType(NodeInfo):
 class Summary(NodeInfo):
     wrn = SummaryWarning
     """Class to encapsulate summary information."""
-    def __init__(self, data, api_url, filters):
+    def __init__(self, data, api_url, filters, data_type):
         super(Summary, self).__init__(data, api_url, filters)
+        self._data_type = data_type
+
+    @property
+    def data_type(self):
+        return self._data_type
 
     @property
     def summary_type(self):
@@ -205,6 +217,21 @@ class Summary(NodeInfo):
     @property
     def uri(self):
         return self._data.get('uri', None)
+
+    def get_data(self):
+        r = requests.get('{0}{1}'.format(self.api_url, self.uri),
+            params=self.filters.time_filters,
+            headers=self.request_headers)
+
+        self.inspect_request(r)
+
+        if r.status_code == 200 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            return DataPayload(data, self.data_type)
+        else:
+            self.http_alert(r)
+            return DataPayload([], self.data_type)
 
     def __repr__(self):
         return '<Summary/{0}: window:{1}>'.format(self.summary_type, self.summary_window)
@@ -355,6 +382,13 @@ class ApiFilters(object):
 
     # Time range search filters
 
+    def _check_time(self, ts):
+        try:
+            t_s = int(float(ts))
+            return t_s
+        except ValueError:
+            self.warn('The timestamp value {0} is not a valid integer'.format(ts))
+
     @property
     def time_filters(self):
         return self._time_filters
@@ -364,7 +398,7 @@ class ApiFilters(object):
         def fget(self):
             return self._time_filters.get('time', None)
         def fset(self, value):
-            self._time_filters['time'] = value
+            self._time_filters['time'] = self._check_time(value)
         def fdel(self):
             del self._time_filters['time']
         return locals()
@@ -375,7 +409,7 @@ class ApiFilters(object):
         def fget(self):
             return self._time_filters.get('time-start', None)
         def fset(self, value):
-            self._time_filters['time-start'] = value
+            self._time_filters['time-start'] = self._check_time(value)
         def fdel(self):
             del self._time_filters['time-start']
         return locals()
@@ -386,7 +420,7 @@ class ApiFilters(object):
         def fget(self):
             return self._time_filters.get('time-end', None)
         def fset(self, value):
-            self._time_filters['time-end'] = value
+            self._time_filters['time-end'] = self._check_time(value)
         def fdel(self):
             del self._time_filters['time-end']
         return locals()
@@ -397,7 +431,7 @@ class ApiFilters(object):
         def fget(self):
             return self._time_filters.get('time-range', None)
         def fset(self, value):
-            self._time_filters['time-range'] = value
+            self._time_filters['time-range'] = self._check_time(value)
         def fdel(self):
             del self._time_filters['time-range']
         return locals()
