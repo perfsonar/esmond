@@ -36,12 +36,12 @@ def main():
         # print md.time_duration
         # print md.tool_name
         # print md.uri
-        et = md.get_event_type('packet-count-sent')
-        print '  * ', et
-        dpay = et.get_data()
-        print '   * ', dpay
-        for dp in dpay.data:
-            print dp
+        # et = md.get_event_type('histogram-owdelay')
+        # print '  * ', et
+        # dpay = et.get_data()
+        # print '   * ', dpay
+        # for dp in dpay.data:
+        #     print dp
         # for et in md.get_all_event_types():
         #     if not et.data_type.startswith('histogram'):
         #         continue
