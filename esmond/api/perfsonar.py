@@ -1,6 +1,6 @@
 from calendar import timegm
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
-from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
+from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData
 from esmond.config import get_config_path, get_config
 from datetime import datetime
 from django.conf.urls.defaults import url
@@ -72,7 +72,6 @@ EVENT_TYPE_CONFIG = {
 SUMMARY_TYPES = {
     "base": "base",
     "aggregations": "aggregation",
-    "composites": "composite",
     "statistics": "statistics",
     "subintervals": "subinterval"
 }
@@ -131,6 +130,8 @@ DNS_MATCH_ONLY_V6 = "only-v6"
 DNS_MATCH_ONLY_V4 = "only-v4"
 DNS_MATCH_V4_V6 = "v4v6"
 RESERVED_GET_PARAMS = ["format", DNS_MATCH_RULE_FILTER]
+DATA_KEY_TIME = "ts"
+DATA_KEY_VALUE = "val"
 
 #global utility functions
 def format_key(k):
@@ -705,23 +706,12 @@ class PSTimeSeriesResource(Resource):
         limit = 0
         max_limit = 0
     
-    def iso_to_ts(self, isotime):
-        ts = 0
+    def valid_time(self, t):
         try:
-            dt = datetime.strptime(isotime, "%Y%m%dT%H%M%S")
-            ts = timegm(dt.timetuple())
-            print ts
+            t = int(t)
         except ValueError:
-            raise BadRequest("Time parameter be in ISO8601 basic format YYYYMMDDThhmmss.")
-            
-        return ts
-    
-    def valid_time_range(self, tr):
-        try:
-            tr = int(tr)
-        except ValueError:
-            raise BadRequest("Time range parameter must be an integer")
-        return tr
+            raise BadRequest("Time parameter must be an integer")
+        return t
     
     def valid_summary_window(self, sw):
         try:
@@ -736,23 +726,23 @@ class PSTimeSeriesResource(Resource):
         end_time = int(time())
         begin_time = 0
         if filters.has_key('time'):
-            begin_time = self.iso_to_ts(filters['time'])
+            begin_time = self.valid_time(filters['time'])
             end_time = begin_time
         elif filters.has_key('time-start') and filters.has_key('time-end'):
-            begin_time = self.iso_to_ts(filters['time-start'])
-            end_time = self.iso_to_ts(filters['time-end'])
+            begin_time = self.valid_time(filters['time-start'])
+            end_time = self.valid_time(filters['time-end'])
         elif filters.has_key('time-start') and filters.has_key('time-range'):
-            begin_time = self.iso_to_ts(filters['time-start'])
-            end_time = begin_time + self.valid_time_range(filters['time-range'])
+            begin_time = self.valid_time(filters['time-start'])
+            end_time = begin_time + self.valid_time(filters['time-range'])
         elif filters.has_key('time-end') and filters.has_key('time-range'):
-            end_time = self.iso_to_ts(filters['time-end'])
-            begin_time = end_time - self.valid_time_range(filters['time-range'])
+            end_time = self.valid_time(filters['time-end'])
+            begin_time = end_time - self.valid_time(filters['time-range'])
         elif filters.has_key('time-start'):
-           begin_time = self.iso_to_ts(filters['time-start'])
+           begin_time = self.valid_time(filters['time-start'])
         elif filters.has_key('time-end'):
-           end_time = self.iso_to_ts(filters['time-end'])
+           end_time = self.valid_time(filters['time-end'])
         elif filters.has_key('time-range'):
-           begin_time = end_time - self.valid_time_range(filters['time-range'])
+           begin_time = end_time - self.valid_time(filters['time-range'])
         if(end_time < begin_time):
             raise BadRequest("Requested start time must be less than end time")
         
@@ -801,15 +791,12 @@ class PSTimeSeriesResource(Resource):
         return results
     
     def format_ts_obj(self, obj):
-        formatted_obj = {'time': None, 'value': None}
         if obj.has_key('ts'):
-            dt = datetime.utcfromtimestamp(obj['ts'] / 1e3)
-            formatted_obj['time'] = dt.isoformat() + 'Z' #add timezone
+            obj['ts'] = int( obj['ts'] / 1e3 )
+        if obj.has_key('is_valid'):
+            del obj['is_valid']
             
-        if obj.has_key('val'):
-            formatted_obj['value'] = obj['val']
-        
-        return formatted_obj
+        return obj
     
     def alter_list_data_to_serialize(self, request, data):
         formatted_data = []
@@ -822,17 +809,16 @@ class PSTimeSeriesResource(Resource):
         return None
     
     def obj_create(self, bundle, **kwargs):
-        print "Write data"
         if bundle.data is None:
             raise BadRequest("Empty request body provided")
-        if "time" not in bundle.data:
-            raise BadRequest("Required field 'time' not provided in request")
+        if DATA_KEY_TIME not in bundle.data:
+            raise BadRequest("Required field %s not provided in request" % DATA_KEY_TIME)
         try:
-            long(bundle.data["time"])
+            long(bundle.data[DATA_KEY_TIME])
         except:
             raise BadRequest("Time must be a unix timestamp")
-        if "value" not in bundle.data:
-            raise BadRequest("Required field 'value' not provided in request")
+        if DATA_KEY_VALUE not in bundle.data:
+            raise BadRequest("Required field %s not provided in request" % DATA_KEY_VALUE)
         if "metadata_key" not in kwargs:
             raise BadRequest("No metadata key provided in URL")
         if "event_type" not in kwargs:
@@ -843,7 +829,7 @@ class PSTimeSeriesResource(Resource):
             raise BadRequest("Invalid summary type %s" % kwargs["summary_type"])
             
         # create object
-        bundle.obj = PSTimeSeriesObject(bundle.data["time"], bundle.data["value"], kwargs["metadata_key"])
+        bundle.obj = PSTimeSeriesObject(bundle.data[DATA_KEY_TIME], bundle.data[DATA_KEY_VALUE], kwargs["metadata_key"])
         bundle.obj.event_type =  kwargs["event_type"] 
         if "summary_type" in kwargs:
             bundle.obj.summary_type =  kwargs["summary_type"]
@@ -876,6 +862,9 @@ class PSTimeSeriesResource(Resource):
         else:
             self.handle_data_create(bundle.obj)
         
+        #Write data to database if everything succeeded
+        db.flush()
+        
         return bundle
     
     def handle_data_create(self, ts_obj):
@@ -894,7 +883,6 @@ class PSTimeSeriesResource(Resource):
         
         #figure out how to insert the data
         if ts_obj.summary_type == "base":
-            print "Base"
             if col_family == db.rate_cf:
                 try:
                     ts_obj.value = long(ts_obj.value)
@@ -902,18 +890,18 @@ class PSTimeSeriesResource(Resource):
                     raise BadRequest("Value must be an integer")
                 ratebin = BaseRateBin(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
                 db.update_rate_bin(ratebin)
-                #Write data to database if everything succeeded
-                db.flush()
             elif col_family == db.agg_cf:
                 raise NotImplemented("Not yet implemented")
             elif col_family == db.raw_cf:
-                raise NotImplemented("Not yet implemented")
+                #TODO: write validators
+                rawdata = RawRateData(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
+                db.set_raw_data(rawdata)
         elif ts_obj.summary_type == "aggregation":
-            raise NotImplemented("Not yet implemented")
+            pass
         elif ts_obj.summary_type == "statistics":
-            raise NotImplemented("Not yet implemented")
+            pass
         elif ts_obj.summary_type == "subinterval":
-            raise NotImplemented("Not yet implemented")
+            pass
     
 perfsonar_api = Api(api_name='perfsonar')
 perfsonar_api.register(PSArchiveResource())
