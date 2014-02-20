@@ -115,21 +115,21 @@ class TestResults(object):
     packet_lost_end_ts = 1391615950000
     packet_lost_end_val = 312.0
 
+hist_data = [
+    'histogram_owdelay_daily_data.json',
+    'histogram_owdelay_minute_data.json',
+    'histogram_ttl_data.json'
+]
+
+rate_data = [
+    'packet_count_lost_data.json',
+    'packet_count_sent_data.json',
+    'packet_duplicates_data.json',
+    'throughput_data.json'
+]
+
 class DataTest(TestCase):
     fixtures = ['perfsonar_metadata.json']
-
-    hist_data = [
-        'histogram_owdelay_daily_data.json',
-        'histogram_owdelay_minute_data.json',
-        'histogram_ttl_data.json'
-    ]
-
-    rate_data = [
-        'packet_count_lost_data.json',
-        'packet_count_sent_data.json',
-        'packet_duplicates_data.json',
-        'throughput_data.json'
-    ]
 
     def setUp(self):
         self.tr = TestResults()
@@ -140,11 +140,11 @@ class DataTest(TestCase):
 
         db = CASSANDRA_DB(config)
 
-        for dat in self.hist_data:
+        for dat in hist_data:
             for row in load_test_data(dat):
                 db.set_raw_data(RawRateData(**row))
 
-        for dat in self.rate_data:
+        for dat in rate_data:
             for row in load_test_data(dat):
                 db.update_rate_bin(BaseRateBin(**row))
 
