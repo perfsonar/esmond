@@ -31,7 +31,7 @@ def main():
         # print md.destination
         # print md.event_types # a list of event type names
         # print md.input_destination
-        # print md.input_source
+        print md.input_source
         # print md.ip_packet_interval
         # print md.measurement_agent
         # print md.metadata_key
