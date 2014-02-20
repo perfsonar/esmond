@@ -38,23 +38,10 @@ class NodeInfo(object):
         self._pp = pprint.PrettyPrinter(indent=4)
 
     def _convert_to_datetime(self, d):
-        t = None
-
-        try:
-            if int(d) > MAX_EPOCH:
-                t = MAX_DATETIME
-            else:
-                t = datetime.datetime.utcfromtimestamp(int(d))
-        except ValueError:
-            # not epoch
-            pass
-
-        if not t:
-            # presume ISO
-            # XXX(mmg) - this should go after api converts to time()
-            t = datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%SZ")
-
-        return t
+        if int(d) > MAX_EPOCH:
+            return MAX_DATETIME
+        else:
+            return datetime.datetime.utcfromtimestamp(int(d))
 
     @property
     def dump(self):
@@ -253,8 +240,8 @@ class DataPoint(NodeInfo):
     """Class to encapsulate the data points"""
     def __init__(self, data={}):
         super(DataPoint, self).__init__(data, None, None)
-        self.ts = self._convert_to_datetime(data.get('time', None))
-        self.val = data.get('value', None)
+        self.ts = self._convert_to_datetime(data.get('ts', None))
+        self.val = data.get('val', None)
 
     def __repr__(self):
         return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
@@ -264,8 +251,8 @@ class DataHistogram(NodeInfo):
     """Class to encapsulate the data histograms"""
     def __init__(self, data={}):
         super(DataHistogram, self).__init__(data, None, None)
-        self.ts = self._convert_to_datetime(data.get('time', None))
-        self.histogram = json.loads(data.get('value', u'{}'))
+        self.ts = self._convert_to_datetime(data.get('ts', None))
+        self.histogram = json.loads(data.get('val', u'{}'))
 
     def __repr__(self):
         return '<DataHistogram: ts:{0} len:{1}>'.format(self.ts, len(self.histogram.keys()))
