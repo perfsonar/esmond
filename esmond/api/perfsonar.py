@@ -1,6 +1,6 @@
 from calendar import timegm
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
-from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
+from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData
 from esmond.config import get_config_path, get_config
 from datetime import datetime
 from django.conf.urls.defaults import url
@@ -72,7 +72,6 @@ EVENT_TYPE_CONFIG = {
 SUMMARY_TYPES = {
     "base": "base",
     "aggregations": "aggregation",
-    "composites": "composite",
     "statistics": "statistics",
     "subintervals": "subinterval"
 }
@@ -821,7 +820,6 @@ class PSTimeSeriesResource(Resource):
         return None
     
     def obj_create(self, bundle, **kwargs):
-        print "Write data"
         if bundle.data is None:
             raise BadRequest("Empty request body provided")
         if "time" not in bundle.data:
@@ -875,6 +873,9 @@ class PSTimeSeriesResource(Resource):
         else:
             self.handle_data_create(bundle.obj)
         
+        #Write data to database if everything succeeded
+        db.flush()
+        
         return bundle
     
     def handle_data_create(self, ts_obj):
@@ -893,7 +894,6 @@ class PSTimeSeriesResource(Resource):
         
         #figure out how to insert the data
         if ts_obj.summary_type == "base":
-            print "Base"
             if col_family == db.rate_cf:
                 try:
                     ts_obj.value = long(ts_obj.value)
@@ -901,18 +901,18 @@ class PSTimeSeriesResource(Resource):
                     raise BadRequest("Value must be an integer")
                 ratebin = BaseRateBin(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
                 db.update_rate_bin(ratebin)
-                #Write data to database if everything succeeded
-                db.flush()
             elif col_family == db.agg_cf:
                 raise NotImplemented("Not yet implemented")
             elif col_family == db.raw_cf:
-                raise NotImplemented("Not yet implemented")
+                #TODO: write validators
+                rawdata = RawRateData(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
+                db.set_raw_data(rawdata)
         elif ts_obj.summary_type == "aggregation":
-            raise NotImplemented("Not yet implemented")
+            pass
         elif ts_obj.summary_type == "statistics":
-            raise NotImplemented("Not yet implemented")
+            pass
         elif ts_obj.summary_type == "subinterval":
-            raise NotImplemented("Not yet implemented")
+            pass
     
 perfsonar_api = Api(api_name='perfsonar')
 perfsonar_api.register(PSArchiveResource())
