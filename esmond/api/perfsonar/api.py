@@ -797,9 +797,9 @@ class PSTimeSeriesResource(Resource):
         
         #validate data
         if "validator" in EVENT_TYPE_CONFIG[ts_obj.event_type]:
-            EVENT_TYPE_CONFIG[ts_obj.event_type]["validator"].validate(ts_obj.value)
+            ts_obj.value = EVENT_TYPE_CONFIG[ts_obj.event_type]["validator"].validate(ts_obj.value)
         else:
-            TYPE_VALIDATOR_MAP[data_type].validate(ts_obj.value)
+            ts_obj.value = TYPE_VALIDATOR_MAP[data_type].validate(ts_obj.value)
         
         #build datapath
         datapath = EVENT_TYPE_CONFIG[ts_obj.event_type]["row_prefix"].split(KEY_DELIMITER)
