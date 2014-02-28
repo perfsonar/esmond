@@ -5,7 +5,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 from esmond.api.api import v1_api
-from esmond.api.perfsonar import perfsonar_api
+from esmond.api.perfsonar.api import perfsonar_api
 
 urlpatterns = patterns('',
     # Example:

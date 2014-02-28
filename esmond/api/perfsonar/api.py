@@ -89,7 +89,7 @@ def format_list_keys(data):
    
 # Resource classes 
 class PSEventTypesResource(ModelResource):
-    psmetadata = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+    psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
      
     class Meta:
         queryset=PSEventTypes.objects.all()
@@ -243,7 +243,7 @@ class PSEventTypeSummaryResource(PSEventTypesResource):
         return formatted_summary_objs
 
 class PSPointToPointSubjectResource(ModelResource):
-    psmetadata = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+    psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
     
     class Meta:
         queryset=PSPointToPointSubject.objects.all()
@@ -269,7 +269,7 @@ class PSPointToPointSubjectResource(ModelResource):
         return formatted_objs
 
 class PSMetadataParametersResource(ModelResource):
-    psmetadata = fields.ToOneField('esmond.api.perfsonar.PSArchiveResource', 'metadata', null=True, blank=True)
+    psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
     
     class Meta:
         queryset=PSMetadataParameters.objects.all()
