@@ -1,7 +1,7 @@
 from calendar import timegm
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
 from esmond.api.perfsonar.types import *
-from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData
+from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData, AggregationBin
 from esmond.config import get_config_path, get_config
 from datetime import datetime
 from django.conf.urls.defaults import url
@@ -715,6 +715,8 @@ class PSTimeSeriesResource(Resource):
             obj['ts'] = int( obj['ts'] / 1e3 )
         if obj.has_key('is_valid'):
             del obj['is_valid']
+        if obj.has_key('cf'):
+            del obj['cf']
             
         return obj
     
@@ -816,7 +818,10 @@ class PSTimeSeriesResource(Resource):
                 ratebin = BaseRateBin(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
                 db.update_rate_bin(ratebin)
             elif col_family == db.agg_cf:
-                raise NotImplemented("Not yet implemented")
+                agg = AggregationBin(path=datapath,
+                        ts=ts_obj.get_datetime(), val=ts_obj.value["numerator"],
+                        base_freq=1000, count=ts_obj.value["denominator"])
+                db.aggs.insert(agg.get_key(), {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): agg.count}})
             elif col_family == db.raw_cf:
                 rawdata = RawRateData(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
                 db.set_raw_data(rawdata)

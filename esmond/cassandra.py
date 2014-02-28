@@ -989,7 +989,7 @@ class AggregationBin(BaseRateBin):
         
     @property
     def average(self):
-        return self.val / (self.count * (self.base_freq/1000))
+        return self.val / (self.count * (self.base_freq/1000.0))
 
 def escape_path(path):
     escaped = []
