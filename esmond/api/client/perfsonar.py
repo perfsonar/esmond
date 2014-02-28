@@ -8,7 +8,7 @@ import warnings
 
 from esmond.api.client.util import add_apikey_header
 # XXX(mmg) - change this import when data moves
-from esmond.api.perfsonar import EVENT_TYPE_CONFIG
+from esmond.api.perfsonar.types import EVENT_TYPE_CONFIG
 
 MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
 MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())

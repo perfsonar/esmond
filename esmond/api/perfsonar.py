@@ -1,5 +1,6 @@
 from calendar import timegm
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
+from esmond.api.perfsonar.types import *
 from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData
 from esmond.config import get_config_path, get_config
 from datetime import datetime
@@ -17,87 +18,6 @@ from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS
 from time import time
 import hashlib
 import uuid
-
-'''
-START MOVE TO CONFIG
-'''
-EVENT_TYPE_CONFIG = {
-    "failures": {
-        "type": "json",
-        "row_prefix": "ps:failures"
-    },
-    "histogram-owdelay": {
-        "type": "histogram",
-        "row_prefix": "ps:histogram_owdelay"
-    },
-    "histogram-rtt": {
-        "type": "histogram",
-        "row_prefix": "ps:histogram_rtt"
-    },
-    "histogram-ttl": {
-        "type": "histogram",
-        "row_prefix": "ps:histogram_ttl"
-    },
-    "packet-duplicates": {
-        "type": "integer",
-        "row_prefix": "ps:packet_duplicates"
-    },
-    "packet-loss-rate": {
-        "type": "rate",
-        "row_prefix": "ps:packet_loss_rate",
-        "numerator": "packet-count-lost",
-        "denominator": "packet-count-sent"
-    },
-    "packet-trace": {
-        "type": "json",
-        "row_prefix": "ps:packet_trace"
-    },
-    "packet-count-lost": {
-        "type": "integer",
-        "row_prefix": "ps:packet_count_lost"
-    },
-    "packet-count-sent": {
-        "type": "integer",
-        "row_prefix": "ps:packet_count_sent"
-    },
-    "throughput": {
-        "type": "integer",
-        "row_prefix": "ps:throughput"
-    },
-    "time-error-estimates": {
-        "type": "float",
-        "row_prefix": "ps:time_error_estimates"
-    }
-}
-SUMMARY_TYPES = {
-    "base": "base",
-    "aggregations": "aggregation",
-    "statistics": "statistics",
-    "subintervals": "subinterval"
-}
-INVERSE_SUMMARY_TYPES = {v:k for k,v in SUMMARY_TYPES.items()}
-SUBJECT_FIELDS = ['p2p_subject']
-SUBJECT_TYPE_MAP = {
-    "point-to-point": "p2p_subject"
-    
-}
-SUBJECT_MODEL_MAP = {
-    "point-to-point": "pspointtopointsubject"
-    
-}
-SUBJECT_FILTER_MAP = {
-    #point-to-point subject fields
-    "source": 'p2p_subject__source',
-    "destination": 'p2p_subject__destination',
-    "tool-name": 'p2p_subject__tool_name',
-    "measurement-agent": 'p2p_subject__measurement_agent',
-    "input-source": 'p2p_subject__input_source',
-    "input-destination": 'p2p_subject__input_destination'
-}
-IP_FIELDS = ["source","destination","measurement-agent"]
-'''
-END MOVE TO CONFIG
-'''
 
 #Get db connection
 try:
@@ -117,8 +37,8 @@ EVENT_TYPE_CF_MAP = {
     'histogram': db.raw_cf,
     'integer': db.rate_cf,
     'json': db.raw_cf,
-    'rate': db.agg_cf,
-    'numeric': db.raw_cf
+    'percentage': db.agg_cf,
+    'flow': db.raw_cf
 }
 EVENT_TYPE_FILTER = "event-type"
 SUMMARY_TYPE_FILTER = "summary-type"
