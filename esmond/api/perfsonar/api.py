@@ -17,6 +17,7 @@ from tastypie.exceptions import BadRequest, NotFound
 from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS
 from time import time
 import hashlib
+import math
 import uuid
 
 #Get db connection
@@ -38,6 +39,7 @@ EVENT_TYPE_CF_MAP = {
     'integer': db.rate_cf,
     'json': db.raw_cf,
     'percentage': db.agg_cf,
+    'subinterval': db.raw_cf,
     'flow': db.raw_cf
 }
 EVENT_TYPE_FILTER = "event-type"
@@ -154,6 +156,9 @@ class PSEventTypesResource(ModelResource):
                 #verify valid event-type
                 raise BadRequest("Invalid event-type %s" % str(event_type[EVENT_TYPE_FILTER]))
             
+            #set the data type
+            data_type = EVENT_TYPE_CONFIG[event_type[EVENT_TYPE_FILTER]]['type']
+            
             #Create base object
             deserialized_event_types.append({
                 'event_type': event_type[EVENT_TYPE_FILTER],
@@ -170,6 +175,8 @@ class PSEventTypesResource(ModelResource):
                         raise BadRequest("Invalid summary type '%s'" % summary['summary-type'])
                     elif summary['summary-type'] == 'base':
                         continue
+                    elif summary['summary-type'] not in ALLOWED_SUMMARIES[data_type]:
+                        raise BadRequest("Summary type %s not allowed for event-type %s" % (summary['summary-type'], event_type[EVENT_TYPE_FILTER]))
                     elif 'summary-window' not in summary:
                         raise BadRequest("Summary must contain summary-window")
                     
@@ -614,6 +621,9 @@ class PSTimeSeriesObject(object):
         self.event_type = event_type
         self.summary_type = summary_type
         self.summary_window = summary_window
+        #calculate summary bin
+        if summary_type != 'base' and summary_window > 0:
+            self.time = math.floor(ts/summary_window) * summary_window
     
     def get_datetime(self):
         return datetime.utcfromtimestamp(float(self.time))
@@ -696,15 +706,15 @@ class PSTimeSeriesResource(Resource):
         query_type = EVENT_TYPE_CONFIG[event_type]["type"]
         if query_type not in EVENT_TYPE_CF_MAP:
             raise BadRequest("Misconfigured event type on server side. Invalid 'type' %s" % query_type)
+        elif EVENT_TYPE_CF_MAP[query_type] == db.agg_cf or SUMMARY_TYPES[summary_type] == 'average':
+            results = db.query_aggregation_timerange(path=datapath, freq=freq,
+                   cf='average', ts_min=begin_time*1000, ts_max=end_time*1000)
         elif EVENT_TYPE_CF_MAP[query_type] == db.rate_cf:
             results = db.query_baserate_timerange(path=datapath, freq=freq,
                     cf='delta', ts_min=begin_time*1000, ts_max=end_time*1000)
         elif EVENT_TYPE_CF_MAP[query_type] == db.raw_cf:
             results = db.query_raw_data(path=datapath, freq=freq,
                    ts_min=begin_time*1000, ts_max=end_time*1000)
-        elif EVENT_TYPE_CF_MAP[query_type] == db.agg_cf:
-            results = db.query_aggregation_timerange(path=datapath, freq=freq,
-                   cf='average', ts_min=begin_time*1000, ts_max=end_time*1000)
         else:
             raise BadRequest("Requested data does not map to a known column-family")
             
@@ -781,9 +791,6 @@ class PSTimeSeriesResource(Resource):
                                                 summary_window=et.summary_window
                                                 )
                 self.handle_data_create(ts_obj)
-        elif bundle.obj.summary_type == "subinterval":
-            #write function handle subinterval
-            pass
         else:
             raise NotImplementedError()
         
@@ -795,13 +802,27 @@ class PSTimeSeriesResource(Resource):
     def handle_data_create(self, ts_obj):
         # data type and target column family
         data_type = EVENT_TYPE_CONFIG[ts_obj.event_type]["type"]
-        col_family = EVENT_TYPE_CF_MAP[data_type]
+        
+        #Determine if we can do the summary
+        if ts_obj.summary_type != "base" and ts_obj.summary_type not in ALLOWED_SUMMARIES[data_type]:
+            #skip invalid summary. should do logging here
+            return
         
         #validate data
         if "validator" in EVENT_TYPE_CONFIG[ts_obj.event_type]:
             ts_obj.value = EVENT_TYPE_CONFIG[ts_obj.event_type]["validator"].validate(ts_obj.value)
         else:
             ts_obj.value = TYPE_VALIDATOR_MAP[data_type].validate(ts_obj.value)
+        
+        #Determine column family
+        col_family = EVENT_TYPE_CF_MAP[data_type]
+        if ts_obj.summary_type == "average":
+            #if average then switch tables
+            col_family = db.agg_cf
+            ts_obj.value = {
+                'numerator': ts_obj.value,
+                'denominator': 1
+            }
         
         #build datapath
         datapath = EVENT_TYPE_CONFIG[ts_obj.event_type]["row_prefix"].split(KEY_DELIMITER)
@@ -813,23 +834,18 @@ class PSTimeSeriesResource(Resource):
             freq = ts_obj.summary_window
         
         #figure out how to insert the data
-        if ts_obj.summary_type == "base":
-            if col_family == db.rate_cf:
-                ratebin = BaseRateBin(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
-                db.update_rate_bin(ratebin)
-            elif col_family == db.agg_cf:
-                agg = AggregationBin(path=datapath,
-                        ts=ts_obj.get_datetime(), val=ts_obj.value["numerator"],
-                        base_freq=1000, count=ts_obj.value["denominator"])
-                db.aggs.insert(agg.get_key(), {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): agg.count}})
-            elif col_family == db.raw_cf:
-                rawdata = RawRateData(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
-                db.set_raw_data(rawdata)
-        elif ts_obj.summary_type == "aggregation":
-            pass
-        else:
-            pass
-    
+        if col_family == db.rate_cf:
+            ratebin = BaseRateBin(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
+            db.update_rate_bin(ratebin)
+        elif col_family == db.agg_cf:
+            agg = AggregationBin(path=datapath,
+                    ts=ts_obj.get_datetime(), val=ts_obj.value["numerator"],
+                    base_freq=1000, count=ts_obj.value["denominator"])
+            db.aggs.insert(agg.get_key(), {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): agg.count}})
+        elif col_family == db.raw_cf:
+            rawdata = RawRateData(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
+            db.set_raw_data(rawdata)
+
 perfsonar_api = Api(api_name='perfsonar')
 perfsonar_api.register(PSArchiveResource())
 perfsonar_api.register(PSEventTypesResource())

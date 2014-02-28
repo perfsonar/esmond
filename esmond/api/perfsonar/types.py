@@ -63,6 +63,10 @@ EVENT_TYPE_CONFIG = {
         "type": "integer",
         "row_prefix": "ps:throughput",
     },
+    "throughput-subinterval": {
+        "type": "subinterval",
+        "row_prefix": "ps:throughput_subinterval",
+    },
     "time-error-estimates": {
         "type": "float",
         "row_prefix": "ps:time_error_estimates",
@@ -77,7 +81,7 @@ SUMMARY_TYPES = {
     "base": "base",
     "aggregations": "aggregation",
     "statistics": "statistics",
-    "subintervals": "subinterval"
+    "averages": "average"
 }
 
 '''
@@ -132,5 +136,18 @@ TYPE_VALIDATOR_MAP = {
     "integer": IntegerValidator(),
     "json": JSONValidator(),
     "percentage": PercentageValidator(),
+    "subinterval": SubintervalValidator(),
+}
+
+'''
+ALLOWED_SUMMARIES: Indicates the types of summaries allowed by each type
+'''
+ALLOWED_SUMMARIES = {
+    "float": [],
+    "histogram": ['aggregation', 'statistics'],
+    "integer": ['aggregation', 'average'],
+    "json": [],
+    "percentage": ['aggregation'],
+    "subinterval": [],
 }
 

@@ -80,3 +80,19 @@ class PercentageValidator(DataValidator):
             raise BadRequest("The field 'numerator' cannot be negative")
         
         return value
+
+'''
+SubintervalValidator: Validator for subinterval type
+'''
+class SubintervalValidator(DataValidator):
+    def validate(self, value):
+        try:
+            json.dumps(value)
+            for k in value:
+                long(value[k])
+        except ValueError:
+            raise BadRequest("Subinterval key must be an integer")
+        except:
+            raise BadRequest("Invalid subintervals provided")
+        
+        return value
