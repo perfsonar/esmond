@@ -122,3 +122,15 @@ one of the fields listed.
 '''
 IP_FIELDS = ["source","destination","measurement-agent"]
 
+'''
+TYPE_VALIDATOR_MAP: Mpas data types to validator classes. These are the
+defaults used if no 'validator' is provided in EVENT_TYPE_CONFIG
+'''
+TYPE_VALIDATOR_MAP = {
+    "float": FloatValidator(),
+    "histogram": HistogramValidator(),
+    "integer": IntegerValidator(),
+    "json": JSONValidator(),
+    "percentage": PercentageValidator(),
+}
+
