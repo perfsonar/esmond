@@ -1,6 +1,7 @@
 from calendar import timegm
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
 from esmond.api.perfsonar.types import *
+from esmond.api.perfsonar.validators import TYPE_VALIDATOR_MAP
 from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData
 from esmond.config import get_config_path, get_config
 from datetime import datetime
@@ -779,8 +780,11 @@ class PSTimeSeriesResource(Resource):
                                                 summary_window=et.summary_window
                                                 )
                 self.handle_data_create(ts_obj)
+        elif bundle.obj.summary_type == "subinterval":
+            #write function handle subinterval
+            pass
         else:
-            self.handle_data_create(bundle.obj)
+            raise NotImplementedError()
         
         #Write data to database if everything succeeded
         db.flush()
@@ -791,7 +795,13 @@ class PSTimeSeriesResource(Resource):
         # data type and target column family
         data_type = EVENT_TYPE_CONFIG[ts_obj.event_type]["type"]
         col_family = EVENT_TYPE_CF_MAP[data_type]
-    
+        
+        #validate data
+        if "validator" in EVENT_TYPE_CONFIG[ts_obj.event_type]:
+            EVENT_TYPE_CONFIG[ts_obj.event_type]["validator"].validate(ts_obj.value)
+        else:
+            TYPE_VALIDATOR_MAP[data_type].validate(ts_obj.value)
+        
         #build datapath
         datapath = EVENT_TYPE_CONFIG[ts_obj.event_type]["row_prefix"].split(KEY_DELIMITER)
         datapath.append(ts_obj.metadata_key)
@@ -804,23 +814,16 @@ class PSTimeSeriesResource(Resource):
         #figure out how to insert the data
         if ts_obj.summary_type == "base":
             if col_family == db.rate_cf:
-                try:
-                    ts_obj.value = long(ts_obj.value)
-                except ValueError:
-                    raise BadRequest("Value must be an integer")
                 ratebin = BaseRateBin(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
                 db.update_rate_bin(ratebin)
             elif col_family == db.agg_cf:
                 raise NotImplemented("Not yet implemented")
             elif col_family == db.raw_cf:
-                #TODO: write validators
                 rawdata = RawRateData(path=datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=freq)
                 db.set_raw_data(rawdata)
         elif ts_obj.summary_type == "aggregation":
             pass
-        elif ts_obj.summary_type == "statistics":
-            pass
-        elif ts_obj.summary_type == "subinterval":
+        else:
             pass
     
 perfsonar_api = Api(api_name='perfsonar')

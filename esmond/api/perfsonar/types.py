@@ -2,6 +2,7 @@
 This file defines the event types supported by the MA. Edit this file to
 define new event types (or even remove support for existing event types)
 '''
+from esmond.api.perfsonar.validators import FloatValidator, HistogramValidator, HistogramValidator, JSONValidator, PercentageValidator
 
 '''
 EVENT_TYPE_CONFIG: Defines the event-types. The 'key' of the dictionary
@@ -12,7 +13,8 @@ type: The data type of the event type. Valid values are currently:
         float: A floating point number
         histogram: An object where the key is a string labeling the bucket and the value is an integer of the bucket count
         integer: A whole number
-        json: A generic JSON object. No summary is pissible since the structure is opaque to the MA.
+        json: A generic JSON object. No summary is possible since the structure is opaque to the MA.
+        percentage: A numerator and denominator that can be used to calculate a percentage
 
 row-prefix: The prefix used for rows in cassandra
 
@@ -113,9 +115,10 @@ SUBJECT_FILTER_MAP = {
 }
 
 '''
-SUBJECT_FILTER_MAP: Fields that must be IP addresses. Maps to GET parameter
+IP_FIELDS: Fields that must be IP addresses. Maps to GET parameter
 name as defined in SUBJECT_FILTER_MAP. This list is used to determine if DNS
 lookups need to be performed when a user provides a hostname for a search against
 one of the fields listed.
 '''
 IP_FIELDS = ["source","destination","measurement-agent"]
+
