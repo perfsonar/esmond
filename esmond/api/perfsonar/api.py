@@ -1,7 +1,6 @@
 from calendar import timegm
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
 from esmond.api.perfsonar.types import *
-from esmond.api.perfsonar.validators import TYPE_VALIDATOR_MAP
 from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData
 from esmond.config import get_config_path, get_config
 from datetime import datetime

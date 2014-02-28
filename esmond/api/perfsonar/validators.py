@@ -3,14 +3,14 @@ import json
 '''
 DataValidator: Base validator class. Subclasses should override vaildate class
 '''
-def DataValidator(object):
+class DataValidator(object):
     def validate(self, value):
         return
 
 '''
 FloatValidator: Simple validator for floating point numbers
 '''
-def FloatValidator(DataValidator):
+class FloatValidator(DataValidator):
     def validate(self, value):
         try:
             float(value)
@@ -20,7 +20,7 @@ def FloatValidator(DataValidator):
 '''
 HistogramValidator: Validator for histogram type
 '''
-def HistogramValidator(DataValidator):
+class HistogramValidator(DataValidator):
     def validate(self, value):
         try:
             json.loads(value)
@@ -34,7 +34,7 @@ def HistogramValidator(DataValidator):
 '''
 IntegerValidator: Simple validator for integers
 '''
-def HistogramValidator(DataValidator):
+class IntegerValidator(DataValidator):
     def validate(self, value):
         try:
             long(value)
@@ -44,7 +44,7 @@ def HistogramValidator(DataValidator):
 '''
 JSONValidator: Simple validator for json strings
 '''
-def JSONValidator(DataValidator):
+class JSONValidator(DataValidator):
     def validate(self, value):
         try:
             json.loads(value)
@@ -54,7 +54,7 @@ def JSONValidator(DataValidator):
 '''
 PercentageValidator: Simple validator for percentage types
 '''
-def PercentageValidator(DataValidator):
+class PercentageValidator(DataValidator):
     def validate(self, value):
         if "numerator" not in value:
             raise BadRequest("Missing required field 'numerator'")
