@@ -692,6 +692,7 @@ class PSTimeSeriesResource(Resource):
         metadata_key = kwargs['metadata_key']
         datapath = EVENT_TYPE_CONFIG[event_type]["row_prefix"].split(KEY_DELIMITER)
         datapath.append(metadata_key)
+        summary_type = ''
         if 'summary_type' in kwargs:
             summary_type = kwargs['summary_type']
             if summary_type not in SUMMARY_TYPES:
@@ -706,7 +707,7 @@ class PSTimeSeriesResource(Resource):
         query_type = EVENT_TYPE_CONFIG[event_type]["type"]
         if query_type not in EVENT_TYPE_CF_MAP:
             raise BadRequest("Misconfigured event type on server side. Invalid 'type' %s" % query_type)
-        elif EVENT_TYPE_CF_MAP[query_type] == db.agg_cf or SUMMARY_TYPES[summary_type] == 'average':
+        elif EVENT_TYPE_CF_MAP[query_type] == db.agg_cf or summary_type == 'averages':
             results = db.query_aggregation_timerange(path=datapath, freq=freq,
                    cf='average', ts_min=begin_time*1000, ts_max=end_time*1000)
         elif EVENT_TYPE_CF_MAP[query_type] == db.rate_cf:

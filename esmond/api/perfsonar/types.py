@@ -2,7 +2,7 @@
 This file defines the event types supported by the MA. Edit this file to
 define new event types (or even remove support for existing event types)
 '''
-from esmond.api.perfsonar.validators import FloatValidator, HistogramValidator, IntegerValidator, JSONValidator, PercentageValidator
+from esmond.api.perfsonar.validators import FloatValidator, HistogramValidator, IntegerValidator, JSONValidator, PercentageValidator, SubintervalValidator
 
 '''
 EVENT_TYPE_CONFIG: Defines the event-types. The 'key' of the dictionary
@@ -45,7 +45,6 @@ EVENT_TYPE_CONFIG = {
     "packet-loss-rate": {
         "type": "percentage",
         "row_prefix": "ps:packet_loss_rate",
-        
     },
     "packet-trace": {
         "type": "json",
