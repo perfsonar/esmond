@@ -8,9 +8,11 @@ class DataValidator(object):
     def validate(self, value):
         return value
     
-    def base(self, db, obj):
-        #use default column family
+    def summary_cf(self, summary_type):
         return None
+        
+    def base(self, db, obj):
+        return
     
     def average(self, db, obj):
         raise NotImplementedError()
@@ -69,8 +71,6 @@ class HistogramValidator(DataValidator):
             else:
                 agg_hist[k] = curr_hist[k]
         obj.value = agg_hist
-        
-        return None
 
 '''
 IntegerValidator: Simple validator for integers
@@ -82,16 +82,19 @@ class IntegerValidator(DataValidator):
         except ValueError:
             raise BadRequest("Value must be an integer")
     
+    def summary_cf(self, summary_type):
+        if summary_type == 'average':
+            return db.agg_cf
+        return None
+    
     def average(self, db, obj):
         obj.value = {
             'numerator': obj.value,
             'denominator': 1
         }
-        
-        return db.agg_cf
     
     def aggregation(self, db, obj):
-        return None
+        return
 
 '''
 JSONValidator: Simple validator for json strings
@@ -131,7 +134,7 @@ class PercentageValidator(DataValidator):
         return value
     
     def aggregation(self, db, obj):
-        return None
+        return
 
 '''
 SubintervalValidator: Validator for subinterval type

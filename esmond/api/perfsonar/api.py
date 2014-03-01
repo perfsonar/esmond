@@ -730,13 +730,16 @@ class PSTimeSeriesResource(Resource):
         query_type = EVENT_TYPE_CONFIG[event_type]["type"]
         if query_type not in EVENT_TYPE_CF_MAP:
             raise BadRequest("Misconfigured event type on server side. Invalid 'type' %s" % query_type)
-        elif EVENT_TYPE_CF_MAP[query_type] == db.agg_cf or summary_type == 'averages':
+        col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(summary_type)
+        if col_fam is None:
+            col_fam = EVENT_TYPE_CF_MAP[query_type]
+        if col_fam == db.agg_cf:
             results = db.query_aggregation_timerange(path=datapath, freq=freq,
                    cf='average', ts_min=begin_time*1000, ts_max=end_time*1000)
-        elif EVENT_TYPE_CF_MAP[query_type] == db.rate_cf:
+        elif col_fam == db.rate_cf:
             results = db.query_baserate_timerange(path=datapath, freq=freq,
                     cf='delta', ts_min=begin_time*1000, ts_max=end_time*1000)
-        elif EVENT_TYPE_CF_MAP[query_type] == db.raw_cf:
+        elif col_fam == db.raw_cf:
             results = db.query_raw_data(path=datapath, freq=freq,
                    ts_min=begin_time*1000, ts_max=end_time*1000)
         else:
@@ -836,17 +839,17 @@ class PSTimeSeriesResource(Resource):
         ts_obj.value = validator.validate(ts_obj.value)
         
         #Determine column family
-        col_family = EVENT_TYPE_CF_MAP[data_type]
-        summ_col_family = None
-        if ts_obj.summary_type == "aggregation":
-            summ_col_family = validator.aggregation(db, ts_obj)
+        col_family = validator.summary_cf(ts_obj.summary_type)
+        if col_family is None:
+            col_family = EVENT_TYPE_CF_MAP[data_type]
+        
+        #perform initial summarization
+        if  ts_obj.summary_type== "aggregation":
+            validator.aggregation(db, ts_obj)
         elif ts_obj.summary_type == "average":
-            summ_col_family = validator.average(db, ts_obj)
+            validator.average(db, ts_obj)
         elif ts_obj.summary_type == "statistics":
-            summ_col_family = validator.statistics(db, ts_obj)
-        #set to default if no special column needed
-        if summ_col_family is not None:
-            col_family = summ_col_family    
+            validator.statistics(db, ts_obj)
         
         print "datapath=%s" %str(ts_obj.datapath)
         print "time=%s" %str(ts_obj.time)
