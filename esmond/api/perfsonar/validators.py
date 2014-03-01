@@ -7,6 +7,19 @@ DataValidator: Base validator class. Subclasses should override vaildate class
 class DataValidator(object):
     def validate(self, value):
         return value
+    
+    def base(self, db, obj):
+        #use default column family
+        return None
+    
+    def average(self, db, obj):
+        raise NotImplementedError()
+    
+    def aggregation(self, db, obj):
+        raise NotImplementedError()
+    
+    def statistics(self, db, obj):
+        raise NotImplementedError()
 
 '''
 FloatValidator: Simple validator for floating point numbers
@@ -33,6 +46,31 @@ class HistogramValidator(DataValidator):
             raise BadRequest("Invalid histogram provided")
         
         return value
+    
+    def _get_histogram(self, db, obj):
+        #query current histogram
+        results = db.query_raw_data(path=obj.datapath, freq=obj.freq,
+                   ts_min=obj.time*1000, ts_max=obj.time*1000)
+        #if no results then this is the first histogram
+        if len(results) == 0:
+            return None
+        
+        return results[0]['val']
+    
+    def aggregation(self, db, obj):
+        #combine and set as value
+        agg_hist = self._get_histogram(db, obj)
+        if agg_hist is None:
+            return None
+        curr_hist = obj.value
+        for k in curr_hist:
+            if k in agg_hist:
+                agg_hist[k] += curr_hist[k]
+            else:
+                agg_hist[k] = curr_hist[k]
+        obj.value = agg_hist
+        
+        return None
 
 '''
 IntegerValidator: Simple validator for integers
@@ -43,6 +81,17 @@ class IntegerValidator(DataValidator):
             return long(value)
         except ValueError:
             raise BadRequest("Value must be an integer")
+    
+    def average(self, db, obj):
+        obj.value = {
+            'numerator': obj.value,
+            'denominator': 1
+        }
+        
+        return db.agg_cf
+    
+    def aggregation(self, db, obj):
+        return None
 
 '''
 JSONValidator: Simple validator for json strings
@@ -80,6 +129,9 @@ class PercentageValidator(DataValidator):
             raise BadRequest("The field 'numerator' cannot be negative")
         
         return value
+    
+    def aggregation(self, db, obj):
+        return None
 
 '''
 SubintervalValidator: Validator for subinterval type
