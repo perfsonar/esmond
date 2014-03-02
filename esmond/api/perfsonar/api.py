@@ -786,7 +786,9 @@ class PSTimeSeriesResource(Resource):
             raise BadRequest("Invalid event_type %s" % kwargs["event_type"])
         if "summary_type" in kwargs and kwargs["summary_type"] not in SUMMARY_TYPES:
             raise BadRequest("Invalid summary type %s" % kwargs["summary_type"])
-            
+        if "summary_type" in kwargs and kwargs["summary_type"] != 'base':
+            raise BadRequest("Only base summary-type allowed for writing. Cannot use %s" % kwargs["summary_type"])
+        
         # create object
         bundle.obj = PSTimeSeriesObject(bundle.data[DATA_KEY_TIME], bundle.data[DATA_KEY_VALUE], kwargs["metadata_key"])
         bundle.obj.event_type =  kwargs["event_type"] 
@@ -805,21 +807,19 @@ class PSTimeSeriesResource(Resource):
             raise NotFound("Given event type does not exist for metadata key")
         
         #Insert into cassandra
-        if bundle.obj.summary_type == "base":
-            et_to_update = PSEventTypes.objects.filter(
-                metadata__metadata_key=bundle.obj.metadata_key,
-                event_type=bundle.obj.event_type)
-            for et in et_to_update:
-                ts_obj = PSTimeSeriesObject(bundle.obj.time,
-                                                bundle.obj.value,
-                                                bundle.obj.metadata_key,
-                                                event_type=bundle.obj.event_type,
-                                                summary_type=et.summary_type,
-                                                summary_window=et.summary_window
-                                                )
-                self.handle_data_create(ts_obj)
-        else:
-            raise NotImplementedError()
+        #NOTE: Ordering in model allows statistics to go last. If this ever changes may need to update code here.
+        et_to_update = PSEventTypes.objects.filter(
+            metadata__metadata_key=bundle.obj.metadata_key,
+            event_type=bundle.obj.event_type)
+        for et in et_to_update:
+            ts_obj = PSTimeSeriesObject(bundle.obj.time,
+                                            bundle.obj.value,
+                                            bundle.obj.metadata_key,
+                                            event_type=bundle.obj.event_type,
+                                            summary_type=et.summary_type,
+                                            summary_window=et.summary_window
+                                            )
+            self.handle_data_create(ts_obj)
         
         #Write data to database if everything succeeded
         db.flush()
@@ -850,12 +850,6 @@ class PSTimeSeriesResource(Resource):
             validator.average(db, ts_obj)
         elif ts_obj.summary_type == "statistics":
             validator.statistics(db, ts_obj)
-        
-        print "datapath=%s" %str(ts_obj.datapath)
-        print "time=%s" %str(ts_obj.time)
-        print "datetime=%s" %str(ts_obj.get_datetime)
-        print "value=%s" %str(ts_obj.value)
-        print "freq=%s" %str(ts_obj.freq)
         
         #insert the data in the target column-family
         if col_family == db.rate_cf:
