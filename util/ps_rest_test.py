@@ -48,21 +48,27 @@ def main():
         # print '   * ', dpay
         # print dpay.data[0], dpay.data[0].ts_epoch
         # print dpay.data[-1], dpay.data[-1].ts_epoch
-        ## End single call - loop
+        ## End single call - loop now
         for et in md.get_all_event_types():
             print '  * ', et
             # print et.base_uri
             # print et.event_type
             print et.summaries
-            for summ in et.get_summaries():
+            ## Single call
+            if et.summaries:
+                print '  * found summary - fetching single'
+                summ = et.get_summary(et.summaries[0][0], et.summaries[0][1])
                 print '    * ', summ
-                print summ.summary_type
-                print summ.summary_window
-                print summ.uri
+            ## End single call - loop now
+            for summ in et.get_all_summaries():
+                print '    * ', summ
+                # print summ.summary_type
+                # print summ.summary_window
+                # print summ.uri
                 dpay = summ.get_data()
                 print dpay, dpay.data_type
                 for dp in dpay.data:
-                    # print dp, dp.histogram
+                    # print dp, dp.val
                     pass
 
         print '====='
