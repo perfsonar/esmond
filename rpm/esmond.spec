@@ -104,7 +104,7 @@ done
 %post
 source /opt/rh/python27/enable
 cd %{install_base}
-virtualenv --prompt="(esmond)" .
+/opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 . bin/activate
 pip install -r requirements.txt
 mkdir -p tsdb-data
