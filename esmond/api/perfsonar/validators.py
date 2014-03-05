@@ -6,8 +6,8 @@ from tastypie.exceptions import BadRequest
 DataValidator: Base validator class. Subclasses should override vaildate class
 '''
 class DataValidator(object):
-    def validate(self, value):
-        return value
+    def validate(self, obj):
+        return obj.value
     
     def summary_cf(self, summary_type):
         return None
@@ -28,12 +28,27 @@ class DataValidator(object):
 FloatValidator: Simple validator for floating point numbers
 '''
 class FloatValidator(DataValidator):
-    def validate(self, value):
+    def validate(self, obj):
+        formatted_value ={}
         try:
-            return float(value)
+            formatted_value = {
+                numerator: int( float(obj.value) *  obj.base_freq),
+                denominator: 1
+            }
         except ValueError:
             raise BadRequest("Value must be a floating point number")
-
+        
+        return formatted_value
+    
+    def average(self, db, obj):
+        return
+    
+    def aggregation(self, db, obj):
+        results = db.query_aggregation_timerange(path=obj.datapath, freq=obj.freq,
+                   cf='average', ts_min=obj.time*1000, ts_max=obj.time*1000)
+        if len(results) > 0:
+            obj["denominator"] = 0 #don't increase the count
+        return
 '''
 Percentile: Used by histogram class to calculate percentiles using the NIST
 algorithm (http://www.itl.nist.gov/div898/handbook/prc/section2/prc252.htm)
@@ -74,17 +89,17 @@ class Percentile(object):
 HistogramValidator: Validator for histogram type
 '''
 class HistogramValidator(DataValidator):
-    def validate(self, value):
+    def validate(self, obj):
         try:
-            json.dumps(value)
-            for k in value:
-                value[k] = long(value[k])
+            json.dumps(obj.value)
+            for k in obj.value:
+                obj.value[k] = long(obj.value[k])
         except ValueError:
             raise BadRequest("Value of histogram must be an integer")
         except:
             raise BadRequest("Invalid histogram provided")
         
-        return value
+        return obj.value
     
     def _get_histogram(self, db, obj, datapath=None):
         if datapath is None:
@@ -195,9 +210,9 @@ class HistogramValidator(DataValidator):
 IntegerValidator: Simple validator for integers
 '''
 class IntegerValidator(DataValidator):
-    def validate(self, value):
+    def validate(self, obj):
         try:
-            return long(value)
+            return long(obj.value)
         except ValueError:
             raise BadRequest("Value must be an integer")
     
@@ -219,38 +234,38 @@ class IntegerValidator(DataValidator):
 JSONValidator: Simple validator for json strings
 '''
 class JSONValidator(DataValidator):
-    def validate(self, value):
+    def validate(self, obj):
         try:
-            json.dumps(value)
+            json.dumps(obj.value)
         except:
             raise BadRequest("Value must be valid JSON")
         
-        return value
+        return obj.value
         
 '''
 PercentageValidator: Simple validator for percentage types
 '''
 class PercentageValidator(DataValidator):
-    def validate(self, value):
-        if "numerator" not in value:
+    def validate(self, obj):
+        if "numerator" not in obj.value:
             raise BadRequest("Missing required field 'numerator'")
-        elif "denominator" not in value:
+        elif "denominator" not in obj.value:
             raise BadRequest("Missing required field 'denominator'")
         try:
-            value["numerator"] = long(value["numerator"])
+            obj.value["numerator"] = long(obj.value["numerator"])
         except:
             raise BadRequest("The field 'numerator' must be an integer")
         try:
-            value["denominator"] = long(value["denominator"])
+            obj.value["denominator"] = long(obj.value["denominator"])
         except:
             raise BadRequest("The field 'denominator' must be an integer")
         
-        if(value["denominator"] <= 0):
+        if(obj.value["denominator"] <= 0):
             raise BadRequest("The field 'denominator' must be greater than 0")
-        elif(value["numerator"] < 0):
+        elif(obj.value["numerator"] < 0):
             raise BadRequest("The field 'numerator' cannot be negative")
         
-        return value
+        return obj.value
     
     def aggregation(self, db, obj):
         return
@@ -259,14 +274,14 @@ class PercentageValidator(DataValidator):
 SubintervalValidator: Validator for subinterval type
 '''
 class SubintervalValidator(DataValidator):
-    def validate(self, value):
+    def validate(self, obj):
         try:
-            json.dumps(value)
-            for k in value:
-                long(value[k])
+            json.dumps(obj.value)
+            for k in obj.value:
+                long(obj.value[k])
         except ValueError:
             raise BadRequest("Subinterval key must be an integer")
         except:
             raise BadRequest("Invalid subintervals provided")
         
-        return value
+        return obj.value

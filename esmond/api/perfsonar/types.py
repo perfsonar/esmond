@@ -142,11 +142,18 @@ TYPE_VALIDATOR_MAP = {
 ALLOWED_SUMMARIES: Indicates the types of summaries allowed by each type
 '''
 ALLOWED_SUMMARIES = {
-    "float": [],
+    "float": ['aggregation', 'average'],
     "histogram": ['aggregation', 'statistics'],
     "integer": ['aggregation', 'average'],
     "json": [],
     "percentage": ['aggregation'],
     "subinterval": [],
 }
+
+'''
+DEFAULT_FLOAT_PRECISION: Indicates the number of decimal places to store
+for float type as 10 ^ <numeber-of-digits>.
+Example: 10000 means 4 decimal places
+'''
+DEFAULT_FLOAT_PRECISION=10000
 

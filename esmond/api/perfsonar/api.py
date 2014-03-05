@@ -40,7 +40,7 @@ EVENT_TYPE_CF_MAP = {
     'json': db.raw_cf,
     'percentage': db.agg_cf,
     'subinterval': db.raw_cf,
-    'flow': db.raw_cf
+    'float': db.agg_cf
 }
 EVENT_TYPE_FILTER = "event-type"
 SUMMARY_TYPE_FILTER = "summary-type"
@@ -640,6 +640,14 @@ class PSTimeSeriesObject(object):
         return freq
     
     @property
+    def base_freq(self):
+        base_freq = 1000
+        if EVENT_TYPE_CONFIG[self.event_type]["type"] == "float":
+            base_freq = DEFAULT_FLOAT_PRECISION
+        
+        return freq
+    
+    @property
     def time(self):
         ts = self._time
         #calculate summary bin
@@ -836,7 +844,7 @@ class PSTimeSeriesResource(Resource):
             return
         
         #validate data
-        ts_obj.value = validator.validate(ts_obj.value)
+        ts_obj.value = validator.validate(ts_obj)
         
         #Determine column family
         col_family = validator.summary_cf(ts_obj.summary_type)
@@ -858,7 +866,7 @@ class PSTimeSeriesResource(Resource):
         elif col_family == db.agg_cf:
             agg = AggregationBin(path=ts_obj.datapath,
                     ts=ts_obj.get_datetime(), val=ts_obj.value["numerator"],
-                    freq=ts_obj.freq, base_freq=1000, count=ts_obj.value["denominator"])
+                    freq=ts_obj.freq, base_freq=ts_obj.base_freq, count=ts_obj.value["denominator"])
             db.aggs.insert(agg.get_key(), {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): agg.count}})
         elif col_family == db.raw_cf:
             rawdata = RawRateData(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
