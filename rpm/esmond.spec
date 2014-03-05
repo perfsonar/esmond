@@ -26,19 +26,20 @@ BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 BuildRequires:  httpd
 
-Requires:		python
-Requires:		python-devel
-Requires:		python-setuptools
-Requires:		centos-release-SCL
-Requires:		python27
+Requires:       python
+Requires:       python-devel
+Requires:       python-setuptools
+Requires:       centos-release-SCL
+Requires:       python27
 Requires:       mercurial
 Requires:       mod_wsgi
 Requires:       httpd
-Requires:		postgresql
-Requires:		postgresql-devel
-Requires:		sqlite
-Requires:		sqlite-devel
-Requires:		subversion
+Requires:       postgresql
+Requires:       postgresql-devel
+Requires:       sqlite
+Requires:       sqlite-devel
+Requires:       subversion
+Requires:       memcached
 
  
 %description
