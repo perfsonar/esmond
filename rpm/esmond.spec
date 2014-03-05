@@ -26,45 +26,19 @@ BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 BuildRequires:  httpd
 
-Requires:       mercurial
-Requires:		wget
 Requires:		python
 Requires:		python-devel
 Requires:		python-setuptools
+Requires:		centos-release-SCL
+Requires:		python27
+Requires:       mercurial
 Requires:       mod_wsgi
 Requires:       httpd
 Requires:		postgresql
 Requires:		postgresql-devel
 Requires:		sqlite
 Requires:		sqlite-devel
-Requires:		zlib-devel
-Requires:		bzip2-devel
-Requires:		openssl-devel
-Requires:		ncurses-devel
-Requires:		readline-devel
-Requires:		tk-devel
-Requires:		memcached
-Requires:		autoconf
-Requires:		automake
-Requires:		bison
-Requires:		byacc
-Requires:		cscope
-Requires:		ctags
-Requires:		diffstat
-Requires:		doxygen
-Requires:		flex
-Requires:		gcc-c++
-Requires:		gcc-gfortran
-Requires:		git
-Requires:		indent
-Requires:		intltool
-Requires:		libtool
-Requires:		patchutils
-Requires:		rcs
-Requires:		redhat-rpm-config
 Requires:		subversion
-Requires:		swig
-Requires:		systemtap
 
  
 %description
@@ -105,6 +79,11 @@ mv %{buildroot}/%{install_base}/rpm/config_files/apache-esdb.conf %{buildroot}/e
 mkdir -p %{buildroot}/etc/cron.d/
 mv %{buildroot}/%{install_base}/rpm/config_files/cron-generate_perfsonar_store_file %{buildroot}/etc/cron.d/cron-generate_perfsonar_store_file
 
+# ENV files
+mkdir -p %{buildroot}/etc/profile.d
+mv %{buildroot}/%{install_base}/rpm/config_files/esmond.csh %{buildroot}/etc/profile.d/esmond.csh
+mv %{buildroot}/%{install_base}/rpm/config_files/esmond.sh %{buildroot}/etc/profile.d/esmond.sh
+
 # Move the apache mod_wsgi esdb CGI into place
 mkdir -p %{buildroot}/%{install_base}/bin/
 mv %{buildroot}/%{install_base}/rpm/bin/esdb_wsgi %{buildroot}/%{install_base}/bin/
@@ -122,32 +101,9 @@ done
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
 
 %post
-# Check for modern python and set up environment.
-easy_install pip
-pip install virtualenv
-# yum -y groupinstall "Development Tools"
-mkdir -p /usr/local/src
-if ! [ -a /usr/local/bin/python2.7 ] && 
-	! [ -a /usr/bin/python2.7 ];
-then
-	echo "Installing alt python2.7"
-	cd /usr/local/src
-	wget http://python.org/ftp/python/2.7.6/Python-2.7.6.tgz
-	tar zxvf Python-2.7.6.tgz
-	cd /usr/local/src/Python-2.7.6
-	./configure --prefix=/usr/local
-	make && make altinstall
-else
-	echo "Python2.7 exists"
-fi
-
+source /opt/rh/python27/enable
 cd %{install_base}
-if [ -a /usr/local/bin/python2.7 ];
-then
-	virtualenv --prompt="(esmond)" --python=/usr/local/bin/python2.7 .
-else
-	virtualenv --prompt="(esmond)" --python=/usr/bin/python2.7 .
-fi
+virtualenv --prompt="(esmond)" .
 . bin/activate
 pip install -r requirements.txt
 mkdir -p tsdb-data
@@ -178,6 +134,8 @@ chown -R esmond:esmond /var/run/esmond
 /etc/init.d/%{init_script_2}
 /etc/httpd/conf.d
 /etc/cron.d/cron-generate_perfsonar_store_file
+/etc/profile.d/esmond.csh
+/etc/profile.d/esmond.sh
  
 %changelog
 * Wed Apr 27 2011 Aaron Brown <aaron@internet2.edu> 1.0-1
