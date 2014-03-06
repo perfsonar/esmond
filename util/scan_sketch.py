@@ -12,6 +12,7 @@ import time
 
 from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, \
      Inventory, GapInventory
+from esmond.api.api import SNMP_NAMESPACE
 from esmond.cassandra import get_rowkey, KEY_DELIMITER
 from esmond.util import max_datetime
 
@@ -53,7 +54,7 @@ def main():
                         ts_max = calendar.timegm(iface.end_time.utctimetuple())
 
                     row_key_range = get_key_range(
-                        [device.name, oidset.name, oid.name, iface.ifDescr], 
+                        [SNMP_NAMESPACE, device.name, oidset.name, oid.name, iface.ifDescr], 
                         oidset.frequency_ms, ts_min, ts_max)
 
                     for key in row_key_range:
