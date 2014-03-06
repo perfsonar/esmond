@@ -378,3 +378,62 @@ class APIPermission(Permission):
         )
         self.content_type = ct
         super(APIPermission, self).save(*args, **kwargs)
+
+### Models for data inventory
+
+class Inventory(models.Model):
+    """Data inventory to drive gap scanning"""
+    # choices for cf to scan
+    RAW_DATA = 'RD'
+    BASE_RATES = 'BR'
+    RATE_AGGS = 'RA'
+    STAT_AGGS = 'SA'
+    COLUMN_FAMILY_CHOICES = (
+        (RAW_DATA, 'raw_data'),
+        (BASE_RATES, 'base_rates'),
+        (RATE_AGGS, 'rate_aggregations'),
+        (STAT_AGGS, 'stat_aggregations')
+    )
+    # fields
+    row_key = models.CharField(max_length=128, unique=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    last_scan_point = models.DateTimeField(null=True, blank=True)
+    scan_complete = models.BooleanField(default=False)
+    column_family = models.CharField(max_length=2, 
+                                    choices=COLUMN_FAMILY_CHOICES,
+                                    default=BASE_RATES)
+
+    class Meta:
+        db_table = 'inventory'
+        ordering = ['row_key']
+
+    def __unicode__(self):
+        return self.row_key
+
+    def to_dict(self):
+        return dict(
+            row_key=self.row_key,
+            last_scan_point=self.last_scan_point,
+            scan_complete=self.scan_complete
+        )
+
+class GapInventory(models.Model):
+    """Inventory of gaps existing in the data"""
+    row = models.ForeignKey(Inventory, db_column='keyid')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    processed = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'gap_inventory'
+        ordering = ['row__row_key']
+
+    def __unicode__(self):
+        return self.row.row_key
+
+    def to_dict(self):
+        return dict(
+            row=self.row.row_key,
+            processed=self.processed
+        )
