@@ -57,9 +57,9 @@ class TestClientLibs(LiveServerTestCase):
         final_dp = et.get_data().data[-1]
 
         self.assertEqual(len(et.get_data().data), self.tr.h_ttl_len)
-        self.assertEqual(first_dp.histogram, json.loads(self.tr.h_ttl_start_val))
+        self.assertEqual(first_dp.val, json.loads(self.tr.h_ttl_start_val))
         self.assertEqual(first_dp.ts_epoch, self.tr.h_ttl_start_ts/1000)
-        self.assertEqual(final_dp.histogram, json.loads(self.tr.h_ttl_end_val))
+        self.assertEqual(final_dp.val, json.loads(self.tr.h_ttl_end_val))
         self.assertEqual(final_dp.ts_epoch, self.tr.h_ttl_end_ts/1000)
 
         et = md.get_event_type('histogram-owdelay')
@@ -68,9 +68,9 @@ class TestClientLibs(LiveServerTestCase):
         final_dp = et.get_data().data[-1]
 
         self.assertEqual(len(et.get_data().data), self.tr.h_owd_min_len)
-        self.assertEqual(first_dp.histogram, json.loads(self.tr.h_owd_min_start_val))
+        self.assertEqual(first_dp.val, json.loads(self.tr.h_owd_min_start_val))
         self.assertEqual(first_dp.ts_epoch, self.tr.h_owd_min_start_ts/1000)
-        self.assertEqual(final_dp.histogram, json.loads(self.tr.h_owd_min_end_val))
+        self.assertEqual(final_dp.val, json.loads(self.tr.h_owd_min_end_val))
         self.assertEqual(final_dp.ts_epoch, self.tr.h_owd_min_end_ts/1000)
 
 
@@ -133,17 +133,41 @@ class TestClientLibs(LiveServerTestCase):
 
         md = list(conn.get_metadata())[0]
         et = md.get_event_type('histogram-owdelay')
+
+        test_summary = (u'aggregation', u'86400')
+
+        self.assertEqual(len(et.summaries), 1)
+        self.assertEqual(et.summaries[0], test_summary)
+
+        # Grab from generator first
         
-        summ = list(et.get_summaries())[0]
+        summ = list(et.get_all_summaries())[0]
         
         first_dp = summ.get_data().data[0]
         final_dp = summ.get_data().data[-1]
 
         self.assertEqual(len(summ.get_data().data), self.tr.h_owd_day_len)
-        self.assertEqual(first_dp.histogram, json.loads(self.tr.h_owd_day_start_val))
+        self.assertEqual(first_dp.val, json.loads(self.tr.h_owd_day_start_val))
         self.assertEqual(first_dp.ts_epoch, self.tr.h_owd_day_start_ts/1000)
-        self.assertEqual(final_dp.histogram, json.loads(self.tr.h_owd_day_end_val))
+        self.assertEqual(final_dp.val, json.loads(self.tr.h_owd_day_end_val))
         self.assertEqual(final_dp.ts_epoch, self.tr.h_owd_day_end_ts/1000)
+
+        # Same test but pull specific summary
+
+        summ = et.get_summary(test_summary[0], test_summary[1])
+
+        first_dp = summ.get_data().data[0]
+        final_dp = summ.get_data().data[-1]
+
+        self.assertEqual(len(summ.get_data().data), self.tr.h_owd_day_len)
+        self.assertEqual(first_dp.val, json.loads(self.tr.h_owd_day_start_val))
+        self.assertEqual(first_dp.ts_epoch, self.tr.h_owd_day_start_ts/1000)
+        self.assertEqual(final_dp.val, json.loads(self.tr.h_owd_day_end_val))
+        self.assertEqual(final_dp.ts_epoch, self.tr.h_owd_day_end_ts/1000)
+
+
+
+
 
 
 

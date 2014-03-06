@@ -169,12 +169,19 @@ class EventType(NodeInfo):
     def summaries(self):
         s_t = []
         for s in self._data.get('summaries', []):
-            s_t.append(s['summary-type'])
+            s_t.append((s['summary-type'],s['summary-window']))
         return s_t
 
-    def get_summaries(self):
+    def get_all_summaries(self):
         for s in self._data.get('summaries', []):
             yield Summary(s, self.api_url, self.filters, self.data_type)
+
+    def get_summary(self, s_type, s_window):
+        for s in self._data.get('summaries', []):
+            if s['summary-type'] == s_type and \
+                s['summary-window'] == s_window:
+                return Summary(s, self.api_url, self.filters, self.data_type)
+        return None
 
     def get_data(self):
         r = requests.get('{0}{1}'.format(self.api_url, self.base_uri),
@@ -285,14 +292,14 @@ class DataHistogram(NodeInfo):
     def __init__(self, data={}):
         super(DataHistogram, self).__init__(data, None, None)
         self.ts = self._convert_to_datetime(data.get('ts', None))
-        self.histogram = json.loads(data.get('val', u'{}'))
+        self.val = json.loads(data.get('val', u'{}'))
 
     @property
     def ts_epoch(self):
         return calendar.timegm(self.ts.utctimetuple())
 
     def __repr__(self):
-        return '<DataHistogram: ts:{0} len:{1}>'.format(self.ts, len(self.histogram.keys()))
+        return '<DataHistogram: ts:{0} len:{1}>'.format(self.ts, len(self.val.keys()))
 
 class ApiFilters(object):
     wrn = ApiFiltersWarning
