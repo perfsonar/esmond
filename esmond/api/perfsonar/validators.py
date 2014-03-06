@@ -32,8 +32,8 @@ class FloatValidator(DataValidator):
         formatted_value ={}
         try:
             formatted_value = {
-                numerator: int( float(obj.value) *  obj.base_freq),
-                denominator: 1
+                'numerator': long( float(obj.value) *  (obj.base_freq/1000)),
+                'denominator': 1
             }
         except ValueError:
             raise BadRequest("Value must be a floating point number")
@@ -47,7 +47,7 @@ class FloatValidator(DataValidator):
         results = db.query_aggregation_timerange(path=obj.datapath, freq=obj.freq,
                    cf='average', ts_min=obj.time*1000, ts_max=obj.time*1000)
         if len(results) > 0:
-            obj["denominator"] = 0 #don't increase the count
+            obj.value["denominator"] = 0 #don't increase the count
         return
 '''
 Percentile: Used by histogram class to calculate percentiles using the NIST

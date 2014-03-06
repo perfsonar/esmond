@@ -643,9 +643,10 @@ class PSTimeSeriesObject(object):
     def base_freq(self):
         base_freq = 1000
         if EVENT_TYPE_CONFIG[self.event_type]["type"] == "float":
-            base_freq = DEFAULT_FLOAT_PRECISION
+            #multiply by 1000 to compensate for division in AggregationBin average 
+            base_freq = DEFAULT_FLOAT_PRECISION * 1000
         
-        return freq
+        return base_freq
     
     @property
     def time(self):
