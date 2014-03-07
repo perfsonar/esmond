@@ -17,6 +17,8 @@ from esmond.cassandra import get_rowkey, KEY_DELIMITER
 from esmond.util import max_datetime
 
 from django.utils.timezone import utc
+from django.db.utils import IntegrityError
+from django.db import connection
 
 def get_key_range(path, freq, ts_min, ts_max):
    
@@ -82,7 +84,11 @@ def main():
 
                         i = Inventory(row_key=key, start_time=table_start,
                                 end_time=table_end, column_family=cf)
-                        # i.save()
+                        try:
+                            i.save()
+                        except IntegrityError as e:
+                            print e
+                            connection._rollback()
 
 
 
@@ -91,3 +97,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
