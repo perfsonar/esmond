@@ -453,6 +453,11 @@ class PSArchiveResource(ModelResource):
                 self.wrap_view('dispatch_summary_data'),
                 name="api_get_children"),
                 ]
+    def dispatch_detail(self, request, **kwargs):
+        if request.method.lower() == 'post':
+            return PSBulkTimeSeriesResource().dispatch_list(request, **kwargs)
+        return super(ModelResource, self).dispatch_detail(request, **kwargs)
+    
     
     def dispatch_event_type_detail(self, request, **kwargs):
         return PSEventTypesResource().dispatch_list(request,
@@ -777,65 +782,67 @@ class PSTimeSeriesResource(Resource):
         return None
     
     def obj_create(self, bundle, **kwargs):
-        if bundle.data is None:
+        bundle.obj = self._obj_create(bundle.data, **kwargs)
+        db.flush()
+        return bundle
+        
+    def _obj_create(self, request_data, **kwargs):
+        if request_data is None:
             raise BadRequest("Empty request body provided")
-        if DATA_KEY_TIME not in bundle.data:
+        if DATA_KEY_TIME not in request_data:
             raise BadRequest("Required field %s not provided in request" % DATA_KEY_TIME)
         try:
-            long(bundle.data[DATA_KEY_TIME])
+            long(request_data[DATA_KEY_TIME])
         except:
             raise BadRequest("Time must be a unix timestamp")
-        if DATA_KEY_VALUE not in bundle.data:
+        if DATA_KEY_VALUE not in request_data:
             raise BadRequest("Required field %s not provided in request" % DATA_KEY_VALUE)
         if "metadata_key" not in kwargs:
             raise BadRequest("No metadata key provided in URL")
         if "event_type" not in kwargs:
             raise BadRequest("event_type must be defined in URL.")
         if kwargs["event_type"] not in EVENT_TYPE_CONFIG:
-            raise BadRequest("Invalid event_type %s" % kwargs["event_type"])
+            raise BadRequest("Invalid event type %s" % kwargs["event_type"])
         if "summary_type" in kwargs and kwargs["summary_type"] not in SUMMARY_TYPES:
             raise BadRequest("Invalid summary type %s" % kwargs["summary_type"])
         if "summary_type" in kwargs and kwargs["summary_type"] != 'base':
             raise BadRequest("Only base summary-type allowed for writing. Cannot use %s" % kwargs["summary_type"])
         
         # create object
-        bundle.obj = PSTimeSeriesObject(bundle.data[DATA_KEY_TIME], bundle.data[DATA_KEY_VALUE], kwargs["metadata_key"])
-        bundle.obj.event_type =  kwargs["event_type"] 
+        obj = PSTimeSeriesObject(request_data[DATA_KEY_TIME], request_data[DATA_KEY_VALUE], kwargs["metadata_key"])
+        obj.event_type =  kwargs["event_type"] 
         if "summary_type" in kwargs:
-            bundle.obj.summary_type =  kwargs["summary_type"]
+            obj.summary_type =  kwargs["summary_type"]
         if "summary_window" in kwargs:
-            bundle.obj.summary_window =  kwargs["summary_window"]
+            obj.summary_window =  kwargs["summary_window"]
         
         #check that this event_type is defined
         event_types = PSEventTypes.objects.filter(
-            metadata__metadata_key=bundle.obj.metadata_key,
-            event_type=bundle.obj.event_type,
-            summary_type=bundle.obj.summary_type,
-            summary_window=bundle.obj.summary_window)
+            metadata__metadata_key=obj.metadata_key,
+            event_type=obj.event_type,
+            summary_type=obj.summary_type,
+            summary_window=obj.summary_window)
         if(event_types.count() == 0):
             raise NotFound("Given event type does not exist for metadata key")
         
         #Insert into cassandra
         #NOTE: Ordering in model allows statistics to go last. If this ever changes may need to update code here.
         et_to_update = PSEventTypes.objects.filter(
-            metadata__metadata_key=bundle.obj.metadata_key,
-            event_type=bundle.obj.event_type)
+            metadata__metadata_key=obj.metadata_key,
+            event_type=obj.event_type)
         for et in et_to_update:
-            ts_obj = PSTimeSeriesObject(bundle.obj.time,
-                                            bundle.obj.value,
-                                            bundle.obj.metadata_key,
-                                            event_type=bundle.obj.event_type,
+            ts_obj = PSTimeSeriesObject(obj.time,
+                                            obj.value,
+                                            obj.metadata_key,
+                                            event_type=obj.event_type,
                                             summary_type=et.summary_type,
                                             summary_window=et.summary_window
                                             )
-            self.handle_data_create(ts_obj)
+            self.database_write(ts_obj)
         
-        #Write data to database if everything succeeded
-        db.flush()
-        
-        return bundle
+        return obj
     
-    def handle_data_create(self, ts_obj):
+    def database_write(self, ts_obj):
         data_type = EVENT_TYPE_CONFIG[ts_obj.event_type]["type"]
         validator = TYPE_VALIDATOR_MAP[data_type]
         
@@ -873,6 +880,46 @@ class PSTimeSeriesResource(Resource):
             rawdata = RawRateData(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
             db.set_raw_data(rawdata)
 
+class PSBulkTimeSeriesResource(PSTimeSeriesResource):
+    class Meta:
+        resource_name = 'bulkpstimeseries'
+        allowed_methods = ['post']
+        limit = 0
+        max_limit = 0
+    
+    def obj_create(self, bundle, **kwargs):
+        if "metadata_key" not in kwargs:
+            raise BadRequest("No metadata key provided in URL")
+        if "data" not in bundle.data:
+            raise BadRequest("Request must contain 'data' element")
+        if not isinstance(bundle.data["data"], list):
+            raise BadRequest("The 'data' element must be an array")
+        i = 0
+        
+        for ts_item in bundle.data["data"]:
+            i += 1
+            if DATA_KEY_TIME not in ts_item:
+                raise BadRequest("Missing %s field in provided data list at position %d" % (DATA_KEY_TIME, i))                
+            if DATA_KEY_VALUE not in ts_item:
+                raise BadRequest("Missing %s field in provided data list at position %d" % (DATA_KEY_VALUE, i))
+            if not isinstance(ts_item[DATA_KEY_VALUE], list):
+                raise BadRequest("'%s' field must be an array in provided data list at position %d" % (DATA_KEY_VALUE, i))
+            ts = ts_item[DATA_KEY_TIME]
+            j = 0
+            for val_item in ts_item[DATA_KEY_VALUE]:
+                j += 1
+                if 'event-type' not in val_item:
+                    raise BadRequest("Missing event-type field at data item %d in value %d " % (i, j))
+                if DATA_KEY_VALUE not in val_item:
+                    raise BadRequest("Missing %s field at data item %d in value %d " % (DATA_KEY_VALUE, i, j))
+                tmp_obj = { DATA_KEY_TIME: ts, DATA_KEY_VALUE: val_item[DATA_KEY_VALUE] }
+                #assign last item to bundle.obj to avoid null error
+                bundle.obj = self._obj_create(tmp_obj, metadata_key=kwargs['metadata_key'], event_type=val_item['event-type'], summary_type='base')
+                
+        #everything succeeded so save to database
+        db.flush()
+        return bundle    
+        
 perfsonar_api = Api(api_name='perfsonar')
 perfsonar_api.register(PSArchiveResource())
 perfsonar_api.register(PSEventTypesResource())
