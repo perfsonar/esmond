@@ -9,10 +9,9 @@ from django.core.urlresolvers import reverse
 from tastypie.test import ResourceTestCase
 
 from esmond.api.models import *
-from esmond.api.api import OIDSET_INTERFACE_ENDPOINTS
-from esmond.api.tests.example_data import build_default_metadata
+from esmond.api.tests.example_data import build_default_metadata, build_pdu_metadata
 from esmond.cassandra import AGG_TYPES
-from esmond.api.api import SNMP_NAMESPACE
+from esmond.api.api import SNMP_NAMESPACE, OIDSET_INTERFACE_ENDPOINTS, QueryUtil
 
 def datetime_to_timestamp(dt):
     return calendar.timegm(dt.timetuple())
@@ -198,10 +197,10 @@ class DeviceAPITests(DeviceAPITestsBase):
                     self.assertIn(field, child)
 
             for oidset in Device.objects.get(name=device).oidsets.all():
-                if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
+                if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
                     continue
 
-                for child_name in OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys():
+                for child_name in OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].keys():
                     self.assertIn(child_name , children)
                     child = children[child_name]
                     self.assertEqual(child['uri'], url + child_name)
@@ -305,7 +304,13 @@ class MockCASSANDRA_DB(object):
         ]
 
     def query_raw_data(self, path=None, freq=None, ts_min=None, ts_max=None):
-        return self.query_baserate_timerange(path, freq, ts_min, ts_max)
+        if 'SentryPoll' in path:
+            s_bin = (ts_min/freq)*freq
+            e_bin = (ts_max/freq)*freq
+            n_bins = (e_bin - s_bin) / freq
+            return [ {'ts': s_bin+(i*freq), 'val': 1200} for i in range(n_bins) ]
+        else:
+            return self.query_baserate_timerange(path, freq, ts_min, ts_max)
 
     def query_aggregation_timerange(self, path=None, freq=None, ts_min=None, ts_max=None, cf=None):
         self._test_incoming_args(path, freq, ts_min, ts_max, cf)
@@ -895,14 +900,140 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 201) # not 200!
 
 
+class PDUAPITests(ResourceTestCase):
+    fixtures = ["oidsets.json"]
 
+    def setUp(self):
+        super(PDUAPITests, self).setUp()
 
+        self.td = build_pdu_metadata()
 
+    def test_get_pdu_list(self):
+        url = '/v1/pdu/'
 
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
 
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        self.assertEquals(len(data), 1)
+        self.assertEquals(data[0]["name"], "sentry_pdu")
 
+    def test_get_pdu(self):
+        url = '/v1/pdu/sentry_pdu/'
 
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
 
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        #print json.dumps(data, indent=4)
 
+        children = {}
+        for child in data['children']:
+            children[child['name']] = child
+            for field in ['leaf','name','uri']:
+                self.assertIn(field, child)
 
+        for child_name in ['outlet']:
+            self.assertIn(child_name, children)
+            child = children[child_name]
+            self.assertEqual(child['uri'], url + child_name)
 
+    def test_get_pdu_outlet_list(self):
+        url = '/v1/pdu/sentry_pdu/outlet/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        #print json.dumps(data, indent=4)
+
+        children = data['children']
+        self.assertEqual(len(children), 1)
+        self.assertEqual(children[0]['outletID'], 'AA')
+        self.assertEqual(children[0]['outletName'], 'rtr_a:PEM1:50A')
+        self.assertEqual(len(children[0]['children']), 1)
+        self.assertEqual(children[0]['children'][0]['name'], 'load')
+
+    def test_search_outlet_names(self):
+        url = '/v1/outlet/?outletName__contains=rtr_a'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        #print json.dumps(data, indent=4)
+
+        children = data['children']
+        self.assertEqual(len(children), 1)
+        self.assertEqual(children[0]['outletID'], 'AA')
+        self.assertEqual(children[0]['outletName'], 'rtr_a:PEM1:50A')
+
+        url = '/v1/outlet/?outletName__contains=not_valid_query_string'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+        # by default only currently active devices are returned
+        data = json.loads(response.content)
+        #print json.dumps(data, indent=4)
+
+        children = data['children']
+        self.assertEqual(len(children), 0)
+
+class PDUAPIDataTests(DeviceAPITestsBase):
+    def setUp(self):
+        super(PDUAPIDataTests, self).setUp()
+        # mock patches names where used/imported, not where defined
+        # This form will patch a class when it is instantiated by the executed code:
+        # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
+        # This form will patch a module-level class instance:
+        self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
+        self.patcher.start()
+        self.td = build_pdu_metadata()
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    def test_get_load(self):
+        url = '/v1/pdu/sentry_pdu/outlet/AA/load/'
+
+        params = { }
+
+        response = self.client.get(url, params)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['resource_uri'], url)
+        self.assertEquals(len(data['data']), 60)
+
+class QueryUtilTests(TestCase):
+    def test_coerce_to_bins(self):
+        data_in = [
+            {
+                "ts": 1391216201000,
+                "val": 1100
+            },
+            {
+                "ts": 1391216262000,
+                "val": 1100
+            },
+            {
+                "ts": 1391216323000,
+                "val": 1100
+            }
+        ]
+
+        data_out = [[1391216160, 1100], [1391216220, 1100], [1391216280, 1100]]
+        data_check = QueryUtil.format_data_payload(data_in, coerce_to_bins=60000)
+        self.assertEquals(data_check, data_out)
+
+        data_out_nocoerce = [[1391216201, 1100], [1391216262, 1100], [1391216323, 1100]]
+        data_check = QueryUtil.format_data_payload(data_in)
+        self.assertEquals(data_check, data_out_nocoerce)

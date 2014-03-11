@@ -32,7 +32,7 @@ from esmond.util import max_datetime
 from pycassa.columnfamily import ColumnFamily
 
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
-     build_metadata_from_test_data, load_test_data
+     build_metadata_from_test_data, load_test_data, build_rtr_alu_metadata
 from esmond.api.api import check_connection, SNMP_NAMESPACE, ANON_LIMIT
 from esmond.util import atencode
 
@@ -124,6 +124,10 @@ class TestPersistQueue(object):
         except IndexError:
             raise PersistQueueEmpty()
 
+class MockConfig(object):
+    def __init__(self):
+        self.profile_persister = False
+
 class SimpleTest(TestCase):
     def test_basic_addition(self):
         """
@@ -145,7 +149,7 @@ class TestIfRefPersister(TestCase):
         self.assertTrue(len(ifrefs) == 0)
 
         q = TestPersistQueue(json.loads(ifref_test_data))
-        p = IfRefPollPersister([], "test", persistq=q)
+        p = IfRefPollPersister(MockConfig(), "test", persistq=q)
         p.run()
 
         ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
@@ -159,7 +163,7 @@ class TestIfRefPersister(TestCase):
         self.assertTrue(ifrefs[1].ifAlias == "test two")
 
         q = TestPersistQueue(json.loads(empty_ifref_test_data))
-        p = IfRefPollPersister([], "test", persistq=q)
+        p = IfRefPollPersister(MockConfig(), "test", persistq=q)
         p.run()
 
         ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
@@ -234,7 +238,7 @@ class TestALUSAPRefPersister(TestCase):
         self.assertTrue(len(ifrefs) == 0)
 
         q = TestPersistQueue(json.loads(alu_sap_test_data))
-        p = ALUSAPRefPersister([], "test", persistq=q)
+        p = ALUSAPRefPersister(MockConfig(), "test", persistq=q)
         p.run()
 
         ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8/1/1-100")
@@ -247,7 +251,7 @@ class TestALUSAPRefPersister(TestCase):
         self.assertTrue(ifrefs[1].sapDescription == "two")
 
         q = TestPersistQueue(json.loads(empty_alu_sap_test_data))
-        p = ALUSAPRefPersister([], "test", persistq=q)
+        p = ALUSAPRefPersister(MockConfig(), "test", persistq=q)
         p.run()
 
         ifrefs = ALUSAPRef.objects.filter(device__name="rtr_d", name="1-8/1/1-100")
@@ -256,8 +260,6 @@ class TestALUSAPRefPersister(TestCase):
 
         self.assertTrue(ifrefs[1].end_time < max_datetime)
 
-# XXX(jdugan): it would probably be better and easier in the long run to keep
-# these JSON blobs in files and define a small class to load them
 timeseries_test_data = """
 [
     {
@@ -431,7 +433,7 @@ class CassandraTestResults(object):
     # Values for aggregation tests
     agg_ts = 1343955600
     agg_freq = 3600
-    agg_avg = 17
+    agg_avg = 17.572649572649574 # now a float
     agg_min = 0
     agg_max = 7500
     agg_raw = 61680
@@ -621,8 +623,7 @@ class TestCassandraPollPersister(TestCase):
 
     def test_persister_heartbeat(self):
         """Test the hearbeat code"""
-        # XXX(jdugan): commented out until performance problem from r794 is fixed
-        return
+
         config = get_config(get_config_path())
 
         freq = 30
@@ -1201,7 +1202,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         
-        self.assertEquals(len(data), 16)
+        self.assertEquals(len(data), 17)
 
     def test_z_throttle(self):
         ifaces = [
@@ -1374,7 +1375,64 @@ class TestFitToBins(TestCase):
         r = fit_to_bins(30000, 1386369693000, 141368641534364, 1386369719000, 141368891281597)
         self.assertEqual({1386369690000: 249747233}, r)
         self.assertLess(time.time()-t0, 0.5)
-       
+
+class TestCassandraApiQueriesALU(ResourceTestCase):
+    fixtures = ['oidsets.json']
+
+    def setUp(self):
+        super(TestCassandraApiQueriesALU, self).setUp()
+
+        self.td = build_rtr_alu_metadata()
+
+        test_data = load_test_data("rtr_alu_ifhcin_long.json")
+        build_metadata_from_test_data(test_data)
+
+        self.ctr = CassandraTestResults()
+
+        # Check connection in case the test_api module was unable
+        # to connect but we've not seen an error yet.  This way
+        # we'll see an explicit error that makes sense.
+        check_connection()
+
+
+    def test_a_load_data(self):
+        config = get_config(get_config_path())
+        config.db_clear_on_testing = True
+        # return
+        test_data = load_test_data("rtr_alu_ifhcin_long.json")
+        q = TestPersistQueue(test_data)
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+        p.db.flush()
+        p.db.close()
+
+    def test_get_device_interface_data_detail(self):
+        params = {
+            'begin': self.ctr.begin,
+            'end': self.ctr.end
+        }
+
+        url = '/v1/device/rtr_alu/interface/1@2F1@2F1/in'
+
+        authn = self.create_apikey(self.td.user_admin.username,
+                                  self.td.user_admin_apikey.key)
+
+        response = self.api_client.get(url, data=params, authentication=authn)
+        self.assertEquals(response.status_code, 200)
+
+        data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
+
+        self.assertEquals(data['end_time'], params['end'])
+        self.assertEquals(data['begin_time'], params['begin'])
+        self.assertEquals(data['agg'], '30')
+        self.assertEquals(data['cf'], 'average')
+        self.assertEquals(data['resource_uri'], url)
+
+        self.assertEquals(data['data'][0][0], params['begin'])
+
+        self.assertEqual(len(data['data']), 21)
+
 
 if False:
     class TestTSDBPollPersister(TestCase):

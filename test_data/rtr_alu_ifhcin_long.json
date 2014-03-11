@@ -1,0 +1,2126 @@
+[
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955624.289914, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731145
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955654.802243, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731145
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955684.951352, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731289
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955715.451059, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731361
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955745.963703, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731433
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955776.490952, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731721
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955807.167513, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731793
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955837.701564, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731793
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955868.272994, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11731937
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955898.830807, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732009
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955929.256416, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732009
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955959.842696, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732009
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343955989.929692, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732153
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956020.361937, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732225
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956051.050047, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732225
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956083.850394, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732225
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956112.044914, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732369
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956145.852358, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732513
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956173.096218, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732513
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956207.046726, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732513
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956234.26631, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732513
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956268.082286, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732585
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956295.037901, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732657
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956328.770043, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732873
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956356.100313, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732945
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956388.784763, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732945
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956417.044449, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11732945
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956449.800577, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733017
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956478.428333, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733089
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956510.981404, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733089
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956539.461622, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733089
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956571.323472, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733089
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956600.106612, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733089
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956631.233346, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733233
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956661.216888, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733377
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956692.29534, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733377
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956722.468573, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733449
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956753.461152, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733665
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956783.486224, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733881
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956814.280931, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733881
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956845.427939, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733953
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956876.187405, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11733953
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956906.505181, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734025
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956936.664925, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734097
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956967.010382, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734169
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343956997.783139, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734385
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957028.093956, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734601
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957058.859712, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734745
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957092.523955, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734817
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957119.934067, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734817
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957150.404883, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734817
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957180.962403, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11734889
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957211.368146, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735625
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957241.601495, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735625
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957271.966558, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735697
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957302.707483, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735697
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957333.159577, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735697
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957363.805285, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735697
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957394.649583, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735985
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957424.833726, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735985
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957455.196722, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735985
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957485.767471, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11735985
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957516.327622, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736129
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957546.45826, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736201
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957576.962328, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736201
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957607.481278, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736201
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957637.980831, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736417
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957668.497238, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736489
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957699.019895, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736489
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957729.59928, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736489
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957760.048204, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736705
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957790.508801, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736705
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957821.016149, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736705
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957851.27572, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736921
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957881.781179, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11736993
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957912.494821, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737137
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957943.016959, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737137
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343957973.533575, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737281
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958003.990364, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737497
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958034.366678, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737569
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958064.971681, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737641
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958095.397828, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737713
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958125.804394, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737857
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958156.031708, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737857
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958186.49597, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737929
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958216.961778, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11737929
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958247.490737, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738001
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958278.178211, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738073
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958308.435278, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738145
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958339.182368, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738145
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958369.637604, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738145
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958400.147392, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738217
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958430.617618, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738289
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958460.539358, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738289
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958491.058248, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738289
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958521.710421, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738433
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958552.210023, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738505
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958582.771596, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738649
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958613.215009, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738649
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958643.703797, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738649
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958674.237179, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738649
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958704.737919, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738721
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958735.34672, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738721
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958765.355886, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738721
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958795.855165, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738721
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958826.38475, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738721
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958856.881086, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738865
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958887.532797, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11738865
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958918.160889, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739153
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958948.486247, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739153
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343958979.129373, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739225
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343959009.827688, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739369
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343959040.198308, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739369
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343959070.228148, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739369
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343959100.886487, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739441
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343959131.34716, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739513
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343959161.891926, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739657
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }, 
+    {
+        "oidset_name": "ALUFastPollHC", 
+        "device_name": "rtr_alu", 
+        "timestamp": 1343959194.904206, 
+        "oid_name": "ifHCInOctets", 
+        "data": [
+            [
+                [
+                    "ifHCInOctets", 
+                    "1/1/1"
+                ], 
+                11739801
+            ]
+        ], 
+        "metadata": {
+            "tsdb_flags": 1
+        }
+    }
+]

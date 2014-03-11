@@ -23,7 +23,7 @@ from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.http import HttpCreated
 from tastypie.throttle import CacheDBThrottle
 
-from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID
+from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import atdecode, atencode
@@ -97,56 +97,35 @@ def get_throttle_args(config):
 
 THROTTLE_ARGS = get_throttle_args(get_config(get_config_path()))
 
-def generate_endpoint_map():
-    payload = {}
-    for oidset in OIDSet.objects.all().order_by('name'):
-        for oid in oidset.oids.all().order_by('name'):
-            if oid.endpoint_alias:
-                if not payload.has_key(oidset.name):
-                    payload[oidset.name] = {}
-                payload[oidset.name][oid.endpoint_alias] = oid.name
-    return payload
+class EndpointMap(object):
+    """
+    The dynamic endpoint map generation has been moved into 
+    this class to avoid the map being generated on module import.
+    That could cause conflicts with the test suite loading fixtures 
+    and allows getting rid of the old "failover" static dict.
+    Burying execution of the map generation until after the tests 
+    have set up the in-memory db makes things happy.
+    """
+    def __init__(self):
+        self.mapping = None
 
-# XXX(jdugan): temporary hack to deal with ALUFastPollHC
-OIDSET_NAME_TRANSFORM = {
-    'ALUFastPollHC': 'FastPollHC',
-}
+    def generate_endpoint_map(self):
+        payload = {}
+        for oidset in OIDSet.objects.all().order_by('name'):
+            for oid in oidset.oids.all().order_by('name'):
+                if oid.endpoint_alias:
+                    if not payload.has_key(oidset.name):
+                        payload[oidset.name] = {}
+                    payload[oidset.name][oid.endpoint_alias] = oid.name
+        return payload
 
-if db:
-    OIDSET_INTERFACE_ENDPOINTS = generate_endpoint_map()
-    print 'generated endpoint map'
-else:
-    print 'using canned endpoint map'
-    # XXX(mmg): we should be dynamically generating this, per above, 
-    # but leaving original data structure in place if the db object 
-    # is not initialized until we determine how to represent this 
-    # data in the canned fixtures for unit testing.
-    OIDSET_INTERFACE_ENDPOINTS = {
-        'ALUErrors': {
-            'error/in': 'ifInErrors',
-            'error/out': 'ifOutErrors',
-            'discard/in': 'ifInDiscards',
-            'discard/out': 'ifOutDiscards',
-        },
-        'ALUFastPollHC': {
-            'in': 'ifHCInOctets',
-            'out': 'ifHCOutOctets',
-        },
-        'Errors': {
-            'error/in': 'ifInErrors',
-            'error/out': 'ifOutErrors',
-            'discard/in': 'ifInDiscards',
-            'discard/out': 'ifOutDiscards',
-        },
-        'FastPollHC': {
-            'in': 'ifHCInOctets',
-            'out': 'ifHCOutOctets',
-        },
-        'InfFastPollHC': {
-            'in': 'gigeClientCtpPmRealRxOctets',
-            'out': 'gigeClientCtpPmRealTxOctets',
-        },
-    }
+    @property
+    def endpoints(self):
+        if not self.mapping:
+            self.mapping = self.generate_endpoint_map()
+        return self.mapping
+
+OIDSET_INTERFACE_ENDPOINTS = EndpointMap()
 
 def check_connection():
     """Called by testing suite to produce consistent errors.  If no 
@@ -501,16 +480,6 @@ class DeviceResource(ModelResource):
 
         return orm_filters
 
-    # XXX(jdugan): next steps
-    # data formatting
-    # time based limits on view
-    # decide to how represent -infinity/infinity timestamps
-    # figure out what we need from newdb.py
-    # add docs, start with stuff in newdb.py
-    #
-    # add mapping between oidset and REST API.  Something similar to declarative
-    # models/resources ala Django models
-
     """
     The three following methods are invoked by the prepend_urls regex parsing. 
     They invoke and return an the appropriate method call on an instance of 
@@ -648,8 +617,6 @@ class InterfaceResource(ModelResource):
         kwargs['ifDescr'] = atdecode(kwargs['ifDescr'])
         kwargs = build_time_filters(bundle.request.GET, kwargs)
 
-        # XXX(jdugan): we might want to do something different here, such as
-        # return a reference to or a list of other valid IfRefs at this point.
         object_list = self.get_object_list(bundle.request).filter(**kwargs)
         if len(object_list) > 1:
             kwargs['pk'] = object_list.order_by("-end_time")[0].pk
@@ -705,8 +672,8 @@ class InterfaceResource(ModelResource):
         children = []
 
         for oidset in bundle.obj.device.oidsets.all():
-            if oidset.name in OIDSET_INTERFACE_ENDPOINTS:
-                children.extend(OIDSET_INTERFACE_ENDPOINTS[oidset.name].keys())
+            if oidset.name in OIDSET_INTERFACE_ENDPOINTS.endpoints:
+                children.extend(OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].keys())
 
         base_uri = self.get_resource_uri(bundle)
         return [ dict(leaf=True, uri='%s/%s' % (base_uri, x), name=x)
@@ -797,11 +764,11 @@ class InterfaceDataResource(Resource):
         oidsets = iface.device.oidsets.all()
         endpoint_map = {}
         for oidset in oidsets:
-            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
-                continue 
+            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
+                continue
 
             for endpoint, varname in \
-                    OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
+                    OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].iteritems():
                 endpoint_map[endpoint] = [
                     SNMP_NAMESPACE,
                     iface.device.name,
@@ -811,7 +778,7 @@ class InterfaceDataResource(Resource):
                 ]
 
         iface_dataset = kwargs['iface_dataset'].rstrip("/")
-        
+
         if iface_dataset not in endpoint_map:
             raise BadRequest("no such dataset: %s" % iface_dataset)
 
@@ -819,8 +786,7 @@ class InterfaceDataResource(Resource):
 
         obj = InterfaceDataObject()
         obj.datapath = endpoint_map[iface_dataset]
-        # XXX(jdugan): temporary hack to deal with ALUFastPollHC
-        obj.datapath[2] = OIDSET_NAME_TRANSFORM.get(obj.datapath[2], obj.datapath[2])
+        obj.datapath[2] = oidset.set_name  # set_name defaults to oidset.name, but can be overidden in poller_args
         obj.iface_dataset = iface_dataset
         obj.iface = iface
 
@@ -1037,10 +1003,10 @@ class InterfaceBulkRequestResource(Resource):
                 endpoint_map = {}
                 device = Device.objects.get(name=device_name)
                 for oidset in device.oidsets.all():
-                    if oidset.name not in OIDSET_INTERFACE_ENDPOINTS:
+                    if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
                         continue
                     for endpoint, varname in \
-                        OIDSET_INTERFACE_ENDPOINTS[oidset.name].iteritems():
+                        OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].iteritems():
                         endpoint_map[endpoint] = [
                             SNMP_NAMESPACE,
                             device_name,
@@ -1576,19 +1542,28 @@ class QueryUtil(object):
         return True
 
     @staticmethod
-    def format_data_payload(data, in_ms=False):
+    def format_data_payload(data, in_ms=False, coerce_to_bins=None):
         """Massage results from cassandra for json return payload.
 
         The in_ms flag is set to true if a given resource (like the 
         /timeseries/ namespace) is doing business in milliseconds rather 
-        than seconds."""
+        than seconds.
+
+        If coerce_to_bins is not None, truncate the timestamp to the
+        the bins spaced coerce_to_bins ms apart. This is useful for 
+        fitting raw data to bin boundaries."""
 
         divs = { False: 1000, True: 1 }
 
         results = []
 
         for row in data:
-            d = [row['ts']/divs[in_ms], row['val']]
+            ts = row['ts']
+
+            if coerce_to_bins:
+                ts -= ts % coerce_to_bins
+
+            d = [ts/divs[in_ms], row['val']]
             
             # Further options for different data sets.
             if row.has_key('is_valid'): # Base rates
@@ -1625,15 +1600,7 @@ class Fill(object):
     @staticmethod
     def expected_bin_count(start_bin, end_bin, freq):
         """Get expected number of bins in a given range of bins."""
-        # XXX(mmg):
-        # Should be ((end_bin - start_bin) / freq) + 1  ??
         return ((end_bin - start_bin) / freq) + 1
-        # s = start_bin + 0 # making a copy
-        # bincount = 0
-        # while s <= end_bin:
-        #     bincount += 1
-        #     s += freq
-        # return bincount
 
     @staticmethod
     def get_expected_first_bin(begin, freq):
@@ -1710,7 +1677,233 @@ class Fill(object):
         else:
             #print 'verify: filling'
             return list(Fill.generate_filled_series(start_bin,end_bin,freq,data))
+
+class PDUResource(DeviceResource):
+    class Meta:
+        queryset = Device.objects.filter(pk__in=OutletRef.objects.values_list("device__pk")).distinct()
+        resource_name = 'pdu'
+        serializer = DeviceSerializer()
+        excludes = ['community',]
+        allowed_methods = ['get']
+        detail_uri_name = 'name'
+        filtering = {
+            'name': ALL,
+        }
+
+    def dehydrate_children(self, bundle):
+        children = ['outlet', ]
+
+        base_uri = self.get_resource_uri(bundle)
+        return [ dict(leaf=False, uri='%s%s' % (base_uri, x), name=x)
+                for x in children ]
+
+
+    def prepend_urls(self):
+        """
+        URL regex parsing for this REST schema.  The call to dispatch_detail
+        returns Device information the ORM, the other calls are dispatched to
+        the methods below.
+
+        This is connected to the django url schema by the call:
+
+        v1_api = Api(api_name='v1')
+        v1_api.register(DeviceResource())
+
+        at the bottom of the module.
+        """
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/$" \
+                % self._meta.resource_name, self.wrap_view('dispatch_detail'),
+                  name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/outlet/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_outlet_list'),
+                name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/outlet/(?P<outlet_id>[\w\d_.\-@]+)/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_outlet_detail'),
+                name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/outlet/(?P<outlet_id>[\w\d_.\-@]+)/(?P<outlet_dataset>[\w\d_.-/]+)/?$" % (self._meta.resource_name,),
+                self.wrap_view('dispatch_outlet_data'),
+                name="api_get_children"),
+                ]
+
+    """
+    The three following methods are invoked by the prepend_urls regex parsing. 
+    They invoke and return an the appropriate method call on an instance of 
+    one of the Interface* resorces below.
+    """
+
+    def dispatch_outlet_list(self, request, **kwargs):
+        return OutletResource().dispatch_list(request,
+                device__name=kwargs['name'])
+
+    def dispatch_outlet_detail(self, request, **kwargs):
+        return OutletResource().dispatch_detail(request,
+                device__name=kwargs['name'], outletID=kwargs['outlet_id'] )
+
+    def dispatch_outlet_data(self, request, **kwargs):
+        return OutletDataResource().dispatch_detail(request, **kwargs)
+
+class OutletResource(ModelResource):
+    """An outlet on a PDU.
+
+    Note: this resource is always nested under a PDUResource and is not bound
+    into the normal namespace for the API."""
+
+    pdu = fields.ToOneField(PDUResource, 'device')
+    children = fields.ListField()
+    leaf = fields.BooleanField()
+    device_uri = fields.CharField()
+
+    class Meta:
+        resource_name = 'outlet'
+        queryset = OutletRef.objects.all()
+        allowed_methods = ['get']
+        detail_uri_name = 'outletID'
+        filtering = {
+            'pdu': ALL_WITH_RELATIONS,
+            'outletID': ALL,
+            'outletName': ALL,
+        }
+        authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
+
+    def obj_get(self, bundle, **kwargs):
+        kwargs['outletID'] = atdecode(kwargs['outletID'])
+        kwargs = build_time_filters(bundle.request.GET, kwargs)
         
+        object_list = self.get_object_list(bundle.request).filter(**kwargs)
+        if len(object_list) > 1:
+            kwargs['pk'] = object_list.order_by("-end_time")[0].pk
+
+        return super(OutletResource, self).obj_get(bundle, **kwargs)
+
+    def build_filters(self, filters=None):
+        if filters is None:
+            filters = {}
+        orm_filters = super(OutletResource, self).build_filters(filters)
+        orm_filters = build_time_filters(filters, orm_filters)
+
+        return orm_filters
+
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        Modify resource object default format before this is returned 
+        and serialized as json.
+        """
+        data['children'] = data['objects']
+        del data['objects']
+        return data
+
+    def get_resource_uri(self, bundle_or_obj=None):
+        """Generates the resource uri element that is returned in json payload."""
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+        if obj:
+            uri = "%s%s%s" % (
+                PDUResource().get_resource_uri(obj.device),
+                'outlet/',
+                obj.outletID)
+        else:
+            uri = ''
+
+        return uri
+
+    def dehydrate_children(self, bundle):
+        children = ['load', ]
+
+        base_uri = self.get_resource_uri(bundle)
+        return [ dict(leaf=False, uri='%s%s' % (base_uri, x), name=x)
+                for x in children ]
+
+
+class OutletDataObject(DataObject):
+    """Encapsulation for outlet data."""
+    pass
+
+class OutletDataResource(Resource):
+    """Data for an outlet on a PDU.
+
+    Note: this resource is always nested under a PDURessource and is not bound
+    into the normal namespace for the API."""
+
+    begin_time = fields.IntegerField(attribute="begin_time")
+    end_time = fields.IntegerField(attribute="end_time")
+    data = fields.ListField(attribute='data')
+
+    class Meta:
+        resource_name = 'outlet_data'
+        allowed_methods = ['get']
+        object_class = OutletDataObject
+        authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
+
+    def get_resource_uri(self, bundle_or_obj):
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+
+        uri = "%s/%s/" % (
+            OutletResource().get_resource_uri(obj.outlet),
+            obj.outlet_dataset)
+
+        return uri
+
+    def obj_get(self, bundle, **kwargs):
+        outlet_id = atdecode(kwargs['outlet_id'])
+        outlet_dataset = kwargs['outlet_dataset'].rstrip("/")
+
+        try:
+            outlet = OutletResource().obj_get(bundle,
+                device__name=kwargs['name'],
+                outletID=outlet_id)
+        except OutletRef.DoesNotExist:
+            raise BadRequest("no such device/oulet: dev: {0} outlet: {1}".format(kwargs['name'], outlet_id))
+
+        if outlet_dataset != 'load':
+            raise BadRequest("no such dataset: {0}".format(outlet_dataset))
+
+        oidset_name = 'SentryPoll'
+        datapath = [SNMP_NAMESPACE, outlet.device.name, oidset_name, 'outletLoadValue', outlet_id]
+
+        obj = OutletDataObject()
+        obj.outlet = outlet
+        obj.datapath = datapath
+        obj.outlet_dataset = outlet_dataset
+
+        oidset = outlet.device.oidsets.get(name=oidset_name)
+
+        filters = getattr(bundle.request, 'GET', {})
+
+        # Make sure incoming begin/end timestamps are ints
+        if filters.has_key('begin'):
+            obj.begin_time = int(float(filters['begin']))
+        else:
+            obj.begin_time = int(time.time() - 3600)
+
+        if filters.has_key('end'):
+            obj.end_time = int(float(filters['end']))
+        else:
+            obj.end_time = int(time.time())
+
+        return self._execute_query(oidset, obj)
+
+    def _execute_query(self, oidset, obj):
+        data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
+                                 obj.begin_time*1000, obj.end_time*1000)
+
+        obj.data = QueryUtil.format_data_payload(data, coerce_to_bins=oidset.frequency*1000)
+        obj.data = Fill.verify_fill(obj.begin_time, obj.end_time, oidset.frequency,
+                                    obj.data)
+
+        return obj
+
 """Connect the 'root' resources to the URL schema."""
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
@@ -1719,5 +1912,7 @@ v1_api.register(OidsetResource())
 v1_api.register(InterfaceResource())
 v1_api.register(OidsetEndpointResource())
 v1_api.register(BulkDispatch())
+v1_api.register(PDUResource())
+v1_api.register(OutletResource())
 
 __doc__ = '\n\n'.join([snmp_ns_doc, bulk_ns_doc, bulk_interface_ns_doc, ts_ns_doc, bulk_namespace_ns_doc])

@@ -245,6 +245,29 @@ def build_rtr_d_metadata():
 
     return td
 
+
+def build_rtr_alu_metadata():
+    """Creates rtr_d, to be used for larger dataset testing
+
+    The following devices are created:
+
+    rtr_alu -- FastPollHC, currently active router with IfRefs
+
+    """
+
+    td = TestData()
+
+    td.rtr_alu, _ = Device.objects.get_or_create(
+            name="rtr_alu",
+            community= "community_string",
+            active=True,
+            begin_time=make_aware(datetime.datetime(2011,11,14), utc),
+            end_time=max_datetime)
+
+    users_testdata(td)
+
+    return td
+
 def build_metadata_from_test_data(data):
     """Inserts OIDSetMap entries and IfRef data to allow API access to test data.
 
@@ -281,3 +304,26 @@ def build_metadata_from_test_data(data):
                 end_time=max_datetime)
         ifr.save()
 
+def build_pdu_metadata():
+    td = TestData()
+
+    td.pdu_a, _ = Device.objects.get_or_create(
+            name="sentry_pdu",
+            community="public",
+            begin_time=now())
+
+    DeviceOIDSetMap(device=td.pdu_a,
+            oid_set=OIDSet.objects.get(name="SentryOutletRefPoll")).save()
+    DeviceOIDSetMap(device=td.pdu_a,
+            oid_set=OIDSet.objects.get(name="SentryPoll")).save()
+
+    OutletRef.objects.get_or_create(
+        device=td.pdu_a,
+        begin_time=td.pdu_a.begin_time,
+        outletID="AA",
+        outletName="rtr_a:PEM1:50A",
+        outletStatus=1,
+        outletControlState=1
+    )
+
+    return td

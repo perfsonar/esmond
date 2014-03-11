@@ -64,7 +64,6 @@ from pycassa.system_manager import *
 
 from thrift.transport.TTransport import TTransportException
 
-# XXX(jdugan): revisit this number, (was adjusted for ms)
 SEEK_BACK_THRESHOLD = 2592000000 # 30 days in ms
 KEY_DELIMITER = ":"
 AGG_TYPES = ['average', 'min', 'max', 'raw']
@@ -328,7 +327,7 @@ class CASSANDRA_DB(object):
             if ret:
                 # A previous value was found in the raw data, so we can
                 # seed/return that.
-                key = ret.keys()[0]
+                key = ret.keys()[-1]
                 ts = ret[key].keys()[0]
                 val = json.loads(ret[key][ts])
                 meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
@@ -527,7 +526,6 @@ class CASSANDRA_DB(object):
             cf = 'average'
         
         # Divisors to return either the average or a delta.
-        # XXX(mmg): double check this is right?  It probably isn't - revisit.
         if freq is None: freq = 1000
         value_divisors = { 'average': int(freq/1000), 'delta': 1 }
         
@@ -641,9 +639,6 @@ class CASSANDRA_DB(object):
 
         for k,v in ret.items():
             for kk,vv in v.items():
-                # XXX(jdugan): perhaps we don't want to deserialize this?
-                #              should the advertised behavior be that we return
-                #              a JSON string?
                 results.append({'ts': kk, 'val': json.loads(vv)})
         
         return results

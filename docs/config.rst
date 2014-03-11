@@ -38,35 +38,47 @@ variable allows overriding the location of the config file.  The value of
 Here is an example ``esmond.conf`` file::
 
     [main]
-    sql_db_engine = django.db.backends.postgresql_psycopg2
-    sql_db_name = esmond
-    sql_db_user = snmp
-    tsdb_root = /ssd/esmond/data
-    tsdb_chunk_prefixes = /ssd/esmond/data,/data/esmond/data
-    mib_dirs = %(ESMOND_ROOT)s/etc/mibs
-    mibs = JUNIPER-FIREWALL-MIB,JUNIPER-COS-MIB,INFINERA-PM-GIGECLIENTCTP-MIB
-    syslog_facility = local7
-    syslog_priority = debug
-    traceback_dir = /data/esmond/crashlog
-    pid_dir = %(ESMOND_ROOT)s/var/
-    espersistd_uri = 127.0.0.1:11211
-    espoll_persist_uri = MemcachedPersistHandler:127.0.0.1:11211
-    htpasswd_file = /data/esmond/etc/htpasswd
+    sql_db_engine = django.db.backends.sqlite3
+    sql_db_name = %(ESMOND_ROOT)s/esmond.db
+    tsdb_root = %(ESMOND_ROOT)s/tsdb-data
+    tsdb_chunk_prefixes = %(ESMOND_ROOT)s/tsdb-data
+    api_anon_limit = 30
+    api_throttle_at = 
+    api_throttle_timeframe =
+    api_throttle_expiration =
     cassandra_servers = localhost:9160
     cassandra_user =
     cassandra_pass =
-    api_anon_limit = 35
+    db_profile_on_testing = no
+    profile_persister = no
+    mib_dirs = %(ESMOND_ROOT)s/mibs
+    mibs = 
+    syslog_facility = local7
+    syslog_priority = debug
+    traceback_dir = %(ESMOND_ROOT)s/crashlog
+    pid_dir = %(ESMOND_ROOT)s/var/
+    espersistd_uri = 127.0.0.1:11211
+    espoll_persist_uri = MemcachedPersistHandler:127.0.0.1:11211
+    htpasswd_file = %(ESMOND_ROOT)s/htpasswd
     [persist_map]
-    FastPollHC = tsdb
-    FastPoll = tsdb
-    InfFastPollHC = tsdb
-    JnxFirewall = tsdb
-    JnxCOS = tsdb
-    Errors = tsdb
+    FastPollHC = cassandra
+    FastPoll = cassandra
+    JnxFirewall = cassandra
+    JnxCOS = cassandra
+    Errors = cassandra
+    ALUFastPollHC = cassandra
+    ALUErrors = cassandra
+    ALUIfRefPoll = aluifref
+    SentryPoll = cassandra
+    ALUSAPRefPoll = alusapref
+    ALUSAPPoll = cassandra
     IfRefPoll = ifref
     [persist_queues]
-    tsdb = TSDBPollPersister:8
+    cassandra = CassandraPollPersister:9
     ifref = IfRefPollPersister:1
+    infifref = InfIfRefPollPersister:1
+    aluifref = ALUIfRefPollPersister:1
+    alusapref = ALUSAPRefPersister:1
 
     
 sql_db_*
@@ -91,12 +103,6 @@ espoll_persist_uri
 This tells `espolld` where to find the work queue for data persistence.  It is
 of the form handler:ip_addr:port.  Currently the only handler implemented is
 the MemcachedPersistHandler.  
-
-esmond_root
-------------
-
-The root of the esmond installation.  This is used to find other important
-resource.
 
 htpasswd_file
 -------------
