@@ -433,7 +433,7 @@ class CassandraTestResults(object):
     # Values for aggregation tests
     agg_ts = 1343955600
     agg_freq = 3600
-    agg_avg = 17
+    agg_avg = 17.572649572649574 # now a float
     agg_min = 0
     agg_max = 7500
     agg_raw = 61680
