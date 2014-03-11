@@ -37,7 +37,7 @@ class TestClientLibs(LiveServerTestCase):
     def test_a_load_data(self):
         config = get_config(get_config_path())
         config.db_clear_on_testing = True
-        return
+        
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
