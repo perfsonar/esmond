@@ -1,4 +1,5 @@
 from calendar import timegm
+from esmond.api.api import AnonymousGetElseApiAuthentication, EsmondAuthorization
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
 from esmond.api.perfsonar.types import *
 from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData, AggregationBin
@@ -11,7 +12,7 @@ from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
 from string import join
 from tastypie import fields
 from tastypie.api import Api
-from tastypie.authorization import Authorization
+from tastypie.authorization import Authorization, DjangoAuthorization
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest, NotFound
 from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS
@@ -97,7 +98,8 @@ class PSEventTypesResource(ModelResource):
         queryset=PSEventTypes.objects.all()
         resource_name = 'event-type'
         allowed_methods = ['get', 'post']
-        authorization = Authorization() #todo replace this
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = DjangoAuthorization()
         excludes = ['id']
         filtering = {
             "event_type": ['exact'],  
@@ -234,6 +236,8 @@ class PSEventTypeSummaryResource(PSEventTypesResource):
         resource_name = 'summary'
         allowed_methods = ['get']
         excludes = ['id']
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = DjangoAuthorization()
         filtering = {
             "event_type": ['exact'],  
             "summary_type": ['exact'],
@@ -256,7 +260,8 @@ class PSPointToPointSubjectResource(ModelResource):
         queryset=PSPointToPointSubject.objects.all()
         resource_name = 'p2p_subject'
         allowed_methods = ['get', 'post']
-        authorization = Authorization() #todo replace this
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = DjangoAuthorization()
         excludes = ['id']
         filtering = {
             "source": ['exact', 'in'],  
@@ -282,7 +287,8 @@ class PSMetadataParametersResource(ModelResource):
         queryset=PSMetadataParameters.objects.all()
         resource_name = 'metadata-parameters'
         allowed_methods = ['get', 'post']
-        authorization = Authorization() #todo replace this
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = DjangoAuthorization()
         excludes = ['id']
         
 class PSArchiveResource(ModelResource):
@@ -297,7 +303,8 @@ class PSArchiveResource(ModelResource):
         detail_uri_name = 'metadata_key'
         allowed_methods = ['get', 'post']
         excludes = ['id']
-        authorization = Authorization() #todo replace this
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = DjangoAuthorization()
         filtering = {
             "metadata_key": ['exact'],
             "subject_type": ['exact'],
@@ -670,6 +677,8 @@ class PSTimeSeriesResource(Resource):
     class Meta:
         resource_name = 'pstimeseries'
         allowed_methods = ['get', 'post']
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = EsmondAuthorization('timeseries')
         limit = 0
         max_limit = 0
     
@@ -781,9 +790,17 @@ class PSTimeSeriesResource(Resource):
     def get_resource_uri(self, bundle_or_obj=None):
         return None
     
+    def save(self, objs_to_authz, bundle):
+        # Check if they're authorized.
+        self.authorized_create_detail(objs_to_authz, bundle)
+        #save to db
+        db.flush()
+    
     def obj_create(self, bundle, **kwargs):
         bundle.obj = self._obj_create(bundle.data, **kwargs)
-        db.flush()
+        #only one object to authorize
+        objs_to_authz = [ bundle.obj ] 
+        self.save(objs_to_authz, bundle)
         return bundle
         
     def _obj_create(self, request_data, **kwargs):
@@ -884,6 +901,8 @@ class PSBulkTimeSeriesResource(PSTimeSeriesResource):
     class Meta:
         resource_name = 'bulkpstimeseries'
         allowed_methods = ['post']
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = EsmondAuthorization('timeseries')
         limit = 0
         max_limit = 0
     
@@ -896,6 +915,7 @@ class PSBulkTimeSeriesResource(PSTimeSeriesResource):
             raise BadRequest("The 'data' element must be an array")
         i = 0
         
+        objs_to_authz = []
         for ts_item in bundle.data["data"]:
             i += 1
             if DATA_KEY_TIME not in ts_item:
@@ -915,9 +935,11 @@ class PSBulkTimeSeriesResource(PSTimeSeriesResource):
                 tmp_obj = { DATA_KEY_TIME: ts, DATA_KEY_VALUE: val_item[DATA_KEY_VALUE] }
                 #assign last item to bundle.obj to avoid null error
                 bundle.obj = self._obj_create(tmp_obj, metadata_key=kwargs['metadata_key'], event_type=val_item['event-type'], summary_type='base')
+                objs_to_authz.append(bundle.obj)
                 
         #everything succeeded so save to database
-        db.flush()
+        self.save(objs_to_authz, bundle)
+        
         return bundle    
         
 perfsonar_api = Api(api_name='perfsonar')
