@@ -8,6 +8,7 @@ import os
 import sys
 
 from esmond.api.client.perfsonar.query import ApiConnect, ApiFilters
+from esmond.api.client.perfsonar.post import MetadataPost
 from esmond.api.tests.perfsonar.test_data import TestResults
 
 def query():
@@ -73,9 +74,32 @@ def query():
 
 def main():
 
-    query()
+    # query()
 
-    #query()
+    args = {
+        "subject_type": "point-to-point",
+        "source": "10.10.0.1",
+        "destination": "10.10.0.2",
+        "tool_name": "bwctl/iperf3",
+        "measurement_agent": "10.10.0.2",
+        "input_source": "host1",
+        "input_destination": "host2",
+        # "time_duration": 30,
+        #"ip_transport_protocol": "tcp"
+    }
+
+    mp = MetadataPost('http://localhost:8000', username='mgoode', 
+        api_key='eb5689d23a118c5a7df977c5ad07438ef3d0c1a0', **args)
+    mp.add_event_type('throughput')
+    mp.add_event_type('time-error-estimates')
+    mp.add_event_type('histogram-ttl')
+    mp.add_summary_type('packet-count-sent', 'aggregation', [3600, 86400])
+    # print mp.json_payload(True)
+    mp.post_metadata()
+
+
+
+    
     pass
 
 if __name__ == '__main__':
