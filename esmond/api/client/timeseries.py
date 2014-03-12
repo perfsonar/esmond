@@ -3,9 +3,9 @@ import requests
 import warnings
 
 from esmond.api.client.snmp import DataPayload
-from esmond.api.client.util import add_apikey_header, atencode
+from esmond.api.client.util import add_apikey_header, atencode, AlertMixin
 
-class TimeseriesBase(object):
+class TimeseriesBase(AlertMixin, object):
     """Base class for the GET and POST timeseries interaction objects."""
     _schema_root = 'v1/timeseries'
     def __init__(self, api_url='http://localhost/', path=[], freq=None,
@@ -47,9 +47,7 @@ class TimeseriesBase(object):
             self._schema_root, self._p_type,
             '/'.join(self.path), self.freq)
 
-    def _issue_warning(self, message):
-        """Use to issue a subclass-specific warning."""
-        warnings.warn(message, self._wrn, stacklevel=2)
+
 
 """
 Classes to handle posting data to esmond rest interface.
@@ -93,7 +91,7 @@ class PostException(Exception):
 class PostData(TimeseriesBase):
     """Base class for API write objects - writes data to the POST 
     facility in the /timeseries/ REST interface namespace."""
-    _wrn = PostWarning
+    wrn = PostWarning
 
     def __init__(self, api_url='http://localhost/', path=[], freq=None,
         username='', api_key=''):
@@ -125,7 +123,7 @@ class PostData(TimeseriesBase):
             raise PostException('Arg payload to set_payload must be a list instance.')
 
         if len(self.payload):
-            self._issue_warning('Internal payload was not empty, so this is a warning that you are overwriting an existing payload.')
+            self.warn('Internal payload was not empty, so this is a warning that you are overwriting an existing payload.')
 
         self.payload = payload
 
@@ -160,14 +158,14 @@ class PostData(TimeseriesBase):
         and so the same instance can be used to send multiple times."""
 
         if not self.payload:
-            self._issue_warning('Payload empty, no data sent.')
+            self.warn('Payload empty, no data sent.')
             return
 
         r = requests.post(self.url, data=json.dumps(self.payload), headers=self.headers)
 
         if not r.status_code == 201:
             # Change this to an exception?
-            self._issue_warning('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
 
         # reset payload
         self.payload = []
@@ -177,12 +175,12 @@ class PostData(TimeseriesBase):
 class PostRawData(PostData):
     """Class to post raw data to rest api."""
     _p_type = 'RawData'
-    _wrn = PostRawDataWarning
+    wrn = PostRawDataWarning
 
 class PostBaseRate(PostData):
     """Class to post base rate deltas to rest api."""
     _p_type = 'BaseRate'
-    _wrn = PostBaseRateWarning
+    wrn = PostBaseRateWarning
 
 """
 Classes to execute get requests to timeseries namespace.
@@ -239,7 +237,7 @@ class GetException(Exception):
 class GetData(TimeseriesBase):
     """Base class for API write objects - writes data to the Get 
     facility in the /timeseries/ REST interface namespace."""
-    _wrn = GetWarning
+    wrn = GetWarning
     def __init__(self, api_url='http://localhost/', path=[], freq=None, 
         username='', api_key='', params={}):
         """Constructor - the path list arg is an ordered list of elements
@@ -266,18 +264,18 @@ class GetData(TimeseriesBase):
             data = json.loads(r.content)
             return TimeSeriesDataPayload(data)
         else:
-            self._issue_warning('GET error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            self.warn('GET error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
             return TimeSeriesDataPayload()
 
 class GetRawData(GetData):
     """Class to Get raw data to rest api."""
     _p_type = 'RawData'
-    _wrn = GetRawDataWarning
+    wrn = GetRawDataWarning
 
 class GetBaseRate(GetData):
     """Class to Get base rate deltas to rest api."""
     _p_type = 'BaseRate'
-    _wrn = GetBaseRateWarning
+    wrn = GetBaseRateWarning
 
 """
 Classes to make bulk data requests.
@@ -293,8 +291,8 @@ class BulkException(Exception):
     def __str__(self):
         return repr(self.value)
 
-class GetBulkData(object):
-    _wrn = GetBulkWarning
+class GetBulkData(AlertMixin, object):
+    wrn = GetBulkWarning
     _schema_root = 'v1/bulk/timeseries'
     def __init__(self, api_url='http://localhost', username='', api_key=''):
         super(GetBulkData, self).__init__()
@@ -337,7 +335,7 @@ class GetBulkData(object):
             data = json.loads(r.content)
             return TimeSeriesBulkDataPayload(data)
         else:
-            self._issue_warning('GET error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            self.warn('GET error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
             return TimeSeriesBulkDataPayload()
 
     def _validate_paths(self, paths):
@@ -363,20 +361,18 @@ class GetBulkData(object):
                 except ValueError:
                     raise BulkException('The args begin and end must be valid timestamp/numeric values - got: {0}'.format({k:v}))
 
-    def _issue_warning(self, message):
-        """Use to issue a subclass-specific warning."""
-        warnings.warn(message, self._wrn, stacklevel=2)
+
 
 
 class GetBulkRawData(GetBulkData):
     """Class to Get raw data to rest api."""
     _p_type = 'RawData'
-    _wrn = GetRawDataWarning
+    wrn = GetRawDataWarning
 
 class GetBulkBaseRate(GetBulkData):
     """Class to Get base rate deltas to rest api."""
     _p_type = 'BaseRate'
-    _wrn = GetBaseRateWarning
+    wrn = GetBaseRateWarning
 
 """Encapsulation objects for the returned data.  Subclasses the sibling
 classes in the api.client.snmp module and overrides to get rid of the 

@@ -1,6 +1,7 @@
 import calendar
 import os.path
 import sys
+import warnings
 
 import ConfigParser
 
@@ -9,6 +10,17 @@ import ConfigParser
 def add_apikey_header(user, key, header_dict):
     """Format an auth header for rest api key."""
     header_dict['Authorization'] = 'ApiKey {0}:{1}'.format(user, key)
+
+class AlertMixin(object):
+    def http_alert(self, r):
+        """
+        Issue a subclass specific alert in the case that a call to the REST
+        api does not return a 200 status code.
+        """
+        warnings.warn('Request for {0} got status: {1} - response: {2}'.format(r.url,r.status_code,r.content), self.wrn, stacklevel=2)
+
+    def warn(self, m):
+        warnings.warn(m, self.wrn, stacklevel=2)
 
 # -- defines and config handling for summary scripts/code
 

@@ -6,7 +6,7 @@ import requests
 import time
 import warnings
 
-from esmond.api.client.util import add_apikey_header
+from esmond.api.client.util import add_apikey_header, AlertMixin
 
 """
 Library to fetch data from 'simplified' API /v1/snmp/ namespace.
@@ -73,7 +73,7 @@ class EndpointNotFound(ApiNotFound): pass
 
 # - Encapsulation classes for nodes (device, interface, etc).
 
-class NodeInfo(object):
+class NodeInfo(AlertMixin, object):
     wrn = NodeInfoWarning
     """Base class for encapsulation objects"""
     def __init__(self, data, api_url, filters):
@@ -156,16 +156,6 @@ class NodeInfo(object):
     @property
     def dump(self):
         return self.pp.pformat(self._data)
-
-    def http_alert(self, r):
-        """
-        Issue a subclass specific alert in the case that a call to the REST
-        api does not return a 200 status code.
-        """
-        warnings.warn('Request for {0} got status: {1} - response: {2}'.format(r.url,r.status_code,r.content), self.wrn, stacklevel=2)
-
-    def warn(self, m):
-        warnings.warn(m, self.wrn, stacklevel=2)
 
     def inspect_request(self, r):
         if self.filters.verbose:
@@ -556,7 +546,7 @@ class BulkDataRow(object):
 
 # - Query entry point and filtering.
 
-class ApiFilters(object):
+class ApiFilters(AlertMixin, object):
     wrn = ApiFiltersWarning
     """Class to hold filtering/query options.  This will be used by 
     ApiConnect and also passed to all the encapsulation objects."""
@@ -666,10 +656,8 @@ class ApiFilters(object):
 
         return dict(self.default_filters, **filters)
 
-    def warn(self, m):
-        warnings.warn(m, self.wrn, stacklevel=2)
 
-class ApiConnect(object):
+class ApiConnect(AlertMixin, object):
     wrn = ApiConnectWarning
     """Core class to pull data from the rest api."""
     def __init__(self, api_url, filters=ApiFilters(), username='', api_key=''):
@@ -817,12 +805,9 @@ class ApiConnect(object):
     def inspect_payload(self, p):
         if self.filters.verbose > 1:
             print '[POST payload: {0}]'.format(json.dumps(p, indent=4))
-        
-    def http_alert(self, r):
-        warnings.warn('Request for {0} got status: {1} - response: {2}'.format(r.url,r.status_code, r.content), self.wrn, stacklevel=2)
 
-    def warn(self, m):
-        warnings.warn(m, self.wrn, stacklevel=2)
+
+
 
 
 
