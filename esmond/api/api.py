@@ -297,7 +297,7 @@ class EsmondAuthorization(Authorization):
     ``tastypie.authorization.DjangoAuthorization`` class.
     """
 
-    perm_prefix = "esmond_api"
+    perm_prefix = "auth.esmond_api"
 
     def __init__(self, resource_name):
         """There is not way to get the resource name from what is passed into
