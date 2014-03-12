@@ -30,7 +30,10 @@ class PostBase(AlertMixin, object):
         self.username = username
         self.api_key = api_key
         self.headers = { 'content-type': 'application/json' }
-        add_apikey_header(self.username, self.api_key, self.headers)
+        if self.username and self.api_key:
+            add_apikey_header(self.username, self.api_key, self.headers)
+        else:
+            self.warn('username and api_key not set')
         # sublass override
         self._payload = {}
 

@@ -6,6 +6,7 @@ Quick tester script to exercise the pS REST client lib
 
 import os
 import sys
+from optparse import OptionParser
 
 from esmond.api.client.perfsonar.query import ApiConnect, ApiFilters
 from esmond.api.client.perfsonar.post import MetadataPost
@@ -73,6 +74,19 @@ def query():
         print '====='
 
 def main():
+    usage = '%prog [ -u username | -a api_key ]'
+    parser = OptionParser(usage=usage)
+    parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
+            type='string', dest='api_url', 
+            help='URL for the REST API (default=%default) - required.',
+            default='http://localhost:8000')
+    parser.add_option('-u', '--user', metavar='USER',
+            type='string', dest='user', default='',
+            help='POST interface username.')
+    parser.add_option('-k', '--key', metavar='API_KEY',
+            type='string', dest='key', default='',
+            help='API key for post operation.')
+    options, args = parser.parse_args()
 
     # query()
 
@@ -88,8 +102,8 @@ def main():
         #"ip_transport_protocol": "tcp"
     }
 
-    mp = MetadataPost('http://localhost:8000', username='mgoode', 
-        api_key='eb5689d23a118c5a7df977c5ad07438ef3d0c1a0', **args)
+    mp = MetadataPost(options.api_url, username=options.user, 
+        api_key=options.key, **args)
     mp.add_event_type('throughput')
     mp.add_event_type('time-error-estimates')
     mp.add_event_type('histogram-ttl')
