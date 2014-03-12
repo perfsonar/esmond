@@ -7,18 +7,17 @@ Quick tester script to exercise the pS REST client lib
 import os
 import sys
 
-from esmond.api.client.perfsonar import ApiConnect, ApiFilters
+from esmond.api.client.perfsonar.query import ApiConnect, ApiFilters
 from esmond.api.tests.perfsonar.test_data import TestResults
 
-def main():
-
+def query():
     tr = TestResults()
 
     filters = ApiFilters()
 
     filters.verbose = True
-    # filters.time_start = tr.q_start / 1000
-    # filters.time_end = tr.q_end / 1000
+    filters.time_start = tr.q_start / 1000
+    filters.time_end = tr.q_end / 1000
     # filters.input_source = 'lbl-pt1.es.net'
     # filters.tool_name = 'bwctl/iperf3'
     # filters.input_destination = 'chic-owamp.es.net'
@@ -70,8 +69,13 @@ def main():
                 for dp in dpay.data:
                     # print dp, dp.val
                     pass
-
         print '====='
+
+def main():
+
+    query()
+
+    #query()
     pass
 
 if __name__ == '__main__':
