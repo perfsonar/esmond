@@ -790,17 +790,13 @@ class PSTimeSeriesResource(Resource):
     def get_resource_uri(self, bundle_or_obj=None):
         return None
     
-    def save(self, objs_to_authz, bundle):
-        # Check if they're authorized.
-        self.authorized_create_detail(objs_to_authz, bundle)
+    def obj_create(self, bundle, **kwargs):
+        #authorize
+        self.authorized_create_detail([bundle.obj], bundle)
+        #create object
+        bundle.obj = self._obj_create(bundle.data, **kwargs)
         #save to db
         db.flush()
-    
-    def obj_create(self, bundle, **kwargs):
-        bundle.obj = self._obj_create(bundle.data, **kwargs)
-        #only one object to authorize
-        objs_to_authz = [ bundle.obj ] 
-        self.save(objs_to_authz, bundle)
         return bundle
         
     def _obj_create(self, request_data, **kwargs):
@@ -913,9 +909,10 @@ class PSBulkTimeSeriesResource(PSTimeSeriesResource):
             raise BadRequest("Request must contain 'data' element")
         if not isinstance(bundle.data["data"], list):
             raise BadRequest("The 'data' element must be an array")
-        i = 0
+        #authorize
+        self.authorized_create_detail(bundle.data["data"], bundle)
         
-        objs_to_authz = []
+        i = 0
         for ts_item in bundle.data["data"]:
             i += 1
             if DATA_KEY_TIME not in ts_item:
@@ -935,10 +932,9 @@ class PSBulkTimeSeriesResource(PSTimeSeriesResource):
                 tmp_obj = { DATA_KEY_TIME: ts, DATA_KEY_VALUE: val_item[DATA_KEY_VALUE] }
                 #assign last item to bundle.obj to avoid null error
                 bundle.obj = self._obj_create(tmp_obj, metadata_key=kwargs['metadata_key'], event_type=val_item['event-type'], summary_type='base')
-                objs_to_authz.append(bundle.obj)
                 
         #everything succeeded so save to database
-        self.save(objs_to_authz, bundle)
+        db.flush()
         
         return bundle    
         
