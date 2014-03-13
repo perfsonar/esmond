@@ -108,8 +108,12 @@ def main():
     mp.add_event_type('time-error-estimates')
     mp.add_event_type('histogram-ttl')
     mp.add_summary_type('packet-count-sent', 'aggregation', [3600, 86400])
-    # print mp.json_payload(True)
-    mp.post_metadata()
+    new_meta = mp.post_metadata()
+
+    print new_meta
+    print new_meta.metadata_key
+
+
 
 
 

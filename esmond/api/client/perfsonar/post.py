@@ -4,7 +4,7 @@ import requests
 import warnings
 
 from esmond.api.client.util import add_apikey_header, AlertMixin
-from esmond.api.client.perfsonar.query import Metadata
+from esmond.api.client.perfsonar.query import Metadata, ApiFilters
 from esmond.api.perfsonar.types import EVENT_TYPE_CONFIG, INVERSE_SUMMARY_TYPES
 
 class PostException(Exception):
@@ -112,6 +112,10 @@ class MetadataPost(PostBase):
     def add_event_type(self, et):
         self._check_event_type(et)
 
+        for i in self._payload['event-types']:
+            if i.get('event-type', None) == et:
+                self.warn('Event type {0} already exists - skipping'.format(et))
+
         self._payload['event-types'].append({ 'event-type' : et })
 
     def add_summary_type(self, et, st, windows=[]):
@@ -128,7 +132,6 @@ class MetadataPost(PostBase):
             except ValueError:
                 raise MetadataPostException('Invalid summary window int: {0}'.format(i))
 
-        # XXX(mmg) - just skip an existing summary or do something else?
         for i in self._payload['event-types']:
             if i.get('summaries', None) and \
                 i.get('event-type', None) == et:
@@ -149,11 +152,12 @@ class MetadataPost(PostBase):
 
         r = requests.post(url, data=self.json_payload(), headers=self.headers)
 
-        print r.content
-
         if not r.status_code == 201:
             # Change this to an exception?
             self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            return None
+
+        return Metadata(json.loads(r.content), self.api_url, ApiFilters())
 
     def _validate(self):
         redash = lambda s: s.replace('_', '-')
