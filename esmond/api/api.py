@@ -297,7 +297,7 @@ class EsmondAuthorization(Authorization):
     ``tastypie.authorization.DjangoAuthorization`` class.
     """
 
-    perm_prefix = "esmond_api"
+    perm_prefix = "auth.esmond_api"
 
     def __init__(self, resource_name):
         """There is not way to get the resource name from what is passed into
@@ -1224,7 +1224,15 @@ class TimeseriesResource(Resource):
 
         return obj
 
-    def post_detail(self, bundle, **kwargs):
+    def _check_post_detail_auth(self, request):
+        o = TimeseriesDataObject()
+        o.request = request
+        try:
+            EsmondAuthorization('timeseries').create_detail([], o)
+        except Unauthorized as e:
+            self.unauthorized_result(e)
+
+    def post_detail(self, request, **kwargs):
         """
         Invoked when a POST request is issued.  Rather than CGI-style 
         http parameters, a JSON blob (a list of dicts) is passed in as 
@@ -1241,15 +1249,18 @@ class TimeseriesResource(Resource):
         cassandra writes are (base rates for example) so post 
         was chosen. -MMG
         """
+        # Check auth
+        self._check_post_detail_auth(request)
+
         # Validate incoming POST/JSON payload:
-        if bundle.META.get('CONTENT_TYPE') != 'application/json':
+        if request.META.get('CONTENT_TYPE') != 'application/json':
             raise BadRequest('Must post content-type: application/json header and json-formatted payload.')
 
-        if not bundle.body:
+        if not request.body:
             raise BadRequest('No data payload POSTed.')
 
         try:
-            input_payload = json.loads(bundle.body)
+            input_payload = json.loads(request.body)
         except ValueError:
             raise BadRequest('POST data payload could not be decoded to a JSON object - given: {0}'.format(bundle.body))
 
