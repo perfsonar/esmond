@@ -20,6 +20,7 @@ from time import time
 import hashlib
 import math
 import uuid
+import json
 
 #Get db connection
 try:
@@ -890,7 +891,7 @@ class PSTimeSeriesResource(Resource):
                     freq=ts_obj.freq, base_freq=ts_obj.base_freq, count=ts_obj.value["denominator"])
             db.aggs.insert(agg.get_key(), {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): agg.count}})
         elif col_family == db.raw_cf:
-            rawdata = RawRateData(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
+            rawdata = RawRateData(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=json.dumps(ts_obj.value), freq=ts_obj.freq)
             db.set_raw_data(rawdata)
 
 class PSBulkTimeSeriesResource(PSTimeSeriesResource):
