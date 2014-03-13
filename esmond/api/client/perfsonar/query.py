@@ -291,7 +291,8 @@ class DataHistogram(NodeInfo):
     def __init__(self, data={}):
         super(DataHistogram, self).__init__(data, None, None)
         self.ts = self._convert_to_datetime(data.get('ts', None))
-        # XXX(mmg) - this is here pending review.
+        # XXX(mmg) - this is here pending review.  Data are
+        # being stored and returned differently depending on insert method?
         # given some server responses, the json payload might be
         # fully converted. otherwise, do it now.
         print 'xxx', type(data.get('val')), data.get('val')
