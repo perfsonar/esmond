@@ -118,6 +118,16 @@ class MetadataPost(PostBase):
         self._check_event_type(et)
         self._check_summary_type(st)
 
+        if not windows:
+            self.warn('No summary windows were defined - skipping')
+            return
+
+        for i in windows:
+            try:
+                int(i)
+            except ValueError:
+                raise MetadataPostException('Invalid summary window int: {0}'.format(i))
+
         # XXX(mmg) - just skip an existing summary or do something else?
         for i in self._payload['event-types']:
             if i.get('summaries', None) and \
