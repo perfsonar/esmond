@@ -6,10 +6,11 @@ Quick tester script to exercise the pS REST client lib
 
 import os
 import sys
+import time
 from optparse import OptionParser
 
 from esmond.api.client.perfsonar.query import ApiConnect, ApiFilters
-from esmond.api.client.perfsonar.post import MetadataPost
+from esmond.api.client.perfsonar.post import MetadataPost, EventTypePost
 from esmond.api.tests.perfsonar.test_data import TestResults
 
 def query():
@@ -108,12 +109,52 @@ def main():
     mp.add_event_type('time-error-estimates')
     mp.add_event_type('histogram-ttl')
     mp.add_summary_type('packet-count-sent', 'aggregation', [3600, 86400])
+    
     new_meta = mp.post_metadata()
 
     print new_meta
     print new_meta.metadata_key
 
+    et = EventTypePost(options.api_url, username=options.user,
+        api_key=options.key, metadata_key=new_meta.metadata_key,
+        event_type='throughput')
 
+    ts = lambda: int(time.time())
+    val = lambda: (int(time.time()) % 5)
+
+    et.add_data_point(ts(), val())
+    time.sleep(1)
+    et.add_data_point(ts(), val())
+
+    print et.json_payload(True)
+
+    et.post_data()
+
+    events = new_meta.get_event_type('throughput')
+    print events
+    dps = events.get_data()
+    print dps
+    for dp in dps.data:
+        print dp
+
+    et = EventTypePost(options.api_url, username=options.user,
+        api_key=options.key, metadata_key=new_meta.metadata_key,
+        event_type='histogram-ttl')
+
+    et.add_data_point(ts(), {val(): val()})
+    time.sleep(1)
+    et.add_data_point(ts(), {val(): val()})
+
+    print et.json_payload(True)
+
+    et.post_data()
+
+    events = new_meta.get_event_type('histogram-ttl')
+    print events
+    dps = events.get_data()
+    print dps
+    for dp in dps.data:
+        print dp.ts, dp.val
 
 
 

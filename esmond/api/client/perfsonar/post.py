@@ -1,4 +1,5 @@
 import json
+import numbers
 import pprint
 import requests
 import warnings
@@ -14,9 +15,10 @@ class PostException(Exception):
         return repr(self.value)
 
 class MetadataPostException(PostException): pass
-
+class EventTypePostException(PostException): pass
 
 class MetadataPostWarning(Warning): pass
+class EventTypePostWarning(Warning): pass
 
 
 class PostBase(AlertMixin, object):
@@ -173,4 +175,59 @@ class MetadataPost(PostBase):
                 self._payload.has_key(redash(arg)):
                 del self._payload[redash(arg)]
 
+
+class EventTypePost(PostBase):
+    wrn = EventTypePostWarning
+    """docstring for EventTypePost"""
+    def __init__(self, api_url, username='', api_key='', metadata_key=None,
+            event_type=None):
+        super(EventTypePost, self).__init__(api_url, username, api_key)
+
+        self.metadata_key = metadata_key
+        self.event_type = event_type
+
+        if not self.metadata_key or not self.event_type:
+            raise EventTypePostException('Must set metadata_key and event_type args')
+        self._check_event_type(self.event_type)
+
+        # Slightly different than payload in meta data class.
+        # List will hold data points, but whole thing will not
+        # be sent to server.
+        self._payload = []
+
+    def add_data_point(self, ts, val):
+        if not isinstance(ts, int):
+            raise EventTypePostException('ts arg must be an integer')
+        if not isinstance(val, numbers.Number) and \
+            not isinstance(val, dict):
+            raise EventTypePostException('val arg must be number or dict for histograms')
+        self._payload.append( { 'ts': ts, 'val': val } )
+
+    def post_data(self):
+        self._validate()
+
+        url = '{0}/{1}/{2}/{3}/base'.format(self.api_url, self._schema_root,
+            self.metadata_key, self.event_type)
+
+        results = []
+
+        for dp in self._payload:
+            r = requests.post(url, data=json.dumps(dp), headers=self.headers)
+
+            if not r.status_code == 201:
+                self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+
+    def _validate(self):
+        for i in self._payload:
+            if isinstance(i['val'], dict):
+                for k,v in i['val'].items():
+                    try:
+                        int(k), int(v)
+                    except ValueError:
+                        raise EventTypePostException('Histogram dict items must be integer values - got {0} {1}'.format(k,v))
+
+
+
+
+        
 
