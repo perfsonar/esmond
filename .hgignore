@@ -35,3 +35,5 @@ pysqlite2-doc/install-source.txt
 crashlog
 test-env
 .coverage
+.hgcheck
+
