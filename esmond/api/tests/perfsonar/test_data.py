@@ -67,22 +67,22 @@ class TestResults(object):
     h_ttl_path = ['ps','histogram_ttl','0CB19291FB6D40EAA1955376772BF5D2']
     h_ttl_len = 960
     h_ttl_start_ts = 1391558439000
-    h_ttl_start_val = u'{"10": 600}'
+    h_ttl_start_val = {"10": 600}
     h_ttl_end_ts = 1391615979000
-    h_ttl_end_val = u'{"9": 114, "10": 486}'
+    h_ttl_end_val = {"9": 114, "10": 486}
 
     h_owd_min_path = ['ps','histogram_owdelay','0CB19291FB6D40EAA1955376772BF5D2']
     h_owd_min_len = 960
     h_owd_min_start_ts = 1391558410000
-    h_owd_min_start_val = u'{"472": 3, "800": 41, "15": 5, "263": 281, "241": 49, "505": 30, "232": 191}'
+    h_owd_min_start_val = {"472": 3, "800": 41, "15": 5, "263": 281, "241": 49, "505": 30, "232": 191}
     h_owd_min_end_ts = 1391615950000
-    h_owd_min_end_val = u'{"309": 1, "763": 1, "45": 11, "182": 3, "473": 3, "427": 1, "362": 99, "424": 9, "430": 472}'
+    h_owd_min_end_val = {"309": 1, "763": 1, "45": 11, "182": 3, "473": 3, "427": 1, "362": 99, "424": 9, "430": 472}
 
     h_owd_day_path = ['ps','histogram_owdelay','0CB19291FB6D40EAA1955376772BF5D2','aggregation']
     h_owd_day_freq = 86400
     h_owd_day_len = 1
     h_owd_day_start_ts = 1391613631000
-    h_owd_day_start_val = u'{"623": 206173, "203": 54590, "833": 175, "203": 330, "863": 6, "193": 5, "713": 85, "928": 575408, "341": 1402, "265": 93, "224": 25810, "544": 1}'
+    h_owd_day_start_val = {"623": 206173, "203": 54590, "833": 175, "203": 330, "863": 6, "193": 5, "713": 85, "928": 575408, "341": 1402, "265": 93, "224": 25810, "544": 1}
     h_owd_day_end_ts = h_owd_day_start_ts
     h_owd_day_end_val = h_owd_day_start_val
 
