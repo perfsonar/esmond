@@ -136,11 +136,11 @@ class HistogramValidator(DataValidator):
         if obj.summary_window != 0:
             agg_datapath = obj.datapath
             agg_datapath[len(agg_datapath) - 1] = 'aggregation'
-            agg_hist = self._get_histogram(db, obj, datapath=agg_datapath)
+            existing_hist = self._get_histogram(db, obj, datapath=agg_datapath)
             #assume first histogram
-            if agg_hist is not None:
+            if existing_hist is not None:
                 #aggregate since db not yet flushed
-                agg_hist = self._aggregation(obj.value, agg_hist)
+                agg_hist = self._aggregation(obj.value, existing_hist)
         
         #pass one: mode, mean and sample size
         stats = {}
