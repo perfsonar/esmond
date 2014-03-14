@@ -793,7 +793,7 @@ class PSTimeSeriesResource(Resource):
     
     def obj_create(self, bundle, **kwargs):
         #authorize
-        self.authorized_create_detail([bundle.obj], bundle)
+        self.authorized_create_detail([bundle.data], bundle)
         #create object
         bundle.obj = self._obj_create(bundle.data, **kwargs)
         #save to db
