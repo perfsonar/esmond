@@ -754,7 +754,7 @@ class PSTimeSeriesResource(Resource):
         query_type = EVENT_TYPE_CONFIG[event_type]["type"]
         if query_type not in EVENT_TYPE_CF_MAP:
             raise BadRequest("Misconfigured event type on server side. Invalid 'type' %s" % query_type)
-        col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(summary_type)
+        col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(summary_type, db)
         if col_fam is None:
             col_fam = EVENT_TYPE_CF_MAP[query_type]
         if col_fam == db.agg_cf:
