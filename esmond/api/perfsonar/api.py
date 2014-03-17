@@ -869,7 +869,7 @@ class PSTimeSeriesResource(Resource):
         ts_obj.value = validator.validate(ts_obj)
         
         #Determine column family
-        col_family = validator.summary_cf(ts_obj.summary_type)
+        col_family = validator.summary_cf(ts_obj.summary_type, db)
         if col_family is None:
             col_family = EVENT_TYPE_CF_MAP[data_type]
         
