@@ -16,9 +16,11 @@ class PostException(Exception):
 
 class MetadataPostException(PostException): pass
 class EventTypePostException(PostException): pass
+class EventTypeBulkPostException(PostException): pass
 
 class MetadataPostWarning(Warning): pass
 class EventTypePostWarning(Warning): pass
+class EventTypeBulkPostWarning(Warning): pass
 
 
 class PostBase(AlertMixin, object):
@@ -226,6 +228,59 @@ class EventTypePost(PostBase):
                     except ValueError:
                         raise EventTypePostException('Histogram dict items must be integer values - got {0} {1}'.format(k,v))
 
+class EventTypeBulkPost(PostBase):
+    wrn = EventTypePostWarning
+    """docstring for EventTypePost"""
+    def __init__(self, api_url, username='', api_key='', metadata_key=None):
+        super(EventTypeBulkPost, self).__init__(api_url, username, api_key)
+
+        self.metadata_key = metadata_key
+
+        if not self.metadata_key:
+            raise EventTypeBulkPostException('Must set metadata_key')
+
+        self._payload = { 'data': [] }
+
+    def _get_ts_payload_entry(self, ts):
+        entry = False
+
+        for i in self._payload['data']:
+            if i['ts'] == ts: entry = i
+
+        if not entry:
+            self._payload['data'].append( {'ts': ts, 'val': [] } )
+            return self._get_ts_payload_entry(ts)
+
+        return entry
+
+    def add_data_point(self, event_type, ts, val):
+        self._check_event_type(event_type)
+        if not isinstance(ts, int):
+            raise EventTypeBulkPostException('ts arg must be an integer')
+        if not isinstance(val, numbers.Number) and \
+            not isinstance(val, dict):
+            raise EventTypeBulkPostException('val arg must be number or dict for histograms')
+
+        data_entry = self._get_ts_payload_entry(ts)
+        data_entry['val'].append({'event-type': event_type, 'val': val})
+
+    def post_data(self):
+        self._validate()
+
+        url = '{0}/{1}/{2}/'.format(self.api_url, self._schema_root,
+            self.metadata_key)
+        
+        r = requests.post(url, data=self.json_payload(), headers=self.headers)
+
+        if not r.status_code == 201:
+            # Change this to an exception?
+            self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+
+    def _validate(self):
+        for i in self._payload['data']:
+            # Validation currently being done on incoming values
+            # in add_data_point - leaving this here for the future.
+            pass
 
 
 

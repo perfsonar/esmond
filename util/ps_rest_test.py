@@ -10,7 +10,7 @@ import time
 from optparse import OptionParser
 
 from esmond.api.client.perfsonar.query import ApiConnect, ApiFilters
-from esmond.api.client.perfsonar.post import MetadataPost, EventTypePost
+from esmond.api.client.perfsonar.post import MetadataPost, EventTypePost, EventTypeBulkPost
 from esmond.api.tests.perfsonar.test_data import TestResults
 
 def query():
@@ -108,6 +108,7 @@ def main():
     mp.add_event_type('throughput')
     mp.add_event_type('time-error-estimates')
     mp.add_event_type('histogram-ttl')
+    mp.add_event_type('packet-loss-rate')
     mp.add_summary_type('packet-count-sent', 'aggregation', [3600, 86400])
     
     new_meta = mp.post_metadata()
@@ -115,18 +116,19 @@ def main():
     print new_meta
     print new_meta.metadata_key
 
+    ts = lambda: int(time.time())
+    val = lambda: (int(time.time()) % 5)
+
     et = EventTypePost(options.api_url, username=options.user,
         api_key=options.key, metadata_key=new_meta.metadata_key,
         event_type='throughput')
-
-    ts = lambda: int(time.time())
-    val = lambda: (int(time.time()) % 5)
+    
 
     et.add_data_point(ts(), val())
     time.sleep(1)
     et.add_data_point(ts(), val())
 
-    print et.json_payload(True)
+    # print et.json_payload(True)
 
     et.post_data()
 
@@ -145,7 +147,7 @@ def main():
     time.sleep(1)
     et.add_data_point(ts(), {val(): val()})
 
-    print et.json_payload(True)
+    # print et.json_payload(True)
 
     et.post_data()
 
@@ -155,6 +157,37 @@ def main():
     print dps
     for dp in dps.data:
         print dp.ts, dp.val
+
+    etb = EventTypeBulkPost(options.api_url, username=options.user,
+        api_key=options.key, metadata_key=new_meta.metadata_key)
+
+    t = ts()
+    etb.add_data_point('time-error-estimates', t, val())
+    etb.add_data_point('packet-loss-rate', t, {'numerator': val(), 'denominator': val()})
+
+    time.sleep(1)
+
+    t = ts()
+    etb.add_data_point('time-error-estimates', t, val())
+    etb.add_data_point('packet-loss-rate', t, {'numerator': val(), 'denominator': val()})
+
+    etb.post_data()
+
+    # print etb.json_payload(True)
+
+    events = new_meta.get_event_type('time-error-estimates')
+    print events
+    dps = events.get_data()
+    print dps
+    for dp in dps.data:
+        print dp
+
+    events = new_meta.get_event_type('packet-loss-rate')
+    print events
+    dps = events.get_data()
+    print dps
+    for dp in dps.data:
+        print dp, dp.val
 
 
 
