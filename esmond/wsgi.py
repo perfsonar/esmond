@@ -26,6 +26,8 @@ def application(environ, start_response):
         exit()
     esmond_root = environ['ESMOND_ROOT']
     os.environ['ESMOND_ROOT'] = esmond_root
+    if environ.has_key('ESMOND_CONF'):
+        os.environ['ESMOND_CONF'] = environ['ESMOND_CONF']
     return _application(environ, start_response)
 
 """
