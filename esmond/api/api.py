@@ -23,8 +23,10 @@ from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.http import HttpCreated
 from tastypie.throttle import CacheDBThrottle
 
-from esmond.api import SNMP_NAMESPACE, ANON_LIMIT, OIDSET_INTERFACE_ENDPOINTS, \
-    EsmondAuthorization, AnonymousGetElseApiAuthentication, anonymous_username
+from esmond.api import SNMP_NAMESPACE, ANON_LIMIT, OIDSET_INTERFACE_ENDPOINTS
+from esmond.api.auth import EsmondAuthorization, AnonymousGetElseApiAuthentication, \
+    AnonymousBulkLimitElseApiAuthentication, AnonymousTimeseriesBulkLimitElseApiAuthentication, \
+    AnonymousThrottle
 from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
@@ -126,110 +128,6 @@ def build_time_filters(filters, orm_filters):
         orm_filters['end_time__gte'] = now
 
     return orm_filters
-
-
-class AnonymousBulkLimitElseApiAuthentication(ApiKeyAuthentication):
-    """For bulk data retrieval interface.  If user has valid Api Key,
-    allow unthrottled access.  Otherwise, check the size of the 
-    quantity of interfaces/endpoints requested and """
-    def is_authenticated(self, request, **kwargs):
-        authenticated = super(AnonymousBulkLimitElseApiAuthentication, self).is_authenticated(
-                request, **kwargs)
-
-        # If they are username/api key authenticated, just
-        # let the request go.
-        if authenticated == True:
-            return authenticated
-
-        # Otherwise, look at the size of the request (ie: number of 
-        # endpoints requested) and react accordingly.
-
-        if request.body and request.META.get('CONTENT_TYPE') == 'application/json':
-            post_payload = json.loads(request.body)
-        else:
-            raise BadRequest('Did not receive json payload for bulk POST request.')
-
-        if not post_payload.has_key('interfaces') or \
-            not post_payload.has_key('endpoint'):
-            raise BadRequest('JSON payload must have endpoint and interfaces keys.')  
-
-        if not isinstance(post_payload['interfaces'], list) or \
-            not isinstance(post_payload['endpoint'], list):
-            raise BadRequest('Both endpoint and interfaces keys must be a list')
-
-        request_queries = len(post_payload.get('interfaces')) * \
-            len(post_payload.get('endpoint'))
-
-        if request_queries <= ANON_LIMIT:
-            return True
-        else:
-            authenticated.content = \
-                'Request for {0} endpoints exceeds the unauthenticated limit of {1}'.format(request_queries, ANON_LIMIT)
-
-        return authenticated
-
-    def get_identifier(self, request):
-        if request.user.is_anonymous():
-            return anonymous_username(request)
-        else:
-            return super(AnonymousBulkLimitElseApiAuthentication,
-                    self).get_identifier(request)
-
-class AnonymousTimeseriesBulkLimitElseApiAuthentication(ApiKeyAuthentication):
-    """For bulk data retrieval interface.  If user has valid Api Key,
-    allow unthrottled access.  Otherwise, check the size of the 
-    quantity of interfaces/endpoints requested and """
-    def is_authenticated(self, request, **kwargs):
-        authenticated = super(AnonymousTimeseriesBulkLimitElseApiAuthentication, self).is_authenticated(
-                request, **kwargs)
-        
-        # If they are username/api key authenticated, just
-        # let the request go.
-        if authenticated == True:
-            return authenticated
-
-        # Otherwise, look at the size of the request (ie: number of 
-        # paths requested) and react accordingly.
-
-        if request.body and request.META.get('CONTENT_TYPE') == 'application/json':
-            post_payload = json.loads(request.body)
-        else:
-            raise BadRequest('Did not receive json payload for bulk POST request.')
-
-        if not post_payload.has_key('paths') or \
-            not isinstance(post_payload['paths'], list):
-            raise BadRequest('Payload must contain the element paths and that element must be a list.')
-
-        if len(post_payload['paths']) <= ANON_LIMIT:
-            return True
-        else:
-            authenticated.content = \
-                'Request for {0} paths exceeds the unauthenticated limit of {1}'.format(len(post_payload['paths']), ANON_LIMIT)
-
-        return authenticated
-
-    def get_identifier(self, request):
-        if request.user.is_anonymous():
-            return anonymous_username(request)
-        else:
-            return super(AnonymousTimeseriesBulkLimitElseApiAuthentication,
-                    self).get_identifier(request)
-
-class AnonymousThrottle(CacheDBThrottle):
-    def __init__(self, **kwargs):
-        # Parse incoming args from config, let superclass defaults
-        # ride if not set.
-        _kw = {}
-        for k,v in kwargs.items():
-            if v:
-                _kw[k] = v
-        super(AnonymousThrottle, self).__init__(**_kw)
-
-    def should_be_throttled(self, identifier, **kwargs):
-        if not identifier.startswith('AnonymousUser'):
-            return False
-
-        return super(AnonymousThrottle, self).should_be_throttled(identifier, **kwargs)
 
 
 class DeviceSerializer(Serializer):
