@@ -739,7 +739,7 @@ class PSTimeSeriesResource(Resource):
         metadata_key = kwargs['metadata_key']
         datapath = EVENT_TYPE_CONFIG[event_type]["row_prefix"].split(KEY_DELIMITER)
         datapath.append(metadata_key)
-        summary_type = ''
+        summary_type = 'base'
         if 'summary_type' in kwargs:
             summary_type = kwargs['summary_type']
             if summary_type not in SUMMARY_TYPES:
