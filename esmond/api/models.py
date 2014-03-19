@@ -10,7 +10,7 @@ from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, at
 class DeviceTag(models.Model):
     """A tag for a :py:class:`.Device.`"""
 
-    name = models.CharField(max_length = 256, unique=True)
+    name = models.CharField(max_length = 255, unique=True)
 
     class Meta:
         db_table = "devicetag"
@@ -379,7 +379,7 @@ class APIPermission(Permission):
         self.content_type = ct
         super(APIPermission, self).save(*args, **kwargs)
 
-### Models for data inventory
+# Models for data inventory
 
 class Inventory(models.Model):
     """Data inventory to drive gap scanning"""
@@ -437,3 +437,69 @@ class GapInventory(models.Model):
             row=self.row.row_key,
             processed=self.processed
         )
+
+# Additional PS specific models.
+
+class PSMetadataManager(models.Manager):
+    def search():
+        return []
+    
+class PSMetadata(models.Model):
+    metadata_key = models.SlugField(max_length=128, db_index=True, unique=True )
+    subject_type = models.CharField(max_length=128)
+    checksum = models.CharField(max_length=128, db_index=True, unique=True)
+    objects = PSMetadataManager()
+    
+    class Meta:
+        db_table = "ps_metadata"
+    
+    def __unicode__(self):
+        return self.metadata_key
+    
+class PSPointToPointSubject(models.Model):
+    metadata = models.OneToOneField(PSMetadata)
+    tool_name = models.CharField(max_length=128)
+    source = models.GenericIPAddressField(db_index=True)
+    destination = models.GenericIPAddressField(db_index=True)
+    measurement_agent = models.GenericIPAddressField()
+    input_source = models.CharField(max_length=128)
+    input_destination = models.CharField(max_length=128)
+    
+    class Meta:
+        db_table = "ps_p2p_subject"
+        ordering = ["source","destination"]
+    
+    def __unicode__(self):
+        return "%s-%s" % (self.source, self.destination)
+    
+class PSEventTypes(models.Model):
+    metadata = models.ForeignKey(PSMetadata, related_name='pseventtypes')
+    event_type =  models.CharField(max_length=128, db_index=True)
+    summary_type =  models.CharField(max_length=128)
+    summary_window =  models.BigIntegerField()
+    
+    class Meta:
+        db_table = "ps_event_types"
+        ordering = ["metadata","event_type", "summary_type", "summary_window"]
+    
+    def __unicode__(self):
+        return "%s:%s:%d" % (self.event_type, self.summary_type, self.summary_window)
+    
+    def encoded_event_type(self):
+        return atencode(self.event_type)
+    
+    def encoded_summary_type(self):
+        return atencode(self.summary_type)
+    
+class PSMetadataParameters(models.Model):
+    metadata = models.ForeignKey(PSMetadata, related_name='psmetadataparameters')
+    parameter_key = models.CharField(max_length=128, db_index=True)
+    parameter_value = models.TextField()
+    
+    class Meta:
+        db_table = "ps_metadata_parameters"
+    
+    def __unicode__(self):
+        return "%s" % (self.parameter_key)
+
+
