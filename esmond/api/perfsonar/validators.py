@@ -9,7 +9,7 @@ class DataValidator(object):
     def validate(self, obj):
         return obj.value
     
-    def summary_cf(self, summary_type):
+    def summary_cf(self, db, summary_type):
         return None
         
     def base(self, db, obj):
@@ -216,7 +216,7 @@ class IntegerValidator(DataValidator):
         except ValueError:
             raise BadRequest("Value must be an integer")
     
-    def summary_cf(self, summary_type):
+    def summary_cf(self, db, summary_type):
         if summary_type == 'average':
             return db.agg_cf
         return None
