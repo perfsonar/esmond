@@ -11,7 +11,8 @@ from tastypie.test import ResourceTestCase
 from esmond.api.models import *
 from esmond.api.tests.example_data import build_default_metadata, build_pdu_metadata
 from esmond.cassandra import AGG_TYPES
-from esmond.api.api import SNMP_NAMESPACE, OIDSET_INTERFACE_ENDPOINTS, QueryUtil
+from esmond.api import SNMP_NAMESPACE, OIDSET_INTERFACE_ENDPOINTS
+from esmond.api.api import QueryUtil
 
 def datetime_to_timestamp(dt):
     return calendar.timegm(dt.timetuple())

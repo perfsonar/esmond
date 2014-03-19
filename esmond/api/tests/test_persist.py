@@ -33,7 +33,8 @@ from pycassa.columnfamily import ColumnFamily
 
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
      build_metadata_from_test_data, load_test_data, build_rtr_alu_metadata
-from esmond.api.api import check_connection, SNMP_NAMESPACE, ANON_LIMIT
+from esmond.api import SNMP_NAMESPACE, ANON_LIMIT
+from esmond.api.api import check_connection
 from esmond.util import atencode
 
 try:

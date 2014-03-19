@@ -12,7 +12,7 @@ from django.test import LiveServerTestCase
 
 from esmond.config import get_config, get_config_path
 from esmond.persist import CassandraPollPersister
-from esmond.api.api import SNMP_NAMESPACE
+from esmond.api import SNMP_NAMESPACE
 
 from esmond.api.client.snmp import ApiConnect, ApiFilters
 from esmond.api.client.timeseries import GetRawData, GetBaseRate, \
