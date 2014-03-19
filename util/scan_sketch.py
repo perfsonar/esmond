@@ -13,12 +13,17 @@ import time
 from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, \
      Inventory, GapInventory
 from esmond.api.api import SNMP_NAMESPACE
-from esmond.cassandra import get_rowkey, KEY_DELIMITER
+from esmond.api.dataseries import QueryUtil, Fill
+from esmond.cassandra import get_rowkey, KEY_DELIMITER, CASSANDRA_DB, _split_rowkey
 from esmond.util import max_datetime
+from esmond.config import get_config_path, get_config
 
 from django.utils.timezone import utc
 from django.db.utils import IntegrityError
 from django.db import connection
+
+def ts_epoch(ts):
+    return calendar.timegm(ts.utctimetuple())
 
 def get_key_range(path, freq, ts_min, ts_max):
    
@@ -35,11 +40,12 @@ def get_key_range(path, freq, ts_min, ts_max):
     return key_range
 
 def get_year_boundries(key):
+
     key_year = int(key.split(KEY_DELIMITER)[-1])
     return datetime.datetime(key_year, 1, 1, tzinfo=utc), \
         datetime.datetime(key_year, 12, 31, hour=23, minute=59, second=59, tzinfo=utc)
 
-def main():
+def generate_or_update_inventory():
 
     for device in Device.objects.all().order_by('name')[:5]:
         print device.name
@@ -82,13 +88,76 @@ def main():
                         else:
                             cf = Inventory.RAW_DATA
 
-                        i = Inventory(row_key=key, start_time=table_start,
-                                end_time=table_end, column_family=cf)
+                        i = Inventory(row_key=key, frequency=oidset.frequency,
+                            start_time=table_start, end_time=table_end, 
+                            column_family=cf)
                         try:
                             i.save()
                         except IntegrityError as e:
                             print e
                             connection._rollback()
+
+def main():
+
+    # generate_or_update_inventory()
+
+    db = CASSANDRA_DB(get_config(get_config_path()))
+
+    data_found = 0
+
+    for entry in Inventory.objects.filter(frequency__exact=30)[:20]:
+        print entry
+        print '  *', entry.start_time, ts_epoch(entry.start_time)
+        print '  *', entry.end_time, ts_epoch(entry.end_time)
+
+        # XXX(mmg): if end_time of current row is in the
+        # future (ie: probably when run on the row of the
+        # current year), adjust end time arg to a couple
+        # of minutes in the past.  Use this in both the 
+        # query and when setting up fill boundaries.
+        #
+        # Will also be setting last_scan_point to that
+        # value in the main inventory table.
+
+        ts_start = ts_epoch(entry.start_time)
+        ts_end = ts_epoch(entry.end_time)
+
+        path = _split_rowkey(entry.row_key)[0:5]
+
+        if entry.get_column_family_display() == 'base_rates':
+            
+
+            data = db.query_baserate_timerange(path=path, 
+                    freq=entry.frequency*1000,
+                    ts_min=ts_start*1000,
+                    ts_max=ts_end*1000)
+
+        else:
+            # Not sure if we'll be scanning any other cfs?
+            continue
+
+        # XXX(mmg): throttle things back to first pair of data
+        # while developing.
+        if data:
+            data_found += 1
+
+        print data[0:10]
+
+        # Format the data payload (transform ms timestamps back
+        # to seconds and set is_valid = 0 values to None) and 
+        # build a filled series over the query range out of 
+        # the returned data.
+        data = QueryUtil.format_data_payload(data)
+        data = Fill.verify_fill(ts_start, ts_end, entry.frequency, data)
+
+        print data[0:10]
+        
+        print Fill.get_expected_first_bin(ts_start,
+                entry.frequency)
+        if data_found >= 2:
+            break
+        print '======='
+
 
 
 

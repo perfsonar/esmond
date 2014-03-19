@@ -396,6 +396,7 @@ class Inventory(models.Model):
     )
     # fields
     row_key = models.CharField(max_length=128, unique=True)
+    frequency = models.IntegerField()
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     last_scan_point = models.DateTimeField(null=True, blank=True)
