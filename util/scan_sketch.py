@@ -160,7 +160,10 @@ def generate_or_update_gap_inventory(limit=0, verbose=False):
 
     data_found = 0
 
-    row_inventory = Inventory.objects.filter(scan_complete=False).order_by('row_key')[:20]
+    if limit:
+        row_inventory = Inventory.objects.filter(scan_complete=False).order_by('row_key')[:limit]
+    else:
+        row_inventory = Inventory.objects.filter(scan_complete=False).order_by('row_key')
 
     for entry in row_inventory:
         print entry
@@ -293,6 +296,7 @@ def main():
     if not options.inventory and not options.gapscan:
         print 'Select an action to perform'
         parser.print_help()
+        return -1
 
     if options.limit == 0:
         if not get_input('Perform actions with no limit?'):
