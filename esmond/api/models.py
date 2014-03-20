@@ -401,6 +401,7 @@ class Inventory(models.Model):
     end_time = models.DateTimeField()
     last_scan_point = models.DateTimeField(null=True, blank=True)
     scan_complete = models.BooleanField(default=False)
+    data_found = models.BooleanField(default=False)
     column_family = models.CharField(max_length=2, 
                                     choices=COLUMN_FAMILY_CHOICES,
                                     default=BASE_RATES)

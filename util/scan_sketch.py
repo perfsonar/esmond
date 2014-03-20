@@ -57,6 +57,9 @@ def generate_or_update_inventory():
 
                     if iface.end_time == max_datetime or \
                         iface.end_time.year == 9999:
+                        # If the end time is max time/not defined, set the 
+                        # time to now and it will only generate row keys
+                        # in the inventory up to the current year.
                         ts_max = time.time()
                     else:
                         ts_max = calendar.timegm(iface.end_time.utctimetuple())
@@ -67,10 +70,6 @@ def generate_or_update_inventory():
 
                     for key in row_key_range:
                         year_start,year_end = get_year_boundries(key)
-
-                        # XXX(mmg): get clear on what django/postgres
-                        # is doing with the datestamps.  This is working
-                        # but what I expect to be happening is not happening
                           
                         if iface.begin_time < year_start:
                             table_start = year_start
@@ -141,7 +140,9 @@ def main():
         if data:
             data_found += 1
 
-        print data[0:10]
+
+        print 'lead:', data[0:5]
+        # print 'trail:', data[-5:]
 
         # Format the data payload (transform ms timestamps back
         # to seconds and set is_valid = 0 values to None) and 
@@ -150,7 +151,8 @@ def main():
         data = QueryUtil.format_data_payload(data)
         data = Fill.verify_fill(ts_start, ts_end, entry.frequency, data)
 
-        print data[0:10]
+        print 'lead:', data[0:5]
+        # print 'trail:', data[-5:]
         
         print Fill.get_expected_first_bin(ts_start,
                 entry.frequency)
