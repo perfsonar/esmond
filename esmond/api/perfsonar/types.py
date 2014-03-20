@@ -47,10 +47,22 @@ EVENT_TYPE_CONFIG = {
     "packet-count-sent": {
         "type": "integer",
     },
+    "packet-reorders": {
+        "type": "integer",
+    },
+    "packet-retransmits": {
+        "type": "integer",
+    },
+    "streams-throughput": {
+        "type": "json",
+    },
+    "streams-throughput-subintervals": {
+        "type": "json",
+    },
     "throughput": {
         "type": "integer",
     },
-    "throughput-subinterval": {
+    "throughput-subintervals": {
         "type": "subinterval",
     },
     "time-error-estimates": {
