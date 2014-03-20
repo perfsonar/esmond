@@ -53,6 +53,9 @@ EVENT_TYPE_CONFIG = {
     "packet-retransmits": {
         "type": "integer",
     },
+    "streams-retransmits": {
+        "type": "json",
+    },
     "streams-throughput": {
         "type": "json",
     },
