@@ -16,59 +16,45 @@ type: The data type of the event type. Valid values are currently:
         json: A generic JSON object. No summary is possible since the structure is opaque to the MA.
         percentage: A numerator and denominator that can be used to calculate a percentage
 
-row-prefix: The prefix used for rows in cassandra
-
 validator: Optional. A class to validate the value. If not specified a default will be used based on the type.
 
 '''
 EVENT_TYPE_CONFIG = {
     "failures": {
         "type": "json",
-        "row_prefix": "ps:failures",
     },
     "histogram-owdelay": {
         "type": "histogram",
-        "row_prefix": "ps:histogram_owdelay",
     },
     "histogram-rtt": {
         "type": "histogram",
-        "row_prefix": "ps:histogram_rtt",
     },
     "histogram-ttl": {
         "type": "histogram",
-        "row_prefix": "ps:histogram_ttl",
     },
     "packet-duplicates": {
         "type": "integer",
-        "row_prefix": "ps:packet_duplicates",
     },
     "packet-loss-rate": {
         "type": "percentage",
-        "row_prefix": "ps:packet_loss_rate",
     },
     "packet-trace": {
         "type": "json",
-        "row_prefix": "ps:packet_trace",
     },
     "packet-count-lost": {
-        "type": "integer",
-        "row_prefix": "ps:packet_count_lost",
+        "type": "integer"
     },
     "packet-count-sent": {
         "type": "integer",
-        "row_prefix": "ps:packet_count_sent",
     },
     "throughput": {
         "type": "integer",
-        "row_prefix": "ps:throughput",
     },
     "throughput-subinterval": {
         "type": "subinterval",
-        "row_prefix": "ps:throughput_subinterval",
     },
     "time-error-estimates": {
         "type": "float",
-        "row_prefix": "ps:time_error_estimates",
     }
 }
 

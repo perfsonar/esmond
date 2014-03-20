@@ -90,7 +90,11 @@ def format_list_keys(data):
         formatted_objs.append(format_detail_keys(obj))
     
     return formatted_objs
-   
+
+def row_prefix(event_type):
+    return ['ps', event_type.replace('-', '_') ]
+    
+
 # Resource classes 
 class PSEventTypesResource(ModelResource):
     psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
@@ -637,7 +641,7 @@ class PSTimeSeriesObject(object):
     
     @property
     def datapath(self):
-        datapath = EVENT_TYPE_CONFIG[self.event_type]["row_prefix"].split(KEY_DELIMITER)
+        datapath = row_prefix(self.event_type)
         datapath.append(self.metadata_key)
         if self.summary_type != "base":
             datapath.append(self.summary_type)
@@ -733,11 +737,9 @@ class PSTimeSeriesResource(Resource):
             raise BadRequest("Unsupported event type '%s' provided" % kwargs['event_type'])
         elif "type" not in EVENT_TYPE_CONFIG[kwargs['event_type']]:
             raise BadRequest("Misconfigured event type on server side. Missing 'type' field")
-        elif "row_prefix" not in EVENT_TYPE_CONFIG[kwargs['event_type']]:
-            raise BadRequest("Misconfigured event type on server side. Missing 'row_prefix' field")
         event_type = kwargs['event_type']
         metadata_key = kwargs['metadata_key']
-        datapath = EVENT_TYPE_CONFIG[event_type]["row_prefix"].split(KEY_DELIMITER)
+        datapath = row_prefix(event_type)
         datapath.append(metadata_key)
         summary_type = 'base'
         if 'summary_type' in kwargs:
