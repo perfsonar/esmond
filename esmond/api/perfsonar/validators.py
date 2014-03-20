@@ -275,13 +275,29 @@ SubintervalValidator: Validator for subinterval type
 '''
 class SubintervalValidator(DataValidator):
     def validate(self, obj):
+        err = None
         try:
             json.dumps(obj.value)
-            for k in obj.value:
-                long(obj.value[k])
+            pos = 1
+            for si in obj.value:
+                if('start' not in si):
+                    err = "Interval must contain 'start' field at position %d" % pos
+                    break
+                if('duration' not in si):
+                    err = "Interval must contain 'duration' field at position %d" % pos
+                    break
+                if('val' not in si):
+                    err = "Interval must contain 'val' field at position %d" % pos
+                    break
+                float(si['start'])
+                float(si['duration'])
+                pos += 1
         except ValueError:
-            raise BadRequest("Subinterval key must be an integer")
+            raise BadRequest("Subinterval 'start' and 'duration' must be floating point numbers")
         except:
             raise BadRequest("Invalid subintervals provided")
+        
+        if err is not None:
+            raise BadRequest(err)
         
         return obj.value
