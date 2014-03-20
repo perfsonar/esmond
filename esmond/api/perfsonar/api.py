@@ -4,6 +4,7 @@ from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, P
 from esmond.api.perfsonar.types import *
 from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData, AggregationBin
 from esmond.config import get_config_path, get_config
+from esmond.util import get_logger
 from datetime import datetime
 from django.conf.urls.defaults import url
 from django.db.models import Q
@@ -21,6 +22,9 @@ import hashlib
 import math
 import uuid
 import json
+
+#create logger
+log = get_logger(__name__)
 
 #Get db connection
 try:
@@ -759,6 +763,8 @@ class PSTimeSeriesResource(Resource):
         col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(db, SUMMARY_TYPES[summary_type])
         if col_fam is None:
             col_fam = EVENT_TYPE_CF_MAP[query_type]
+        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%d end=%d cf=%s datapath=%s" %
+                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, col_fam, datapath))
         if col_fam == db.agg_cf:
             results = db.query_aggregation_timerange(path=datapath, freq=freq,
                    cf='average', ts_min=begin_time*1000, ts_max=end_time*1000)
@@ -769,8 +775,10 @@ class PSTimeSeriesResource(Resource):
             results = db.query_raw_data(path=datapath, freq=freq,
                    ts_min=begin_time*1000, ts_max=end_time*1000)
         else:
+            log.debug("action=query_timeseries.end status=-1")
             raise BadRequest("Requested data does not map to a known column-family")
-            
+        log.debug("action=query_timeseries.end status=0")
+        
         return results
     
     def format_ts_obj(self, obj):
@@ -884,6 +892,8 @@ class PSTimeSeriesResource(Resource):
             validator.statistics(db, ts_obj)
         
         #insert the data in the target column-family
+        log.debug("action=create_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s ts=%s val=%s cf=%s datapath=%s freq=%s base_freq=%s" %
+                  (ts_obj.metadata_key, ts_obj.event_type, ts_obj.summary_type, ts_obj.summary_window, str(ts_obj.get_datetime()), str(ts_obj.value), col_family, ts_obj.datapath, ts_obj.freq, ts_obj.base_freq ))
         if col_family == db.rate_cf:
             ratebin = BaseRateBin(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
             db.update_rate_bin(ratebin)
@@ -895,7 +905,8 @@ class PSTimeSeriesResource(Resource):
         elif col_family == db.raw_cf:
             rawdata = RawRateData(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
             db.set_raw_data(rawdata)
-
+        log.debug("action=create_timeseries.end status=0")
+                  
 class PSBulkTimeSeriesResource(PSTimeSeriesResource):
     class Meta:
         resource_name = 'bulkpstimeseries'
