@@ -152,6 +152,8 @@ def find_gaps_in_series(data):
     if gap_scanning:
         gaps.append((gap_start, last_val[0]))
 
+    last_val = None
+
     return gaps
 
 def generate_or_update_gap_inventory(limit=0, verbose=False):
@@ -220,6 +222,8 @@ def generate_or_update_gap_inventory(limit=0, verbose=False):
         data = Fill.verify_fill(ts_start, ts_end, entry.frequency, data)
 
         gaps = find_gaps_in_series(data)
+
+        data = None
 
         for gap in gaps:
             g_start = make_aware(datetime.datetime.utcfromtimestamp(gap[0]), utc)
