@@ -35,6 +35,7 @@ Requires:       python27-mod_wsgi
 Requires:       cassandra20
 Requires:       httpd
 Requires:       postgresql
+Requires:       postgresql-server
 Requires:       postgresql-devel
 Requires:       sqlite
 Requires:       sqlite-devel
