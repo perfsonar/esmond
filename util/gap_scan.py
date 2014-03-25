@@ -86,7 +86,7 @@ def generate_or_update_inventory(limit=0, allow_blank_ifalias=False, verbose=Fal
                         ts_max = calendar.timegm(iface.end_time.utctimetuple())
 
                     row_key_range = get_key_range(
-                        [SNMP_NAMESPACE, device.name, oidset.name, oid.name, iface.ifDescr], 
+                        [SNMP_NAMESPACE, device.name, oidset.set_name, oid.name, iface.ifDescr], 
                         oidset.frequency_ms, ts_min, ts_max)
 
                     for key in row_key_range:
