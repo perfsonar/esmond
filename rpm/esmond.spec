@@ -38,7 +38,6 @@ Requires:       postgresql
 Requires:       postgresql-devel
 Requires:       sqlite
 Requires:       sqlite-devel
-Requires:       subversion
 Requires:       memcached
 
  
@@ -47,7 +46,11 @@ Esmond is a system for collecting and storing large sets of SNMP data. Esmond
 uses a hybrid model for storing data using TSDB for time series data and an SQL
 database for everything else. All data is available via a REST style interface
 (as JSON) allowing for easy integration with other tools.
- 
+
+%pre
+# Create the 'esmond' user
+/usr/sbin/groupadd esmond 2> /dev/null || :
+/usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 %prep
 %setup -q -n %{name}-%{version}
 
@@ -75,10 +78,6 @@ mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_2} %{buildroot}/e
 # Move the apache configuration into place
 mkdir -p %{buildroot}/etc/httpd/conf.d/
 mv %{buildroot}/%{install_base}/rpm/config_files/apache-esdb.conf %{buildroot}/etc/httpd/conf.d/apache-esdb.conf
-
-# Move the cron configuration into place
-mkdir -p %{buildroot}/etc/cron.d/
-mv %{buildroot}/%{install_base}/rpm/config_files/cron-generate_perfsonar_store_file %{buildroot}/etc/cron.d/cron-generate_perfsonar_store_file
 
 # ENV files
 mkdir -p %{buildroot}/etc/profile.d
@@ -110,10 +109,6 @@ pip install -r requirements.txt
 mkdir -p tsdb-data
 touch tsdb-data/TSDB
 
-# Create the 'esmond' user
-/usr/sbin/groupadd esmond 2> /dev/null || :
-/usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
-
 # Create the logging directories
 mkdir -p /var/log/esmond
 mkdir -p /var/log/esmond/crashlog
@@ -133,8 +128,7 @@ chown -R esmond:esmond /var/run/esmond
 %{install_base}/*
 /etc/init.d/%{init_script_1}
 /etc/init.d/%{init_script_2}
-/etc/httpd/conf.d
-/etc/cron.d/cron-generate_perfsonar_store_file
+/etc/httpd/conf.d/apache-esdb.conf
 /etc/profile.d/esmond.csh
 /etc/profile.d/esmond.sh
  
