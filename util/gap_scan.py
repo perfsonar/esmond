@@ -48,7 +48,7 @@ def get_year_boundries(key):
     return datetime.datetime(key_year, 1, 1, tzinfo=utc), \
         datetime.datetime(key_year, 12, 31, hour=23, minute=59, second=59, tzinfo=utc)
 
-def generate_or_update_inventory(limit=0, verbose=False):
+def generate_or_update_inventory(limit=0, allow_blank_ifalias=False, verbose=False):
 
     if limit:
         devices = Device.objects.all().order_by('name')[:limit]
@@ -66,14 +66,14 @@ def generate_or_update_inventory(limit=0, verbose=False):
                     ifaces = device.ifref_set.all()
 
                 for iface in ifaces:
-                    # XXX(mmg): make this a toggleable option 
                     # Skip interfaces that do not have an ifalias 
                     # defined in the metadata since we do not collect
                     # data from these by default.
-                    if iface.ifAlias == None or \
-                        iface.ifAlias == '':
+                    if not allow_blank_ifalias and \
+                        (iface.ifAlias == None or iface.ifAlias == ''):
+                        if verbose: print '  * skipping:', iface
                         continue
-
+                    
                     ts_min = calendar.timegm(iface.begin_time.utctimetuple())
 
                     if iface.end_time == max_datetime or \
@@ -283,6 +283,9 @@ def main():
     parser.add_option('-l', '--limit', metavar='LIMIT',
             type='int', dest='limit', default=0,
             help='Limit query loops for development.')
+    parser.add_option('-b', '--blank_ifalias',
+            dest='blank', action='store_true', default=False,
+            help='Allow interfaces with a blank/NULL ifalias value.')
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
@@ -300,7 +303,8 @@ def main():
 
     if options.inventory:
         print 'Generating inventory'
-        generate_or_update_inventory(options.limit, options.verbose)
+        generate_or_update_inventory(options.limit, options.blank,
+                options.verbose)
     
     if options.gapscan:
         print 'Scanning data for gaps'
