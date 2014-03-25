@@ -12,11 +12,11 @@
 Name:           esmond
 Version:        0.99       
 Release:        1%{?dist}
-Summary:        REPLACE
+Summary:        esmond
 Group:          Development/Libraries
-License:        REPLACE 
+License:        New BSD License 
 URL:            http://REPLACE
-Source0:        http://REPLACE/%{name}-%{version}.tar.gz
+Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 AutoReqProv:	no
@@ -29,20 +29,21 @@ BuildRequires:  httpd
 Requires:       python
 Requires:       python-devel
 Requires:       python-setuptools
-Requires:       centos-release-SCL
 Requires:       python27
 Requires:       mercurial
-Requires:       mod_wsgi
+Requires:       python27-mod_wsgi
+Requires:       cassandra20
 Requires:       httpd
 Requires:       postgresql
 Requires:       postgresql-devel
 Requires:       sqlite
 Requires:       sqlite-devel
 Requires:       memcached
-
+#java 1.7 needed for cassandra. dependency wrong in cassandra rpm.
+Requires:       java-1.7.0-openjdk
  
 %description
-Esmond is a system for collecting and storing large sets of SNMP data. Esmond
+Esmond is a system for collecting and storing large sets of time-series data. Esmond
 uses a hybrid model for storing data using TSDB for time series data and an SQL
 database for everything else. All data is available via a REST style interface
 (as JSON) allowing for easy integration with other tools.
@@ -51,6 +52,7 @@ database for everything else. All data is available via a REST style interface
 # Create the 'esmond' user
 /usr/sbin/groupadd esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
+
 %prep
 %setup -q -n %{name}-%{version}
 
@@ -77,7 +79,7 @@ mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_2} %{buildroot}/e
 
 # Move the apache configuration into place
 mkdir -p %{buildroot}/etc/httpd/conf.d/
-mv %{buildroot}/%{install_base}/rpm/config_files/apache-esdb.conf %{buildroot}/etc/httpd/conf.d/apache-esdb.conf
+mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}/etc/httpd/conf.d/apache-esmond.conf
 
 # ENV files
 mkdir -p %{buildroot}/etc/profile.d
@@ -128,10 +130,13 @@ chown -R esmond:esmond /var/run/esmond
 %{install_base}/*
 /etc/init.d/%{init_script_1}
 /etc/init.d/%{init_script_2}
-/etc/httpd/conf.d/apache-esdb.conf
+/etc/httpd/conf.d/apache-esmond.conf
 /etc/profile.d/esmond.csh
 /etc/profile.d/esmond.sh
  
 %changelog
+* Wed Mar 5 2014 Monte Goode <mmgoode@lbl.gov> .99-1
+- Initial Esmond Spec File including perfsonar support
+
 * Wed Apr 27 2011 Aaron Brown <aaron@internet2.edu> 1.0-1
 - Initial Esmond Spec File
