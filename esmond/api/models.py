@@ -395,7 +395,7 @@ class Inventory(models.Model):
         (STAT_AGGS, 'stat_aggregations')
     )
     # fields
-    row_key = models.CharField(max_length=128, unique=True)
+    row_key = models.CharField(max_length=128)
     frequency = models.IntegerField()
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
@@ -409,6 +409,9 @@ class Inventory(models.Model):
     class Meta:
         db_table = 'inventory'
         ordering = ['row_key']
+        # This constraint will only work in a "real" db engine like
+        # PG or MySQL.  YMMV if using sqlite.
+        unique_together = (('row_key', 'start_time', 'end_time'),)
 
     def __unicode__(self):
         return self.row_key

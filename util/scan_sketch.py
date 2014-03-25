@@ -65,24 +65,15 @@ def generate_or_update_inventory(limit=0, verbose=False):
                 else:
                     ifaces = device.ifref_set.all()
 
-                # There might be more than a single entry for an 
-                # interface.  So, "compress" the entries and adjust
-                # the begin and end time to get a holistic timespan.
-                # Which is to say, pick the earliest begin time and 
-                # the last end time to create the entry in the inventory.
-                iface_map = {}
-
                 for iface in ifaces:
-                    if not iface_map.has_key(iface.ifDescr):
-                        iface_map[iface.ifDescr] = iface
-                    else:
-                        if iface_map[iface.ifDescr].end_time < iface.end_time:
-                            iface_map[iface.ifDescr].end_time = iface.end_time
-                        if iface_map[iface.ifDescr].begin_time > iface.begin_time:
-                            iface_map[iface.ifDescr].begin_time = iface.begin_time
+                    # XXX(mmg): make this a toggleable option 
+                    # Skip interfaces that do not have an ifalias 
+                    # defined in the metadata since we do not collect
+                    # data from these by default.
+                    if iface.ifAlias == None or \
+                        iface.ifAlias == '':
+                        continue
 
-
-                for iface in iface_map.values():
                     ts_min = calendar.timegm(iface.begin_time.utctimetuple())
 
                     if iface.end_time == max_datetime or \
