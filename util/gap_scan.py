@@ -285,7 +285,7 @@ def main():
             help='Limit query loops for development.')
     parser.add_option('-b', '--blank_ifalias',
             dest='blank', action='store_true', default=False,
-            help='Allow interfaces with a blank/NULL ifalias value.')
+            help='Allow interfaces with a blank/NULL ifalias value when generating primary inventory.')
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
