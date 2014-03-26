@@ -164,6 +164,13 @@ def generate_or_update_gap_inventory(limit=0, verbose=False):
             print '  *', entry.start_time, ts_epoch(entry.start_time)
             print '  *', entry.end_time, ts_epoch(entry.end_time)
 
+        # Check for valid timestamps
+        if entry.start_time > entry.end_time:
+            print '   * Bad start/end times!'
+            entry.issues = 'ifref start_time/end_time mismatch'
+            entry.save()
+            continue
+
         ts_start = ts_epoch(entry.start_time)
         ts_end = ts_epoch(entry.end_time)
 
