@@ -130,6 +130,8 @@ chown -R esmond:esmond /var/run/esmond
 
 %files
 %defattr(-,root,root,-)
+%config(noreplace) %{install_base}/esmond.conf
+%config(noreplace) %{install_base}/esmond/settings.py
 %{install_base}/*
 /etc/init.d/%{init_script_1}
 /etc/init.d/%{init_script_2}
