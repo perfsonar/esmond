@@ -168,7 +168,7 @@ def find_gaps_in_series(data):
 
     return gaps
 
-def generate_or_update_gap_inventory(limit=0, threshold=60, verbose=False):
+def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
 
     db = CASSANDRA_DB(get_config(get_config_path()))
 
@@ -314,7 +314,7 @@ def main():
             dest='gapscan', action='store_true', default=False,
             help='Use inventory to scan and inventory gaps in data.')
     parser.add_option('-t', '--threshold', metavar='THRESHOLD',
-            type='int', dest='threshold', default=60,
+            type='int', dest='threshold', default=0,
             help='Length in seconds that a gap duration must be to be considered a gap (default=%default).')
     parser.add_option('-l', '--limit', metavar='LIMIT',
             type='int', dest='limit', default=0,
