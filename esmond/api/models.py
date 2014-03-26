@@ -405,6 +405,7 @@ class Inventory(models.Model):
     column_family = models.CharField(max_length=2, 
                                     choices=COLUMN_FAMILY_CHOICES,
                                     default=BASE_RATES)
+    issues = models.CharField(max_length=128, null=True, blank=True)
 
     class Meta:
         db_table = 'inventory'
@@ -429,6 +430,7 @@ class GapInventory(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     processed = models.BooleanField(default=False)
+    issues = models.CharField(max_length=128, null=True, blank=True)
 
     class Meta:
         db_table = 'gap_inventory'
