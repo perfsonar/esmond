@@ -48,6 +48,26 @@ def get_year_boundries(key):
     return datetime.datetime(key_year, 1, 1, tzinfo=utc), \
         datetime.datetime(key_year, 12, 31, hour=23, minute=59, second=59, tzinfo=utc)
 
+def get_interface_list(device, oidset):
+
+    oidsets = {
+        'ALUSAPPoll': ('alusapref_set', 'name'),
+    }
+
+    if oidsets.has_key(oidset.name):
+        interface_set, ifdescr_source = oidsets[oidset.name]
+        interfaces = getattr(device, interface_set).all()
+        # If the set does not have the same named attributes
+        # as an IfRef object, massage the objects so the usual
+        # generation logic works correctly.
+        if ifdescr_source:
+            for i in interfaces:
+                i.ifAlias = getattr(i, ifdescr_source)
+                i.ifDescr = getattr(i, ifdescr_source)
+        return interfaces
+    else:
+        return device.ifref_set.all()
+
 def generate_or_update_inventory(limit=0, allow_blank_ifalias=False, verbose=False):
 
     if limit:
@@ -60,10 +80,11 @@ def generate_or_update_inventory(limit=0, allow_blank_ifalias=False, verbose=Fal
         oidsets = device.oidsets.all()
         for oidset in oidsets:
             for oid in oidset.oids.all():
+
+                ifaces = get_interface_list(device, oidset)
+
                 if limit:
-                    ifaces = device.ifref_set.all()[:limit]
-                else:
-                    ifaces = device.ifref_set.all()
+                    ifaces = ifaces[:limit]
 
                 for iface in ifaces:
                     # Skip interfaces that do not have an ifalias 
@@ -147,11 +168,11 @@ def find_gaps_in_series(data):
 
     return gaps
 
-def generate_or_update_gap_inventory(limit=0, verbose=False):
+def generate_or_update_gap_inventory(limit=0, threshold=60, verbose=False):
 
     db = CASSANDRA_DB(get_config(get_config_path()))
 
-    data_found = 0
+    gap_duration_lower_bound = datetime.timedelta(seconds=threshold)
 
     if limit:
         row_inventory = Inventory.objects.filter(scan_complete=False).order_by('row_key')[:limit]
@@ -226,6 +247,11 @@ def generate_or_update_gap_inventory(limit=0, verbose=False):
         for gap in gaps:
             g_start = make_aware(datetime.datetime.utcfromtimestamp(gap[0]), utc)
             g_end = make_aware(datetime.datetime.utcfromtimestamp(gap[1]), utc)
+
+            # Skip gaps too small to be considered gaps
+            if g_end - g_start < gap_duration_lower_bound:
+                continue
+
             if verbose:
                 print '  * gap'
                 print '   *', g_start
@@ -287,12 +313,15 @@ def main():
     parser.add_option('-g', '--gapscan',
             dest='gapscan', action='store_true', default=False,
             help='Use inventory to scan and inventory gaps in data.')
+    parser.add_option('-t', '--threshold', metavar='THRESHOLD',
+            type='int', dest='threshold', default=60,
+            help='Length in seconds that a gap duration must be to be considered a gap (default=%default).')
     parser.add_option('-l', '--limit', metavar='LIMIT',
             type='int', dest='limit', default=0,
-            help='Limit query loops for development.')
+            help='Limit query loops for development (default=No Limit).')
     parser.add_option('-b', '--blank_ifalias',
             dest='blank', action='store_true', default=False,
-            help='Allow interfaces with a blank/NULL ifalias value when generating primary inventory.')
+            help='Allow interfaces with a blank/NULL ifalias value when generating primary inventory (default=%default).')
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
@@ -315,7 +344,8 @@ def main():
     
     if options.gapscan:
         print 'Scanning data for gaps'
-        generate_or_update_gap_inventory(options.limit, options.verbose)
+        generate_or_update_gap_inventory(options.limit, options.threshold,
+                options.verbose)
     pass
 
 if __name__ == '__main__':
