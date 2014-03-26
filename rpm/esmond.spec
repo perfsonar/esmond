@@ -10,7 +10,7 @@
 %define init_script_2 espersistd
  
 Name:           esmond
-Version:        0.99       
+Version:        1.0       
 Release:        1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
@@ -73,6 +73,9 @@ find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 # Move the default RPM esmond.conf into place
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{install_base}/esmond.conf
 
+# Move the default settings.py into place
+mv %{buildroot}/%{install_base}/rpm/config_files/settings.py %{buildroot}/%{install_base}/esmond/settings.py
+
 # Move the init scripts into place
 mkdir -p %{buildroot}/etc/init.d
 mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_1} %{buildroot}/etc/init.d/%{init_script_1}
@@ -86,10 +89,6 @@ mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}
 mkdir -p %{buildroot}/etc/profile.d
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.csh %{buildroot}/etc/profile.d/esmond.csh
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.sh %{buildroot}/etc/profile.d/esmond.sh
-
-# Move the apache mod_wsgi esdb CGI into place
-mkdir -p %{buildroot}/%{install_base}/bin/
-mv %{buildroot}/%{install_base}/rpm/bin/esdb_wsgi %{buildroot}/%{install_base}/bin/
 
 # Get rid of the 'rpm' directory now that all the files have been moved into place
 rm -rf %{buildroot}/%{install_base}/rpm
@@ -111,6 +110,9 @@ cd %{install_base}
 pip install -r requirements.txt
 mkdir -p tsdb-data
 touch tsdb-data/TSDB
+
+#generate secret key
+grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.py >> esmond/settings.py
 
 # Create the logging directories
 mkdir -p /var/log/esmond
