@@ -117,7 +117,7 @@ grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.p
 # Create the logging directories
 mkdir -p /var/log/esmond
 mkdir -p /var/log/esmond/crashlog
-chown -R esmond:esmond /var/log/esmond
+chown -R apache:apache /var/log/esmond
 
 # Create the TSDB directory
 mkdir -p /var/lib/esmond

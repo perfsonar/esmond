@@ -104,3 +104,49 @@ INSTALLED_APPS = (
     'discover_runner',
     'tastypie',
 )
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(pathname)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'django_handler': {
+            'level':'INFO',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/esmond/django.log',
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        },
+        'esmond_handler': {
+            'level':'INFO',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/esmond/esmond.log',
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        }
+    },
+    'loggers': {
+        'django.request': { 
+            'handlers': ['django_handler'],
+            'level': 'INFO',
+            'propagate': True
+        },
+        'esmond': { 
+            'handlers': ['esmond_handler'],
+            'level': 'INFO',
+            'propagate': True
+        },
+        'cassandra_db': { 
+            'handlers': ['esmond_handler'],
+            'level': 'INFO',
+            'propagate': True
+        },
+    }
+}
+
