@@ -179,11 +179,16 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
     else:
         row_inventory = Inventory.objects.filter(scan_complete=False).order_by('row_key')
 
+    count = 1
+
     for entry in row_inventory:
         print entry
         if verbose:
             print '  *', entry.start_time, ts_epoch(entry.start_time)
             print '  *', entry.end_time, ts_epoch(entry.end_time)
+            print '  * inventory item # {0}/{1}'.format(count, len(row_inventory))
+
+        count += 1
 
         # Check for valid timestamps
         if entry.start_time > entry.end_time:
