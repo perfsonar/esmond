@@ -70,6 +70,9 @@ cd %{buildroot}/%{install_base}
 # Get rid of any remnants of the buildroot directory
 find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 
+#Create bin directory. virtualenv files will leave here.
+mkdir -p %{buildroot}/%{install_base}/bin/
+
 # Move the default RPM esmond.conf into place
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{install_base}/esmond.conf
 
@@ -93,11 +96,6 @@ mv %{buildroot}/%{install_base}/rpm/config_files/esmond.sh %{buildroot}/etc/prof
 # Get rid of the 'rpm' directory now that all the files have been moved into place
 rm -rf %{buildroot}/%{install_base}/rpm
 
-# XXX: For some reason, the DLNetSNMP gets installed into a subdirectory of the
-# egg
-for i in %{buildroot}/%{install_base}/bin/*; do
-    sed -i 's/DLNetSNMP-\(.*\).egg/DLNetSNMP-\1.egg\/DLNetSNMP/' $i
-done
  
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
