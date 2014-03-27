@@ -171,20 +171,20 @@ def find_gaps_in_series(data):
     for row in data:
         if row[1] == None and gap_scanning == False:
             gap_scanning = True
-            gap_start = row[0]
+            gap_start = int(row[0])
 
         if row[1] != None and gap_scanning == True:
-            gaps.append((gap_start, last_val[0]))
+            gaps.append((gap_start, int(last_val[0])))
             gap_start = None
             gap_scanning = False
 
-        last_val = row
+        last_val = row[:]
 
     # fallthrough - end of row and still scanning
     if gap_scanning:
-        gaps.append((gap_start, last_val[0]))
+        gaps.append((gap_start, int(last_val[0])))
 
-    last_val = None
+    del last_val[:]
 
     return gaps
 
@@ -269,12 +269,14 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
         # to seconds and set is_valid = 0 values to None) and 
         # build a filled series over the query range out of 
         # the returned data.
-        data = QueryUtil.format_data_payload(data)
-        data = Fill.verify_fill(ts_start, ts_end, entry.frequency, data)
+        formatted_data = QueryUtil.format_data_payload(data)
+        filled_data = Fill.verify_fill(ts_start, ts_end, entry.frequency, formatted_data)
 
-        gaps = find_gaps_in_series(data)
+        gaps = find_gaps_in_series(filled_data)
 
-        data = None
+        del filled_data[:]
+        del formatted_data[:]
+        del data[:]
 
         if sig_handler.interrupted:
             print 'shutting down'
@@ -330,6 +332,7 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
             entry.scan_complete = True
 
         entry.save()
+        del gaps[:]
         if verbose: print '======='
         if sig_handler.interrupted:
             print 'shutting down'
