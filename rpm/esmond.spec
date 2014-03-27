@@ -42,7 +42,9 @@ Requires:       sqlite-devel
 Requires:       memcached
 #java 1.7 needed for cassandra. dependency wrong in cassandra rpm.
 Requires:       java-1.7.0-openjdk
- 
+#need gcc for some of the pip installs in the post section
+Requires(post):       gcc
+
 %description
 Esmond is a system for collecting and storing large sets of time-series data. Esmond
 uses a hybrid model for storing data using TSDB for time series data and an SQL
@@ -115,6 +117,8 @@ grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.p
 # Create the logging directories
 mkdir -p /var/log/esmond
 mkdir -p /var/log/esmond/crashlog
+touch /var/log/esmond/esmond.log
+touch /var/log/esmond/django.log
 chown -R apache:apache /var/log/esmond
 
 # Create the TSDB directory
