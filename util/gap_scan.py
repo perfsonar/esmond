@@ -25,6 +25,26 @@ from django.db.utils import IntegrityError
 from django.db import connection
 from django.core.exceptions import ObjectDoesNotExist
 
+import signal
+
+class IntHandler(object):
+    def __init__(self, sig=signal.SIGINT):
+        self.interrupted = False
+        self._calls = 0
+        signal.signal(sig, self.catch)
+
+    def catch(self, signum, frame):
+        self._calls += 1
+        print 'SIGINT {0}'.format(self._calls)
+        self.interrupted = True
+        # Multiple calls will exit if pycassa driver holds on
+        # while it is querying.
+        # Normally should exit loop gracefully.
+        if self._calls >= 3:
+            sys.exit()
+
+sig_handler = IntHandler()
+
 def ts_epoch(ts):
     return calendar.timegm(ts.utctimetuple())
 
@@ -181,12 +201,14 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
 
     count = 1
 
+    inv_count = len(row_inventory)
+
     for entry in row_inventory:
         print entry
         if verbose:
             print '  *', entry.start_time, ts_epoch(entry.start_time)
             print '  *', entry.end_time, ts_epoch(entry.end_time)
-            print '  * inventory item # {0}/{1}'.format(count, len(row_inventory))
+            print '  * inventory item # {0}/{1}'.format(count, inv_count)
 
         count += 1
 
@@ -222,11 +244,16 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
 
         path = _split_rowkey(entry.row_key)[0:5]
 
+        if sig_handler.interrupted:
+            print 'shutting down'
+            break
+
         if entry.get_column_family_display() == 'base_rates':
             data = db.query_baserate_timerange(path=path, 
                     freq=entry.frequency*1000,
                     ts_min=ts_start*1000,
                     ts_max=ts_end*1000)
+
 
         else:
             # XXX(mmg): figure out what data is being stored
@@ -248,6 +275,10 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
         gaps = find_gaps_in_series(data)
 
         data = None
+
+        if sig_handler.interrupted:
+            print 'shutting down'
+            break
 
         for gap in gaps:
             g_start = make_aware(datetime.datetime.utcfromtimestamp(gap[0]), utc)
@@ -300,6 +331,9 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
 
         entry.save()
         if verbose: print '======='
+        if sig_handler.interrupted:
+            print 'shutting down'
+            break
                     
     pass
 
@@ -355,5 +389,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
