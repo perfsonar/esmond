@@ -24,6 +24,7 @@ from django.utils.timezone import utc, make_aware
 from django.db.utils import IntegrityError
 from django.db import connection
 from django.core.exceptions import ObjectDoesNotExist
+from django import db as django_db
 
 import signal
 
@@ -168,6 +169,9 @@ def find_gaps_in_series(data):
     gap_start = None
     last_val = None
 
+    # The explicit copies via int() and [:] were
+    # part of a memory leak hunt.
+
     for row in data:
         if row[1] == None and gap_scanning == False:
             gap_scanning = True
@@ -184,6 +188,7 @@ def find_gaps_in_series(data):
     if gap_scanning:
         gaps.append((gap_start, int(last_val[0])))
 
+    # Probably not needed but let's be sure.
     del last_val[:]
 
     return gaps
@@ -274,6 +279,8 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
 
         gaps = find_gaps_in_series(filled_data)
 
+        # Lots of data being passed around, so explicitly clear
+        # the lists.
         del filled_data[:]
         del formatted_data[:]
         del data[:]
@@ -332,7 +339,12 @@ def generate_or_update_gap_inventory(limit=0, threshold=0, verbose=False):
             entry.scan_complete = True
 
         entry.save()
+        # explicitly clear gaps list just in case and issue 
+        # the djanjo reset so as to no leak memory in the 
+        # form of saved queries.
         del gaps[:]
+        django_db.reset_queries()
+
         if verbose: print '======='
         if sig_handler.interrupted:
             print 'shutting down'
