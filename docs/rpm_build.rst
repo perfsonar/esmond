@@ -78,7 +78,7 @@ python 2.7 for CentOS i386
 ----------------------------------------
 The CentOS Software Collections only provide Python 2.7 for x86_64. For i386 architectures you will need to rebuild the python27 RPMs. Mock is required to rebuild these RPMs (at least if you want to keep your sanity). Assuming you have mock setup, follow the steps below to rebuild the RPMS.
 
-1. Under the /rpm/mock-configs or the esmond source tree there are two files: epel-6-i386-scl.cfg and epel-6-i386-scl-python27.cfg. Move both of these files to /etc/mock of your build system. 
+1. Under the /rpm/mock_configs or the esmond source tree there are two files: epel-6-i386-scl.cfg and epel-6-i386-scl-python27.cfg. Move both of these files to /etc/mock of your build system. 
 
 1. At the bottom of each file is a section called [holding-repo]. Update the path to point at a local holding repo on your system where you can install RPMs.
 
