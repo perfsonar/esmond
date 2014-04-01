@@ -22,20 +22,21 @@ placed on the SQL server are fairly modest.  Our production server uses
 PostgreSQL_, but it's likely that SQLite_ would work just fine.
 
 .. _TSDB: http://code.google.com/p/tsdb/
+.. _PostgreSQL: http://www.postgresql.org/
+.. _SQLite: https://sqlite.org/
 
-Desgin Goals
+Design Goals
 ============
 
 esmond was designed to meet the needs of the Network Engineering group at
 ESnet_.  The key design goals were:
 
-  * data collection should be very reliable
-  * data visualization should be very reliable but not at the expense of data
-    collection
-  * raw data should never be discarded
-  * new interfaces should be detected automatically
-  * automate as much as possible
-  * provide a clean interface for programatic control
+* data collection should be very reliable
+* data visualization should be very reliable but not at the expense of data collection
+* raw data should never be discarded
+* new interfaces should be detected automatically
+* automate as much as possible
+* provide a clean interface for programatic control
 
 .. _ESnet: http://www.es.net/
 

@@ -1,6 +1,8 @@
 esmond subsystems
 ------------------
 
+.. image:: arch.png
+
 `espolld`
 :::::::::
 
@@ -130,13 +132,13 @@ The core of storing and retrieving data from cassandra is the unique key
 that points at a row of data.  One does not 'query' the row keys, rather 
 it is something that can be constructed by the client querying the data.
 
-The row keys for the stored snmp data is of the following form:
+The row keys for the stored snmp data is of the following form::
 
-snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012
+    snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012
 
-The components of the row key are:
+The components of the row key are::
 
-ns:device_name:oidset:oid:interface_name:data_frequency:year
+    ns:device_name:oidset:oid:interface_name:data_frequency:year
 
 The namespace component is a prefix to differentiate different kinds of 
 data that might later be put into the backend - currently just 'snmp.'
@@ -191,15 +193,15 @@ that someone has come up with a better way.
 Raw Data cf
 ~~~~~~~~~~~
 
-The raw data are stored in a regular column family with the following schema:
+The raw data are stored in a regular column family with the following schema::
 
-// regular col family
-"raw_data" : {
-    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
-        "1343955624" :   // long column name
-        "16150333739148" // UTF-8 containing JSON for values.
+    // regular col family
+    "raw_data" : {
+        "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
+            "1343955624" :   // long column name
+            "16150333739148" // UTF-8 containing JSON for values.
+        }
     }
-}
 
 This is a regular column family - the column name is the timestamp and the 
 value is the numeric value that came from the devices.  We were originaly 
@@ -211,15 +213,17 @@ on the column name - all of the columns are ordered on the timestamp.
 Base Rate cf
 ~~~~~~~~~~~~
 
-// supercolumn
-"base_rates" : {
-    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
-        "1343955600" : {     // long column name.
-            "val": "123",    // string key, counter type value.
-            "is_valid" : "2" // zero or positive non-zero.
+The base rate data are store in a supercolumn family with the following schema::
+
+    // supercolumn
+    "base_rates" : {
+        "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012" : {
+            "1343955600" : {     // long column name.
+                "val": "123",    // string key, counter type value.
+                "is_valid" : "2" // zero or positive non-zero.
+            }
         }
     }
-}
 
 The base rates are stored in a supercolumn.  Column name is the timestamp, 
 and the values in the supercol are a string 'key' and a counter type value. 
@@ -240,15 +244,17 @@ a "zero value that is basically a NULL."
 Rate Aggregation cf
 ~~~~~~~~~~~~~~~~~~~
 
-// supercolumn
-"rate_aggregations" : {
-    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:3600000:2012" : {
-        "1343955600" : {   // long column name.
-            "val": "1234", // string key, counter type.
-            "30": "38"     // key of the 'non-val' column is freq of the base rate.
-        }                  // the value of said is the count used in the average.
+The rate aggregation data are stored in a supercolumn family with the following schema::
+
+    // supercolumn
+    "rate_aggregations" : {
+        "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:3600000:2012" : {
+            "1343955600" : {   // long column name.
+                "val": "1234", // string key, counter type.
+                "30": "38"     // key of the 'non-val' column is freq of the base rate.
+            }                  // the value of said is the count used in the average.
+        }
     }
-}
 
 This is one of two column families that contain the higher level 
 aggregations.  This one is how we generate the aggregated averages.  It 
@@ -275,15 +281,17 @@ point to note how the data are stored.
 Stat Aggregation cf
 ~~~~~~~~~~~~~~~~~~~
 
-// supercolumn
-"stat_aggregations" : {
-    "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:86400000:2012" : {
-        "1343955600" : { // long column name.
-            "min": "0",  // string keys, long types.
-            "max": "484140" 
+The stat aggregation data are stored in a supercolumn family with the following schema::
+
+    // supercolumn
+    "stat_aggregations" : {
+        "snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:86400000:2012" : {
+            "1343955600" : { // long column name.
+                "min": "0",  // string keys, long types.
+                "max": "484140" 
+            }
         }
     }
-}
 
 This is different and somewhat more straightforward.  As usual, timestamp 
 column name and the super column elements are just string names and 

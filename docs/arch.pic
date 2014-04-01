@@ -56,7 +56,7 @@ intline down from Espolld .s lineht <->;
 
 move to P2 .s;
 intline down ->;
-D: disk "disk" "(TSDB)";
+D: disk "disk" "(Cassandra)";
 
 move to D .w;
 move left then left;
@@ -70,7 +70,7 @@ intline down to D .ne ->;
 
 move to D .s;
 intline down then down <->;
-DB: bigproc "esdbd (newdb)";
+DB: bigproc "REST API";
 
 move to SQL.e;
 sqlline right then to DB.nw <->;
@@ -94,16 +94,21 @@ PS: client "perfSONAR";
 move to PS .n;
 restline up then to DB .w <->;
 
-move to PS.s then down;
+move to PS.s then down .25 then left .2;
 
 right;
 restline;
-move to last line .center then up .1 "REST";
+move to last line .center then down .1 "REST";
 move to last line .e;
 move right;
-intline above "internal";
+intline;
+move to last line .center then down .1 "internal";
+move to last line .e;
 move right;
-sqlline above "SQL";
+sqlline;
+move to last line .center then down .1 "SQL";
+move to last line .e;
 move right;
-snmpline above "SNMP";
+snmpline;
+move to last line .center then down .1 "SNMP";
 .PE
