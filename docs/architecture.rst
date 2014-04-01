@@ -42,6 +42,11 @@ deprecated, see `newdbd`
  populated by `espolld`.  There is a manager process and a number of worker 
  processes.
 
+`espersistq`
+::::::::::::
+
+`espersistq` displays details about the stat of the persist queue.
+
 Operation
 ~~~~~~~~~
 
