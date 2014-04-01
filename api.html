@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Developer Reference &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="index.html" />
+    <link rel="next" title="REST API Client Libary" href="api.client.html" />
+    <link rel="prev" title="Hacking on esmond" href="hacking.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png _static/logo-esnet-ball-sm.png --><img src="_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="hacking.html" title="Previous Chapter: Hacking on esmond">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+      <span class="hidden-sm">
+        Hacking on esmon...
+      </span>
+    </a>
+  </li>
+  <li>
+    <a href="api.client.html" title="Next Chapter: REST API Client Libary">
+      <span class="hidden-sm">
+        REST API Client ...
+      </span>
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href=""><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">Developer Reference</a><ul>
+<li><a class="reference internal" href="#module-api.api"><tt class="docutils literal"><span class="pre">api</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-api.models"><tt class="docutils literal"><span class="pre">models</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-api.views"><tt class="docutils literal"><span class="pre">views</span></tt> Module</a></li>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9">
+      
+  <div class="section" id="developer-reference">
+<h1>Developer Reference<a class="headerlink" href="#developer-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-api.api">
+<span id="api-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">api</span></tt> Module<a class="headerlink" href="#module-api.api" title="Permalink to this headline">¶</a></h2>
+<p>REST namespace documentation:</p>
+<p><strong>/v1/device/</strong> - Namespace to retrieve traffic data with a simplfied helper syntax.</p>
+<p>/v1/device/
+/v1/device/$DEVICE/
+/v1/device/$DEVICE/interface/
+/v1/device/$DEVICE/interface/$INTERFACE/
+/v1/device/$DEVICE/interface/$INTERFACE/in
+/v1/device/$DEVICE/interface/$INTERFACE/out</p>
+<p>Params for GET: begin, end, agg (and cf where appropriate).</p>
+<p>If none are supplied, sane defaults will be set by the interface and the 
+last hour of base rates will be returned.  The begin/end params are 
+timestamps in seconds, the agg param is the frequency of the aggregation 
+that the client is requesting, and the cf is one of average/min/max.</p>
+<p>This namespace is &#8216;browsable&#8217; - /v1/device/ will return a list of devices, 
+/v1/device/$DEVICE/interface/ will return the interfaces on a device, etc. 
+A full &#8216;detail&#8217; URI with a defined endpoing data set (as outlined in the 
+OIDSET_INTERFACE_ENDPOINTS just below) will return the data.</p>
+<p><strong>/v1/oidset/</strong> - Namespace to retrive a list of valid oidsets.</p>
+<p>This endpoint is not &#8216;browsable&#8217; and it takes no GET arguments.  It merely 
+return a list of valid oidsets from the metadata database for user 
+reference.</p>
+<p><strong>/v1/interface/</strong> - Namespace to retrieve information about discrete interfaces 
+without having to &#8220;go through&#8221; information about a specific device.</p>
+<p>This endpoint is not &#8216;browsable.&#8217;  It takes common GET arguments that 
+would apply like begin and end to filter active interfaces.  Additionally, 
+standard django filtering arguments can be applied to the ifDesc and 
+ifAlias fields (ex: &amp;ifAlias__contains=intercloud) to get information 
+about specifc subsets of interfaces.</p>
+<p><strong>/v1/bulk/</strong> - Not a true namespace.  The /bulk/ ns node will dispatch URIs
+like /bulk/interface/ or /bulk/timeseries/ to the appropriate classes.</p>
+<p><strong>/v1/bulk/interface/</strong> - Namespace to retrive bulk traffic data from 
+multiple interfaces without needing to make multiple round trip http 
+requests via the main device/interface/endpoint namespace documented 
+at the top of the module.</p>
+<p>This namespace is not &#8216;browsable,&#8217; and while it runs counter to typical 
+REST semantics/verbs, it implements the POST verb.  This is to get around 
+potential limitations in how many arguments/length of said that can be 
+sent in a GET request.  The request information is sent as a json blob:</p>
+<dl class="docutils">
+<dt>{ </dt>
+<dd>&#8216;interfaces&#8217;: [{&#8216;interface&#8217;: me0.0, &#8216;device&#8217;: albq-asw1}, ...], 
+&#8216;endpoint&#8217;: [&#8216;in&#8217;, &#8216;out&#8217;],
+&#8216;cf&#8217;: &#8216;average&#8217;,
+&#8216;begin&#8217;: 1382459647,
+&#8216;end&#8217;: 1382463247,</dd>
+</dl>
+<p>}</p>
+<p>Interfaces are requestes as a list of dicts containing iface and device 
+information.  Different kinds of endpoints (in, out, error/in, 
+discard/out, etc) are passed in as a list and data for each sort of 
+endpoint will be returned for each interface.</p>
+<p><strong>/v1/timeseries/</strong> - Namespace to retrive data with explicit Cassandra 
+schema-like syntax.</p>
+<p>/v1/timeseries/
+/v1/timeseries/$TYPE/
+/v1/timeseries/$TYPE/$NS/
+/v1/timeseries/$TYPE/$NS/$DEVICE/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/$FREQUENCY</p>
+<p>$TYPE: is RawData, BaseRate or Aggs
+$NS: is just a prefix/key construct</p>
+<p>Params for get: begin, end, and cf where appropriate.
+Params for put: JSON list of dicts with keys &#8216;val&#8217; and &#8216;ts&#8217; sent as POST 
+data payload.</p>
+<p>GET: The begin/end params are timestamps in milliseconds, and the cf is 
+one of average/min/max.  If none are given, begin/end will default to the 
+last hour.</p>
+<p>In short: everything after the /v1/timeseries/$TYPE/ segment of the URI is 
+joined together to create a cassandra row key.  The path must end with a 
+valid numeric frequency.  The URIs could potentailly be longer or shorter 
+depending on the composition of the row keys of the data being retrieved 
+or written - this is just based on the composition of the snmp data keys.</p>
+<p>The $NS element is just a construct of how we are storing the data.  It is 
+just a prefix - the esmond data is being stored with the previx snmp for 
+example.  Ultimately it is still just part of the generated path.</p>
+<p>This namespace is not &#8216;browsable&#8217; - GET and POST requests expect expect a 
+full &#8216;detail&#8217; URI.  Entering an incomplete URI (ex: /v1/timeseries/, etc) 
+will result in a 400 error being returned.</p>
+<p><strong>/v1/bulk/timeseries/</strong> - Namespace to retrive bulk traffic data from 
+multiple paths without needing to make multiple round trip http 
+requests via the /timeseries/ namespace.</p>
+<p>This namespace is not &#8216;browsable,&#8217; and while it runs counter to typical 
+REST semantics/verbs, it implements the POST verb.  This is to get around 
+potential limitations in how many arguments/length of said that can be 
+sent in a GET request.  The request information is sent as a json blob:</p>
+<dl class="docutils">
+<dt>{</dt>
+<dd><dl class="first docutils">
+<dt>&#8216;paths&#8217;: [</dt>
+<dd>[&#8216;snmp&#8217;, &#8216;lbl-mr2&#8217;, &#8216;FastPollHC&#8217;, &#8216;ifHCInOctets&#8217;, &#8216;xe-9/3/0.202&#8217;, &#8216;30000&#8217;], 
+[&#8216;snmp&#8217;, &#8216;anl-mr2&#8217;, &#8216;FastPollHC&#8217;, &#8216;ifHCOutOctets&#8217;, &#8216;xe-7/0/0.1808&#8217;, &#8216;30000&#8217;]</dd>
+</dl>
+<p class="last">], 
+&#8216;begin&#8217;: 1384976511773, 
+&#8216;end&#8217;: 1384980111773, 
+&#8216;type&#8217;: &#8216;RawData&#8217;</p>
+</dd>
+</dl>
+<p>}</p>
+<p>Data are requested as a list of paths per the /timeseries namespace with
+the addition of a frequency (in ms) at the end of the path dict mimicing
+the cassandra row keys.</p>
+<dl class="class">
+<dt id="api.api.BulkDispatch">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">BulkDispatch</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#BulkDispatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.BulkDispatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.Resource</span></tt></p>
+<p>Class to dispatch the /v1/bulk namespace to other bulk resources.</p>
+<dl class="class">
+<dt id="api.api.BulkDispatch.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#BulkDispatch.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.BulkDispatch.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.BulkDispatch.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get', 'post']</em><a class="headerlink" href="#api.api.BulkDispatch.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.BulkDispatch.Meta.api_name">
+<tt class="descname">api_name</tt><em class="property"> = 'v1'</em><a class="headerlink" href="#api.api.BulkDispatch.Meta.api_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.BulkDispatch.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'bulk'</em><a class="headerlink" href="#api.api.BulkDispatch.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.BulkDispatch.Meta.serializer">
+<tt class="descname">serializer</tt><em class="property"> = &lt;api.api.DeviceSerializer object at 0x1083ed090&gt;</em><a class="headerlink" href="#api.api.BulkDispatch.Meta.serializer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.BulkDispatch.base_fields">
+<tt class="descclassname">BulkDispatch.</tt><tt class="descname">base_fields</tt><em class="property"> = {u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083ed1d0&gt;}</em><a class="headerlink" href="#api.api.BulkDispatch.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.BulkDispatch.declared_fields">
+<tt class="descclassname">BulkDispatch.</tt><tt class="descname">declared_fields</tt><em class="property"> = {}</em><a class="headerlink" href="#api.api.BulkDispatch.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.BulkDispatch.dispatch_namespace_root">
+<tt class="descclassname">BulkDispatch.</tt><tt class="descname">dispatch_namespace_root</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#BulkDispatch.dispatch_namespace_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.BulkDispatch.dispatch_namespace_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Incomplete path: /v1/bulk/</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.BulkDispatch.dispatch_query_type">
+<tt class="descclassname">BulkDispatch.</tt><tt class="descname">dispatch_query_type</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#BulkDispatch.dispatch_query_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.BulkDispatch.dispatch_query_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.BulkDispatch.prepend_urls">
+<tt class="descclassname">BulkDispatch.</tt><tt class="descname">prepend_urls</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/api.html#BulkDispatch.prepend_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.BulkDispatch.prepend_urls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.DataObject">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">DataObject</tt><big>(</big><em>initial=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DataObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DataObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>Encapsulation object to assign values to during processing.</p>
+<dl class="method">
+<dt id="api.api.DataObject.to_dict">
+<tt class="descname">to_dict</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/api.html#DataObject.to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DataObject.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.DeviceResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">DeviceResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.ModelResource</span></tt></p>
+<p>Root resource of this REST schema.  This will return device information 
+form using the ORM and dispatch requests for interface and endpoint 
+information to the appropriate InterfaceResource.</p>
+<dl class="class">
+<dt id="api.api.DeviceResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#DeviceResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get', 'put']</em><a class="headerlink" href="#api.api.DeviceResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.api_name">
+<tt class="descname">api_name</tt><em class="property"> = 'v1'</em><a class="headerlink" href="#api.api.DeviceResource.Meta.api_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousGetElseApiAuthentication object at 0x1083e3bd0&gt;</em><a class="headerlink" href="#api.api.DeviceResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.authorization">
+<tt class="descname">authorization</tt><a class="headerlink" href="#api.api.DeviceResource.Meta.authorization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses permission checking from <tt class="docutils literal"><span class="pre">django.contrib.auth</span></tt> to map
+<tt class="docutils literal"><span class="pre">POST</span> <span class="pre">/</span> <span class="pre">PUT</span> <span class="pre">/</span> <span class="pre">DELETE</span> <span class="pre">/</span> <span class="pre">PATCH</span></tt> to their equivalent Django auth
+permissions.</p>
+<p>Both the list &amp; detail variants simply check the model they&#8217;re based
+on, as that&#8217;s all the more granular Django&#8217;s permission setup gets.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.detail_uri_name">
+<tt class="descname">detail_uri_name</tt><em class="property"> = 'name'</em><a class="headerlink" href="#api.api.DeviceResource.Meta.detail_uri_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.excludes">
+<tt class="descname">excludes</tt><em class="property"> = ['community']</em><a class="headerlink" href="#api.api.DeviceResource.Meta.excludes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.filtering">
+<tt class="descname">filtering</tt><em class="property"> = {'name': 1}</em><a class="headerlink" href="#api.api.DeviceResource.Meta.filtering" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.DeviceResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">Device</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.queryset">
+<tt class="descname">queryset</tt><a class="headerlink" href="#api.api.DeviceResource.Meta.queryset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'device'</em><a class="headerlink" href="#api.api.DeviceResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.serializer">
+<tt class="descname">serializer</tt><em class="property"> = &lt;api.api.DeviceSerializer object at 0x1083e3b10&gt;</em><a class="headerlink" href="#api.api.DeviceResource.Meta.serializer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.Meta.throttle">
+<tt class="descname">throttle</tt><em class="property"> = &lt;esmond.api.auth.AnonymousThrottle object at 0x1083e3a50&gt;</em><a class="headerlink" href="#api.api.DeviceResource.Meta.throttle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.alter_detail_data_to_serialize">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">alter_detail_data_to_serialize</tt><big>(</big><em>request</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.alter_detail_data_to_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.alter_detail_data_to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.base_fields">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'leaf': &lt;tastypie.fields.BooleanField object at 0x1083e3850&gt;, 'name': &lt;tastypie.fields.CharField object at 0x1083e38d0&gt;, u'id': &lt;tastypie.fields.IntegerField object at 0x1083e3ad0&gt;, 'end_time': &lt;tastypie.fields.DateTimeField object at 0x1083e3810&gt;, 'begin_time': &lt;tastypie.fields.DateTimeField object at 0x1083e39d0&gt;, 'active': &lt;tastypie.fields.BooleanField object at 0x1083e3d10&gt;, 'oidsets': &lt;tastypie.fields.ToManyField object at 0x1083e3c50&gt;, 'children': &lt;tastypie.fields.ListField object at 0x1083e3790&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083e3910&gt;}</em><a class="headerlink" href="#api.api.DeviceResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.build_filters">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">build_filters</tt><big>(</big><em>filters=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.build_filters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.build_filters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.DeviceResource.declared_fields">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {'oidsets': &lt;tastypie.fields.ToManyField object at 0x1083e3c50&gt;, 'leaf': &lt;tastypie.fields.BooleanField object at 0x1083e3850&gt;, 'children': &lt;tastypie.fields.ListField object at 0x1083e3790&gt;}</em><a class="headerlink" href="#api.api.DeviceResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.dehydrate">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">dehydrate</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.dehydrate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.dehydrate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.dehydrate_begin_time">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">dehydrate_begin_time</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.dehydrate_begin_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.dehydrate_begin_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.dehydrate_children">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">dehydrate_children</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.dehydrate_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.dehydrate_children" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.dehydrate_end_time">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">dehydrate_end_time</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.dehydrate_end_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.dehydrate_end_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.dispatch_interface_data">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">dispatch_interface_data</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.dispatch_interface_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.dispatch_interface_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.dispatch_interface_detail">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">dispatch_interface_detail</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.dispatch_interface_detail"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.dispatch_interface_detail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.dispatch_interface_list">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">dispatch_interface_list</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.dispatch_interface_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.dispatch_interface_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.hydrate_begin_time">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">hydrate_begin_time</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.hydrate_begin_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.hydrate_begin_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.hydrate_end_time">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">hydrate_end_time</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.hydrate_end_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.hydrate_end_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.hydrate_oidsets">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">hydrate_oidsets</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.hydrate_oidsets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.hydrate_oidsets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.prepend_urls">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">prepend_urls</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.prepend_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.prepend_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>URL regex parsing for this REST schema.  The call to dispatch_detail 
+returns Device information the ORM, the other calls are dispatched to 
+the methods below.</p>
+<p>This is connected to the django url schema by the call:</p>
+<p>v1_api = Api(api_name=&#8217;v1&#8217;)
+v1_api.register(DeviceResource())</p>
+<p>at the bottom of the module.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.DeviceResource.save_m2m">
+<tt class="descclassname">DeviceResource.</tt><tt class="descname">save_m2m</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceResource.save_m2m"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceResource.save_m2m" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.DeviceSerializer">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">DeviceSerializer</tt><big>(</big><em>formats=None</em>, <em>content_types=None</em>, <em>datetime_formatting=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceSerializer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceSerializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.serializers.Serializer</span></tt></p>
+<dl class="method">
+<dt id="api.api.DeviceSerializer.to_json">
+<tt class="descname">to_json</tt><big>(</big><em>data</em>, <em>options=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#DeviceSerializer.to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.DeviceSerializer.to_json" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.InterfaceBulkRequestDataObject">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">InterfaceBulkRequestDataObject</tt><big>(</big><em>initial=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceBulkRequestDataObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceBulkRequestDataObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#api.api.DataObject" title="api.api.DataObject"><tt class="xref py py-class docutils literal"><span class="pre">api.api.DataObject</span></tt></a></p>
+<p>Data encapsulation.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.InterfaceBulkRequestResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">InterfaceBulkRequestResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceBulkRequestResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceBulkRequestResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.Resource</span></tt></p>
+<p>Resource to make a series of requests to the cassandra backend
+to avoid a bunch of round trip http requests to the REST interface.
+Takes a POST verb to get around around limitations in passing 
+lots of args to GET requests.  Incoming payload looks like this:</p>
+<dl class="docutils">
+<dt>{</dt>
+<dd>&#8216;interfaces&#8217;: [{&#8216;interface&#8217;: me0.0, &#8216;device&#8217;: albq-asw1}, ...],
+&#8216;endpoint&#8217;: &#8216;in&#8217;,
+other usual args (begin/end/cf...)</dd>
+</dl>
+<p>}</p>
+<dl class="class">
+<dt id="api.api.InterfaceBulkRequestResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#InterfaceBulkRequestResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['post']</em><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.Meta.always_return_data">
+<tt class="descname">always_return_data</tt><em class="property"> = True</em><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.Meta.always_return_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousBulkLimitElseApiAuthentication object at 0x1083ed2d0&gt;</em><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#api.api.InterfaceBulkRequestDataObject" title="api.api.InterfaceBulkRequestDataObject"><tt class="xref py py-class docutils literal"><span class="pre">InterfaceBulkRequestDataObject</span></tt></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'bulkinterface'</em><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.Meta.serializer">
+<tt class="descname">serializer</tt><em class="property"> = &lt;api.api.DeviceSerializer object at 0x1083ed190&gt;</em><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.Meta.serializer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.Meta.throttle">
+<tt class="descname">throttle</tt><em class="property"> = &lt;esmond.api.auth.AnonymousThrottle object at 0x1083ed310&gt;</em><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.Meta.throttle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceBulkRequestResource.alter_detail_data_to_serialize">
+<tt class="descclassname">InterfaceBulkRequestResource.</tt><tt class="descname">alter_detail_data_to_serialize</tt><big>(</big><em>request</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceBulkRequestResource.alter_detail_data_to_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.alter_detail_data_to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.base_fields">
+<tt class="descclassname">InterfaceBulkRequestResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083ed410&gt;}</em><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceBulkRequestResource.declared_fields">
+<tt class="descclassname">InterfaceBulkRequestResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {}</em><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceBulkRequestResource.detail_uri_kwargs">
+<tt class="descclassname">InterfaceBulkRequestResource.</tt><tt class="descname">detail_uri_kwargs</tt><big>(</big><em>bundle_or_obj</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceBulkRequestResource.detail_uri_kwargs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.detail_uri_kwargs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceBulkRequestResource.obj_create">
+<tt class="descclassname">InterfaceBulkRequestResource.</tt><tt class="descname">obj_create</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceBulkRequestResource.obj_create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceBulkRequestResource.obj_create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.InterfaceDataObject">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">InterfaceDataObject</tt><big>(</big><em>initial=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceDataObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceDataObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#api.api.DataObject" title="api.api.DataObject"><tt class="xref py py-class docutils literal"><span class="pre">api.api.DataObject</span></tt></a></p>
+<p>Encapsulation object to assign values to during processing.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.InterfaceDataResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">InterfaceDataResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceDataResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceDataResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.Resource</span></tt></p>
+<p>Data for interface on a device.</p>
+<p>Note: this resource is always nested under a DeviceResource and is not bound
+into the normal namespace for the API.</p>
+<dl class="class">
+<dt id="api.api.InterfaceDataResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#InterfaceDataResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceDataResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.InterfaceDataResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get']</em><a class="headerlink" href="#api.api.InterfaceDataResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceDataResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousGetElseApiAuthentication object at 0x1083e9f10&gt;</em><a class="headerlink" href="#api.api.InterfaceDataResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceDataResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.InterfaceDataResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#api.api.InterfaceDataObject" title="api.api.InterfaceDataObject"><tt class="xref py py-class docutils literal"><span class="pre">InterfaceDataObject</span></tt></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceDataResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'interface_data'</em><a class="headerlink" href="#api.api.InterfaceDataResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceDataResource.Meta.throttle">
+<tt class="descname">throttle</tt><em class="property"> = &lt;esmond.api.auth.AnonymousThrottle object at 0x1083e9f50&gt;</em><a class="headerlink" href="#api.api.InterfaceDataResource.Meta.throttle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceDataResource.base_fields">
+<tt class="descclassname">InterfaceDataResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'end_time': &lt;tastypie.fields.IntegerField object at 0x1083e9e10&gt;, 'begin_time': &lt;tastypie.fields.IntegerField object at 0x1083e9d90&gt;, 'agg': &lt;tastypie.fields.CharField object at 0x1083e9e90&gt;, 'data': &lt;tastypie.fields.ListField object at 0x1083e9e50&gt;, 'cf': &lt;tastypie.fields.CharField object at 0x1083e9ed0&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083ed0d0&gt;}</em><a class="headerlink" href="#api.api.InterfaceDataResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceDataResource.declared_fields">
+<tt class="descclassname">InterfaceDataResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {'agg': &lt;tastypie.fields.CharField object at 0x1083e9e90&gt;, 'begin_time': &lt;tastypie.fields.IntegerField object at 0x1083e9d90&gt;, 'data': &lt;tastypie.fields.ListField object at 0x1083e9e50&gt;, 'cf': &lt;tastypie.fields.CharField object at 0x1083e9ed0&gt;, 'end_time': &lt;tastypie.fields.IntegerField object at 0x1083e9e10&gt;}</em><a class="headerlink" href="#api.api.InterfaceDataResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceDataResource.get_object_list">
+<tt class="descclassname">InterfaceDataResource.</tt><tt class="descname">get_object_list</tt><big>(</big><em>request</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceDataResource.get_object_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceDataResource.get_object_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceDataResource.get_resource_uri">
+<tt class="descclassname">InterfaceDataResource.</tt><tt class="descname">get_resource_uri</tt><big>(</big><em>bundle_or_obj</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceDataResource.get_resource_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceDataResource.get_resource_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate resource uri</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceDataResource.obj_get">
+<tt class="descclassname">InterfaceDataResource.</tt><tt class="descname">obj_get</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceDataResource.obj_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceDataResource.obj_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invoked when the actual data detail is requested.  Checks the 
+interface name, and generates the endpoint mapping which contains 
+the array &#8216;path&#8217; that is used to request the data from the backend.</p>
+<p>If that is all good, then query args are parsed, defaults are set if 
+none were supplied and then the query is executed.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.InterfaceResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">InterfaceResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.ModelResource</span></tt></p>
+<p>An interface on a device.</p>
+<p>Note: this resource is always nested under a DeviceResource and is not bound
+into the normal namespace for the API.</p>
+<dl class="class">
+<dt id="api.api.InterfaceResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#InterfaceResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get']</em><a class="headerlink" href="#api.api.InterfaceResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.api_name">
+<tt class="descname">api_name</tt><em class="property"> = 'v1'</em><a class="headerlink" href="#api.api.InterfaceResource.Meta.api_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousGetElseApiAuthentication object at 0x1083e97d0&gt;</em><a class="headerlink" href="#api.api.InterfaceResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.detail_uri_name">
+<tt class="descname">detail_uri_name</tt><em class="property"> = 'ifDescr'</em><a class="headerlink" href="#api.api.InterfaceResource.Meta.detail_uri_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.filtering">
+<tt class="descname">filtering</tt><em class="property"> = {'device': 2, 'ifAlias': 1, 'ifDescr': 1}</em><a class="headerlink" href="#api.api.InterfaceResource.Meta.filtering" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.InterfaceResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">IfRef</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.queryset">
+<tt class="descname">queryset</tt><a class="headerlink" href="#api.api.InterfaceResource.Meta.queryset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'interface'</em><a class="headerlink" href="#api.api.InterfaceResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.Meta.throttle">
+<tt class="descname">throttle</tt><em class="property"> = &lt;esmond.api.auth.AnonymousThrottle object at 0x1083e9810&gt;</em><a class="headerlink" href="#api.api.InterfaceResource.Meta.throttle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceResource.alter_list_data_to_serialize">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">alter_list_data_to_serialize</tt><big>(</big><em>request</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource.alter_list_data_to_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.alter_list_data_to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify resource object default format before this is returned 
+and serialized as json.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.base_fields">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'ifType': &lt;tastypie.fields.IntegerField object at 0x1083e9bd0&gt;, 'ifDescr': &lt;tastypie.fields.CharField object at 0x1083e9a50&gt;, 'ipAddr': &lt;tastypie.fields.CharField object at 0x1083e9ad0&gt;, 'ifPhysAddress': &lt;tastypie.fields.CharField object at 0x1083e9d10&gt;, 'ifIndex': &lt;tastypie.fields.IntegerField object at 0x1083e9a10&gt;, 'ifAdminStatus': &lt;tastypie.fields.IntegerField object at 0x1083e9c50&gt;, 'begin_time': &lt;tastypie.fields.DateTimeField object at 0x1083e9c90&gt;, 'device': &lt;tastypie.fields.ToOneField object at 0x1083e93d0&gt;, 'children': &lt;tastypie.fields.ListField object at 0x1083e9550&gt;, 'ifMtu': &lt;tastypie.fields.IntegerField object at 0x1083e9b90&gt;, 'ifSpeed': &lt;tastypie.fields.CharField object at 0x1083e9b10&gt;, 'leaf': &lt;tastypie.fields.BooleanField object at 0x1083e9590&gt;, 'ifHighSpeed': &lt;tastypie.fields.CharField object at 0x1083e9b50&gt;, 'ifAlias': &lt;tastypie.fields.CharField object at 0x1083e9a90&gt;, 'uri': &lt;tastypie.fields.CharField object at 0x1083e9610&gt;, u'id': &lt;tastypie.fields.IntegerField object at 0x1083e99d0&gt;, 'end_time': &lt;tastypie.fields.DateTimeField object at 0x1083e9cd0&gt;, 'device_uri': &lt;tastypie.fields.CharField object at 0x1083e95d0&gt;, 'ifOperStatus': &lt;tastypie.fields.IntegerField object at 0x1083e9c10&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083e98d0&gt;}</em><a class="headerlink" href="#api.api.InterfaceResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceResource.build_filters">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">build_filters</tt><big>(</big><em>filters=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource.build_filters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.build_filters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.InterfaceResource.declared_fields">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {'device': &lt;tastypie.fields.ToOneField object at 0x1083e93d0&gt;, 'device_uri': &lt;tastypie.fields.CharField object at 0x1083e95d0&gt;, 'leaf': &lt;tastypie.fields.BooleanField object at 0x1083e9590&gt;, 'children': &lt;tastypie.fields.ListField object at 0x1083e9550&gt;, 'uri': &lt;tastypie.fields.CharField object at 0x1083e9610&gt;}</em><a class="headerlink" href="#api.api.InterfaceResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceResource.dehydrate">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">dehydrate</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource.dehydrate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.dehydrate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceResource.dehydrate_children">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">dehydrate_children</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource.dehydrate_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.dehydrate_children" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceResource.get_object_list">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">get_object_list</tt><big>(</big><em>request</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource.get_object_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.get_object_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceResource.get_resource_uri">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">get_resource_uri</tt><big>(</big><em>bundle_or_obj=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource.get_resource_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.get_resource_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the resource uri element that is returned in json payload.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceResource.obj_get">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">obj_get</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource.obj_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.obj_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>The standard time range filtering is applied to obj_get since there may
+actually be more than one underlying IfRef for this interface. If there
+is more than one IfRef during the selected time period the IfRef with
+the greatest end_time is returned.</p>
+<p>This also massages the incoming URL fragment to restore characters in 
+ifDescr which were encoded to avoid URL metacharacters back to
+their original state.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.InterfaceResource.obj_get_list">
+<tt class="descclassname">InterfaceResource.</tt><tt class="descname">obj_get_list</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#InterfaceResource.obj_get_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.InterfaceResource.obj_get_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.OidResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">OidResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.ModelResource</span></tt></p>
+<dl class="class">
+<dt id="api.api.OidResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#OidResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.OidResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.OidResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">OID</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidResource.Meta.queryset">
+<tt class="descname">queryset</tt><a class="headerlink" href="#api.api.OidResource.Meta.queryset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'oid'</em><a class="headerlink" href="#api.api.OidResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidResource.base_fields">
+<tt class="descclassname">OidResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'aggregate': &lt;tastypie.fields.BooleanField object at 0x1083e94d0&gt;, 'endpoint_alias': &lt;tastypie.fields.CharField object at 0x1083e9510&gt;, u'id': &lt;tastypie.fields.IntegerField object at 0x1083e9450&gt;, 'name': &lt;tastypie.fields.CharField object at 0x1083e9490&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083e9410&gt;}</em><a class="headerlink" href="#api.api.OidResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidResource.declared_fields">
+<tt class="descclassname">OidResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {}</em><a class="headerlink" href="#api.api.OidResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidResource.get_object_list">
+<tt class="descclassname">OidResource.</tt><tt class="descname">get_object_list</tt><big>(</big><em>request</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidResource.get_object_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidResource.get_object_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidResource.obj_get_list">
+<tt class="descclassname">OidResource.</tt><tt class="descname">obj_get_list</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidResource.obj_get_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidResource.obj_get_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.OidsetEndpointResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">OidsetEndpointResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetEndpointResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetEndpointResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.ModelResource</span></tt></p>
+<dl class="class">
+<dt id="api.api.OidsetEndpointResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#OidsetEndpointResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get']</em><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.Meta.api_name">
+<tt class="descname">api_name</tt><em class="property"> = 'v1'</em><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta.api_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousGetElseApiAuthentication object at 0x1083e9150&gt;</em><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.Meta.excludes">
+<tt class="descname">excludes</tt><em class="property"> = ['id', 'poller_args', 'frequency']</em><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta.excludes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.Meta.include_resource_uri">
+<tt class="descname">include_resource_uri</tt><em class="property"> = False</em><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta.include_resource_uri" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">OIDSet</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.Meta.queryset">
+<tt class="descname">queryset</tt><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta.queryset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'oidsetmap'</em><a class="headerlink" href="#api.api.OidsetEndpointResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidsetEndpointResource.alter_list_data_to_serialize">
+<tt class="descclassname">OidsetEndpointResource.</tt><tt class="descname">alter_list_data_to_serialize</tt><big>(</big><em>request</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetEndpointResource.alter_list_data_to_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetEndpointResource.alter_list_data_to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.base_fields">
+<tt class="descclassname">OidsetEndpointResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'oids': &lt;tastypie.fields.ToManyField object at 0x1083e3ed0&gt;, 'name': &lt;tastypie.fields.CharField object at 0x1083e91d0&gt;}</em><a class="headerlink" href="#api.api.OidsetEndpointResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetEndpointResource.declared_fields">
+<tt class="descclassname">OidsetEndpointResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {'oids': &lt;tastypie.fields.ToManyField object at 0x1083e3ed0&gt;}</em><a class="headerlink" href="#api.api.OidsetEndpointResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidsetEndpointResource.dehydrate">
+<tt class="descclassname">OidsetEndpointResource.</tt><tt class="descname">dehydrate</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetEndpointResource.dehydrate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetEndpointResource.dehydrate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidsetEndpointResource.get_object_list">
+<tt class="descclassname">OidsetEndpointResource.</tt><tt class="descname">get_object_list</tt><big>(</big><em>request</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetEndpointResource.get_object_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetEndpointResource.get_object_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidsetEndpointResource.obj_get_list">
+<tt class="descclassname">OidsetEndpointResource.</tt><tt class="descname">obj_get_list</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetEndpointResource.obj_get_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetEndpointResource.obj_get_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.OidsetResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">OidsetResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.ModelResource</span></tt></p>
+<dl class="class">
+<dt id="api.api.OidsetResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#OidsetResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.OidsetResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get']</em><a class="headerlink" href="#api.api.OidsetResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetResource.Meta.api_name">
+<tt class="descname">api_name</tt><em class="property"> = 'v1'</em><a class="headerlink" href="#api.api.OidsetResource.Meta.api_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousGetElseApiAuthentication object at 0x1083e3e50&gt;</em><a class="headerlink" href="#api.api.OidsetResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetResource.Meta.excludes">
+<tt class="descname">excludes</tt><em class="property"> = ['id', 'poller_args', 'frequency']</em><a class="headerlink" href="#api.api.OidsetResource.Meta.excludes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.OidsetResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">OIDSet</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetResource.Meta.queryset">
+<tt class="descname">queryset</tt><a class="headerlink" href="#api.api.OidsetResource.Meta.queryset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'oidset'</em><a class="headerlink" href="#api.api.OidsetResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidsetResource.alter_list_data_to_serialize">
+<tt class="descclassname">OidsetResource.</tt><tt class="descname">alter_list_data_to_serialize</tt><big>(</big><em>request</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetResource.alter_list_data_to_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetResource.alter_list_data_to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetResource.base_fields">
+<tt class="descclassname">OidsetResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'name': &lt;tastypie.fields.CharField object at 0x1083e3f50&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083e3f10&gt;}</em><a class="headerlink" href="#api.api.OidsetResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OidsetResource.declared_fields">
+<tt class="descclassname">OidsetResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {}</em><a class="headerlink" href="#api.api.OidsetResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidsetResource.dehydrate">
+<tt class="descclassname">OidsetResource.</tt><tt class="descname">dehydrate</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetResource.dehydrate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetResource.dehydrate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidsetResource.get_object_list">
+<tt class="descclassname">OidsetResource.</tt><tt class="descname">get_object_list</tt><big>(</big><em>request</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetResource.get_object_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetResource.get_object_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OidsetResource.obj_get_list">
+<tt class="descclassname">OidsetResource.</tt><tt class="descname">obj_get_list</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OidsetResource.obj_get_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OidsetResource.obj_get_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.OutletDataObject">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">OutletDataObject</tt><big>(</big><em>initial=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletDataObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletDataObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#api.api.DataObject" title="api.api.DataObject"><tt class="xref py py-class docutils literal"><span class="pre">api.api.DataObject</span></tt></a></p>
+<p>Encapsulation for outlet data.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.OutletDataResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">OutletDataResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletDataResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletDataResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.Resource</span></tt></p>
+<p>Data for an outlet on a PDU.</p>
+<p>Note: this resource is always nested under a PDURessource and is not bound
+into the normal namespace for the API.</p>
+<dl class="class">
+<dt id="api.api.OutletDataResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#OutletDataResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletDataResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.OutletDataResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get']</em><a class="headerlink" href="#api.api.OutletDataResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletDataResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousGetElseApiAuthentication object at 0x1083ef9d0&gt;</em><a class="headerlink" href="#api.api.OutletDataResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletDataResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.OutletDataResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#api.api.OutletDataObject" title="api.api.OutletDataObject"><tt class="xref py py-class docutils literal"><span class="pre">OutletDataObject</span></tt></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletDataResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'outlet_data'</em><a class="headerlink" href="#api.api.OutletDataResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletDataResource.Meta.throttle">
+<tt class="descname">throttle</tt><em class="property"> = &lt;esmond.api.auth.AnonymousThrottle object at 0x1083efa10&gt;</em><a class="headerlink" href="#api.api.OutletDataResource.Meta.throttle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletDataResource.base_fields">
+<tt class="descclassname">OutletDataResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'begin_time': &lt;tastypie.fields.IntegerField object at 0x1083ef690&gt;, 'data': &lt;tastypie.fields.ListField object at 0x1083ef990&gt;, 'end_time': &lt;tastypie.fields.IntegerField object at 0x1083ef950&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083efb50&gt;}</em><a class="headerlink" href="#api.api.OutletDataResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletDataResource.declared_fields">
+<tt class="descclassname">OutletDataResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {'data': &lt;tastypie.fields.ListField object at 0x1083ef990&gt;, 'end_time': &lt;tastypie.fields.IntegerField object at 0x1083ef950&gt;, 'begin_time': &lt;tastypie.fields.IntegerField object at 0x1083ef690&gt;}</em><a class="headerlink" href="#api.api.OutletDataResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OutletDataResource.get_resource_uri">
+<tt class="descclassname">OutletDataResource.</tt><tt class="descname">get_resource_uri</tt><big>(</big><em>bundle_or_obj</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletDataResource.get_resource_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletDataResource.get_resource_uri" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OutletDataResource.obj_get">
+<tt class="descclassname">OutletDataResource.</tt><tt class="descname">obj_get</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletDataResource.obj_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletDataResource.obj_get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.OutletResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">OutletResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.ModelResource</span></tt></p>
+<p>An outlet on a PDU.</p>
+<p>Note: this resource is always nested under a PDUResource and is not bound
+into the normal namespace for the API.</p>
+<dl class="class">
+<dt id="api.api.OutletResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#OutletResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.OutletResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get']</em><a class="headerlink" href="#api.api.OutletResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.Meta.api_name">
+<tt class="descname">api_name</tt><em class="property"> = 'v1'</em><a class="headerlink" href="#api.api.OutletResource.Meta.api_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousGetElseApiAuthentication object at 0x1083ef5d0&gt;</em><a class="headerlink" href="#api.api.OutletResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.Meta.detail_uri_name">
+<tt class="descname">detail_uri_name</tt><em class="property"> = 'outletID'</em><a class="headerlink" href="#api.api.OutletResource.Meta.detail_uri_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.Meta.filtering">
+<tt class="descname">filtering</tt><em class="property"> = {'outletName': 1, 'pdu': 2, 'outletID': 1}</em><a class="headerlink" href="#api.api.OutletResource.Meta.filtering" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.OutletResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">OutletRef</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.Meta.queryset">
+<tt class="descname">queryset</tt><a class="headerlink" href="#api.api.OutletResource.Meta.queryset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'outlet'</em><a class="headerlink" href="#api.api.OutletResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.Meta.throttle">
+<tt class="descname">throttle</tt><em class="property"> = &lt;esmond.api.auth.AnonymousThrottle object at 0x1083ef610&gt;</em><a class="headerlink" href="#api.api.OutletResource.Meta.throttle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.OutletResource.alter_list_data_to_serialize">
+<tt class="descclassname">OutletResource.</tt><tt class="descname">alter_list_data_to_serialize</tt><big>(</big><em>request</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletResource.alter_list_data_to_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletResource.alter_list_data_to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify resource object default format before this is returned 
+and serialized as json.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.base_fields">
+<tt class="descclassname">OutletResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'leaf': &lt;tastypie.fields.BooleanField object at 0x1083ef2d0&gt;, 'outletStatus': &lt;tastypie.fields.IntegerField object at 0x1083ef810&gt;, 'pdu': &lt;tastypie.fields.ToOneField object at 0x1083edc50&gt;, 'begin_time': &lt;tastypie.fields.DateTimeField object at 0x1083ef890&gt;, 'outletName': &lt;tastypie.fields.CharField object at 0x1083ef7d0&gt;, u'id': &lt;tastypie.fields.IntegerField object at 0x1083ef750&gt;, 'end_time': &lt;tastypie.fields.DateTimeField object at 0x1083ef8d0&gt;, 'device_uri': &lt;tastypie.fields.CharField object at 0x1083ef490&gt;, 'outletControlState': &lt;tastypie.fields.IntegerField object at 0x1083ef850&gt;, 'outletID': &lt;tastypie.fields.CharField object at 0x1083ef790&gt;, 'children': &lt;tastypie.fields.ListField object at 0x1083ef310&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083ef6d0&gt;}</em><a class="headerlink" href="#api.api.OutletResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OutletResource.build_filters">
+<tt class="descclassname">OutletResource.</tt><tt class="descname">build_filters</tt><big>(</big><em>filters=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletResource.build_filters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletResource.build_filters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.OutletResource.declared_fields">
+<tt class="descclassname">OutletResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {'pdu': &lt;tastypie.fields.ToOneField object at 0x1083edc50&gt;, 'leaf': &lt;tastypie.fields.BooleanField object at 0x1083ef2d0&gt;, 'children': &lt;tastypie.fields.ListField object at 0x1083ef310&gt;, 'device_uri': &lt;tastypie.fields.CharField object at 0x1083ef490&gt;}</em><a class="headerlink" href="#api.api.OutletResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OutletResource.dehydrate_children">
+<tt class="descclassname">OutletResource.</tt><tt class="descname">dehydrate_children</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletResource.dehydrate_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletResource.dehydrate_children" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.OutletResource.get_resource_uri">
+<tt class="descclassname">OutletResource.</tt><tt class="descname">get_resource_uri</tt><big>(</big><em>bundle_or_obj=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletResource.get_resource_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletResource.get_resource_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the resource uri element that is returned in json payload.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.OutletResource.obj_get">
+<tt class="descclassname">OutletResource.</tt><tt class="descname">obj_get</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#OutletResource.obj_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.OutletResource.obj_get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.PDUResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">PDUResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#PDUResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.PDUResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#api.api.DeviceResource" title="api.api.DeviceResource"><tt class="xref py py-class docutils literal"><span class="pre">api.api.DeviceResource</span></tt></a></p>
+<dl class="class">
+<dt id="api.api.PDUResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#PDUResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.PDUResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.PDUResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get']</em><a class="headerlink" href="#api.api.PDUResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.Meta.api_name">
+<tt class="descname">api_name</tt><em class="property"> = 'v1'</em><a class="headerlink" href="#api.api.PDUResource.Meta.api_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.Meta.detail_uri_name">
+<tt class="descname">detail_uri_name</tt><em class="property"> = 'name'</em><a class="headerlink" href="#api.api.PDUResource.Meta.detail_uri_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.Meta.excludes">
+<tt class="descname">excludes</tt><em class="property"> = ['community']</em><a class="headerlink" href="#api.api.PDUResource.Meta.excludes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.Meta.filtering">
+<tt class="descname">filtering</tt><em class="property"> = {'name': 1}</em><a class="headerlink" href="#api.api.PDUResource.Meta.filtering" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.PDUResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">Device</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.Meta.queryset">
+<tt class="descname">queryset</tt><a class="headerlink" href="#api.api.PDUResource.Meta.queryset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'pdu'</em><a class="headerlink" href="#api.api.PDUResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.Meta.serializer">
+<tt class="descname">serializer</tt><em class="property"> = &lt;api.api.DeviceSerializer object at 0x1083edd10&gt;</em><a class="headerlink" href="#api.api.PDUResource.Meta.serializer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.base_fields">
+<tt class="descclassname">PDUResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'leaf': &lt;tastypie.fields.BooleanField object at 0x1083edb90&gt;, 'name': &lt;tastypie.fields.CharField object at 0x1083edad0&gt;, 'children': &lt;tastypie.fields.ListField object at 0x1083ef390&gt;, 'end_time': &lt;tastypie.fields.DateTimeField object at 0x1083edb50&gt;, 'begin_time': &lt;tastypie.fields.DateTimeField object at 0x1083edcd0&gt;, 'active': &lt;tastypie.fields.BooleanField object at 0x1083ef190&gt;, 'oidsets': &lt;tastypie.fields.ToManyField object at 0x1083ef110&gt;, u'id': &lt;tastypie.fields.IntegerField object at 0x1083edb10&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083ef290&gt;}</em><a class="headerlink" href="#api.api.PDUResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.PDUResource.declared_fields">
+<tt class="descclassname">PDUResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {}</em><a class="headerlink" href="#api.api.PDUResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.PDUResource.dehydrate_children">
+<tt class="descclassname">PDUResource.</tt><tt class="descname">dehydrate_children</tt><big>(</big><em>bundle</em><big>)</big><a class="reference internal" href="_modules/api/api.html#PDUResource.dehydrate_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.PDUResource.dehydrate_children" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.PDUResource.dispatch_outlet_data">
+<tt class="descclassname">PDUResource.</tt><tt class="descname">dispatch_outlet_data</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#PDUResource.dispatch_outlet_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.PDUResource.dispatch_outlet_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.PDUResource.dispatch_outlet_detail">
+<tt class="descclassname">PDUResource.</tt><tt class="descname">dispatch_outlet_detail</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#PDUResource.dispatch_outlet_detail"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.PDUResource.dispatch_outlet_detail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.PDUResource.dispatch_outlet_list">
+<tt class="descclassname">PDUResource.</tt><tt class="descname">dispatch_outlet_list</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#PDUResource.dispatch_outlet_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.PDUResource.dispatch_outlet_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.PDUResource.prepend_urls">
+<tt class="descclassname">PDUResource.</tt><tt class="descname">prepend_urls</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/api.html#PDUResource.prepend_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.PDUResource.prepend_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>URL regex parsing for this REST schema.  The call to dispatch_detail
+returns Device information the ORM, the other calls are dispatched to
+the methods below.</p>
+<p>This is connected to the django url schema by the call:</p>
+<p>v1_api = Api(api_name=&#8217;v1&#8217;)
+v1_api.register(DeviceResource())</p>
+<p>at the bottom of the module.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.TimeseriesBulkRequestDataObject">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">TimeseriesBulkRequestDataObject</tt><big>(</big><em>initial=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesBulkRequestDataObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesBulkRequestDataObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#api.api.DataObject" title="api.api.DataObject"><tt class="xref py py-class docutils literal"><span class="pre">api.api.DataObject</span></tt></a></p>
+<p>Data encapsulation.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.TimeseriesBulkRequestResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">TimeseriesBulkRequestResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesBulkRequestResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.Resource</span></tt></p>
+<p>Resource to make a series of requests to the cassandra backend
+to avoid a bunch of round trip http requests to the REST interface.
+Takes a POST verb to get around around limitations in passing 
+lots of args to GET requests.  Incoming payload looks like this:</p>
+<p>{
+&#8216;paths&#8217;: [</p>
+<blockquote>
+<div>[&#8216;snmp&#8217;, &#8216;lbl-mr2&#8217;, &#8216;FastPollHC&#8217;, &#8216;ifHCInOctets&#8217;, &#8216;xe-9/3/0.202&#8217;, &#8216;30000&#8217;], 
+[&#8216;snmp&#8217;, &#8216;anl-mr2&#8217;, &#8216;FastPollHC&#8217;, &#8216;ifHCOutOctets&#8217;, &#8216;xe-7/0/0.1808&#8217;, &#8216;30000&#8217;]</div></blockquote>
+<p>], 
+&#8216;begin&#8217;: 1384976511773, 
+&#8216;end&#8217;: 1384980111773, 
+&#8216;type&#8217;: &#8216;RawData&#8217;
+}</p>
+<dl class="class">
+<dt id="api.api.TimeseriesBulkRequestResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#TimeseriesBulkRequestResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['post']</em><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.Meta.always_return_data">
+<tt class="descname">always_return_data</tt><em class="property"> = True</em><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.Meta.always_return_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousTimeseriesBulkLimitElseApiAuthentication object at 0x1083ed790&gt;</em><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#api.api.TimeseriesBulkRequestDataObject" title="api.api.TimeseriesBulkRequestDataObject"><tt class="xref py py-class docutils literal"><span class="pre">TimeseriesBulkRequestDataObject</span></tt></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'timeseriesbulk'</em><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.Meta.serializer">
+<tt class="descname">serializer</tt><em class="property"> = &lt;api.api.DeviceSerializer object at 0x1083e3a10&gt;</em><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.Meta.serializer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.Meta.throttle">
+<tt class="descname">throttle</tt><em class="property"> = &lt;esmond.api.auth.AnonymousThrottle object at 0x1083ed7d0&gt;</em><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.Meta.throttle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesBulkRequestResource.alter_detail_data_to_serialize">
+<tt class="descclassname">TimeseriesBulkRequestResource.</tt><tt class="descname">alter_detail_data_to_serialize</tt><big>(</big><em>request</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesBulkRequestResource.alter_detail_data_to_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.alter_detail_data_to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.base_fields">
+<tt class="descclassname">TimeseriesBulkRequestResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083ed8d0&gt;}</em><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesBulkRequestResource.declared_fields">
+<tt class="descclassname">TimeseriesBulkRequestResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {}</em><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesBulkRequestResource.detail_uri_kwargs">
+<tt class="descclassname">TimeseriesBulkRequestResource.</tt><tt class="descname">detail_uri_kwargs</tt><big>(</big><em>bundle_or_obj</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesBulkRequestResource.detail_uri_kwargs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.detail_uri_kwargs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesBulkRequestResource.obj_create">
+<tt class="descclassname">TimeseriesBulkRequestResource.</tt><tt class="descname">obj_create</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesBulkRequestResource.obj_create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesBulkRequestResource.obj_create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.TimeseriesDataObject">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">TimeseriesDataObject</tt><big>(</big><em>initial=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesDataObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesDataObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#api.api.DataObject" title="api.api.DataObject"><tt class="xref py py-class docutils literal"><span class="pre">api.api.DataObject</span></tt></a></p>
+<p>Data encapsulation.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.api.TimeseriesResource">
+<em class="property">class </em><tt class="descclassname">api.api.</tt><tt class="descname">TimeseriesResource</tt><big>(</big><em>api_name=None</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tastypie.resources.Resource</span></tt></p>
+<p>This is a non-ORM resource.  The fields defined right below 
+are just the return values from ths resource, not connected to 
+a database backend.</p>
+<p>This accepts both GET and POST requests.  The POST is dispatched 
+to post_detail and not create_obj since this is using the full 
+&#8216;detail&#8217; level URI during the request to define the complete cassandra
+key.</p>
+<dl class="class">
+<dt id="api.api.TimeseriesResource.Meta">
+<em class="property">class </em><tt class="descname">Meta</tt><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="api.api.TimeseriesResource.Meta.allowed_methods">
+<tt class="descname">allowed_methods</tt><em class="property"> = ['get', 'post']</em><a class="headerlink" href="#api.api.TimeseriesResource.Meta.allowed_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.Meta.api_name">
+<tt class="descname">api_name</tt><em class="property"> = 'v1'</em><a class="headerlink" href="#api.api.TimeseriesResource.Meta.api_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.Meta.authentication">
+<tt class="descname">authentication</tt><em class="property"> = &lt;esmond.api.auth.AnonymousGetElseApiAuthentication object at 0x1083ed610&gt;</em><a class="headerlink" href="#api.api.TimeseriesResource.Meta.authentication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.Meta.authorization">
+<tt class="descname">authorization</tt><a class="headerlink" href="#api.api.TimeseriesResource.Meta.authorization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses a custom set of <tt class="docutils literal"><span class="pre">django.contrib.auth</span></tt> permissions to manage
+authorization for various actions in the API.  Since many of of esmond&#8217;s
+resources don&#8217;t map directly (or at all) to Django models we can&#8217;t use the
+<tt class="docutils literal"><span class="pre">tastypie.authorization.DjangoAuthorization</span></tt> class.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.Meta.object_class">
+<tt class="descname">object_class</tt><a class="headerlink" href="#api.api.TimeseriesResource.Meta.object_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#api.api.TimeseriesDataObject" title="api.api.TimeseriesDataObject"><tt class="xref py py-class docutils literal"><span class="pre">TimeseriesDataObject</span></tt></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.Meta.resource_name">
+<tt class="descname">resource_name</tt><em class="property"> = 'timeseries'</em><a class="headerlink" href="#api.api.TimeseriesResource.Meta.resource_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.Meta.serializer">
+<tt class="descname">serializer</tt><em class="property"> = &lt;api.api.DeviceSerializer object at 0x1083ed590&gt;</em><a class="headerlink" href="#api.api.TimeseriesResource.Meta.serializer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.Meta.throttle">
+<tt class="descname">throttle</tt><em class="property"> = &lt;esmond.api.auth.AnonymousThrottle object at 0x1083ed690&gt;</em><a class="headerlink" href="#api.api.TimeseriesResource.Meta.throttle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesResource.alter_list_data_to_serialize">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">alter_list_data_to_serialize</tt><big>(</big><em>request</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.alter_list_data_to_serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.alter_list_data_to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.base_fields">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">base_fields</tt><em class="property"> = {'end_time': &lt;tastypie.fields.IntegerField object at 0x1083ed490&gt;, 'begin_time': &lt;tastypie.fields.IntegerField object at 0x1083ed3d0&gt;, 'agg': &lt;tastypie.fields.CharField object at 0x1083ed510&gt;, 'data': &lt;tastypie.fields.ListField object at 0x1083ed4d0&gt;, 'cf': &lt;tastypie.fields.CharField object at 0x1083ed550&gt;, u'resource_uri': &lt;tastypie.fields.CharField object at 0x1083e3a90&gt;}</em><a class="headerlink" href="#api.api.TimeseriesResource.base_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="api.api.TimeseriesResource.declared_fields">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">declared_fields</tt><em class="property"> = {'agg': &lt;tastypie.fields.CharField object at 0x1083ed510&gt;, 'end_time': &lt;tastypie.fields.IntegerField object at 0x1083ed490&gt;, 'data': &lt;tastypie.fields.ListField object at 0x1083ed4d0&gt;, 'cf': &lt;tastypie.fields.CharField object at 0x1083ed550&gt;, 'begin_time': &lt;tastypie.fields.IntegerField object at 0x1083ed3d0&gt;}</em><a class="headerlink" href="#api.api.TimeseriesResource.declared_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesResource.dispatch_data_ns">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">dispatch_data_ns</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.dispatch_data_ns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.dispatch_data_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Incomplete path: /v1/timeseries/$TYPE/$NS/</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesResource.dispatch_data_type">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">dispatch_data_type</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.dispatch_data_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.dispatch_data_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Incomplete path: /v1/timeseries/$TYPE/</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesResource.dispatch_namespace_root">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">dispatch_namespace_root</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.dispatch_namespace_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.dispatch_namespace_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Incomplete path: /v1/timeseries/</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesResource.get_resource_uri">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">get_resource_uri</tt><big>(</big><em>bundle_or_obj</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.get_resource_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.get_resource_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate resource_uri for json payload.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesResource.obj_get">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">obj_get</tt><big>(</big><em>bundle</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.obj_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.obj_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invoked when a GET request hits this namespace.  Sanity check incoming
+URI segment/args, sets defaults if need be and executes the query.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesResource.post_detail">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">post_detail</tt><big>(</big><em>request</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.post_detail"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.post_detail" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invoked when a POST request is issued.  Rather than CGI-style 
+http parameters, a JSON blob (a list of dicts) is passed in as 
+the the body of the request.</p>
+<p>This performs some rather granular sanity checks on the incoming 
+request/JSON payload.  If that passes, then a list of data objects 
+is generated from the payload and passed to the method that 
+executes the inserts.</p>
+<p>When debating the PUT/POST issue on how to handle this,
+I read a comment about the issue that theoretically a 
+PUT command should be idempotent and not all of our
+cassandra writes are (base rates for example) so post 
+was chosen. -MMG</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.api.TimeseriesResource.prepend_urls">
+<tt class="descclassname">TimeseriesResource.</tt><tt class="descname">prepend_urls</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/api.html#TimeseriesResource.prepend_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.TimeseriesResource.prepend_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>URL parsing - most of these patterns just match an imcomplete 
+URL and dispatch them to methods that return an appropriate
+error message.  The final pattern passes a request to an actual 
+processing method.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="api.api.build_time_filters">
+<tt class="descclassname">api.api.</tt><tt class="descname">build_time_filters</tt><big>(</big><em>filters</em>, <em>orm_filters</em><big>)</big><a class="reference internal" href="_modules/api/api.html#build_time_filters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.build_time_filters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build default time filters.</p>
+<p>By default we want only currently active items.  This will inspect
+orm_filters and fill in defaults if they are missing.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="api.api.check_connection">
+<tt class="descclassname">api.api.</tt><tt class="descname">check_connection</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/api.html#check_connection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.check_connection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called by testing suite to produce consistent errors.  If no 
+cassandra instance is available, test_api might silently hide that 
+fact with mock.patch causing unclear errors in other modules 
+like test_persist.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="api.api.get_throttle_args">
+<tt class="descclassname">api.api.</tt><tt class="descname">get_throttle_args</tt><big>(</big><em>config</em><big>)</big><a class="reference internal" href="_modules/api/api.html#get_throttle_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.get_throttle_args" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-api.models">
+<span id="models-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">models</span></tt> Module<a class="headerlink" href="#module-api.models" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="api.models.ALUSAPRefManager">
+<em class="property">class </em><tt class="descclassname">api.models.</tt><tt class="descname">ALUSAPRefManager</tt><a class="reference internal" href="_modules/api/models.html#ALUSAPRefManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.ALUSAPRefManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">django.db.models.manager.Manager</span></tt></p>
+<dl class="method">
+<dt id="api.models.ALUSAPRefManager.active">
+<tt class="descname">active</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/models.html#ALUSAPRefManager.active"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.ALUSAPRefManager.active" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.models.APIPermissionManager">
+<em class="property">class </em><tt class="descclassname">api.models.</tt><tt class="descname">APIPermissionManager</tt><a class="reference internal" href="_modules/api/models.html#APIPermissionManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.APIPermissionManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">django.db.models.manager.Manager</span></tt></p>
+<dl class="method">
+<dt id="api.models.APIPermissionManager.get_query_set">
+<tt class="descname">get_query_set</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/models.html#APIPermissionManager.get_query_set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.APIPermissionManager.get_query_set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.models.DeviceManager">
+<em class="property">class </em><tt class="descclassname">api.models.</tt><tt class="descname">DeviceManager</tt><a class="reference internal" href="_modules/api/models.html#DeviceManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.DeviceManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">django.db.models.manager.Manager</span></tt></p>
+<dl class="method">
+<dt id="api.models.DeviceManager.active">
+<tt class="descname">active</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/models.html#DeviceManager.active"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.DeviceManager.active" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.models.DeviceManager.active_as_dict">
+<tt class="descname">active_as_dict</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/models.html#DeviceManager.active_as_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.DeviceManager.active_as_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.models.HistoryTableManager">
+<em class="property">class </em><tt class="descclassname">api.models.</tt><tt class="descname">HistoryTableManager</tt><a class="reference internal" href="_modules/api/models.html#HistoryTableManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.HistoryTableManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">django.db.models.manager.Manager</span></tt></p>
+<dl class="method">
+<dt id="api.models.HistoryTableManager.active">
+<tt class="descname">active</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/models.html#HistoryTableManager.active"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.HistoryTableManager.active" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.models.IfRefManager">
+<em class="property">class </em><tt class="descclassname">api.models.</tt><tt class="descname">IfRefManager</tt><a class="reference internal" href="_modules/api/models.html#IfRefManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.IfRefManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">django.db.models.manager.Manager</span></tt></p>
+<dl class="method">
+<dt id="api.models.IfRefManager.active">
+<tt class="descname">active</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/api/models.html#IfRefManager.active"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.models.IfRefManager.active" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-api.views">
+<span id="views-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">views</span></tt> Module<a class="headerlink" href="#module-api.views" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.client.html#module-api.client.snmp"><tt class="docutils literal"><span class="pre">snmp</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.client.html#module-api.client.timeseries"><tt class="docutils literal"><span class="pre">timeseries</span></tt> Module</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/api.txt"
+     rel="nofollow">Source</a>
+</div>
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>

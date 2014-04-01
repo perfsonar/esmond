@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="index.html" />
+    <link rel="next" title="Configuration" href="config.html" />
+    <link rel="prev" title="Introduction" href="intro.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png _static/logo-esnet-ball-sm.png --><img src="_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="intro.html" title="Previous Chapter: Introduction">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+      <span class="hidden-sm">
+        Introduction
+      </span>
+    </a>
+  </li>
+  <li>
+    <a href="config.html" title="Next Chapter: Configuration">
+      <span class="hidden-sm">
+        Configuration
+      </span>
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href=""><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#id2">Installation</a><ul>
+<li><a class="reference internal" href="#virtualenv">virtualenv</a></li>
+<li><a class="reference internal" href="#other-installation-methods">Other installation methods</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9">
+      
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>esmond relies on the following software:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://www.python.org/">Python</a>, version 2.7 or greater</li>
+<li><a class="reference external" href="http://www.net-snmp.org/">Net-SNMP</a></li>
+<li><a class="reference external" href="http://www.postgresql.org/">PostgreSQL</a>, verson 8.0 or greater</li>
+<li><a href="#id3"><span class="problematic" id="id4">memcached_</span></a></li>
+</ul>
+</div></blockquote>
+<p>In addition, it uses the following Python libraries:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://bitbucket.org/jdugan/dlnetsnmp">DLNetSNMP</a>, with ESnet mods</li>
+<li><a class="reference external" href="http://www.initd.org/pub/software/psycopg/PSYCOPG-2-0/">psycopg2</a></li>
+<li><a class="reference external" href="http://www.djangoproject.com/">Django</a></li>
+<li><a class="reference external" href="http://webpy.org/">web.py</a></li>
+<li><a class="reference external" href="http://code.google.com/p/tsdb/">TSDB</a></li>
+<li><a href="#id5"><span class="problematic" id="id6">memcached_</span></a></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="id2">
+<h2>Installation<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="virtualenv">
+<h3>virtualenv<a class="headerlink" href="#virtualenv" title="Permalink to this headline">¶</a></h3>
+<p>buildout, or more specifically zc.buildout, is a tool for creating an isolated
+Python environment and installing packages inside it.  It is used in some
+parts of the Python community to manage deployments and is currently the most
+convienent way to install esmond.  At some point in the future this may
+change. buildout includes a bootstrap script that has a single dependency
+which is Python.</p>
+<ol class="arabic">
+<li><p class="first">Install the prerequisites</p>
+<blockquote>
+<div><p>You will need to install Python, Net-SNMP and PostgreSQL using your normal
+method for installing software.  These packages are very common and are
+supported by most Linux distributions, BSD systems, OS X and others.</p>
+</div></blockquote>
+</li>
+</ol>
+<ol class="arabic">
+<li><p class="first">Obtain the code</p>
+<blockquote>
+<div><p>Currently there is no release tarball so we&#8217;ll use a version checked out
+from the Subversion repo.</p>
+<p>The directory you install esmond into will be referred to as ESMOND.</p>
+<blockquote>
+<div><p>$ cd $ESMOND
+$ svn checkout <a class="reference external" href="http://esmond.googlecode.com/svn/trunk/">http://esmond.googlecode.com/svn/trunk/</a> esmond</p>
+</div></blockquote>
+<p>Note that this creates a subdirectory called esmond, so if you have
+$ESMOND set to /opt/esmond, the code will be in /opt/esmond/esmond/</p>
+</div></blockquote>
+</li>
+</ol>
+<ol class="arabic">
+<li><p class="first">Perform the buildout</p>
+<blockquote>
+<div><p>Buildout is a tool that allows the construction of an isolated environment
+for running Python programs.  It will take care of fetching the Python
+dependencies and installing them in this isolated environement.  To do the
+buildout run the following commands:</p>
+<blockquote>
+<div><p>$ cd $ESMOND/esmond
+$ python bootstrap.py
+$ bin/buildout</p>
+</div></blockquote>
+<p>Note that all of the programs will be installed in $ESMOND/esmond/bin.
+So to run the polling daemon for example you&#8217;d run
+$ESMOND/esmond/bin/espolld.</p>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="other-installation-methods">
+<h3>Other installation methods<a class="headerlink" href="#other-installation-methods" title="Permalink to this headline">¶</a></h3>
+<p>Currently virtualenv is the only documented install method.  There is an RPM
+under development.  If you&#8217;d like a copy of the RPM contact the author.</p>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/install.txt"
+     rel="nofollow">Source</a>
+</div>
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>
