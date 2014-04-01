@@ -108,6 +108,10 @@ html_theme_options = {
 html_logo = "_esnet/static/logo-esnet-ball-sm.png"
 html_sidebars = {'index': None, 'search': None, '*': ['localtoc.html']}
 html_title = "esmond"
+html_favicon = "_esnet/static/favicon.ico"
+html_context = {
+    "github_url": "http://github.com/esnet/esmond",
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
