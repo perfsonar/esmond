@@ -28,7 +28,7 @@ from esmond.api.auth import EsmondAuthorization, AnonymousGetElseApiAuthenticati
     AnonymousBulkLimitElseApiAuthentication, AnonymousTimeseriesBulkLimitElseApiAuthentication, \
     AnonymousThrottle
 from esmond.api.dataseries import QueryUtil, Fill
-from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef
+from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef, Inventory
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import atdecode, atencode
@@ -1498,6 +1498,31 @@ class OutletDataResource(Resource):
 
         return obj
 
+class InventoryResource(ModelResource):
+    """
+    Resource to query cassandra key inventory from gap filling 
+    db tables since querying "real" cassandra keys is expensive.
+    """
+    class Meta:
+        resource_name = 'inventory'
+        allowed_methods = ['get']
+        queryset = Inventory.objects.all()
+        authentication = AnonymousGetElseApiAuthentication()
+        filtering = {
+            'row_key': ALL,
+        }
+
+    def get_object_list(self, request):
+        qs = self._meta.queryset._clone()
+        return qs
+
+    def alter_list_data_to_serialize(self, request, data):
+        return data['objects']
+
+    def dehydrate(self, bundle):
+        return bundle.data['row_key']
+
+
 """Connect the 'root' resources to the URL schema."""
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
@@ -1508,5 +1533,6 @@ v1_api.register(OidsetEndpointResource())
 v1_api.register(BulkDispatch())
 v1_api.register(PDUResource())
 v1_api.register(OutletResource())
+v1_api.register(InventoryResource())
 
 __doc__ = '\n\n'.join([snmp_ns_doc, bulk_ns_doc, bulk_interface_ns_doc, ts_ns_doc, bulk_namespace_ns_doc])
