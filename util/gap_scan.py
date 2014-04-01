@@ -189,7 +189,8 @@ def find_gaps_in_series(data):
         gaps.append((gap_start, int(last_val[0])))
 
     # Probably not needed but let's be sure.
-    del last_val[:]
+    if last_val is not None:
+        del last_val[:]
 
     return gaps
 
