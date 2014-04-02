@@ -632,7 +632,7 @@ class PSArchiveResource(ModelResource):
         for parameter_q in parameter_qs:
             query = query.filter(parameter_q)
             
-        return query
+        return query.distinct()
 
 class PSTimeSeriesObject(object):
     def __init__(self, ts, value, metadata_key, event_type=None, summary_type='base', summary_window=0):
