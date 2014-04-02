@@ -14,6 +14,7 @@ class QueryUtil(object):
     and data structures to validate incoming request elements."""
 
     _timerange_limits = {
+        11: datetime.timedelta(days=30),
         30: datetime.timedelta(days=30),
         60: datetime.timedelta(days=30),
         300: datetime.timedelta(days=30),
