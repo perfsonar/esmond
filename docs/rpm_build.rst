@@ -22,23 +22,18 @@ Open your epel-6 x86_64 profile and add the CentOS Software Collections (SCL) re
 
 Running the Build
 =================
-1. Checkout a clean copy of the source code where (VERSION is the RPM version to be built. e.g. 1.0-1)::
+1. Checkout a clean copy of the source code::
 
-    hg clone https://code.google.com/p/esmond/ esmond-VERSION
+    git clone https://github.com/esnet/esmond.git ./esmond
 
-1. Remove the Mercurial files::
+1. Create a tarball (where VERSION is the major version to be built such as 1.0)::
 
-    rm -rf esmond-VERSION/.hg*
+    cd esmond
+    git archive --format=tar --prefix=esmond-VERSION/ HEAD | gzip >$HOME/rpmbuild/SOURCES/esmond-VERSION.tar.gz
 
-1. Create a tarball::
-
-    tar cvf esmond-VERSION.tar esmond-VERSION/
-    gzip  esmond-VERSION.tar
-
-1. Copy the .spec file and source tarball to your rpmbuild directory::
+1. Copy the .spec file to your rpmbuild directory::
 
     cp esmond-VERSION/esmond.spec $HOME/rpmbuild/SPECS/
-    cp esmond-VERSION/esmond.tar.gz $HOME/rpmbuild/SOURCES/  
 
 1. Build a source RPM::
 
