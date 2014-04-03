@@ -11,6 +11,9 @@ import sys
 
 from optparse import OptionParser
 
+from django.core.paginator import Paginator
+from django import db as django_db
+
 from esmond.cassandra import _split_rowkey
 from esmond.api.models import GapInventory
 from esmond.api.client.timeseries import GetBaseRate, PostBaseRate
@@ -18,69 +21,99 @@ from esmond.api.client.timeseries import GetBaseRate, PostBaseRate
 def ts_epoch(ts):
     return calendar.timegm(ts.utctimetuple())
 
+def fix_string_for_db(s):
+    if len(s) > 128:
+        return '{0}...{1}'.format(s[:60], s[-60:])
+    return s
 
 def process_gaps(source_api_url, destination_api_url, username='', key='', 
-            limit=0, verbose=False):
+            limit=0, verbose=False, dry=False):
 
-    if limit:
-        gaps = GapInventory.objects.filter(processed=False)[:limit]
-    else:
-        gaps = GapInventory.objects.filter(processed=False)
+    # Would normaly limit django set with a [slice] but 
+    # need to handle the iteration artfully for handling
+    # large querysets.
+    count = 0
 
-    for gap in gaps:
+    paginator = Paginator(GapInventory.objects.filter(processed=False).order_by('id'), 1000)
+    for page in range(1, paginator.num_pages):
+        print 'page', count # XXX(mmg): remove this
+        if limit and count >= limit: break
+        for gap in paginator.page(page):
+            if limit and count >= limit: break
+            count += 1
 
-        if verbose:
-            print gap.row.row_key
-            print ' *', gap.start_time, ts_epoch(gap.start_time)
-            print ' *', gap.end_time, ts_epoch(gap.end_time)
+            # XXX(mmg) remove this after first QA pass
+            if gap.row.row_key.find('albq-cr5') > -1:
+                django_db.reset_queries()
+                continue
 
-        path = _split_rowkey(gap.row.row_key)[:-1]
-        freq = int(path.pop())
-
-        params = {
-            'begin': ts_epoch(gap.start_time)*1000, 
-            'end': ts_epoch(gap.end_time)*1000
-        }
-
-        args = {
-            'api_url': source_api_url, 
-            'path': path, 
-            'freq': freq,
-            'params': params,
-            'username': username,
-            'api_key': key
-        }
-
-        get = GetBaseRate(**args)
-
-        payload = get.get_data()
-
-        if verbose:
-            print '  *', payload
-
-        post_payload = []
-
-        for d in payload.data:
             if verbose:
-                print '   *', d, datetime.datetime.utcfromtimestamp(d.ts/1000)
+                print gap.row.row_key
+                print ' *', gap.start_time, ts_epoch(gap.start_time)
+                print ' *', gap.end_time, ts_epoch(gap.end_time)
 
-            # Only transfer valid data points
-            if d.val is not None:
-                post_payload.append( { 'ts': d.ts, 'val': d.val } )
+            path = _split_rowkey(gap.row.row_key)[:-1]
+            freq = int(path.pop())
 
-        if post_payload:
-            print gap.row.row_key
-            print ' *', gap.start_time, ts_epoch(gap.start_time)
-            print ' *', gap.end_time, ts_epoch(gap.end_time)
-            # post = PostBaseRate(api_url=destination_api_url, path=path,
-            #             freq=freq, username=username, api_key=key)
+            params = {
+                'begin': ts_epoch(gap.start_time)*1000, 
+                'end': ts_epoch(gap.end_time)*1000
+            }
 
-            # post.set_payload(post_payload)
-            # post.send_data()
-            pass
+            args = {
+                'api_url': source_api_url, 
+                'path': path, 
+                'freq': freq,
+                'params': params,
+                'username': username,
+                'api_key': key
+            }
 
+            get = GetBaseRate(**args)
 
-        
+            payload = get.get_data()
+
+            if get.get_error:
+                if verbose:
+                    print '  xx', get.get_error
+                gap.issues = fix_string_for_db(get.get_error)
+                # XXX(mmg): remove this
+                print 'xxx', fix_string_for_db(get.get_error)
+
+            if verbose:
+                print '  *', payload
+
+            post_payload = []
+
+            for d in payload.data:
+                if verbose:
+                    print '   *', d, datetime.datetime.utcfromtimestamp(d.ts/1000)
+
+                # Only transfer valid data points
+                if d.val is not None:
+                    post_payload.append( { 'ts': d.ts, 'val': d.val } )
+
+            if post_payload:
+                # XXX(mmg): remove this after first QA pass
+                gap.issues = 'Data found in gap'
+                print gap.row.row_key
+                print ' *', gap.start_time, ts_epoch(gap.start_time)
+                print ' *', gap.end_time, ts_epoch(gap.end_time)
+                # post = PostBaseRate(api_url=destination_api_url, path=path,
+                #             freq=freq, username=username, api_key=key)
+
+                # post.set_payload(post_payload)
+                # post.send_data()
+                # if post.get_error:
+                #     # do something
+                #     pass
+                pass
+
+            gap.processed = True
+            if not dry:
+                gap.save()
+            django_db.reset_queries()
+
 
 def main():
     usage = '%prog [ options | -v ]'
@@ -102,6 +135,9 @@ def main():
     parser.add_option('-k', '--key', metavar='API_KEY',
         type='string', dest='key', default='',
         help='API key for post operation.')
+    parser.add_option('-d', '--dry',
+            dest='dry', action='store_true', default=False,
+            help='Dry run - do not commit saves to gap inventory.')
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
@@ -113,7 +149,8 @@ def main():
         return -1
 
     process_gaps(options.source_api_url, options.destination_api_url,
-                options.user, options.key, options.limit, options.verbose)
+                options.user, options.key, options.limit, options.verbose,
+                options.dry)
     
     pass
 
