@@ -477,6 +477,7 @@ class PSEventTypes(models.Model):
     event_type =  models.CharField(max_length=128, db_index=True)
     summary_type =  models.CharField(max_length=128)
     summary_window =  models.BigIntegerField()
+    time_updated = models.DateTimeField(null=True)
     
     class Meta:
         db_table = "ps_event_types"

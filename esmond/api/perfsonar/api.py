@@ -9,6 +9,7 @@ from datetime import datetime
 from django.conf.urls.defaults import url
 from django.db.models import Q
 from django.utils.text import slugify
+from django.utils.timezone import now, utc
 from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
 from string import join
 from tastypie import fields
@@ -52,12 +53,17 @@ EVENT_TYPE_FILTER = "event-type"
 SUMMARY_TYPE_FILTER = "summary-type"
 SUMMARY_WINDOW_FILTER = "summary-window"
 DNS_MATCH_RULE_FILTER = "dns-match-rule"
+TIME_FILTER = "time"
+TIME_START_FILTER = "time-start"
+TIME_END_FILTER = "time-end"
+TIME_RANGE_FILTER = "time-range"
 DNS_MATCH_PREFER_V6 = "prefer-v6"
 DNS_MATCH_PREFER_V4 = "prefer-v4"
 DNS_MATCH_ONLY_V6 = "only-v6"
 DNS_MATCH_ONLY_V4 = "only-v4"
 DNS_MATCH_V4_V6 = "v4v6"
-RESERVED_GET_PARAMS = ["format", DNS_MATCH_RULE_FILTER]
+RESERVED_GET_PARAMS = ["format", DNS_MATCH_RULE_FILTER, TIME_FILTER,
+                       TIME_START_FILTER, TIME_END_FILTER, TIME_RANGE_FILTER]
 DATA_KEY_TIME = "ts"
 DATA_KEY_VALUE = "val"
 
@@ -97,7 +103,46 @@ def format_list_keys(data):
 
 def row_prefix(event_type):
     return ['ps', event_type.replace('-', '_') ]
+
+def datetime_to_ts(dt):
+    return timegm(dt.utctimetuple())
+
+def valid_time(t):
+    try:
+        t = int(t)
+    except ValueError:
+        raise BadRequest("Time parameter must be an integer")
+    return t
     
+def handle_time_filters(filters):
+    end_time = int(time())
+    begin_time = 0
+    has_filters = True
+    if filters.has_key(TIME_FILTER):
+        begin_time = valid_time(filters[TIME_FILTER])
+        end_time = begin_time
+    elif filters.has_key(TIME_START_FILTER) and filters.has_key(TIME_END_FILTER):
+        begin_time = valid_time(filters[TIME_START_FILTER])
+        end_time = valid_time(filters[TIME_END_FILTER])
+    elif filters.has_key(TIME_START_FILTER) and filters.has_key(TIME_RANGE_FILTER):
+        begin_time = valid_time(filters[TIME_START_FILTER])
+        end_time = begin_time + valid_time(filters[TIME_RANGE_FILTER])
+    elif filters.has_key(TIME_END_FILTER) and filters.has_key(TIME_RANGE_FILTER):
+        end_time = valid_time(filters[TIME_END_FILTER])
+        begin_time = end_time - valid_time(filters[TIME_RANGE_FILTER])
+    elif filters.has_key(TIME_START_FILTER):
+        begin_time = valid_time(filters[TIME_START_FILTER])
+    elif filters.has_key(TIME_END_FILTER):
+        end_time = valid_time(filters[TIME_END_FILTER])
+    elif filters.has_key(TIME_RANGE_FILTER):
+        begin_time = end_time - valid_time(filters[TIME_RANGE_FILTER])
+    else:
+        has_filters = False
+    if(end_time < begin_time):
+        raise BadRequest("Requested start time must be less than end time")
+    return {"begin": begin_time,
+            "end": end_time,
+            "has_filters": has_filters}
 
 # Resource classes 
 class PSEventTypesResource(ModelResource):
@@ -114,8 +159,10 @@ class PSEventTypesResource(ModelResource):
             "event_type": ['exact'],  
             "summary_type": ['exact'],
             "summary_window": ['exact'],
+            "time_updated": ['exact'],
             "psmetadata": ALL_WITH_RELATIONS
         }
+    
     
     @staticmethod
     def format_summary_obj(event_type):
@@ -123,6 +170,10 @@ class PSEventTypesResource(ModelResource):
         summary_obj['uri'] = event_type['resource_uri']
         summary_obj['summary-type'] = event_type['summary_type']
         summary_obj['summary-window'] = event_type['summary_window']
+        summary_obj['time-updated'] = None
+        if(event_type['time_updated'] is not None):
+            summary_obj['time-updated'] = datetime_to_ts(event_type['time_updated'])
+            
         return summary_obj
     
     @staticmethod
@@ -139,10 +190,14 @@ class PSEventTypesResource(ModelResource):
                 formatted_event_type['base-uri'] = ""
                 formatted_event_type['summaries'] = []
                 formatted_event_type_map[event_type['event_type']] = formatted_event_type
-             
+                formatted_event_type['time-updated'] = None
+                
             #Determine summary type and update accordingly   
             if(event_type['summary_type'] == 'base'):
                 formatted_event_type['base-uri'] = event_type['resource_uri']
+                formatted_event_type['time-updated'] = None
+                if(event_type['time_updated'] is not None):
+                    formatted_event_type['time-updated'] = datetime_to_ts(event_type['time_updated'])
             else:
                 summary_obj = PSEventTypesResource.format_summary_obj(event_type)
                 formatted_event_type['summaries'].append(summary_obj) 
@@ -251,6 +306,7 @@ class PSEventTypeSummaryResource(PSEventTypesResource):
             "event_type": ['exact'],  
             "summary_type": ['exact'],
             "summary_window": ['exact'],
+            "time_updated": ['exact'],
             "psmetadata": ALL_WITH_RELATIONS
         }
     
@@ -602,7 +658,16 @@ class PSArchiveResource(ModelResource):
                     parameter_qs.append(Q(
                     psmetadataparameters__parameter_key=filter,
                     psmetadataparameters__parameter_value=filters[filter]))
-                
+        #add time filters if there are any
+        time_filters = handle_time_filters(filters)
+        if(time_filters["has_filters"]):
+            print "begin_ts=%d, end_ts=%d" % (time_filters['begin'], time_filters['end'])
+            begin = datetime.utcfromtimestamp(time_filters['begin']).replace(tzinfo=utc)
+            end = datetime.utcfromtimestamp(time_filters['end']).replace(tzinfo=utc)
+            print "begin=%s, end=%s" % (begin, end)
+            event_type_qs.append(Q(pseventtypes__time_updated__gte=begin))
+            event_type_qs.append(Q(pseventtypes__time_updated__lte=end))
+            
         # Create standard ORM filters
         orm_filters = super(ModelResource, self).build_filters(formatted_filters)
         
@@ -691,13 +756,6 @@ class PSTimeSeriesResource(Resource):
         limit = 0
         max_limit = 0
     
-    def valid_time(self, t):
-        try:
-            t = int(t)
-        except ValueError:
-            raise BadRequest("Time parameter must be an integer")
-        return t
-    
     def valid_summary_window(self, sw):
         try:
             sw = int(sw)
@@ -708,28 +766,9 @@ class PSTimeSeriesResource(Resource):
     def obj_get_list(self, bundle, **kwargs):
         #format time GET parameters
         filters = getattr(bundle.request, 'GET', {})
-        end_time = int(time())
-        begin_time = 0
-        if filters.has_key('time'):
-            begin_time = self.valid_time(filters['time'])
-            end_time = begin_time
-        elif filters.has_key('time-start') and filters.has_key('time-end'):
-            begin_time = self.valid_time(filters['time-start'])
-            end_time = self.valid_time(filters['time-end'])
-        elif filters.has_key('time-start') and filters.has_key('time-range'):
-            begin_time = self.valid_time(filters['time-start'])
-            end_time = begin_time + self.valid_time(filters['time-range'])
-        elif filters.has_key('time-end') and filters.has_key('time-range'):
-            end_time = self.valid_time(filters['time-end'])
-            begin_time = end_time - self.valid_time(filters['time-range'])
-        elif filters.has_key('time-start'):
-           begin_time = self.valid_time(filters['time-start'])
-        elif filters.has_key('time-end'):
-           end_time = self.valid_time(filters['time-end'])
-        elif filters.has_key('time-range'):
-           begin_time = end_time - self.valid_time(filters['time-range'])
-        if(end_time < begin_time):
-            raise BadRequest("Requested start time must be less than end time")
+        time_result = handle_time_filters(filters)
+        begin_time = time_result['begin']
+        end_time = time_result['end']
         
         #build data path
         datapath = []
@@ -863,6 +902,8 @@ class PSTimeSeriesResource(Resource):
                                             summary_window=et.summary_window
                                             )
             self.database_write(ts_obj)
+        #update time. clear out microseconds since timestamp filters are only seconds and we wwant to allow exact matches
+        et_to_update.update(time_updated=now().replace(microsecond=0))
         
         return obj
     
