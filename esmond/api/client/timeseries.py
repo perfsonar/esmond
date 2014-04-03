@@ -20,6 +20,10 @@ class TimeseriesBase(AlertMixin, object):
         self.username = username
         self.api_key = api_key
 
+        # Error from base classes
+        self.errno = None
+        self.errms = None
+
         # Make sure we're not using the base class
         try:
             getattr(self, '_p_type')
@@ -46,6 +50,16 @@ class TimeseriesBase(AlertMixin, object):
         self.url = '{0}/{1}/{2}/{3}/{4}'.format(self.api_url, 
             self._schema_root, self._p_type,
             '/'.join(self.path), self.freq)
+
+    def set_error_state(self, errno, errms):
+        self.errno = errno
+        self.errms = errms
+
+    @property
+    def get_error(self):
+        if self.errno or self.errms:
+            return '{0}: {1}'.format(self.errno, self.errms)
+        return None
 
 
 
@@ -165,6 +179,7 @@ class PostData(TimeseriesBase):
 
         if not r.status_code == 201:
             # Change this to an exception?
+            self.set_error_state(r.status_code, r.content)
             self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
 
         # reset payload
@@ -264,6 +279,7 @@ class GetData(TimeseriesBase):
             data = json.loads(r.content)
             return TimeSeriesDataPayload(data)
         else:
+            self.set_error_state(r.status_code, r.content)
             self.warn('GET error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
             return TimeSeriesDataPayload()
 
