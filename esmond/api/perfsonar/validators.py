@@ -147,9 +147,9 @@ class HistogramValidator(DataValidator):
         mean_num = 0
         sample_size = 0
         for k in agg_hist:
-            #only can do statistics for histograms with integer buckets
+            #only can do statistics for histograms with numeric buckets
             try:
-                long(k)
+                float(k)
             except ValueError:
                 #store empty object and return but don't fail whole operation
                 obj.value = {}
@@ -160,12 +160,12 @@ class HistogramValidator(DataValidator):
                stats['mode'] = [ k ]
             elif agg_hist[k] == agg_hist[stats['mode'][0]]:
                 stats['mode'].append(k)
-            mean_num += (long(k) * agg_hist[k])
+            mean_num += (float(k) * agg_hist[k])
             sample_size += agg_hist[k]
         stats['mean'] = (mean_num/(1.0*sample_size))
         
         #sort items. make sure sort as numbers not strings
-        sorted_hist = sorted(agg_hist.iteritems(), key=lambda k: long(k[0]))
+        sorted_hist = sorted(agg_hist.iteritems(), key=lambda k: float(k[0]))
         
         #get min and max
         stats['minimum'] = sorted_hist[0][0]
@@ -179,11 +179,11 @@ class HistogramValidator(DataValidator):
         curr_count = 0
         for hist_item in sorted_hist:
             #stddev/variance
-            stddev += (math.pow(long(hist_item[0]) - stats['mean'], 2)*hist_item[1])
+            stddev += (math.pow(float(hist_item[0]) - stats['mean'], 2)*hist_item[1])
             #quantiles
             curr_count += hist_item[1]
             while percentile is not None and curr_count >= percentile.k:
-                percentile.findvalue(curr_count, long(hist_item[0]))
+                percentile.findvalue(curr_count, float(hist_item[0]))
                 #some percentiles require next item in list, so may have to wait until next iteration
                 if percentile.is_calculated:
                     #calculated so add to dict
