@@ -11,26 +11,22 @@
  
 Name:           esmond
 Version:        1.0       
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
 URL:            http://REPLACE
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildArch:      noarch
 AutoReqProv:	no
  
-BuildRequires:  python
-BuildRequires:  python-devel
-BuildRequires:  python-setuptools
+BuildRequires:  python27
 BuildRequires:  httpd
+BuildRequires:  postgresql-devel
+BuildRequires:  mercurial
+BuildRequires:  gcc
 
-Requires:       python
-Requires:       python-devel
-Requires:       python-setuptools
 Requires:       python27
-Requires:       mercurial
 Requires:       python27-mod_wsgi
 Requires:       cassandra20
 Requires:       httpd
@@ -42,8 +38,7 @@ Requires:       sqlite-devel
 Requires:       memcached
 #java 1.7 needed for cassandra. dependency wrong in cassandra rpm.
 Requires:       java-1.7.0-openjdk
-#need gcc for some of the pip installs in the post section
-Requires(post):       gcc
+
 
 %description
 Esmond is a system for collecting and storing large sets of time-series data. Esmond
@@ -98,16 +93,26 @@ mv %{buildroot}/%{install_base}/rpm/config_files/esmond.sh %{buildroot}/etc/prof
 # Get rid of the 'rpm' directory now that all the files have been moved into place
 rm -rf %{buildroot}/%{install_base}/rpm
 
- 
+# Install python libs so don't rely on pip connectivity during RPM install
+# NOTE: This part is why its not noarch
+cd %{buildroot}/%{install_base}
+source /opt/rh/python27/enable
+/opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
+. bin/activate
+pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
+#not pretty but below is the best way I could find to remove references to buildroot
+find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
+find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
+
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
 
 %post
-source /opt/rh/python27/enable
 cd %{install_base}
+source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 . bin/activate
-pip install -r requirements.txt
+
 mkdir -p tsdb-data
 touch tsdb-data/TSDB
 
