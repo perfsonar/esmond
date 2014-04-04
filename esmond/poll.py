@@ -7,6 +7,8 @@ import socket
 import threading
 import Queue
 
+import django
+
 from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
 
 import tsdb
@@ -452,6 +454,8 @@ class PollManager(object):
                 poller.run_once()
 
             if self.last_reload + self.config.reload_interval <= time.time():
+                if self.config.debug:
+                    django.db.reset_queries()
                 self.reload()
 
             time.sleep(1)

@@ -27,6 +27,9 @@ def get_config(config_file, opts=None):
     if opts and opts.pid_dir:
         conf.pid_dir = opts.pid_dir
 
+    if opts and opts.debug:
+        conf.debug = opts.debug
+
     return conf
 
 def get_opt_parser(default_config_file=None, default_pid_dir=None):
@@ -56,6 +59,7 @@ class EsmondConfig(object):
         # from config file parsing.
         self.db_clear_on_testing = False
         self.db_profile_on_testing = None
+        self.debug = False
         self.error_email_from = None
         self.error_email_subject = None
         self.error_email_to = None
@@ -111,6 +115,7 @@ class EsmondConfig(object):
                 'cassandra_user',
                 'db_profile_on_testing',
                 'db_uri',
+                'debug',
                 'error_email_from',
                 'error_email_subject',
                 'error_email_to',
@@ -142,9 +147,14 @@ class EsmondConfig(object):
             if opt in config_items:
                 setattr(self, opt, cfg.get("main", opt))
 
+        boolean_options = (
+            'db_profile_on_testing',
+            'profile_persister',
+            'debug',
+        )
+
         for key, val in cfg.items('main'):
-            if key == 'db_profile_on_testing' or \
-                key == 'profile_persister':
+            if key in boolean_options:
                 setattr(self, key, cfg.getboolean('main', key))
         
         self.persist_map = {}

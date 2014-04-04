@@ -19,6 +19,7 @@ import cPickle as pickle
 
 import json
 
+import django
 from django.utils.timezone import now, utc, make_aware
 
 import tsdb
@@ -172,6 +173,8 @@ class PollPersister(object):
                 if not self.sleeping:
                     self.flush()
                     self.sleeping = True
+                    if self.config.debug:
+                        django.db.reset_queries()
                 time.sleep(PERSIST_SLEEP_TIME)
 
         if self.config.profile_persister:
