@@ -1698,3 +1698,22 @@ def espersistd():
         stats(name, config, opts)
     else:
         print >>sys.stderr, "unknown role: %s" % opts.role
+
+def espersistq():
+    """Entry point for espersistq.
+
+    """
+
+    argv = sys.argv
+    oparse = get_opt_parser(default_config_file=get_config_path())
+    (opts, args) = oparse.parse_args(args=argv)
+
+    opts.config_file = os.path.abspath(opts.config_file)
+
+    try:
+        config = get_config(opts.config_file, opts)
+    except ConfigError, e:
+        print >>sys.stderr, e
+        sys.exit(1)
+
+    stats("espersistq", config, opts)
