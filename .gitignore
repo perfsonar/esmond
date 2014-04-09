@@ -1,0 +1,24 @@
+# ignore standard python junk
+*.pyc
+*.egg-info
+.Python
+# ignore virtualenv directories
+/bin
+/lib
+/include
+/src
+# place to dump temporary junk
+/tmp
+/eggs
+# ignore generated environment config
+esmond.env
+.env
+/devel
+/docs/_build
+.DS_Store
+*.swp
+*.py.orig
+util/configure_cluster.orig
+pysqlite2-doc/install-source.txt
+/crashlog
+.coverage
