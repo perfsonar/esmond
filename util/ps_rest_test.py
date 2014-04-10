@@ -13,20 +13,20 @@ from esmond.api.client.perfsonar.query import ApiConnect, ApiFilters
 from esmond.api.client.perfsonar.post import MetadataPost, EventTypePost, EventTypeBulkPost
 from esmond.api.tests.perfsonar.test_data import TestResults
 
-def query():
+def query(script_alias):
     tr = TestResults()
 
     filters = ApiFilters()
 
     filters.verbose = True
-    filters.time_start = tr.q_start / 1000
-    filters.time_end = tr.q_end / 1000
+    # filters.time_start = tr.q_start / 1000
+    # filters.time_end = tr.q_end / 1000
     # filters.input_source = 'lbl-pt1.es.net'
     # filters.tool_name = 'bwctl/iperf3'
     # filters.input_destination = 'chic-owamp.es.net'
     # filters.tool_name = 'owamp/powstream'
 
-    conn = ApiConnect('http://localhost:8000/', filters)
+    conn = ApiConnect('http://localhost:8000/', filters, script_alias=script_alias)
 
     for md in conn.get_metadata():
         print md
@@ -89,7 +89,9 @@ def main():
             help='API key for post operation.')
     options, args = parser.parse_args()
 
-    # query()
+    script_alias = None
+
+    # query(script_alias)
 
     args = {
         "subject_type": "point-to-point",
@@ -104,7 +106,7 @@ def main():
     }
 
     mp = MetadataPost(options.api_url, username=options.user, 
-        api_key=options.key, **args)
+        api_key=options.key, script_alias=script_alias, **args)
     mp.add_event_type('throughput')
     mp.add_event_type('time-error-estimates')
     mp.add_event_type('histogram-ttl')
@@ -121,7 +123,7 @@ def main():
 
     et = EventTypePost(options.api_url, username=options.user,
         api_key=options.key, metadata_key=new_meta.metadata_key,
-        event_type='throughput')
+        event_type='throughput', script_alias=script_alias)
     
 
     et.add_data_point(ts(), val())
@@ -141,7 +143,7 @@ def main():
 
     et = EventTypePost(options.api_url, username=options.user,
         api_key=options.key, metadata_key=new_meta.metadata_key,
-        event_type='histogram-ttl')
+        event_type='histogram-ttl', script_alias=script_alias)
 
     et.add_data_point(ts(), {val(): val()})
     time.sleep(1)
@@ -159,7 +161,8 @@ def main():
         print dp.ts, dp.val
 
     etb = EventTypeBulkPost(options.api_url, username=options.user,
-        api_key=options.key, metadata_key=new_meta.metadata_key)
+        api_key=options.key, metadata_key=new_meta.metadata_key,
+        script_alias=script_alias)
 
     t = ts()
     etb.add_data_point('time-error-estimates', t, val())

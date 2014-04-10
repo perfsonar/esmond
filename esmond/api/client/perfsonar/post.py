@@ -26,13 +26,14 @@ class EventTypeBulkPostWarning(Warning): pass
 class PostBase(AlertMixin, object):
     """docstring for PostBase"""
     _schema_root = 'perfsonar/archive'
-    def __init__(self, api_url, username, api_key):
+    def __init__(self, api_url, username, api_key, script_alias):
         super(PostBase, self).__init__()
         self.api_url = api_url
         if self.api_url: self.api_url = api_url.rstrip('/')
 
         self.username = username
         self.api_key = api_key
+        self.script_alias = script_alias
         self.headers = { 'content-type': 'application/json' }
         if self.username and self.api_key:
             add_apikey_header(self.username, self.api_key, self.headers)
@@ -45,6 +46,12 @@ class PostBase(AlertMixin, object):
             getattr(self, 'wrn')
         except AttributeError:
             raise PostException('Do not instantiate base class, use appropriate subclass')
+
+        if self.script_alias: 
+            self.script_alias = script_alias.rstrip('/')
+            self.script_alias = script_alias.lstrip('/')
+            self._schema_root = '{0}/{1}'.format(self.script_alias, self._schema_root)
+            print self._schema_root
 
     def _validate(self):
         raise NotImplementedError('Must be implemented in subclass')
@@ -71,8 +78,8 @@ class MetadataPost(PostBase):
             subject_type=None, source=None, destination=None,
             tool_name=None, measurement_agent=None, input_source=None,
             input_destination=None, time_duration=None, 
-            ip_transport_protocol=None):
-        super(MetadataPost, self).__init__(api_url, username, api_key)
+            ip_transport_protocol=None, script_alias='esmond'):
+        super(MetadataPost, self).__init__(api_url, username, api_key, script_alias)
         # required
         self.subject_type = subject_type
         self.source = source
@@ -182,8 +189,8 @@ class EventTypePost(PostBase):
     wrn = EventTypePostWarning
     """docstring for EventTypePost"""
     def __init__(self, api_url, username='', api_key='', metadata_key=None,
-            event_type=None):
-        super(EventTypePost, self).__init__(api_url, username, api_key)
+            event_type=None, script_alias='esmond'):
+        super(EventTypePost, self).__init__(api_url, username, api_key, script_alias)
 
         self.metadata_key = metadata_key
         self.event_type = event_type
@@ -231,8 +238,9 @@ class EventTypePost(PostBase):
 class EventTypeBulkPost(PostBase):
     wrn = EventTypePostWarning
     """docstring for EventTypePost"""
-    def __init__(self, api_url, username='', api_key='', metadata_key=None):
-        super(EventTypeBulkPost, self).__init__(api_url, username, api_key)
+    def __init__(self, api_url, username='', api_key='', metadata_key=None, 
+            script_alias='esmond'):
+        super(EventTypeBulkPost, self).__init__(api_url, username, api_key, script_alias)
 
         self.metadata_key = metadata_key
 
