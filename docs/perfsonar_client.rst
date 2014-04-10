@@ -50,6 +50,13 @@ A complete example of setting this up::
 
     conn = ApiConnect('http://localhost:8000/', filters)
 
+NOTE: the default perfSONAR/esmond deployments use a WSGIScriptAlias of /esmond 
+prefixing the URI - this is set in Apache.  The client libraries default to 
+using this.  But if one is doing development against the django runserver dev 
+server, or if this has been set up differently, then the optional kwarg 
+"script_alias" will need to be set as well.  Against the dev server, it can 
+be set to script_alias=None since the Apache directive is not in place.
+
 Retrieving the data
 ===================
 
@@ -249,6 +256,9 @@ Add a mix of data points specified by event type and post::
         {'numerator': 5, 'denominator': 8})
 
     etb.post_data()
+
+NOTE: as noted in the previous section, the optional script_alias kwarg works 
+the same way with the POST interface.
 
 Additional notes
 ================
