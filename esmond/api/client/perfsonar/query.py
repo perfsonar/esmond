@@ -386,6 +386,53 @@ class ApiFilters(object):
         return locals()
     tool_name = property(**tool_name())
 
+    # Additional metadata search criteria
+    # event-type, summary-type, summary-window and subject-type
+
+    def event_type():
+        doc = "The event_type property."
+        def fget(self):
+            return self._metadata_filters.get('event-type', None)
+        def fset(self, value):
+            self._metadata_filters['event-type'] = value
+        def fdel(self):
+            del self._metadata_filters['event-type']
+        return locals()
+    event_type = property(**event_type())
+
+    def subject_type():
+        doc = "The subject_type property."
+        def fget(self):
+            return self._metadata_filters.get('subject-type', None)
+        def fset(self, value):
+            self._metadata_filters['subject-type'] = value
+        def fdel(self):
+            del self._metadata_filters['subject-type']
+        return locals()
+    subject_type = property(**subject_type())
+
+    def summary_type():
+        doc = "The summary_type property."
+        def fget(self):
+            return self._metadata_filters.get('summary-type', None)
+        def fset(self, value):
+            self._metadata_filters['summary-type'] = value
+        def fdel(self):
+            del self._metadata_filters['summary-type']
+        return locals()
+    summary_type = property(**summary_type())
+
+    def summary_window():
+        doc = "The summary_window property."
+        def fget(self):
+            return self._metadata_filters.get('summary-window', None)
+        def fset(self, value):
+            self._metadata_filters['summary-window'] = value
+        def fdel(self):
+            del self._metadata_filters['summary-window']
+        return locals()
+    summary_window = property(**summary_window())
+
     # Time range search filters
 
     def _check_time(self, ts):
@@ -471,7 +518,7 @@ class ApiConnect(object):
             archive_url = '{0}/perfsonar/archive/'.format(self.api_url)
 
         r = requests.get(archive_url,
-            params=self.filters.metadata_filters,
+            params=dict(self.filters.metadata_filters, **self.filters.time_filters),
             headers = self.request_headers)
 
         self.inspect_request(r)
