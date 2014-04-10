@@ -178,7 +178,7 @@ class EventType(NodeInfo):
     def get_summary(self, s_type, s_window):
         for s in self._data.get('summaries', []):
             if s['summary-type'] == s_type and \
-                s['summary-window'] == s_window:
+                s['summary-window'] == str(s_window):
                 return Summary(s, self.api_url, self.filters, self.data_type)
         return None
 
@@ -449,17 +449,28 @@ class ApiFilters(object):
 class ApiConnect(object):
     wrn = ApiConnectWarning
     """Core class to pull data from the rest api"""
-    def __init__(self, api_url, filters=ApiFilters(), username='', api_key=''):
+    def __init__(self, api_url, filters=ApiFilters(), username='', api_key='',
+            script_alias='esmond'):
         super(ApiConnect, self).__init__()
         self.api_url = api_url.rstrip("/")
         self.filters = filters
         self.filters.auth_username = username
         self.filters.auth_apikey = api_key
+        self.script_alias = script_alias
+
+        if self.script_alias: 
+            self.script_alias = script_alias.rstrip('/')
+            self.script_alias = script_alias.lstrip('/')
 
         self.request_headers = {}
 
     def get_metadata(self):
-        r = requests.get('{0}/perfsonar/archive/'.format(self.api_url),
+        if self.script_alias:
+            archive_url = '{0}/{1}/perfsonar/archive/'.format(self.api_url, self.script_alias)
+        else:
+            archive_url = '{0}/perfsonar/archive/'.format(self.api_url)
+
+        r = requests.get(archive_url,
             params=self.filters.metadata_filters,
             headers = self.request_headers)
 

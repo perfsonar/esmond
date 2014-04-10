@@ -47,7 +47,8 @@ class TestClientLibs(LiveServerTestCase):
         db.flush()
 
     def test_histograms(self):
-        conn = ApiConnect('http://localhost:8081', self.filters)
+        conn = ApiConnect('http://localhost:8081', self.filters,
+                script_alias=None)
         self.filters.input_source = 'lbl-owamp.es.net'
 
         md = list(conn.get_metadata())[0]
@@ -75,7 +76,8 @@ class TestClientLibs(LiveServerTestCase):
 
 
     def test_values(self):
-        conn = ApiConnect('http://localhost:8081', self.filters)
+        conn = ApiConnect('http://localhost:8081', self.filters,
+                script_alias=None)
         self.filters.input_source = 'lbl-pt1.es.net'
 
         md = list(conn.get_metadata())[0]
@@ -128,7 +130,8 @@ class TestClientLibs(LiveServerTestCase):
         self.assertEqual(final_dp.ts_epoch, self.tr.packet_lost_end_ts/1000)
 
     def test_summaries(self):
-        conn = ApiConnect('http://localhost:8081', self.filters)
+        conn = ApiConnect('http://localhost:8081', self.filters,
+                script_alias=None)
         self.filters.input_source = 'lbl-owamp.es.net'
 
         md = list(conn.get_metadata())[0]
