@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 """
-Samples for graphing
+Samples for graphing - queries for specific metadata objects, and 
+a series of small functions demonstrating how to extract specific
+data/information.
 """
 
 from esmond.api.client.perfsonar.query import ApiConnect, ApiFilters
