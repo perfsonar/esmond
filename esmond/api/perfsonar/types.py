@@ -56,7 +56,7 @@ EVENT_TYPE_CONFIG = {
     "path-mtu": {
         "type": "integer",
     },
-    "streams-retransmits": {
+    "streams-packet-retransmits": {
         "type": "json",
     },
     "streams-throughput": {
