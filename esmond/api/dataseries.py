@@ -167,13 +167,12 @@ class Fill(object):
         while s <= end_bin:
             filled_range.append((s,dict(ts=s, val=None)))
             s += freq
-
+        
         # Make it a ordered dict
         fill = OrderedDict(filled_range)
-
+        
         # Go through the original data and plug in 
         # good values
-
         for dp in data:
             fill[dp['ts']]['val'] = dp['val']
 
