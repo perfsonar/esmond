@@ -860,10 +860,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), self.ctr.expected_results)
-        self.assertEquals(data['data'][0][0], params['begin'])
-        self.assertEquals(data['data'][0][1], self.ctr.base_rate_val_first)
-        self.assertEquals(data['data'][self.ctr.expected_results-1][0], params['end'])
-        self.assertEquals(data['data'][self.ctr.expected_results-1][1], self.ctr.base_rate_val_last)
+        self.assertEquals(data['data'][0]['ts'], params['begin'])
+        self.assertEquals(data['data'][0]['val'], self.ctr.base_rate_val_first)
+        self.assertEquals(data['data'][self.ctr.expected_results-1]['ts'], params['end'])
+        self.assertEquals(data['data'][self.ctr.expected_results-1]['val'], self.ctr.base_rate_val_last)
 
     def test_get_device_interface_data_aggs(self):
         params = {
@@ -886,8 +886,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_avg)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_avg)
 
         params['cf'] = 'min'
 
@@ -905,8 +905,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_min)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_min)
 
         params['cf'] = 'max'
 
@@ -924,8 +924,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_max)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_max)
 
         # make sure that an invalid aggregation raises an error
         params['agg'] = params['agg'] * 3
@@ -956,10 +956,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), self.ctr.expected_results)
-        self.assertEquals(data['data'][0][0], params['begin'])
-        self.assertEquals(data['data'][0][1], self.ctr.base_rate_val_first)
-        self.assertEquals(data['data'][self.ctr.expected_results-1][0], params['end'])
-        self.assertEquals(data['data'][self.ctr.expected_results-1][1], self.ctr.base_rate_val_last)
+        self.assertEquals(data['data'][0]['ts'], params['begin'])
+        self.assertEquals(data['data'][0]['val'], self.ctr.base_rate_val_first)
+        self.assertEquals(data['data'][self.ctr.expected_results-1]['ts'], params['end'])
+        self.assertEquals(data['data'][self.ctr.expected_results-1]['val'], self.ctr.base_rate_val_last)
 
     def test_get_timeseries_data_aggs(self):
         """/timeseries rest test for aggs."""
@@ -984,8 +984,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_avg)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_avg)
 
         params['cf'] = 'min'
 
@@ -1000,8 +1000,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['cf'], params['cf'])
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_min)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_min)
 
         params['cf'] = 'max'
 
@@ -1016,8 +1016,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['cf'], params['cf'])
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_max)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_max)
 
         # print json.dumps(data, indent=4)
 
@@ -1078,12 +1078,14 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
         # Check last value in case the db has not been wiped by a
         # full data load.
-        self.assertEquals(data['data'][-1][0], params['ts'])
-        self.assertEquals(data['data'][-1][1], float(params['val']))
+        self.assertEquals(data['data'][-1]['ts'], params['ts'])
+        self.assertEquals(data['data'][-1]['val'], float(params['val']))
         self.assertEquals(data['cf'], 'raw')
 
         # base rate write
         url = '/v1/timeseries/BaseRate/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
+
+        payload[0]['ts'] = (payload[0]['ts']/30000)*30000
 
         response = self.api_client.post(url, data=payload, format='json',
             authentication=authn)
@@ -1098,10 +1100,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
         # Check last value in case the db has not been wiped by a
         # full data load.
-        self.assertEquals(data['data'][-1][0], params['ts'])
+        self.assertEquals(data['data'][-1]['ts'], params['ts'])
         # Base rate read will return the delta divided by the frequency,
         # not just the value inserted!
-        self.assertEquals(data['data'][-1][1], float(params['val'])/30)
+        self.assertEquals(data['data'][-1]['val'], float(params['val'])/30)
         self.assertEquals(data['cf'], 'average')
 
     def test_interface_bulk_get(self):
@@ -1430,7 +1432,7 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(data['resource_uri'], url)
 
-        self.assertEquals(data['data'][0][0], params['begin'])
+        self.assertEquals(data['data'][0]['ts'], params['begin'])
 
         self.assertEqual(len(data['data']), 21)
 
