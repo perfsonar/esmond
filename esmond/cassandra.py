@@ -437,18 +437,20 @@ class CASSANDRA_DB(object):
         
         if not ret:
             # Bin does not exist, so initialize min and max with the same val.
+            # self.stat_agg.insert(agg.get_key(),
+            #     {agg.ts_to_jstime(): {'min': agg.val, 'max': agg.val}})
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_jstime(): {'min': agg.val, 'max': agg.val}})
+                {agg.ts_to_jstime(): {'min': agg.val, 'max': agg.val, 'min_ts': raw_data.ts_to_jstime(), 'max_ts': raw_data.ts_to_jstime()}})
             updated = True
         elif agg.val > ret['max']:
             # Update max.
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_jstime(): {'max': agg.val}})
+                {agg.ts_to_jstime(): {'max': agg.val, 'max_ts': raw_data.ts_to_jstime()}})
             updated = True
         elif agg.val < ret['min']:
             # Update min.
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_jstime(): {'min': agg.val}})
+                {agg.ts_to_jstime(): {'min': agg.val, 'min_ts': raw_data.ts_to_jstime()}})
             updated = True
         else:
             pass
