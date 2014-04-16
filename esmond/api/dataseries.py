@@ -81,11 +81,11 @@ class QueryUtil(object):
             if coerce_to_bins:
                 ts -= ts % coerce_to_bins
 
-            d = [ts/divs[in_ms], row['val']]
+            d = {'ts': ts/divs[in_ms], 'val': row['val']}
             
             # Further options for different data sets.
             if row.has_key('is_valid'): # Base rates
-                if row['is_valid'] == 0: d[1] = None
+                if row['is_valid'] == 0 : d['val'] = None
             elif row.has_key('cf'): # Aggregations
                 pass
             else: # Raw Data
@@ -165,7 +165,7 @@ class Fill(object):
         filled_range = []
         s = start_bin + 0 # copy it
         while s <= end_bin:
-            filled_range.append((s,None))
+            filled_range.append((s,dict(ts=s, val=None)))
             s += freq
 
         # Make it a ordered dict
@@ -175,10 +175,10 @@ class Fill(object):
         # good values
 
         for dp in data:
-            fill[dp[0]] = dp[1]
+            fill[dp['ts']]['val'] = dp['val']
 
-        for i in fill.items():
-            yield list(i)
+        for i in fill.values():
+            yield i
 
     @staticmethod
     def verify_fill(begin, end, freq, data):

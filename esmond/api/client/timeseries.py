@@ -409,7 +409,7 @@ class TimeSeriesDataPayload(DataPayload):
     @property
     def data(self):
         """Return internal data from payload as list of DataPoint."""
-        return [TimeSeriesDataPoint(x[0],x[1]) for x in self._data.get('data', [])]
+        return [TimeSeriesDataPoint(**x) for x in self._data.get('data', [])]
 
 class TimeSeriesDataPoint(object):
     """Class to encapsulate the returned data points."""
@@ -460,7 +460,7 @@ class TimeSeriesBulkDataRow(object):
 
     @property
     def data(self):
-        return [TimeSeriesDataPoint(x[0],x[1]) for x in self._data]
+        return [TimeSeriesDataPoint(**x) for x in self._data]
 
     def __repr__(self):
         return '<TimeSeriesBulkDataRow: path:{0} len:{1}>'.format(self.path, len(self._data))
