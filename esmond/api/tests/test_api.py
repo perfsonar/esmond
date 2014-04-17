@@ -320,15 +320,15 @@ class MockCASSANDRA_DB(object):
             ]
         elif cf == 'min':
             return [
-                {'ts': s_bin, 'val': 0, 'cf': 'min'},
-                {'ts': s_bin+freq, 'val': 10, 'cf': 'min'},
-                {'ts': s_bin+(freq*2),'val': 20, 'cf': 'min'},
+                {'ts': s_bin, 'val': 0, 'cf': 'min', 'm_ts': 2},
+                {'ts': s_bin+freq, 'val': 10, 'cf': 'min', 'm_ts': 12},
+                {'ts': s_bin+(freq*2),'val': 20, 'cf': 'min', 'm_ts': 22},
             ]
         elif cf == 'max':
             return [
-                {'ts': s_bin, 'val': 75, 'cf': 'max'},
-                {'ts': s_bin+freq, 'val': 150, 'cf': 'max'},
-                {'ts': s_bin+(freq*2), 'val': 300, 'cf': 'max'},
+                {'ts': s_bin, 'val': 75, 'cf': 'max', 'm_ts': 2},
+                {'ts': s_bin+freq, 'val': 150, 'cf': 'max', 'm_ts': 12},
+                {'ts': s_bin+(freq*2), 'val': 300, 'cf': 'max', 'm_ts': 22},
             ]
         else:
             pass

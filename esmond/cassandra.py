@@ -610,9 +610,11 @@ class CASSANDRA_DB(object):
                 for kk,vv in v.items():
                     ts = kk
                     if cf == 'min':
-                        results.append({'ts': ts, 'val': vv['min'], 'cf': cf})
+                        datum = {'ts': ts, 'val': vv['min'], 'cf': cf, 'm_ts': vv.get('min_ts', None)}
+                        results.append(datum)
                     else:
-                        results.append({'ts': ts, 'val': vv['max'], 'cf': cf})
+                        datum = {'ts': ts, 'val': vv['max'], 'cf': cf, 'm_ts': vv.get('max_ts', None)}
+                        results.append(datum)
         
         return results
             

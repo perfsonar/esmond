@@ -483,12 +483,13 @@ class DataPayload(NodeInfo):
             len(self.data), self.begin_time, self.end_time)
 
 class DataPoint(object):
-    __slots__ = ['ts', 'val']
+    __slots__ = ['ts', 'val', 'm_ts']
     """Class to encapsulate the returned data points."""
-    def __init__(self, ts, val):
+    def __init__(self, ts, val, m_ts=None):
         super(DataPoint, self).__init__()
         self.ts = datetime.datetime.utcfromtimestamp(ts)
         self.val = val
+        self.m_ts = m_ts
 
     @property
     def ts_epoch(self):

@@ -87,7 +87,10 @@ class QueryUtil(object):
             if row.has_key('is_valid'): # Base rates
                 if row['is_valid'] == 0 : d['val'] = None
             elif row.has_key('cf'): # Aggregations
-                pass
+                if row['cf'] == 'min' or row['cf'] == 'max':
+                    d['m_ts'] = row['m_ts']
+                    if d['m_ts']:
+                        d['m_ts'] = d['m_ts']/divs[in_ms]
             else: # Raw Data
                 pass
             

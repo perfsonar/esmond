@@ -436,7 +436,9 @@ class CassandraTestResults(object):
     agg_freq = 3600
     agg_avg = 17.572649572649574 # now a float
     agg_min = 0
+    agg_min_ts = 1343955868
     agg_max = 7500
+    agg_max_ts = 1343957576
     agg_raw = 61680
 
     # Values from raw data tests
@@ -907,6 +909,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts)
         self.assertEquals(data['data'][0]['val'], self.ctr.agg_min)
+        self.assertEquals(data['data'][0]['m_ts'], self.ctr.agg_min_ts)
 
         params['cf'] = 'max'
 
@@ -926,6 +929,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts)
         self.assertEquals(data['data'][0]['val'], self.ctr.agg_max)
+        self.assertEquals(data['data'][0]['m_ts'], self.ctr.agg_max_ts)
 
         # make sure that an invalid aggregation raises an error
         params['agg'] = params['agg'] * 3
@@ -1002,6 +1006,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts*1000)
         self.assertEquals(data['data'][0]['val'], self.ctr.agg_min)
+        self.assertEquals(data['data'][0]['m_ts'], self.ctr.agg_min_ts*1000)
 
         params['cf'] = 'max'
 
@@ -1018,6 +1023,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(len(data['data']), 1)
         self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts*1000)
         self.assertEquals(data['data'][0]['val'], self.ctr.agg_max)
+        self.assertEquals(data['data'][0]['m_ts'], self.ctr.agg_max_ts*1000)
 
         # print json.dumps(data, indent=4)
 
