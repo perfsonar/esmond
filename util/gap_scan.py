@@ -173,24 +173,24 @@ def find_gaps_in_series(data):
     # part of a memory leak hunt.
 
     for row in data:
-        if row[1] == None and gap_scanning == False:
+        if row['val'] == None and gap_scanning == False:
             gap_scanning = True
-            gap_start = int(row[0])
+            gap_start = int(row['ts'])
 
-        if row[1] != None and gap_scanning == True:
-            gaps.append((gap_start, int(last_val[0])))
+        if row['val'] != None and gap_scanning == True:
+            gaps.append((gap_start, int(last_val['ts'])))
             gap_start = None
             gap_scanning = False
 
-        last_val = row[:]
+        last_val = row.copy()
 
     # fallthrough - end of row and still scanning
     if gap_scanning:
-        gaps.append((gap_start, int(last_val[0])))
+        gaps.append((gap_start, int(last_val['ts'])))
 
     # Probably not needed but let's be sure.
     if last_val is not None:
-        del last_val[:]
+        del last_val
 
     return gaps
 
