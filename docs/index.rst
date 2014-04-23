@@ -19,8 +19,10 @@ Contents:
    
    architecture
    hacking
+   perfsonar_extension
    rpm_build
    perfsonar_client
+   
 
 Indices and tables
 ==================
