@@ -143,3 +143,5 @@ class CassandraJMX(object):
 
     def get_compaction_complete(self):
         return self._fetch_value(self.jmx_compaction, 'CompletedTasks')
+
+available_tests = filter(lambda x: x.startswith('get_'), dir(CassandraJMX('')))
