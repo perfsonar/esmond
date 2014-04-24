@@ -11,7 +11,7 @@ setup(name='esmond',
         packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
         install_requires=['tsdb', 'Django==1.5.1', 'django-tastypie', 'web.py',
             'python-memcached', 'pycassa', 'psycopg2','python-mimeparse',
-            'requests', 'mock'],
+            'requests', 'mock', 'nagiosplugin'],
         entry_points = {
             'console_scripts': [
                 'espolld = esmond.poll:espolld',
