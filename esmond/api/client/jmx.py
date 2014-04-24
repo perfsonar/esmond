@@ -55,7 +55,12 @@ class CassandraJMX(object):
 
     def _fetch_value(self, jmx_var, attr):
         root = ET.fromstring(self._make_request(jmx_var))
-        return self._get_attribute_value(root, attr)
+        val = self._get_attribute_value(root, attr)
+        try:
+            val = int(val)
+        except ValueError:
+            pass
+        return val
 
     def _get_contents_dict(self, s):
         d = {}

@@ -34,9 +34,9 @@ class CassandraCheck(nagiosplugin.Resource):
 
     def probe(self):
         value = getattr(self.cjmx, self.metric)()
+        # Mem checks return a dict, used is useful in this case
         if isinstance(value, dict):
             value = value['used']
-        value = int(value)
         yield nagiosplugin.Metric(self.metric, value)
 
 @nagiosplugin.guarded
