@@ -44,6 +44,8 @@ class NodeInfo(object):
 
     @property
     def dump(self):
+        """Dump the returned/wrapped json as a pretty printed string.
+        Just for debugging."""
         return self._pp.pformat(self._data)
 
     def http_alert(self, r):
@@ -62,7 +64,12 @@ class NodeInfo(object):
 
 class Metadata(NodeInfo):
     wrn = MetadataWarning
-    """Class to encapsulate a metadata object"""
+    """Class to encapsulate a metadata object.  It exposes the 
+    information returned in the metadata json payload from the api 
+    as a series of read-only properties.
+
+    Will also return the associated/wrapped event-types as EventType
+    objects."""
     def __init__(self, data, api_url, filters):
         super(Metadata, self).__init__(data, api_url, filters)
 
@@ -72,6 +79,8 @@ class Metadata(NodeInfo):
 
     @property
     def event_types(self):
+        """Returns a list of the event-types associated with 
+        the returned metadata as a list of strings."""
         e_t = []
         for e in self._data.get('event-types', []):
             e_t.append(e['event-type'])
@@ -134,10 +143,15 @@ class Metadata(NodeInfo):
         return self._data.get('uri', None)
 
     def get_all_event_types(self):
+        """Generator returning all the event-types from the metadata
+        json payload wrapped in EventType objects."""
         for et in self._data.get('event-types', []):
             yield EventType(et, self.api_url, self.filters)
 
     def get_event_type(self, event_type):
+        """Returns a single named event-type (as specified by the arg
+        event_type) from the metadata json payload wrapped in an  
+        EventType object."""
         for et in self._data.get('event-types', []):
             if et['event-type'] == event_type:
                 return EventType(et, self.api_url, self.filters)
@@ -148,7 +162,14 @@ class Metadata(NodeInfo):
 
 class EventType(NodeInfo):
     wrn = EventTypeWarning
-    """Class to encapsulate event-types"""
+    """Class to encapsulate a single event-type from the json
+    payload returned from a metadata query/Metadata object.
+    Exposes the json data as a series of read-only properties.
+
+    Is also used to fetch the data associated with the event-type
+    from the API.
+
+    Will also return related summaries as a Summary object."""
     def __init__(self, data, api_url, filters):
         super(EventType, self).__init__(data, api_url, filters)
 
@@ -166,16 +187,23 @@ class EventType(NodeInfo):
 
     @property
     def summaries(self):
+        """Returns a list of strings of the names of the summaries
+        associated with this event-type."""
         s_t = []
         for s in self._data.get('summaries', []):
             s_t.append((s['summary-type'],s['summary-window']))
         return s_t
 
     def get_all_summaries(self):
+        """Generator returning all the summaries from the event-type
+        json payload wrapped in Summary objects."""
         for s in self._data.get('summaries', []):
             yield Summary(s, self.api_url, self.filters, self.data_type)
 
     def get_summary(self, s_type, s_window):
+        """Returns a single named summary (as specified by the arg
+        pair s_type/s_window) from the event-type json payload wrapped 
+        in a Summary object."""
         for s in self._data.get('summaries', []):
             if s['summary-type'] == s_type and \
                 s['summary-window'] == str(s_window):
@@ -183,6 +211,8 @@ class EventType(NodeInfo):
         return None
 
     def get_data(self):
+        """Void method to pull the data associated with this event-type
+        from the API.  Returns a DataPayload object to calling code."""
         r = requests.get('{0}{1}'.format(self.api_url, self.base_uri),
             params=self.filters.time_filters,
             headers=self.request_headers)
@@ -203,7 +233,10 @@ class EventType(NodeInfo):
 
 class Summary(NodeInfo):
     wrn = SummaryWarning
-    """Class to encapsulate summary information."""
+    """Class to encapsulate summary information.  Exposes the summary 
+    json payload in the event-type as read-only properties.
+
+    Is also used to fetch the actual summary data from the API."""
     def __init__(self, data, api_url, filters, data_type):
         super(Summary, self).__init__(data, api_url, filters)
         self._data_type = data_type
@@ -225,6 +258,8 @@ class Summary(NodeInfo):
         return self._data.get('uri', None)
 
     def get_data(self):
+        """Void method to pull the data associated with this event-type
+        from the API.  Returns a DataPayload object to calling code."""
         r = requests.get('{0}{1}'.format(self.api_url, self.uri),
             params=self.filters.time_filters,
             headers=self.request_headers)
@@ -245,7 +280,10 @@ class Summary(NodeInfo):
 
 class DataPayload(NodeInfo):
     wrn = DataPayloadWarning
-    """Class to encapsulate returned data payload"""
+    """Class to encapsulate returned data payload.  Holds the json
+    payload of timeseries/data points internally and returns the 
+    discrete data as a list of DataPoint or DataHistogram objects
+    as is appropriate."""
     def __init__(self, data=[], data_type=None):
         super(DataPayload, self).__init__(data, None, None)
         self._data_type = data_type
@@ -271,7 +309,8 @@ class DataPayload(NodeInfo):
 class DataPoint(NodeInfo):
     __slots__ = ['ts', 'val']
     wrn = DataPointWarning
-    """Class to encapsulate the data points"""
+    """Class to encapsulate the data points.  Represents a single
+    ts/value pair where the value is a simple numeric type."""
     def __init__(self, data={}):
         super(DataPoint, self).__init__(data, None, None)
         self.ts = self._convert_to_datetime(data.get('ts', None))
@@ -287,7 +326,8 @@ class DataPoint(NodeInfo):
 class DataHistogram(NodeInfo):
     __slots__ = ['ts', 'histogram']
     wrn = DataHistogramWarning
-    """Class to encapsulate the data histograms"""
+    """Class to encapsulate the data histograms  Represents a single
+    ts/value pair where the value is histogram written as a dict."""
     def __init__(self, data={}):
         super(DataHistogram, self).__init__(data, None, None)
         self.ts = self._convert_to_datetime(data.get('ts', None))
@@ -302,7 +342,21 @@ class DataHistogram(NodeInfo):
 
 class ApiFilters(object):
     wrn = ApiFiltersWarning
-    """Class to hold filtering/query options."""
+    """
+    Class to hold filtering/query options.
+
+    This is instantiated and the read/write properties that correspond 
+    to metadata information and time ranges can be set by the user.  
+    The class will then be passed to the ApiConnect class constructor 
+    and the values that have been set will be used in the metadata
+    query sent to the API.
+
+    In the case where a metadata property has a dash in it (ie: 
+    input-destination), the property will be named with an underscore
+    (ie: input_destination) instead.
+
+    See the perfsonar_client.rst doc for more usage information.
+    """
     def __init__(self):
         super(ApiFilters, self).__init__()
         self.verbose = False
@@ -495,7 +549,18 @@ class ApiFilters(object):
 
 class ApiConnect(object):
     wrn = ApiConnectWarning
-    """Core class to pull data from the rest api"""
+    """
+    Core class to pull data from the rest api.
+
+    This is the "top level" class a client program will use to 
+    query the perfsonar API.  The args api_url, username and api_key 
+    all have their typical usage.  The ApiFilters object will have
+    the relevant query criteria assigned to it, and the get_metadata
+    method will return the metadata that meet the search criteria 
+    as Metadata objects.
+
+    See the perfsonar_client.rst doc for more usage information.
+    """
     def __init__(self, api_url, filters=ApiFilters(), username='', api_key='',
             script_alias='esmond'):
         super(ApiConnect, self).__init__()
