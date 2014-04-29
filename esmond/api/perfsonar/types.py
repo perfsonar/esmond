@@ -161,3 +161,24 @@ Example: 10000 means 4 decimal places
 '''
 DEFAULT_FLOAT_PRECISION=10000
 
+'''
+Constants that map to common filters
+'''
+EVENT_TYPE_FILTER = "event-type"
+SUMMARY_TYPE_FILTER = "summary-type"
+SUMMARY_WINDOW_FILTER = "summary-window"
+DNS_MATCH_RULE_FILTER = "dns-match-rule"
+TIME_FILTER = "time"
+TIME_START_FILTER = "time-start"
+TIME_END_FILTER = "time-end"
+TIME_RANGE_FILTER = "time-range"
+DNS_MATCH_PREFER_V6 = "prefer-v6"
+DNS_MATCH_PREFER_V4 = "prefer-v4"
+DNS_MATCH_ONLY_V6 = "only-v6"
+DNS_MATCH_ONLY_V4 = "only-v4"
+DNS_MATCH_V4_V6 = "v4v6"
+DATA_KEY_TIME = "ts"
+DATA_KEY_VALUE = "val"
+RESERVED_GET_PARAMS = ["format", DNS_MATCH_RULE_FILTER, TIME_FILTER,
+                       TIME_START_FILTER, TIME_END_FILTER, TIME_RANGE_FILTER]
+
