@@ -187,6 +187,12 @@ class MetadataPost(PostBase):
 
         self._payload['event-types'].append(suminfo)
 
+    def add_freeform_key_value(self, k, v):
+        if not self._payload.get(k, None):
+            self._payload[k] = v
+        else:
+            self.warn('Payload key {0} exists - skipping'.format(k))
+
     def post_metadata(self):
         """Void method that will post the new metadata to the API and 
         return the newly created metadata information wrapped in an
