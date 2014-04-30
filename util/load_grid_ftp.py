@@ -86,7 +86,7 @@ def _convert_host(dest, hn):
 def _epoch(d):
     return calendar.timegm(d.utctimetuple())
 
-def generate_metadata_args(o):
+def _generate_metadata_args(o):
 
     dest = o.dest.lstrip('[').rstrip(']')
 
@@ -154,6 +154,9 @@ def main():
     parser.add_option('-p', '--pickle_file', metavar='FILE',
             type='string', dest='pickle', default='./load_grid_ftp.pickle',
             help='Path to pickle file (default=%default).')
+    parser.add_option('-d', '--dont_write',
+            dest='write', action='store_false', default=True,
+            help='Do not write last position pickle file - can be used to process multiple files by hand, development, etc.')
     parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
             type='string', dest='api_url', 
             help='URL for the REST API (default=%default) - required.',
@@ -213,7 +216,7 @@ def main():
         # XXX(mmg) - tweak script_alias deal
         mp = MetadataPost(options.api_url, username=options.user,
             api_key=options.key, script_alias=None, 
-            **generate_metadata_args(o))
+            **_generate_metadata_args(o))
         mp.add_event_type('throughput')
         mp.add_event_type('failures')
         mp.add_freeform_key_value('bw-parallel-streams', o.streams)
@@ -249,10 +252,8 @@ def main():
                 { 'error': '{0} {1}'.format(o.code, FTP_CODES.get(o.code, None)) })
             et.post_data()
 
-        
-        break
-
-    # o.to_pickle(options.pickle)
+    if options.write:
+        o.to_pickle(options.pickle)
     
     pass
 
