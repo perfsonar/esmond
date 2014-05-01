@@ -45,7 +45,11 @@ class PostBase(AlertMixin, object):
 
         The script_alias arg can be set to None when doing development
         against the django dev runserver, or set to something else if 
-        running under a similar but different deployment.
+        running under a similar but different deployment.  
+
+        Setting the arg to '/' will yield the same result as setting it 
+        to None - this makes it easier for calling programs that are 
+        setting that value via a command line arg/config file/etc.
         """
         super(PostBase, self).__init__()
         self.api_url = api_url
@@ -70,7 +74,8 @@ class PostBase(AlertMixin, object):
         if self.script_alias: 
             self.script_alias = script_alias.rstrip('/')
             self.script_alias = script_alias.lstrip('/')
-            self._schema_root = '{0}/{1}'.format(self.script_alias, self._schema_root)
+            if self.script_alias:
+                self._schema_root = '{0}/{1}'.format(self.script_alias, self._schema_root)
 
     def _validate(self):
         """Will be overridden in subclass.  Needs to run whatever validation

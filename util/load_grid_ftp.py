@@ -199,9 +199,8 @@ def scan_and_load(file_path, last_record, options, _log):
                 scanning = True
             continue
         count += 1
-        # XXX(mmg) - tweak script_alias deal
         mp = MetadataPost(options.api_url, username=options.user,
-            api_key=options.key, script_alias=None, 
+            api_key=options.key, script_alias=options.script_alias, 
             **_generate_metadata_args(o))
         mp.add_event_type('throughput')
         mp.add_event_type('failures')
@@ -221,24 +220,22 @@ def scan_and_load(file_path, last_record, options, _log):
         metadata = mp.post_metadata()
 
         if o.code == 226:
-            # XXX(mmg) - tweak script_alias deal
             et = EventTypePost(options.api_url, username=options.user,
-                api_key=options.key, script_alias=None, 
+                api_key=options.key, script_alias=options.script_alias, 
                 metadata_key=metadata.metadata_key,
                 event_type='throughput')
             throughput = 8 * o.nbytes / (_epoch(o.date) - _epoch(o.start))
             et.add_data_point(_epoch(o.start), throughput)
             et.post_data()
         else:
-            # XXX(mmg) - tweak script_alias deal
             et = EventTypePost(options.api_url, username=options.user,
-                api_key=options.key, script_alias=None, 
+                api_key=options.key, script_alias=options.script_alias, 
                 metadata_key=metadata.metadata_key,
                 event_type='failures')
             et.add_data_point(_epoch(o.start), 
                 { 'error': '{0} {1}'.format(o.code, FTP_CODES.get(o.code, None)) })
             et.post_data()
-        
+
         if options.single:
             break
 
@@ -274,6 +271,9 @@ def main():
     parser.add_option('-k', '--key', metavar='API_KEY',
             type='string', dest='key', default='',
             help='API key for POST operation.')
+    parser.add_option('-s', '--script_alias', metavar='URI_PREFIX',
+            type='string', dest='script_alias', default='/',
+            help='Set the script_alias arg if the perfsonar API is configured to use one (default=%default which means none set).')
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
