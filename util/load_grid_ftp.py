@@ -2,6 +2,79 @@
 
 """
 Utility to parse and load GridFTP data.
+
+This will read the default gridftp logs, process the "Transfer stats" entries, 
+and upload the results to the pS esmond backend as metadata and either 
+throughput or failures event types.
+
+The basic use case would that this script be run from cron periodically 
+over the day to parse and load data from the gridftp logs into an esmond 
+backend.  The scanning code will write out the contents of the record that 
+was last loaded as a python pickle file to disc.  This state file is used 
+to pick up from the point the last processing pass got to.
+
+Basic usage: the following arguments are required for baseline operation:
+
+./load_grid_ftp.py -f ~/Desktop/gridftp.log -U http://localhost:8000 -u mgoode -k api_key_for_mgoode
+
+The -f (--file) arg is the path to the logfile to process.  The code will 
+normalize the path, so relative paths are fine.  No default.
+
+The -U (--url) arg is the host:port url where the rest interface is running. 
+This arg defaults to http://localhost:8000, but most use cases will supply 
+a non default value.
+
+The -u (--user) and -k (--key) arguments are necessary to write the metadata
+and the event types to the database/cassandra backends.  The user will need
+to have both metadata post and timeseries post permissions.
+
+Additional commonly used args:
+
+The -p (--pickle) arg is the path to the pickle file the scanning code uses 
+to store the "state" of the last record that has been processed.  Code uses 
+this to know where to pick pu on subsequent scans.  This defaults to 
+./load_grid_ftp.pickle - will probably want to change this to a fully 
+qualified path somewhere.
+
+The -d (--dont_write) arg suppresses writing the pickle state file out when 
+the file has been scanned.  This would be used when manually/etc processing 
+one or more log files where it is desired to just parse the contents of an 
+entire static (ie: no longer being written to) file.  Defaults to False - 
+use this flag to suppress writing the state file.
+
+The -s (--script_alias) prefix is to be used when the REST API has been 
+deployed under Apache (for example) using a ScriptAlias directive/prefix. 
+This would commonly be set to 'esmond' since the canned CentOS deployments 
+use script alias of /esmond to allow other things to run on the webserver 
+(ie: so the REST API is not the root of the webserver).  The default value 
+is '/' - which will not perform any prefixing. 
+
+The -l (--log_dir) arg can be used to specify a directory to write a log 
+from the program to.  If this is not set (the default), then log output 
+will go to stdout.
+
+Optional content selection args:
+
+The gridftp logs contain information on the user, the file being sent and 
+the volume being written to.  Since these might be considered to be sensitive 
+data, this information is not sent to the backend by default.  The following 
+flags can be set to send that information if desired:
+
+    * -F (--file_attr): send gridftp-file/value of FILE
+    * -N (--name_attr): send gridftp-user/value of USER (name)
+    * -V (--volume_attr): send gridftp-volume/value of VOLUME
+
+Other/development args:
+
+The -S (--single) arg will process a single value starting at the last record 
+sent and stop.  This is mostly used for development/testing to "step through" 
+a file record by record.  It will set the pickle state file to the single 
+record sent before exiting.
+
+Running from cron and the behavior with rotated logs:
+
+TBA - after this part is hammered out.....
+
 """
 
 import calendar
@@ -191,11 +264,10 @@ def scan_and_load(file_path, last_record, options, _log):
         if not row.strip(): continue
         row = _filter_log(row)
         if not row: continue
-        print row
+        print row # XXX(mmg) remove
         o = LogEntryDataObject(row.split())
         if last_record and not scanning:
             if o.to_dict() == last_record.to_dict():
-                print 'found last match'
                 scanning = True
             continue
         count += 1
@@ -210,14 +282,20 @@ def scan_and_load(file_path, last_record, options, _log):
         mp.add_freeform_key_value('gridftp-program', o.prog)
         mp.add_freeform_key_value('gridftp-block-size', o.block)
         mp.add_freeform_key_value('tcp-window-size', o.buffer)
-        # Optional vars
-        # XXX(mmg) make these configurable
-        if False:
+        # Optional vars - these must be enabled via boolean 
+        # command line args since these values might be sensitive.
+        if options.file_attr:
             mp.add_freeform_key_value('gridftp-file', o.file)
+        if options.name_attr:
             mp.add_freeform_key_value('gridftp-user', o.user)
+        if options.volume_attr:
             mp.add_freeform_key_value('gridftp-volume', o.volume)
         
         metadata = mp.post_metadata()
+
+        if not metadata:
+            _log('scan_and_load.error', 'MetadataPost failed, abort processing, not updating record state')
+            return None
 
         if o.code == 226:
             et = EventTypePost(options.api_url, username=options.user,
@@ -274,6 +352,15 @@ def main():
     parser.add_option('-s', '--script_alias', metavar='URI_PREFIX',
             type='string', dest='script_alias', default='/',
             help='Set the script_alias arg if the perfsonar API is configured to use one (default=%default which means none set).')
+    parser.add_option('-F', '--file_attr',
+            dest='file_attr', action='store_true', default=False,
+            help='Include the gridftp file information when sending data to esmond (default=%default since this might be sensitive data).')
+    parser.add_option('-N', '--name_attr',
+            dest='name_attr', action='store_true', default=False,
+            help='Include the gridftp user (name) information when sending data to esmond (default=%default since this might be sensitive data).')
+    parser.add_option('-V', '--volume_attr',
+            dest='volume_attr', action='store_true', default=False,
+            help='Include the gridftp volume information when sending data to esmond (default=%default since this might be sensitive data).')
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
