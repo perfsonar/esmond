@@ -145,53 +145,7 @@ FTP_CODES = {
     553: 'Requested action not taken.',
 }
 
-def main():
-    usage = '%prog [ -f filename | -v ]'
-    parser = OptionParser(usage=usage)
-    parser.add_option('-f', '--file', metavar='FILE',
-            type='string', dest='filename', 
-            help='Input filename.')
-    parser.add_option('-p', '--pickle_file', metavar='FILE',
-            type='string', dest='pickle', default='./load_grid_ftp.pickle',
-            help='Path to pickle file (default=%default).')
-    parser.add_option('-d', '--dont_write',
-            dest='write', action='store_false', default=True,
-            help='Do not write last position pickle file - can be used to process multiple files by hand, development, etc.')
-    parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
-            type='string', dest='api_url', 
-            help='URL for the REST API (default=%default) - required.',
-            default='http://localhost:8000')
-    parser.add_option('-u', '--user', metavar='USER',
-            type='string', dest='user', default='',
-            help='POST interface username.')
-    parser.add_option('-k', '--key', metavar='API_KEY',
-            type='string', dest='key', default='',
-            help='API key for POST operation.')
-    parser.add_option('-v', '--verbose',
-            dest='verbose', action='count', default=False,
-            help='Verbose output - -v, -vv, etc.')
-    options, args = parser.parse_args()
-
-    if not options.filename:
-        parser.error('Filename is required.')
-    
-    file_path = os.path.normpath(options.filename)
-    pickle_path = os.path.normpath(options.pickle)
-    
-    if not os.path.exists(file_path):
-        parser.error('{f} does not exist'.format(f=file_path))
-
-    # Check for previously saved state file
-
-    last_record = None
-
-    if os.path.exists(pickle_path):
-        last_record = LogEntryDataObject()
-        last_record.from_pickle(pickle_path)
-        print 'found last record:', last_record.to_dict()
-    else:
-        print 'no last record'
-
+def scan_and_load(file_path, last_record, options):
     # Load the log
 
     with open(file_path,'r') as fh:
@@ -202,6 +156,8 @@ def main():
     # subsequent records
 
     scanning = False
+
+    o = None
 
     for row in data:
         print row
@@ -251,9 +207,62 @@ def main():
             et.add_data_point(_epoch(o.start), 
                 { 'error': '{0} {1}'.format(o.code, FTP_CODES.get(o.code, None)) })
             et.post_data()
+        break # XXX(mmg) remove
 
-    if options.write:
-        o.to_pickle(options.pickle)
+    return o
+
+def main():
+    usage = '%prog [ -f filename | -v ]'
+    parser = OptionParser(usage=usage)
+    parser.add_option('-f', '--file', metavar='FILE',
+            type='string', dest='filename', 
+            help='Input filename.')
+    parser.add_option('-p', '--pickle_file', metavar='FILE',
+            type='string', dest='pickle', default='./load_grid_ftp.pickle',
+            help='Path to pickle file (default=%default).')
+    parser.add_option('-d', '--dont_write',
+            dest='write', action='store_false', default=True,
+            help='Do not write last position pickle file - can be used to process multiple files by hand, development, etc.')
+    parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
+            type='string', dest='api_url', 
+            help='URL for the REST API (default=%default) - required.',
+            default='http://localhost:8000')
+    parser.add_option('-u', '--user', metavar='USER',
+            type='string', dest='user', default='',
+            help='POST interface username.')
+    parser.add_option('-k', '--key', metavar='API_KEY',
+            type='string', dest='key', default='',
+            help='API key for POST operation.')
+    parser.add_option('-v', '--verbose',
+            dest='verbose', action='count', default=False,
+            help='Verbose output - -v, -vv, etc.')
+    options, args = parser.parse_args()
+
+    if not options.filename:
+        parser.error('Filename is required.')
+    
+    file_path = os.path.normpath(options.filename)
+    pickle_path = os.path.normpath(options.pickle)
+    
+    if not os.path.exists(file_path):
+        parser.error('{f} does not exist'.format(f=file_path))
+
+    # Check for previously saved state file
+
+    last_record = None
+
+    if os.path.exists(pickle_path):
+        last_record = LogEntryDataObject()
+        last_record.from_pickle(pickle_path)
+        print 'found last record:', last_record.to_dict()
+    else:
+        print 'no last record'
+
+    # Process the file
+    last_log_entry = scan_and_load(file_path, last_record, options)
+
+    if last_log_entry and options.write:
+        last_log_entry.to_pickle(pickle_path)
     
     pass
 
