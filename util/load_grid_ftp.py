@@ -165,6 +165,13 @@ FTP_CODES = {
     553: 'Requested action not taken.',
 }
 
+def _filter_log(s):
+    t_stats = 'Transfer stats: '
+    if s.find(t_stats) == -1:
+        return None
+    else:
+        return s.split(t_stats)[1].strip()
+
 def scan_and_load(file_path, last_record, options, _log):
     # Load the log
 
@@ -178,23 +185,27 @@ def scan_and_load(file_path, last_record, options, _log):
     scanning = False
 
     o = None
+    count = 0
 
     for row in data:
-        print row
         if not row.strip(): continue
+        row = _filter_log(row)
+        if not row: continue
+        print row
         o = LogEntryDataObject(row.split())
         if last_record and not scanning:
             if o.to_dict() == last_record.to_dict():
                 print 'found last match'
                 scanning = True
             continue
-
+        count += 1
         # XXX(mmg) - tweak script_alias deal
         mp = MetadataPost(options.api_url, username=options.user,
             api_key=options.key, script_alias=None, 
             **_generate_metadata_args(o))
         mp.add_event_type('throughput')
         mp.add_event_type('failures')
+        # Additional/optional data
         mp.add_freeform_key_value('bw-parallel-streams', o.streams)
         mp.add_freeform_key_value('bw-stripes', o.stripes)
         mp.add_freeform_key_value('gridftp-program', o.prog)
@@ -227,7 +238,11 @@ def scan_and_load(file_path, last_record, options, _log):
             et.add_data_point(_epoch(o.start), 
                 { 'error': '{0} {1}'.format(o.code, FTP_CODES.get(o.code, None)) })
             et.post_data()
-        break # XXX(mmg) remove
+        
+        if options.single:
+            break
+
+    _log('scan_and_load.end', 'Loaded {0} records'.format(count))
 
     return o
 
@@ -243,6 +258,9 @@ def main():
     parser.add_option('-d', '--dont_write',
             dest='write', action='store_false', default=True,
             help='Do not write last position pickle file - can be used to process multiple files by hand, development, etc.')
+    parser.add_option('-S', '--single',
+            dest='single', action='store_true', default=False,
+            help='Only load a single record - used for development.')
     parser.add_option('-l', '--log_dir', metavar='DIR',
             type='string', dest='logdir', default='',
             help='Write log output to specified directory - if not set, log goes to stdout.')
@@ -303,23 +321,25 @@ def main():
         data = data.split('\n')
         for row in data:
             if not row.strip(): continue
+            row = _filter_log(row)
+            if not row: continue
             o = LogEntryDataObject(row.split())
             if o.to_dict() == last_record.to_dict():
                 last_record_check = True
                 break
-
+    
     # Process the file
     if not last_record:
         # Probably a fresh run or manual loads with --dont_write, just do it.
         _log('main.process', 'No last record, processing {0}'.format(file_path))
         last_log_entry = scan_and_load(file_path, last_record, options, _log)
     elif last_record and last_record_check:
-        _log('main.process', 'File {0} passes last record check - processing'.format(file_path))
+        _log('main.process', 'File {0} passes last record check'.format(file_path))
         # We have a hit in the curent log so proceed.
         last_log_entry = scan_and_load(file_path, last_record, options, _log)
     else:
         # Crap, we need to look for it.
-        _log('main.process', 'File {0} does not pass check, searching logs'.format(file_path))
+        _log('main.process', 'File {0} does not pass check'.format(file_path))
         last_log_entry = None # XXX(mmg): temp bulletproof, remove later.
         pass
 
