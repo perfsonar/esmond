@@ -188,6 +188,8 @@ class MetadataPost(PostBase):
         self._payload['event-types'].append(suminfo)
 
     def add_freeform_key_value(self, k, v):
+        """Add key/values pairs to metadata payload to be stored in the
+        ps_metadata_parameters table."""
         if not self._payload.get(k, None):
             self._payload[k] = v
         else:
