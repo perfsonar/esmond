@@ -15,6 +15,26 @@ from optparse import OptionParser
 
 from esmond.api.client.perfsonar.post import MetadataPost, EventTypePost
 
+import logging
+import time
+
+def setup_log(log_path):
+    """
+    Usage:
+    _log('main.start', 'happy simple log event')
+    _log('launch', 'more={0}, complex={1} log=event'.format(100, 200))
+    """
+    log = logging.getLogger("grid_ftp_esmond_load")
+    if not log_path:
+        _h = logging.StreamHandler()
+    else:
+        logfile = '{0}/grid_ftp_esmond_load.log'.format(log_path)
+        _h = logging.FileHandler(logfile)
+    _h.setFormatter(logging.Formatter('ts=%(asctime)s %(message)s'))
+    log.addHandler(_h)
+    log.setLevel(logging.INFO)
+    return log
+
 class LogEntryDataObject(object):
     def __init__(self, initial=None):
         self.__dict__['_data'] = {}
@@ -145,7 +165,7 @@ FTP_CODES = {
     553: 'Requested action not taken.',
 }
 
-def scan_and_load(file_path, last_record, options):
+def scan_and_load(file_path, last_record, options, _log):
     # Load the log
 
     with open(file_path,'r') as fh:
@@ -223,6 +243,9 @@ def main():
     parser.add_option('-d', '--dont_write',
             dest='write', action='store_false', default=True,
             help='Do not write last position pickle file - can be used to process multiple files by hand, development, etc.')
+    parser.add_option('-l', '--log_dir', metavar='DIR',
+            type='string', dest='logdir', default='',
+            help='Write log output to specified directory - if not set, log goes to stdout.')
     parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
             type='string', dest='api_url', 
             help='URL for the REST API (default=%default) - required.',
@@ -237,6 +260,16 @@ def main():
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
     options, args = parser.parse_args()
+
+    log_path = None
+
+    if options.logdir:
+        log_path = os.path.normpath(options.logdir)
+        if not os.path.exists(log_path):
+            parser.error('{0} log path does not exist.'.format(log_path))
+
+    log = setup_log(log_path)
+    _log = lambda e, s: log.info('event={e} id={gid} {s}'.format(e=e, gid=int(time.time()), s=s))
 
     if not options.filename:
         parser.error('Filename is required.')
@@ -254,12 +287,41 @@ def main():
     if os.path.exists(pickle_path):
         last_record = LogEntryDataObject()
         last_record.from_pickle(pickle_path)
-        print 'found last record:', last_record.to_dict()
+        _log('main.start', 'found last record: {0}'.format(last_record.to_dict()))
     else:
-        print 'no last record'
+        _log('main.start', 'no last record found')
+
+    # See if the currently indicated log contains the last record - 
+    # primarily a check to see if the log has been rotated and we 
+    # need to look around for our last spot.
+
+    last_record_check = False
+
+    if last_record:
+        with open(file_path,'r') as fh:
+            data = fh.read()
+        data = data.split('\n')
+        for row in data:
+            if not row.strip(): continue
+            o = LogEntryDataObject(row.split())
+            if o.to_dict() == last_record.to_dict():
+                last_record_check = True
+                break
 
     # Process the file
-    last_log_entry = scan_and_load(file_path, last_record, options)
+    if not last_record:
+        # Probably a fresh run or manual loads with --dont_write, just do it.
+        _log('main.process', 'No last record, processing {0}'.format(file_path))
+        last_log_entry = scan_and_load(file_path, last_record, options, _log)
+    elif last_record and last_record_check:
+        _log('main.process', 'File {0} passes last record check - processing'.format(file_path))
+        # We have a hit in the curent log so proceed.
+        last_log_entry = scan_and_load(file_path, last_record, options, _log)
+    else:
+        # Crap, we need to look for it.
+        _log('main.process', 'File {0} does not pass check, searching logs'.format(file_path))
+        last_log_entry = None # XXX(mmg): temp bulletproof, remove later.
+        pass
 
     if last_log_entry and options.write:
         last_log_entry.to_pickle(pickle_path)
