@@ -49,7 +49,8 @@
    "fields": {
       "summary_window": 0, 
       "summary_type": "base", 
-      "event_type": "throughput", 
+      "event_type": "throughput",
+      "time_updated": "2014-02-05T13:17:50Z", 
       "metadata": 3
    }
 },
@@ -60,6 +61,7 @@
       "summary_window": 86400, 
       "summary_type": "aggregation", 
       "event_type": "histogram-owdelay", 
+      "time_updated": "2014-02-05T15:20:31Z",
       "metadata": 4
    }
 },
@@ -70,6 +72,7 @@
       "summary_window": 0, 
       "summary_type": "base", 
       "event_type": "histogram-owdelay", 
+      "time_updated": "2014-02-05T15:59:10Z",
       "metadata": 4
    }
 },
@@ -80,6 +83,7 @@
       "summary_window": 0, 
       "summary_type": "base", 
       "event_type": "histogram-ttl", 
+      "time_updated": "2014-02-05T15:59:39Z",
       "metadata": 4
    }
 },
@@ -90,6 +94,7 @@
       "summary_window": 0, 
       "summary_type": "base", 
       "event_type": "packet-count-lost", 
+      "time_updated": "2014-02-05T21:22:10Z",
       "metadata": 4
    }
 },
@@ -100,6 +105,7 @@
       "summary_window": 0, 
       "summary_type": "base", 
       "event_type": "packet-count-sent", 
+      "time_updated": "2014-02-05T21:22:35Z",
       "metadata": 4
    }
 },
@@ -110,6 +116,7 @@
       "summary_window": 0, 
       "summary_type": "base", 
       "event_type": "packet-duplicates", 
+      "time_updated": "2014-02-05T21:23:13Z",
       "metadata": 4
    }
 },
