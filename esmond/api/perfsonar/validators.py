@@ -167,9 +167,11 @@ class HistogramValidator(DataValidator):
         #sort items. make sure sort as numbers not strings
         sorted_hist = sorted(agg_hist.iteritems(), key=lambda k: float(k[0]))
         
+        #make mode floats.
+        stats['mode'] = map(lambda x: float(x), stats['mode'])
         #get min and max
-        stats['minimum'] = sorted_hist[0][0]
-        stats['maximum'] = sorted_hist[len(sorted_hist)-1][0]
+        stats['minimum'] = float(sorted_hist[0][0])
+        stats['maximum'] = float(sorted_hist[len(sorted_hist)-1][0])
         
         #pass two: get quantiles, variance, and std deviation
         stddev = 0
@@ -238,6 +240,7 @@ class JSONValidator(DataValidator):
         try:
             json.dumps(obj.value)
         except:
+            #This is pretty much an impossible case since TastyPie JSON parser breaks before this
             raise BadRequest("Value must be valid JSON")
         
         return obj.value
@@ -279,6 +282,9 @@ class SubintervalValidator(DataValidator):
         try:
             json.dumps(obj.value)
             pos = 1
+            if len(obj.value) == 0:
+                 raise BadRequest("Empty subinterval provided")
+                 
             for si in obj.value:
                 if('start' not in si):
                     err = "Interval must contain 'start' field at position %d" % pos
