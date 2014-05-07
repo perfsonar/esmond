@@ -37,6 +37,8 @@ Initial installation
 
     virtualenv --prompt="(esmond)" venv
     . venv/bin/activate
+    pip install -U pip
+    pip install -U setuptools
 
 * pip install -r requirements.txt
 * Execute the following::
