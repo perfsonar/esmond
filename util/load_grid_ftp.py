@@ -77,7 +77,9 @@ When running from cron the script should be run with the required arguments
 enumerated above and set the --pickle arg to a fully qualified path, and 
 the --file arg should point to the logfile.  It can be run at whatever 
 frequency the user desires as the code will pick up from the last record 
-that was processed.
+that was processed.  When running from cron, the --log_dir arg should 
+be set so the logging output is written to a file rather than sent to 
+stdout.
 
 Log rotation interfere with this if the code has not finished scanning 
 a log before it is rotated and renamed.  If the code is run on the "fresh" 
