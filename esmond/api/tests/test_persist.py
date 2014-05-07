@@ -23,8 +23,8 @@ from tastypie.test import ResourceTestCase
 from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
 
 from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
-     PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister, \
-     fit_to_bins
+     PersistQueueEmpty, CassandraPollPersister
+from esmond.api.dataseries import fit_to_bins
 from esmond.config import get_config, get_config_path
 from esmond.cassandra import CASSANDRA_DB, SEEK_BACK_THRESHOLD
 from esmond.util import max_datetime
@@ -40,6 +40,7 @@ from esmond.util import atencode
 try:
     import tsdb
     from tsdb.row import ROW_VALID
+    from esmond.persist import TSDBPollPersister
 except ImportError:
     tsdb = None
 
@@ -567,62 +568,62 @@ class TestCassandraPollPersister(TestCase):
         p.db.flush()
         p.db.close()
         p.db.stats.report('all')
-        return
-        test_data = load_test_data("rtr_d_ifhcin_long.json")
-        q = TestPersistQueue(test_data)
-        p = TSDBPollPersister(config, "test", persistq=q)
-        p.run()
+        if tsdb:    
+            test_data = load_test_data("rtr_d_ifhcin_long.json")
+            q = TestPersistQueue(test_data)
+            p = TSDBPollPersister(config, "test", persistq=q)
+            p.run()
 
-        path_levels = []
+            path_levels = []
 
-        rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
-        for (path, dirs, files) in os.walk(rtr_d_path):
-            if dirs[0] == 'TSDBAggregates':
-                break
-            path_levels.append(dirs)
+            rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
+            for (path, dirs, files) in os.walk(rtr_d_path):
+                if dirs[0] == 'TSDBAggregates':
+                    break
+                path_levels.append(dirs)
 
-        oidsets = path_levels[0]
-        oids    = path_levels[1]
-        paths   = path_levels[2]
+            oidsets = path_levels[0]
+            oids    = path_levels[1]
+            paths   = path_levels[2]
 
-        full_paths = {}
+            full_paths = {}
 
-        for oidset in oidsets:
-            for oid in oids:
-                for path in paths:
-                    full_path = 'rtr_d/%s/%s/%s/TSDBAggregates/30'  % \
-                        (oidset, oid, path)
-                    if not full_paths.has_key(full_path):
-                        full_paths[full_path] = 1
+            for oidset in oidsets:
+                for oid in oids:
+                    for path in paths:
+                        full_path = 'rtr_d/%s/%s/%s/TSDBAggregates/30'  % \
+                            (oidset, oid, path)
+                        if not full_paths.has_key(full_path):
+                            full_paths[full_path] = 1
 
-        ts_db = tsdb.TSDB(config.tsdb_root)
-        
-        config.db_clear_on_testing = False
-        db = CASSANDRA_DB(config)
+            ts_db = tsdb.TSDB(config.tsdb_root)
+            
+            config.db_clear_on_testing = False
+            db = CASSANDRA_DB(config)
 
-        rates = ColumnFamily(db.pool, db.rate_cf)
+            rates = ColumnFamily(db.pool, db.rate_cf)
 
-        count_bad = 0
-        tsdb_aggs = 0
+            count_bad = 0
+            tsdb_aggs = 0
 
-        for p in full_paths.keys():
-            v = ts_db.get_var(p)
-            device,oidset,oid,path,tmp1,tmp2 = p.split('/')
-            path = path.replace("_", "/")
-            for d in v.select():
-                tsdb_aggs += 1
-                key = '%s:%s:%s:%s:%s:%s:%s'  % \
-                    (SNMP_NAMESPACE, device,oidset,oid,path,int(tmp2)*1000,
-                    datetime.datetime.utcfromtimestamp(d.timestamp).year)
+            for p in full_paths.keys():
+                v = ts_db.get_var(p)
+                device,oidset,oid,path,tmp1,tmp2 = p.split('/')
+                path = path.replace("_", "/")
+                for d in v.select():
+                    tsdb_aggs += 1
+                    key = '%s:%s:%s:%s:%s:%s:%s'  % \
+                        (SNMP_NAMESPACE, device,oidset,oid,path,int(tmp2)*1000,
+                        datetime.datetime.utcfromtimestamp(d.timestamp).year)
 
-                val = rates.get(key, [d.timestamp*1000])[d.timestamp*1000]
-                if d.flags != ROW_VALID:
-                    self.assertLess(val['is_valid'], 2)
-                else:
-                    self.assertLessEqual(abs(val['val'] - d.delta), 1.0)
-                    self.assertGreater(val['is_valid'], 0)
+                    val = rates.get(key, [d.timestamp*1000])[d.timestamp*1000]
+                    if d.flags != ROW_VALID:
+                        self.assertLess(val['is_valid'], 2)
+                    else:
+                        self.assertLessEqual(abs(val['val'] - d.delta), 1.0)
+                        self.assertGreater(val['is_valid'], 0)
 
-        db.close()
+            db.close()
 
     def test_persister_heartbeat(self):
         """Test the hearbeat code"""

@@ -9,8 +9,6 @@ import Queue
 
 from DLNetSNMP import SNMPManager, oid_to_str, str_to_oid, SnmpError
 
-import tsdb
-
 from esmond.util import setproctitle, init_logging, get_logger, \
         build_alu_sap_name
 from esmond.util import daemonize, setup_exc_handler
@@ -19,6 +17,12 @@ from esmond.error import ConfigError, PollerError
 from esmond.persist import PollResult, PersistClient
 from esmond.api.models import Device, IfRef, OIDSet
 
+try:
+    import tsdb
+    from tsdb.row import ROW_VALID
+except ImportError:
+    tsdb = None
+    ROW_VALID = 0x0001
 
 class PollError(Exception):
     pass
@@ -712,7 +716,7 @@ class CorrelatedPoller(Poller):
         self.correlator.setup(data)
 
         ts = time.time()
-        metadata = dict(tsdb_flags=tsdb.ROW_VALID)
+        metadata = dict(tsdb_flags=ROW_VALID)
 
         for oid in self.oidset.oids.all():
             dataout = []
@@ -760,7 +764,7 @@ class TranslatedPoller(Poller):
     def finish(self, data):
         self.correlator.setup(data)
         ts = time.time()
-        metadata = dict(tsdb_flags=tsdb.ROW_VALID)
+        metadata = dict(tsdb_flags=ROW_VALID)
         for oid in self.oidset.oids.all():
             correlated_data = []
             # qualified names are returned unqualified
