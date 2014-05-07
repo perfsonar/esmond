@@ -18,6 +18,7 @@ esmond.env
 .DS_Store
 *.swp
 *.py.orig
+*.pickle
 util/configure_cluster.orig
 pysqlite2-doc/install-source.txt
 /crashlog
