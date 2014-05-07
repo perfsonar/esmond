@@ -4,6 +4,7 @@ from esmond.api import ANON_LIMIT
 
 from tastypie.authorization import Authorization
 from tastypie.authentication import ApiKeyAuthentication
+from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.throttle import CacheDBThrottle
 
 # Custom Authn/Authz classes that are now being used by other API components.

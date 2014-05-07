@@ -24,9 +24,33 @@ class EventTypeBulkPostWarning(Warning): pass
 
 
 class PostBase(AlertMixin, object):
-    """docstring for PostBase"""
+    """
+    Base class for perfsonar API post functionality.  Should not 
+    be directly instantiated.
+    """
     _schema_root = 'perfsonar/archive'
     def __init__(self, api_url, username, api_key, script_alias):
+        """
+        The api_url, username and api_key args all have their usual usages.
+
+        The script_alias arg (which defaults to 'esmond') is in place
+        for the perfsonar CentOS distributions.  The 'root' of the 
+        perfsonar api as defined in esmond.api.perfsonar.api is 
+        is http://host:port/perfsonar/archive/... When deployed under 
+        Apache on the canned perfsonar installations, a ScriptAlias 
+        of /esmond is employed so the rest api won't 'take over' the 
+        default webserver.  When running this way it yields a base 
+        of http://host:port/esmond/perfsonar/archive/... - this is 
+        the default of the canned system install.
+
+        The script_alias arg can be set to None when doing development
+        against the django dev runserver, or set to something else if 
+        running under a similar but different deployment.  
+
+        Setting the arg to '/' will yield the same result as setting it 
+        to None - this makes it easier for calling programs that are 
+        setting that value via a command line arg/config file/etc.
+        """
         super(PostBase, self).__init__()
         self.api_url = api_url
         if self.api_url: self.api_url = api_url.rstrip('/')
@@ -50,17 +74,21 @@ class PostBase(AlertMixin, object):
         if self.script_alias: 
             self.script_alias = script_alias.rstrip('/')
             self.script_alias = script_alias.lstrip('/')
-            self._schema_root = '{0}/{1}'.format(self.script_alias, self._schema_root)
-            print self._schema_root
+            if self.script_alias:
+                self._schema_root = '{0}/{1}'.format(self.script_alias, self._schema_root)
 
     def _validate(self):
+        """Will be overridden in subclass.  Needs to run whatever validation
+        checks on the internal payload data before sending it to the API."""
         raise NotImplementedError('Must be implemented in subclass')
 
     def _check_event_type(self, et):
+        """Validate user supplied event type strings."""
         if et not in EVENT_TYPE_CONFIG.keys():
             raise MetadataPostException('{0} is not a valid event type'.format(et))
 
     def _check_summary_type(self, st):
+        """Validate user supplied summary type strings."""
         if st not in INVERSE_SUMMARY_TYPES.keys():
             raise MetadataPostException('{0} is not a valid summary type'.format(st))
 
@@ -73,7 +101,10 @@ class PostBase(AlertMixin, object):
         
 class MetadataPost(PostBase):
     wrn = MetadataPostWarning
-    """docstring for MetadataPost"""
+    """
+    Client class to POST metadata data/objects to the perfsonar 
+    relational database.
+    """
     def __init__(self, api_url, username='', api_key='',
             subject_type=None, source=None, destination=None,
             tool_name=None, measurement_agent=None, input_source=None,
@@ -121,6 +152,8 @@ class MetadataPost(PostBase):
         }
 
     def add_event_type(self, et):
+        """Add event-type data to the metadata before POSTing to 
+        the backend.  Will normally be called more than once."""
         self._check_event_type(et)
 
         for i in self._payload['event-types']:
@@ -130,6 +163,7 @@ class MetadataPost(PostBase):
         self._payload['event-types'].append({ 'event-type' : et })
 
     def add_summary_type(self, et, st, windows=[]):
+        """Add associated summary-type data to metadata before POSTing."""
         self._check_event_type(et)
         self._check_summary_type(st)
 
@@ -158,7 +192,18 @@ class MetadataPost(PostBase):
 
         self._payload['event-types'].append(suminfo)
 
+    def add_freeform_key_value(self, k, v):
+        """Add key/values pairs to metadata payload to be stored in the
+        ps_metadata_parameters table."""
+        if not self._payload.get(k, None):
+            self._payload[k] = v
+        else:
+            self.warn('Payload key {0} exists - skipping'.format(k))
+
     def post_metadata(self):
+        """Void method that will post the new metadata to the API and 
+        return the newly created metadata information wrapped in an
+        esmond.api.perfsonar.query.Metadata object."""
         url = '{0}/{1}/'.format(self.api_url, self._schema_root)
 
         r = requests.post(url, data=self.json_payload(), headers=self.headers)
@@ -187,9 +232,16 @@ class MetadataPost(PostBase):
 
 class EventTypePost(PostBase):
     wrn = EventTypePostWarning
-    """docstring for EventTypePost"""
+    """Client code to POST data to a single event type to the perfsonar API."""
     def __init__(self, api_url, username='', api_key='', metadata_key=None,
             event_type=None, script_alias='esmond'):
+        """
+        The api_url, username and api_key args have their usual uses.  The
+        event_type arg is outlined in the base class.
+
+        The metadata_key and event_type args are the associated metadata 
+        / event-type new data is being added to.
+        """
         super(EventTypePost, self).__init__(api_url, username, api_key, script_alias)
 
         self.metadata_key = metadata_key
@@ -205,6 +257,8 @@ class EventTypePost(PostBase):
         self._payload = []
 
     def add_data_point(self, ts, val):
+        """Add a new ts/datapoint to the payload for the meta/event type 
+        before sending to api.  Will be called more than once."""
         if not isinstance(ts, int):
             raise EventTypePostException('ts arg must be an integer')
         if not isinstance(val, numbers.Number) and \
@@ -213,6 +267,8 @@ class EventTypePost(PostBase):
         self._payload.append( { 'ts': ts, 'val': val } )
 
     def post_data(self):
+        """Void method to send the payload to the API.  Does not return 
+        anything."""
         self._validate()
 
         url = '{0}/{1}/{2}/{3}/base'.format(self.api_url, self._schema_root,
@@ -237,9 +293,15 @@ class EventTypePost(PostBase):
 
 class EventTypeBulkPost(PostBase):
     wrn = EventTypePostWarning
-    """docstring for EventTypePost"""
+    """Client class to bulk post data.  This is used to write multiple 
+    event types to a single metadata."""
     def __init__(self, api_url, username='', api_key='', metadata_key=None, 
             script_alias='esmond'):
+        """
+        The api_url, username and api_key args have their usual uses.  The
+        event_type arg is outlined in the base class.  The metadata_key arg
+        is the string for the metadata being written to.
+        """
         super(EventTypeBulkPost, self).__init__(api_url, username, api_key, script_alias)
 
         self.metadata_key = metadata_key
@@ -262,6 +324,9 @@ class EventTypeBulkPost(PostBase):
         return entry
 
     def add_data_point(self, event_type, ts, val):
+        """Adds data points to the payload.  Adds new ts/datapoint to
+        a specific event-type in the internal payload.  Will be called
+        multiple times."""
         self._check_event_type(event_type)
         if not isinstance(ts, int):
             raise EventTypeBulkPostException('ts arg must be an integer')
@@ -273,6 +338,8 @@ class EventTypeBulkPost(PostBase):
         data_entry['val'].append({'event-type': event_type, 'val': val})
 
     def post_data(self):
+        """Void method to send the payload to the API.  Does not return 
+        anything."""
         self._validate()
 
         url = '{0}/{1}/{2}/'.format(self.api_url, self._schema_root,
