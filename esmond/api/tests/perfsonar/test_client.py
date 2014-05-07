@@ -22,7 +22,7 @@ class TestClientLibs(LiveServerTestCase):
     test_data module matche the corresponding points returned from the
     client libraries.
     """
-    fixtures = ['perfsonar_metadata.json']
+    fixtures = ['perfsonar_client_metadata.json']
 
     def setUp(self):
         self.tr = TestResults()
