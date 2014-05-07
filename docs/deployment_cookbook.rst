@@ -190,3 +190,20 @@ for the keys.  The timeseries rows are not great candidates for row
 caching.
 
 More info: http://www.datastax.com/docs/1.1/operations/tuning
+
+Cassandra monitoring hooks
+==========================
+
+The MX4J plugin can be used to get information about the state/health 
+of a Cassandra server.  This gives a pointer to the java source and 
+instructions how to install:
+
+http://wiki.apache.org/cassandra/Operations#Monitoring_with_MX4J
+
+It exposes an http interface that can be used to query JMX variables from cassandra and the OS as outlined here:
+
+http://www.tomas.cat/blog/en/monitoring-cassandra-relevant-data-should-be-watched-and-how-send-it-graphite
+
+The script util/query_jmx.py imports a client library from esmond.api.client 
+that can query one of these MX4J endpoints for a variety of information.  
+There is a nagios wrapper for that client in util/nagios.
