@@ -71,10 +71,31 @@ sent and stop.  This is mostly used for development/testing to "step through"
 a file record by record.  It will set the pickle state file to the single 
 record sent before exiting.
 
-Running from cron and the behavior with rotated logs:
+Running from cron and dealing with rotated logs:
 
-TBA - after this part is hammered out.....
+When running from cron the script should be run with the required arguments
+enumerated above and set the --pickle arg to a fully qualified path, and 
+the --file arg should point to the logfile.  It can be run at whatever 
+frequency the user desires as the code will pick up from the last record 
+that was processed.
 
+Log rotation interfere with this if the code has not finished scanning 
+a log before it is rotated and renamed.  If the code is run on the "fresh" 
+log, it will not find the last record that was processed.   To deal with 
+this, this script should also be kicked off using the "prerotate" hook 
+that logrotated provides.
+
+When running this as a prerotate job, the -D (--delete_state) flag should
+also be used.  This will delete the pickle state file when the scan is 
+done with the log before it is rotated.  The state file is deleted so that 
+when the next cron job runs on the new "fresh" log, it will just start 
+scaning from the beginning and not try to search for a record that it 
+won't find.
+
+Alternately if the user doesn't need the data to be periodically loaded, 
+one could opt to exclusively run this as a logrotated/prerotate job such 
+that the entire log is processed in one throw before it is rotated.  In that
+case the --dont_write flag should be used.
 """
 
 import calendar
@@ -264,7 +285,6 @@ def scan_and_load(file_path, last_record, options, _log):
         if not row.strip(): continue
         row = _filter_log(row)
         if not row: continue
-        print row # XXX(mmg) remove
         o = LogEntryDataObject(row.split())
         if last_record and not scanning:
             if o.to_dict() == last_record.to_dict():
@@ -336,6 +356,9 @@ def main():
     parser.add_option('-S', '--single',
             dest='single', action='store_true', default=False,
             help='Only load a single record - used for development.')
+    parser.add_option('-D', '--delete_state',
+            dest='delete_state', action='store_true', default=False,
+            help='Delete state file from disc after concluding run.')
     parser.add_option('-l', '--log_dir', metavar='DIR',
             type='string', dest='logdir', default='',
             help='Write log output to specified directory - if not set, log goes to stdout.')
@@ -425,13 +448,15 @@ def main():
         # We have a hit in the curent log so proceed.
         last_log_entry = scan_and_load(file_path, last_record, options, _log)
     else:
-        # Crap, we need to look for it.
-        _log('main.process', 'File {0} does not pass check'.format(file_path))
-        last_log_entry = None # XXX(mmg): temp bulletproof, remove later.
-        pass
+        # State not found so log an error and exit.
+        _log('main.error', 'File {0} does not pass check - exiting'.format(file_path))
+        last_log_entry = None
 
     if last_log_entry and options.write:
         last_log_entry.to_pickle(pickle_path)
+
+    if options.delete_state:
+        os.unlink(pickle_path)
     
     pass
 
