@@ -558,6 +558,7 @@ class InterfaceDataResource(Resource):
         obj.datapath[2] = oidset.set_name  # set_name defaults to oidset.name, but can be overidden in poller_args
         obj.iface_dataset = iface_dataset
         obj.iface = iface
+        obj.user = bundle.request.user
 
         filters = getattr(bundle.request, 'GET', {})
 
@@ -602,7 +603,8 @@ class InterfaceDataResource(Resource):
                 (obj.agg, oidset.name))
 
         # Make sure we're not exceeding allowable time range.
-        if not QueryUtil.valid_timerange(obj):
+        if not QueryUtil.valid_timerange(obj) and \
+            not obj.user.username:
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
         
@@ -959,6 +961,7 @@ class TimeseriesResource(Resource):
         obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
         obj.agg = obj.datapath.pop()
         obj.datapath = QueryUtil.decode_datapath(obj.datapath)
+        obj.user = bundle.request.user
 
         try:
             obj.agg = int(obj.agg)
@@ -1083,7 +1086,8 @@ class TimeseriesResource(Resource):
         method call to the cassandra backend.
         """
         # Make sure we're not exceeding allowable time range.
-        if not QueryUtil.valid_timerange(obj, in_ms=True):
+        if not QueryUtil.valid_timerange(obj, in_ms=True) and \
+            not obj.user.username:
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
         
