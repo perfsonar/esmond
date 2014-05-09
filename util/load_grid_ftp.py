@@ -324,7 +324,7 @@ def scan_and_load(file_path, last_record, options, _log):
                 api_key=options.key, script_alias=options.script_alias, 
                 metadata_key=metadata.metadata_key,
                 event_type='throughput')
-            throughput = 8 * o.nbytes / (_epoch(o.date) - _epoch(o.start))
+            throughput = 8 * o.nbytes / (o.date - o.start).total_seconds()
             et.add_data_point(_epoch(o.start), throughput)
             et.post_data()
         else:
