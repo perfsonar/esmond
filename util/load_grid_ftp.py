@@ -450,9 +450,10 @@ def main():
         # We have a hit in the curent log so proceed.
         last_log_entry = scan_and_load(file_path, last_record, options, _log)
     else:
-        # State not found so log an error and exit.
-        _log('main.error', 'File {0} does not pass check - exiting'.format(file_path))
-        last_log_entry = None
+        # State not found so log a warning and assume rotation
+        _log('main.warn', 'File {0} does not contain last log entry. Maybe rotated?- proceeding'.format(file_path))
+        last_record=None
+        last_log_entry = scan_and_load(file_path, last_record, options, _log)
 
     if last_log_entry and options.write:
         last_log_entry.to_pickle(pickle_path)
