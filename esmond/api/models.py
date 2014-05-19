@@ -395,18 +395,24 @@ class Inventory(models.Model):
         (STAT_AGGS, 'stat_aggregations')
     )
     # fields
-    row_key = models.CharField(max_length=128, unique=True)
+    row_key = models.CharField(max_length=128)
+    frequency = models.IntegerField()
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     last_scan_point = models.DateTimeField(null=True, blank=True)
     scan_complete = models.BooleanField(default=False)
+    data_found = models.BooleanField(default=False)
     column_family = models.CharField(max_length=2, 
                                     choices=COLUMN_FAMILY_CHOICES,
                                     default=BASE_RATES)
+    issues = models.CharField(max_length=128, null=True, blank=True)
 
     class Meta:
         db_table = 'inventory'
         ordering = ['row_key']
+        # This constraint will only work in a "real" db engine like
+        # PG or MySQL.  YMMV if using sqlite.
+        unique_together = (('row_key', 'start_time', 'end_time'),)
 
     def __unicode__(self):
         return self.row_key
@@ -424,6 +430,7 @@ class GapInventory(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     processed = models.BooleanField(default=False)
+    issues = models.CharField(max_length=128, null=True, blank=True)
 
     class Meta:
         db_table = 'gap_inventory'

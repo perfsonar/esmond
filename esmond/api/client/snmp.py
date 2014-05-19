@@ -472,7 +472,7 @@ class DataPayload(NodeInfo):
     @property
     def data(self):
         """Return internal data from payload as list of DataPoint."""
-        return [DataPoint(x[0],x[1]) for x in self._data.get('data', [])]
+        return [DataPoint(**x) for x in self._data.get('data', [])]
 
     @property
     def dump(self):
@@ -483,12 +483,13 @@ class DataPayload(NodeInfo):
             len(self.data), self.begin_time, self.end_time)
 
 class DataPoint(object):
-    __slots__ = ['ts', 'val']
+    __slots__ = ['ts', 'val', 'm_ts']
     """Class to encapsulate the returned data points."""
-    def __init__(self, ts, val):
+    def __init__(self, ts, val, m_ts=None):
         super(DataPoint, self).__init__()
         self.ts = datetime.datetime.utcfromtimestamp(ts)
         self.val = val
+        self.m_ts = m_ts
 
     @property
     def ts_epoch(self):
@@ -538,7 +539,7 @@ class BulkDataRow(object):
 
     @property
     def data(self):
-        return [DataPoint(x[0],x[1]) for x in self._data]
+        return [DataPoint(**x) for x in self._data]
 
     def __repr__(self):
         return '<BulkDataRow: dev:{0} iface:{1} endpoint:{2} len:{3}>'.format(

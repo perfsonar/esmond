@@ -28,7 +28,7 @@ from esmond.api.auth import EsmondAuthorization, AnonymousGetElseApiAuthenticati
     AnonymousBulkLimitElseApiAuthentication, AnonymousTimeseriesBulkLimitElseApiAuthentication, \
     AnonymousThrottle
 from esmond.api.dataseries import QueryUtil, Fill
-from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef
+from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef, Inventory
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import atdecode, atencode
@@ -558,6 +558,7 @@ class InterfaceDataResource(Resource):
         obj.datapath[2] = oidset.set_name  # set_name defaults to oidset.name, but can be overidden in poller_args
         obj.iface_dataset = iface_dataset
         obj.iface = iface
+        obj.user = bundle.request.user
 
         filters = getattr(bundle.request, 'GET', {})
 
@@ -602,7 +603,8 @@ class InterfaceDataResource(Resource):
                 (obj.agg, oidset.name))
 
         # Make sure we're not exceeding allowable time range.
-        if not QueryUtil.valid_timerange(obj):
+        if not QueryUtil.valid_timerange(obj) and \
+            not obj.user.username:
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
         
@@ -959,6 +961,7 @@ class TimeseriesResource(Resource):
         obj.datapath = [kwargs.get('ns')] + kwargs.get('path').rstrip('/').split('/')
         obj.agg = obj.datapath.pop()
         obj.datapath = QueryUtil.decode_datapath(obj.datapath)
+        obj.user = bundle.request.user
 
         try:
             obj.agg = int(obj.agg)
@@ -1083,7 +1086,8 @@ class TimeseriesResource(Resource):
         method call to the cassandra backend.
         """
         # Make sure we're not exceeding allowable time range.
-        if not QueryUtil.valid_timerange(obj, in_ms=True):
+        if not QueryUtil.valid_timerange(obj, in_ms=True) and \
+            not obj.user.username:
             raise BadRequest('exceeded valid timerange for agg level: %s' %
                     obj.agg)
         
@@ -1498,6 +1502,31 @@ class OutletDataResource(Resource):
 
         return obj
 
+class InventoryResource(ModelResource):
+    """
+    Resource to query cassandra key inventory from gap filling 
+    db tables since querying "real" cassandra keys is expensive.
+    """
+    class Meta:
+        resource_name = 'inventory'
+        allowed_methods = ['get']
+        queryset = Inventory.objects.all()
+        authentication = AnonymousGetElseApiAuthentication()
+        filtering = {
+            'row_key': ALL,
+        }
+
+    def get_object_list(self, request):
+        qs = self._meta.queryset._clone()
+        return qs
+
+    def alter_list_data_to_serialize(self, request, data):
+        return data['objects']
+
+    def dehydrate(self, bundle):
+        return bundle.data['row_key']
+
+
 """Connect the 'root' resources to the URL schema."""
 v1_api = Api(api_name='v1')
 v1_api.register(DeviceResource())
@@ -1508,5 +1537,6 @@ v1_api.register(OidsetEndpointResource())
 v1_api.register(BulkDispatch())
 v1_api.register(PDUResource())
 v1_api.register(OutletResource())
+v1_api.register(InventoryResource())
 
 __doc__ = '\n\n'.join([snmp_ns_doc, bulk_ns_doc, bulk_interface_ns_doc, ts_ns_doc, bulk_namespace_ns_doc])

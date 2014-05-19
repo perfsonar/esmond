@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+
+"""
+Nagios tests for cassandra servers.
+
+Plugin guidelines: https://nagios-plugins.org/doc/guidelines.html
+
+Arguments use the typical nagios -w and -c options.  Will also need to 
+specify -H and -p (host/port) options (also per nagios guildelines).
+
+Then the -M flag is used to invoke one of the get_* methods from the 
+CassandraJMX module.  If one of the memory methods are called, it 
+will return the 'used' key from the dict MX4J returns as the measurement.
+"""
+
+import logging
+import os
+import sys
+from optparse import OptionParser
+
+import nagiosplugin
+
+from esmond.api.client.jmx import CassandraJMX, available_tests
+
+_log = logging.getLogger('nagiosplugin')
+
+class CassandraCheck(nagiosplugin.Resource):
+    def __init__(self, host, port, metric):
+        self.host = host
+        self.port = port
+        self.metric = metric
+
+        self.cjmx = CassandraJMX('http://{0}:{1}'.format(self.host, self.port))
+
+    def probe(self):
+        value = getattr(self.cjmx, self.metric)()
+        # Mem checks return a dict, used is useful in this case
+        if isinstance(value, dict):
+            value = value['used']
+        yield nagiosplugin.Metric(self.metric, value)
+
+@nagiosplugin.guarded
+def main():
+    usage = '%prog [ -w RANGE | -c RANGE | -H HOST | -p PORT | -M METRIC ]'
+    parser = OptionParser(usage=usage)
+    parser.add_option('-w', '--warning', metavar='RANGE',
+            type='string', dest='warning', 
+            help='Return warning if measurement is outside of RANGE.')
+    parser.add_option('-c', '--critical', metavar='RANGE',
+            type='string', dest='critical', 
+            help='Return critical if measurement is outside of RANGE.')
+    parser.add_option('-H', '--hostname', metavar='HOSTNAME',
+            type='string', dest='hostname', default='localhost',
+            help='Hostname of cassandra server (default=%default).')
+    parser.add_option('-p', '--port', metavar='PORT',
+            type='int', dest='port', default=8081,
+            help='Port number of cassandra MX4J service (default=%default).')
+    parser.add_option('-M', '--metric', metavar='METRIC',
+            type='string', dest='metric', default='get_heap_memory',
+            help='Metric from esmond.api.client.jmx to test (default=%default) .')
+    parser.add_option('-l', '--list',
+            dest='list', action='store_true', default=False,
+            help='List available metrics for -M arg.')
+    parser.add_option('-v', '--verbose',
+                dest='verbose', action='count', default=False,
+                help='Verbose output - -v, -vv, etc.')
+    options, args = parser.parse_args()
+
+    if options.list or options.metric not in available_tests:
+        print 'Arg --metric | -M must be one of:'
+        for m in available_tests:
+            print '   {0}'.format(m)
+        return -1
+
+    check = nagiosplugin.Check(
+        CassandraCheck(options.hostname, options.port, options.metric),
+        nagiosplugin.ScalarContext(options.metric, options.warning, options.critical)
+        )
+    check.main()
+    
+
+if __name__ == '__main__':
+    main()
