@@ -304,6 +304,7 @@ def scan_and_load(file_path, last_record, options, _log):
         mp.add_freeform_key_value('gridftp-program', o.prog)
         mp.add_freeform_key_value('gridftp-block-size', o.block)
         mp.add_freeform_key_value('tcp-window-size', o.buffer)
+        mp.add_freeform_key_value('gridftp-bytes-transferred', o.nbytes)
         # Optional vars - these must be enabled via boolean 
         # command line args since these values might be sensitive.
         if options.file_attr:
