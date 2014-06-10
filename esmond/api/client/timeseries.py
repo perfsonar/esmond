@@ -2,8 +2,8 @@ import json
 import requests
 import warnings
 
-from esmond.api.client.snmp import DataPayload
-from esmond.api.client.util import add_apikey_header, atencode, AlertMixin
+from .snmp import DataPayload
+from .util import add_apikey_header, atencode, AlertMixin
 
 class TimeseriesBase(AlertMixin, object):
     """Base class for the GET and POST timeseries interaction objects."""

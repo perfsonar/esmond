@@ -6,7 +6,7 @@ import requests
 import time
 import warnings
 
-from esmond.api.client.util import add_apikey_header, AlertMixin
+from .util import add_apikey_header, AlertMixin
 
 """
 Library to fetch data from 'simplified' API /v1/snmp/ namespace.
