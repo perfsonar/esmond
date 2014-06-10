@@ -526,6 +526,11 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         post_data = {'ts': ts, 'val': val}
         response = self.api_client.post(url, format='json', data=post_data, authentication=self.create_admin_credentials())
         self.assertHttpBadRequest(response)
+    
+    def assertSinglePostConflict(self, url, ts, val):
+        post_data = {'ts': ts, 'val': val}
+        response = self.api_client.post(url, format='json', data=post_data, authentication=self.create_admin_credentials())
+        self.assertHttpConflict(response)
         
     def assertBulkTSPostSuccess(self, bulk_url, base_url, start, interval, data, event_type):
         end=0
@@ -676,6 +681,9 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         #single post
         self.assertSinglePostSuccess(base_url, start, self.hist_data[0])
         
+        #duplicate last post - should fail
+        self.assertSinglePostConflict(base_url, start, self.hist_data[0])
+        
         #bulk post
         bulk_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/'
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.hist_data, 'histogram-rtt')
@@ -691,7 +699,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertExpectedResponse(expected, stat_url)
         
         #test non-numeric key(should work) and re-check stats
-        self.assertSinglePostSuccess(base_url, start, {'test': 100})
+        self.assertSinglePostSuccess(base_url, start+1000, {'test': 100})
         self.assertExpectedResponse([{u'ts': 1398902400, u'val': {}}], stat_url)
         
     def test_authentication_failures(self):

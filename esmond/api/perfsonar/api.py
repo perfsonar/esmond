@@ -16,7 +16,8 @@ from tastypie import fields
 from tastypie.api import Api
 from tastypie.authorization import Authorization, DjangoAuthorization
 from tastypie.bundle import Bundle
-from tastypie.exceptions import BadRequest, NotFound
+from tastypie.http import HttpConflict
+from tastypie.exceptions import BadRequest, NotFound, ImmediateHttpResponse
 from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS
 from time import time
 import hashlib
@@ -755,7 +756,6 @@ class PSTimeSeriesResource(Resource):
         end_time = time_result['end']
         
         #build data path
-        datapath = []
         if 'event_type' not in kwargs:
             raise BadRequest("No event type specified for data query")
         elif 'metadata_key' not in kwargs:
@@ -766,20 +766,25 @@ class PSTimeSeriesResource(Resource):
             raise BadRequest("Misconfigured event type on server side. Missing 'type' field")
         event_type = kwargs['event_type']
         metadata_key = kwargs['metadata_key']
-        datapath = row_prefix(event_type)
-        datapath.append(metadata_key)
         summary_type = 'base'
         if 'summary_type' in kwargs:
             summary_type = kwargs['summary_type']
             if summary_type not in SUMMARY_TYPES:
                 raise BadRequest("Invalid summary type '%s'" % summary_type)
-            datapath.append(SUMMARY_TYPES[summary_type])
         freq = None
         if 'summary_window' in kwargs:
             freq = self.valid_summary_window(kwargs['summary_window'])
 
         #send query
+        return self._query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time)
+    
+    def _query_database(self, metadata_key, event_type, summary_type, freq, begin_time, end_time):
         results = []
+        datapath = row_prefix(event_type)
+        datapath.append(metadata_key)
+        if(summary_type != 'base'):
+            datapath.append(SUMMARY_TYPES[summary_type])
+        
         query_type = EVENT_TYPE_CONFIG[event_type]["type"]
         if query_type not in EVENT_TYPE_CF_MAP:
             raise BadRequest("Misconfigured event type on server side. Invalid 'type' %s" % query_type)
@@ -788,6 +793,7 @@ class PSTimeSeriesResource(Resource):
             col_fam = EVENT_TYPE_CF_MAP[query_type]
         log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%d end=%d cf=%s datapath=%s" %
                   (metadata_key, event_type, summary_type, freq, begin_time, end_time, col_fam, datapath))
+
         if col_fam == db.agg_cf:
             results = db.query_aggregation_timerange(path=datapath, freq=freq,
                    cf='average', ts_min=begin_time*1000, ts_max=end_time*1000)
@@ -800,10 +806,9 @@ class PSTimeSeriesResource(Resource):
         else:
             log.debug("action=query_timeseries.end status=-1")
             raise BadRequest("Requested data does not map to a known column-family")
-        log.debug("action=query_timeseries.end status=0")
         
         return results
-    
+        
     def format_ts_obj(self, obj):
         if obj.has_key('ts'):
             obj['ts'] = int( obj['ts'] / 1e3 )
@@ -871,6 +876,11 @@ class PSTimeSeriesResource(Resource):
             summary_window=obj.summary_window)
         if(event_types.count() == 0):
             raise NotFound("Given event type does not exist for metadata key")
+        
+        #verify object does not already exist
+        existing = self._query_database(obj.metadata_key, obj.event_type, 'base', None, int(obj.time), int(obj.time)) 
+        if(len(existing) > 0):
+            raise ImmediateHttpResponse(HttpConflict("Time series value already exists with event type %s at time %d" % (obj.event_type, int(obj.time))))
         
         #Insert into cassandra
         #NOTE: Ordering in model allows statistics to go last. If this ever changes may need to update code here.
