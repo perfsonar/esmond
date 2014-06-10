@@ -107,6 +107,37 @@ class EmersonPollCorrelator(PollCorrelator):
         except KeyError:
             raise PollUnknownIfIndex(var)
 
+class IfNameCorrelator(PollCorrelator):
+    """correlates an IfIndex to an it's IfName"""
+
+    oids = ['ifName', 'ifAlias']
+
+    def setup(self, data, ignore_no_ifalias=True):
+        self.xlate = self._table_parse(filter_data('ifName', data))
+
+        if ignore_no_ifalias:
+            for (var, val) in filter_data('ifAlias', data):
+                ifIndex = var.split(".")[-1]
+                if not val:
+                    self.xlate[ifIndex] = None
+
+    def lookup(self, oid, var):
+        # XXX this sucks
+        if oid.name == 'sysUpTime':
+            return ['sysUpTime']
+
+        ifIndex = var.split('.')[-1]
+
+        try:
+            r = self.xlate[ifIndex]
+            if r:
+                return [oid.name, r]
+            else:
+                return None
+
+        except KeyError:
+            raise PollUnknownIfIndex(ifIndex)
+
 class IfDescrCorrelator(PollCorrelator):
     """correlates an IfIndex to an it's IfDescr"""
 
