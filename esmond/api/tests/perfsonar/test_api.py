@@ -569,6 +569,9 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         #single post
         self.assertSinglePostSuccess(base_url, start, self.int_data[0])
         
+        #duplicate last request which should give a conflict
+        self.assertSinglePostConflict(base_url, start, self.int_data[0])
+        
         #bulk post
         bulk_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/'
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.int_data, 'throughput')
@@ -594,6 +597,9 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         #single post
         self.assertSinglePostSuccess(base_url, start, self.float_data[0])
         
+        #duplicate last request which should give a conflict
+        self.assertSinglePostConflict(base_url, start, self.float_data[0])
+        
         #bulk post
         bulk_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/'
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.float_data, 'time-error-estimates')
@@ -615,6 +621,9 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
         #single post
         self.assertSinglePostSuccess(base_url, start, self.json_data[0])
+        
+        #duplicate last request which should give a conflict
+        self.assertSinglePostConflict(base_url, start, self.json_data[0])
         
         #bulk post
         bulk_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/'
@@ -639,6 +648,9 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         #single post
         self.assertSinglePostSuccess(base_url, start, self.perc_post_data[0], False)
         
+        #duplicate last request which should give a conflict
+        self.assertSinglePostConflict(base_url, start, self.perc_post_data[0])
+        
         #bulk post
         bulk_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/'
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.perc_post_data, 'packet-loss-rate')
@@ -662,9 +674,12 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertSinglePostFailure(base_url, start, [{'duration': 1, 'start': 1}])
         self.assertSinglePostFailure(base_url, start, [{'duration': 'bad', 'start': 1, 'val': 1}])
         self.assertSinglePostFailure(base_url, start, [{'duration': 1, 'start': 'bad', 'val': 1}])
-
+        
         #single post
         self.assertSinglePostSuccess(base_url, start, self.subint_data[0])
+        
+        #duplicate last request which should give a conflict
+        self.assertSinglePostConflict(base_url, start, self.subint_data[0])
         
         #bulk post
         bulk_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/'
