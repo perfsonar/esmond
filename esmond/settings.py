@@ -108,3 +108,5 @@ INSTALLED_APPS = (
     'discover_runner',
     'tastypie',
 )
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
