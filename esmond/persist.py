@@ -820,8 +820,9 @@ class HistoryTablePersister(PollPersister):
 
                 for attr in attrs:
                     if not hasattr(old, attr):
-                        self.log.error("Field " + attr + " is not contained in the object: %s" % str(old))
-                        continue
+                        self.log.error("Field " + attr + " is not contained in the object: %s. Adding it." % str(old))
+                        changed = True
+                        break
 
                     if getattr(old, attr) != new[attr]:
                         changed = True
