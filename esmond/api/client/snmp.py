@@ -6,7 +6,7 @@ import requests
 import time
 import warnings
 
-from esmond.api.client.util import add_apikey_header, AlertMixin
+from .util import add_apikey_header, AlertMixin
 
 """
 Library to fetch data from 'simplified' API /v1/snmp/ namespace.
@@ -675,7 +675,6 @@ class ApiConnect(AlertMixin, object):
                 self.filters.auth_apikey, self.request_headers)
 
     def get_devices(self, **filters):
-        print self.request_headers
         r = requests.get('{0}/v1/device/'.format(self.api_url),
             params=self.filters.compose_filters(filters),
             headers=self.request_headers)
