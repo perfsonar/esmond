@@ -675,7 +675,6 @@ class ApiConnect(AlertMixin, object):
                 self.filters.auth_apikey, self.request_headers)
 
     def get_devices(self, **filters):
-        print self.request_headers
         r = requests.get('{0}/v1/device/'.format(self.api_url),
             params=self.filters.compose_filters(filters),
             headers=self.request_headers)
