@@ -191,6 +191,16 @@ Setting the key cache to around 512M should be more than enough cache
 for the keys.  The timeseries rows are not great candidates for row 
 caching.
 
+If you ever delete rows from Cassandra it may be necessary to increase
+the value of tombstone_failure_threshold in the cassandra.yaml file.
+One full year of 30 second samples is just over 1 million values so
+deleting an entire row will leave behind enough tombstones to prevent
+any queries for that row key from working unless the threshold is
+increased. Note that these failures will normally show up as timeouts
+to the client (as of 2.0.7 at least) which can be misleading. The
+true cause of the failure does show up if the query is run with
+tracing enabled.
+
 More info: http://www.datastax.com/docs/1.1/operations/tuning
 
 Cassandra monitoring hooks
