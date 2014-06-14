@@ -48,6 +48,7 @@ class EsmondConfig(object):
         self.file = file
 
         self.agg_tsdb_root = None
+        self.allowed_hosts = []
         self.api_anon_limit = None
         self.api_throttle_at = None
         self.api_throttle_timeframe = None
@@ -106,6 +107,7 @@ class EsmondConfig(object):
         config_items = map(lambda x: x[0], cfg.items("main"))
         for opt in (
                 'agg_tsdb_root',
+                'allowed_hosts',
                 'api_anon_limit',
                 'api_throttle_at',
                 'api_throttle_timeframe',
@@ -174,6 +176,9 @@ class EsmondConfig(object):
 
     def convert_types(self):
         """update_types -- convert input from config file to appropriate types"""
+
+        if self.allowed_hosts:
+            self.allowed_hosts = map(str.strip, self.allowed_hsots.split(','))
 
         if self.mib_dirs:
             self.mib_dirs = map(str.strip, self.mib_dirs.split(','))
