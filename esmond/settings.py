@@ -110,8 +110,8 @@ INSTALLED_APPS = (
 )
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-if ESMOND_CONF.allowed_hosts:
-    ALLOWED_HOSTS.extend(ESMOND_CONF.allowed_hosts)
+if ESMOND_SETTINGS.allowed_hosts:
+    ALLOWED_HOSTS.extend(ESMOND_SETTINGS.allowed_hosts)
 else:
     import socket
     hostname = socket.gethostname()
