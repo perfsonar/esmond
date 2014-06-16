@@ -210,6 +210,7 @@ class IfRef(models.Model):
     device = models.ForeignKey(Device, db_column="deviceid")
     ifIndex = models.IntegerField(db_column="ifindex")
     ifDescr = models.CharField(max_length=512, db_column="ifdescr")
+    ifName = models.CharField(max_length=512, db_column="ifname")
     ifAlias = models.CharField(max_length=512, db_column="ifalias", blank=True,
             null=True)
     ipAddr = models.IPAddressField(blank=True, db_column="ipaddr", null=True)
@@ -231,14 +232,17 @@ class IfRef(models.Model):
 
     class Meta:
         db_table = "ifref"
-        ordering = ["device__name", "ifDescr"]
+        ordering = ["device__name", "ifName"]
         permissions = (
                 ("can_see_hidden_ifref",
                     "Can see IfRefs with ifAlias containing :hide:"),
                 )
 
     def __unicode__(self):
-        return "%s (%s) %s"%(self.ifDescr, self.ifIndex, self.ifAlias)
+        return "%s (%s) %s"%(self.ifName, self.ifIndex, self.ifAlias)
+
+    def encoded_ifName(self):
+        return atencode(self.ifName)
 
     def encoded_ifDescr(self):
         return atencode(self.ifDescr)
@@ -250,7 +254,7 @@ class IfRef(models.Model):
         else:
             speed = self.ifHighSpeed * int(1e6)
 
-        return dict(name=self.ifDescr,
+        return dict(name=self.ifName,
                     descr=self.ifAlias,
                     speed=speed, 
                     begin_time=datetime_to_unixtime(self.begin_time),
@@ -258,6 +262,7 @@ class IfRef(models.Model):
                     device=self.device.name,
                     ifIndex=self.ifIndex,
                     ifDescr=self.ifDescr,
+                    ifName=self.ifName,
                     ifAlias=self.ifAlias,
                     ifSpeed=self.ifSpeed,
                     ifHighSpeed=self.ifHighSpeed,
