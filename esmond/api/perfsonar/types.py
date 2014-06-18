@@ -32,10 +32,19 @@ EVENT_TYPE_CONFIG = {
     "histogram-ttl": {
         "type": "histogram",
     },
+    "histogram-ttl-reverse": {
+        "type": "histogram",
+    },
     "packet-duplicates": {
         "type": "integer",
     },
+    "packet-duplicates-bidir": {
+        "type": "integer",
+    },
     "packet-loss-rate": {
+        "type": "percentage",
+    },
+    "packet-loss-rate-bidir": {
         "type": "percentage",
     },
     "packet-trace": {
@@ -44,10 +53,16 @@ EVENT_TYPE_CONFIG = {
     "packet-count-lost": {
         "type": "integer"
     },
+    "packet-count-lost-bidir": {
+        "type": "integer"
+    },
     "packet-count-sent": {
         "type": "integer",
     },
     "packet-reorders": {
+        "type": "integer",
+    },
+    "packet-reorders-bidir": {
         "type": "integer",
     },
     "packet-retransmits": {
