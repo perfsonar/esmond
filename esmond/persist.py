@@ -877,26 +877,23 @@ class IfRefPollPersister(HistoryTablePersister):
         obj['end_time'] = max_datetime
         return IfRef(**obj)
 
-    def _resolve_ifdescr(self, ifdescr, ifindex):
-        return ifdescr
-
     def _build_objs(self):
         ifref_objs = {}
         ifIndex_map = {}
 
-        for name, val in self.data['ifDescr']:
+        for name, val in self.data['ifName']:
             foo, ifIndex = name.split('.')
             ifIndex = int(ifIndex)
-            ifDescr = self._resolve_ifdescr(val, ifIndex)
-            ifIndex_map[ifIndex] = ifDescr
-            ifref_objs[ifDescr] = dict(ifDescr=ifDescr, ifIndex=ifIndex)
+            ifName = val
+            ifIndex_map[ifIndex] = ifName
+            ifref_objs[ifName] = dict(ifName=ifName, ifIndex=ifIndex)
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
             ifref_objs[ifIndex_map[val]]['ipAddr'] = ipAddr
 
         remaining_oids = self.data.keys()
-        remaining_oids.remove('ifDescr')
+        remaining_oids.remove('ifName')
         remaining_oids.remove('ipAdEntIfIndex')
 
         for oid in remaining_oids:
