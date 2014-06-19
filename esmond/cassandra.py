@@ -80,7 +80,6 @@ class ConnectionException(CassandraException):
         
 class CASSANDRA_DB(object):
     
-    keyspace = 'esmond'
     raw_cf = 'raw_data'
     rate_cf = 'base_rates'
     agg_cf = 'rate_aggregations'
@@ -121,6 +120,7 @@ class CASSANDRA_DB(object):
 
         # Connect to cassandra with SystemManager, do a schema check 
         # and set up schema components if need be.
+        self.keyspace = config.cassandra_keyspace
         try:
             sysman = SystemManager(config.cassandra_servers[0])                              
         except TTransportException, e:
