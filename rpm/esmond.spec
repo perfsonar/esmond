@@ -96,6 +96,7 @@ rm -rf %{buildroot}/%{install_base}/rpm
 # Install python libs so don't rely on pip connectivity during RPM install
 # NOTE: This part is why its not noarch
 cd %{buildroot}/%{install_base}
+rm -f .gitignore
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 . bin/activate
