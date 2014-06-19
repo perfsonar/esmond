@@ -36,6 +36,7 @@ class TestClientLibs(LiveServerTestCase):
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
+        config.cassandra_keyspace = 'test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         
         test_data = load_test_data("rtr_d_ifhcin_long.json")
