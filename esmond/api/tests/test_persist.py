@@ -23,8 +23,8 @@ from tastypie.test import ResourceTestCase
 from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
 
 from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
-     PersistQueueEmpty, TSDBPollPersister, CassandraPollPersister, \
-     fit_to_bins
+     PersistQueueEmpty, CassandraPollPersister
+from esmond.api.dataseries import fit_to_bins
 from esmond.config import get_config, get_config_path
 from esmond.cassandra import CASSANDRA_DB, SEEK_BACK_THRESHOLD
 from esmond.util import max_datetime
@@ -40,6 +40,7 @@ from esmond.util import atencode
 try:
     import tsdb
     from tsdb.row import ROW_VALID
+    from esmond.persist import TSDBPollPersister
 except ImportError:
     tsdb = None
 
@@ -436,7 +437,9 @@ class CassandraTestResults(object):
     agg_freq = 3600
     agg_avg = 17.572649572649574 # now a float
     agg_min = 0
+    agg_min_ts = 1343955868
     agg_max = 7500
+    agg_max_ts = 1343957576
     agg_raw = 61680
 
     # Values from raw data tests
@@ -471,6 +474,7 @@ class TestCassandraPollPersister(TestCase):
 
     def test_sys_uptime(self):
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         q = TestPersistQueue(json.loads(sys_uptime_test_data))
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
@@ -491,6 +495,7 @@ class TestCassandraPollPersister(TestCase):
     def test_persister(self):
         """This is a very basic smoke test for a cassandra persister."""
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         test_data = json.loads(timeseries_test_data)
         #return
         q = TestPersistQueue(test_data)
@@ -505,9 +510,10 @@ class TestCassandraPollPersister(TestCase):
         Although this isn't supposed to happen, sometimes it does.
         The example data is real data from conf-rtr.sc13.org."""
         
-        config = get_config(get_config_path())
         test_data = json.loads(backwards_counters_test_data)
 
+        config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
@@ -556,6 +562,7 @@ class TestCassandraPollPersister(TestCase):
         config = get_config(get_config_path())
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         # return
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         config.db_profile_on_testing = True
 
@@ -565,67 +572,68 @@ class TestCassandraPollPersister(TestCase):
         p.db.flush()
         p.db.close()
         p.db.stats.report('all')
-        return
-        test_data = load_test_data("rtr_d_ifhcin_long.json")
-        q = TestPersistQueue(test_data)
-        p = TSDBPollPersister(config, "test", persistq=q)
-        p.run()
+        if tsdb:    
+            test_data = load_test_data("rtr_d_ifhcin_long.json")
+            q = TestPersistQueue(test_data)
+            p = TSDBPollPersister(config, "test", persistq=q)
+            p.run()
 
-        path_levels = []
+            path_levels = []
 
-        rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
-        for (path, dirs, files) in os.walk(rtr_d_path):
-            if dirs[0] == 'TSDBAggregates':
-                break
-            path_levels.append(dirs)
+            rtr_d_path = os.path.join(settings.ESMOND_ROOT, "tsdb-data", "rtr_d")
+            for (path, dirs, files) in os.walk(rtr_d_path):
+                if dirs[0] == 'TSDBAggregates':
+                    break
+                path_levels.append(dirs)
 
-        oidsets = path_levels[0]
-        oids    = path_levels[1]
-        paths   = path_levels[2]
+            oidsets = path_levels[0]
+            oids    = path_levels[1]
+            paths   = path_levels[2]
 
-        full_paths = {}
+            full_paths = {}
 
-        for oidset in oidsets:
-            for oid in oids:
-                for path in paths:
-                    full_path = 'rtr_d/%s/%s/%s/TSDBAggregates/30'  % \
-                        (oidset, oid, path)
-                    if not full_paths.has_key(full_path):
-                        full_paths[full_path] = 1
+            for oidset in oidsets:
+                for oid in oids:
+                    for path in paths:
+                        full_path = 'rtr_d/%s/%s/%s/TSDBAggregates/30'  % \
+                            (oidset, oid, path)
+                        if not full_paths.has_key(full_path):
+                            full_paths[full_path] = 1
 
-        ts_db = tsdb.TSDB(config.tsdb_root)
-        
-        config.db_clear_on_testing = False
-        db = CASSANDRA_DB(config)
+            ts_db = tsdb.TSDB(config.tsdb_root)
+            
+            config.db_clear_on_testing = False
+            db = CASSANDRA_DB(config)
 
-        rates = ColumnFamily(db.pool, db.rate_cf)
+            rates = ColumnFamily(db.pool, db.rate_cf)
 
-        count_bad = 0
-        tsdb_aggs = 0
+            count_bad = 0
+            tsdb_aggs = 0
 
-        for p in full_paths.keys():
-            v = ts_db.get_var(p)
-            device,oidset,oid,path,tmp1,tmp2 = p.split('/')
-            path = path.replace("_", "/")
-            for d in v.select():
-                tsdb_aggs += 1
-                key = '%s:%s:%s:%s:%s:%s:%s'  % \
-                    (SNMP_NAMESPACE, device,oidset,oid,path,int(tmp2)*1000,
-                    datetime.datetime.utcfromtimestamp(d.timestamp).year)
+            for p in full_paths.keys():
+                v = ts_db.get_var(p)
+                device,oidset,oid,path,tmp1,tmp2 = p.split('/')
+                path = path.replace("_", "/")
+                for d in v.select():
+                    tsdb_aggs += 1
+                    key = '%s:%s:%s:%s:%s:%s:%s'  % \
+                        (SNMP_NAMESPACE, device,oidset,oid,path,int(tmp2)*1000,
+                        datetime.datetime.utcfromtimestamp(d.timestamp).year)
 
-                val = rates.get(key, [d.timestamp*1000])[d.timestamp*1000]
-                if d.flags != ROW_VALID:
-                    self.assertLess(val['is_valid'], 2)
-                else:
-                    self.assertLessEqual(abs(val['val'] - d.delta), 1.0)
-                    self.assertGreater(val['is_valid'], 0)
+                    val = rates.get(key, [d.timestamp*1000])[d.timestamp*1000]
+                    if d.flags != ROW_VALID:
+                        self.assertLess(val['is_valid'], 2)
+                    else:
+                        self.assertLessEqual(abs(val['val'] - d.delta), 1.0)
+                        self.assertGreater(val['is_valid'], 0)
 
-        db.close()
+            db.close()
 
     def test_persister_heartbeat(self):
         """Test the hearbeat code"""
 
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
 
         freq = 30
         iface = 'GigabitEthernet0/1'
@@ -709,6 +717,7 @@ class TestCassandraPollPersister(TestCase):
         Shows the three query methods that return json formatted data.
         """
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         db = CASSANDRA_DB(config)
         
         start_time = self.ctr.begin*1000
@@ -813,6 +822,7 @@ class TestCassandraApiQueries(ResourceTestCase):
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         # return
         test_data = load_test_data("rtr_d_ifhcin_long.json")
@@ -860,10 +870,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), self.ctr.expected_results)
-        self.assertEquals(data['data'][0][0], params['begin'])
-        self.assertEquals(data['data'][0][1], self.ctr.base_rate_val_first)
-        self.assertEquals(data['data'][self.ctr.expected_results-1][0], params['end'])
-        self.assertEquals(data['data'][self.ctr.expected_results-1][1], self.ctr.base_rate_val_last)
+        self.assertEquals(data['data'][0]['ts'], params['begin'])
+        self.assertEquals(data['data'][0]['val'], self.ctr.base_rate_val_first)
+        self.assertEquals(data['data'][self.ctr.expected_results-1]['ts'], params['end'])
+        self.assertEquals(data['data'][self.ctr.expected_results-1]['val'], self.ctr.base_rate_val_last)
 
     def test_get_device_interface_data_aggs(self):
         params = {
@@ -886,8 +896,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_avg)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_avg)
 
         params['cf'] = 'min'
 
@@ -905,8 +915,9 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_min)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_min)
+        self.assertEquals(data['data'][0]['m_ts'], self.ctr.agg_min_ts)
 
         params['cf'] = 'max'
 
@@ -924,8 +935,9 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_max)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_max)
+        self.assertEquals(data['data'][0]['m_ts'], self.ctr.agg_max_ts)
 
         # make sure that an invalid aggregation raises an error
         params['agg'] = params['agg'] * 3
@@ -956,10 +968,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), self.ctr.expected_results)
-        self.assertEquals(data['data'][0][0], params['begin'])
-        self.assertEquals(data['data'][0][1], self.ctr.base_rate_val_first)
-        self.assertEquals(data['data'][self.ctr.expected_results-1][0], params['end'])
-        self.assertEquals(data['data'][self.ctr.expected_results-1][1], self.ctr.base_rate_val_last)
+        self.assertEquals(data['data'][0]['ts'], params['begin'])
+        self.assertEquals(data['data'][0]['val'], self.ctr.base_rate_val_first)
+        self.assertEquals(data['data'][self.ctr.expected_results-1]['ts'], params['end'])
+        self.assertEquals(data['data'][self.ctr.expected_results-1]['val'], self.ctr.base_rate_val_last)
 
     def test_get_timeseries_data_aggs(self):
         """/timeseries rest test for aggs."""
@@ -984,8 +996,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_avg)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_avg)
 
         params['cf'] = 'min'
 
@@ -1000,8 +1012,9 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['cf'], params['cf'])
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_min)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_min)
+        self.assertEquals(data['data'][0]['m_ts'], self.ctr.agg_min_ts*1000)
 
         params['cf'] = 'max'
 
@@ -1016,8 +1029,9 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['cf'], params['cf'])
 
         self.assertEquals(len(data['data']), 1)
-        self.assertEquals(data['data'][0][0], self.ctr.agg_ts*1000)
-        self.assertEquals(data['data'][0][1], self.ctr.agg_max)
+        self.assertEquals(data['data'][0]['ts'], self.ctr.agg_ts*1000)
+        self.assertEquals(data['data'][0]['val'], self.ctr.agg_max)
+        self.assertEquals(data['data'][0]['m_ts'], self.ctr.agg_max_ts*1000)
 
         # print json.dumps(data, indent=4)
 
@@ -1078,12 +1092,14 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
         # Check last value in case the db has not been wiped by a
         # full data load.
-        self.assertEquals(data['data'][-1][0], params['ts'])
-        self.assertEquals(data['data'][-1][1], float(params['val']))
+        self.assertEquals(data['data'][-1]['ts'], params['ts'])
+        self.assertEquals(data['data'][-1]['val'], float(params['val']))
         self.assertEquals(data['cf'], 'raw')
 
         # base rate write
         url = '/v1/timeseries/BaseRate/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
+
+        payload[0]['ts'] = (payload[0]['ts']/30000)*30000
 
         response = self.api_client.post(url, data=payload, format='json',
             authentication=authn)
@@ -1098,10 +1114,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['resource_uri'], url)
         # Check last value in case the db has not been wiped by a
         # full data load.
-        self.assertEquals(data['data'][-1][0], params['ts'])
+        self.assertEquals(data['data'][-1]['ts'], params['ts'])
         # Base rate read will return the delta divided by the frequency,
         # not just the value inserted!
-        self.assertEquals(data['data'][-1][1], float(params['val'])/30)
+        self.assertEquals(data['data'][-1]['val'], float(params['val'])/30)
         self.assertEquals(data['cf'], 'average')
 
     def test_interface_bulk_get(self):
@@ -1398,6 +1414,7 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         # return
         test_data = load_test_data("rtr_alu_ifhcin_long.json")
@@ -1430,7 +1447,7 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
         self.assertEquals(data['cf'], 'average')
         self.assertEquals(data['resource_uri'], url)
 
-        self.assertEquals(data['data'][0][0], params['begin'])
+        self.assertEquals(data['data'][0]['ts'], params['begin'])
 
         self.assertEqual(len(data['data']), 21)
 

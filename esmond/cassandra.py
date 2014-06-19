@@ -80,7 +80,6 @@ class ConnectionException(CassandraException):
         
 class CASSANDRA_DB(object):
     
-    keyspace = 'esmond'
     raw_cf = 'raw_data'
     rate_cf = 'base_rates'
     agg_cf = 'rate_aggregations'
@@ -121,6 +120,7 @@ class CASSANDRA_DB(object):
 
         # Connect to cassandra with SystemManager, do a schema check 
         # and set up schema components if need be.
+        self.keyspace = config.cassandra_keyspace
         try:
             sysman = SystemManager(config.cassandra_servers[0])                              
         except TTransportException, e:
@@ -437,18 +437,20 @@ class CASSANDRA_DB(object):
         
         if not ret:
             # Bin does not exist, so initialize min and max with the same val.
+            # self.stat_agg.insert(agg.get_key(),
+            #     {agg.ts_to_jstime(): {'min': agg.val, 'max': agg.val}})
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_jstime(): {'min': agg.val, 'max': agg.val}})
+                {agg.ts_to_jstime(): {'min': agg.val, 'max': agg.val, 'min_ts': raw_data.ts_to_jstime(), 'max_ts': raw_data.ts_to_jstime()}})
             updated = True
         elif agg.val > ret['max']:
             # Update max.
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_jstime(): {'max': agg.val}})
+                {agg.ts_to_jstime(): {'max': agg.val, 'max_ts': raw_data.ts_to_jstime()}})
             updated = True
         elif agg.val < ret['min']:
             # Update min.
             self.stat_agg.insert(agg.get_key(),
-                {agg.ts_to_jstime(): {'min': agg.val}})
+                {agg.ts_to_jstime(): {'min': agg.val, 'min_ts': raw_data.ts_to_jstime()}})
             updated = True
         else:
             pass
@@ -609,9 +611,11 @@ class CASSANDRA_DB(object):
                 for kk,vv in v.items():
                     ts = kk
                     if cf == 'min':
-                        results.append({'ts': ts, 'val': vv['min'], 'cf': cf})
+                        datum = {'ts': ts, 'val': vv['min'], 'cf': cf, 'm_ts': vv.get('min_ts', None)}
+                        results.append(datum)
                     else:
-                        results.append({'ts': ts, 'val': vv['max'], 'cf': cf})
+                        datum = {'ts': ts, 'val': vv['max'], 'cf': cf, 'm_ts': vv.get('max_ts', None)}
+                        results.append(datum)
         
         return results
             

@@ -36,6 +36,7 @@ class TestClientLibs(LiveServerTestCase):
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
+        config.cassandra_keyspace = 'test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         
         test_data = load_test_data("rtr_d_ifhcin_long.json")
@@ -125,6 +126,70 @@ class TestClientLibs(LiveServerTestCase):
         self.assertFalse(interface.ifType)
         self.assertTrue(interface.ipAddr)
         self.assertTrue(interface.uri)
+
+    def test_snmp_rate_get(self):
+        filters = ApiFilters()
+
+        filters.begin_time = self.ctr.begin
+        filters.end_time = self.ctr.end
+        filters.endpoint = ['in']
+
+        conn = ApiConnect('http://localhost:8081', filters,
+            username=self.td.user_admin.username, 
+            api_key=self.td.user_admin_apikey.key)
+
+        i = list(conn.get_interfaces(**{'ifDescr': 'fxp0.0'})).pop()
+
+        e = i.get_endpoint('in')
+
+        payload = e.get_data()
+
+        data = payload.data
+
+        self.assertEquals(len(data), self.ctr.expected_results)
+        self.assertEquals(data[0].ts_epoch, self.ctr.begin)
+        self.assertEquals(data[0].val, self.ctr.base_rate_val_first)
+        self.assertEquals(data[0].m_ts, None)
+        self.assertEquals(data[self.ctr.expected_results-1].ts_epoch, self.ctr.end)
+        self.assertEquals(data[self.ctr.expected_results-1].val, self.ctr.base_rate_val_last)
+
+    def test_snmp_agg_get(self):
+
+        filters = ApiFilters()
+
+        filters.begin_time = self.ctr.begin-3600
+        filters.end_time = self.ctr.end
+        filters.endpoint = ['in']
+        filters.cf = 'min'
+        filters.agg = self.ctr.agg_freq
+
+        conn = ApiConnect('http://localhost:8081', filters,
+            username=self.td.user_admin.username, 
+            api_key=self.td.user_admin_apikey.key)
+
+        payload = conn.get_interface_bulk_data(**{'ifDescr': 'fxp0.0'})
+        
+        row = payload.data.pop()
+
+        dp = row.data.pop()
+
+        self.assertEquals(len(row.data), 1)
+        self.assertEquals(dp.ts_epoch, self.ctr.agg_ts)
+        self.assertEquals(dp.val, self.ctr.agg_min)
+        self.assertEquals(dp.m_ts, self.ctr.agg_min_ts)
+
+        filters.cf = 'max'
+
+        payload = conn.get_interface_bulk_data(**{'ifDescr': 'fxp0.0'})
+        
+        row = payload.data.pop()
+
+        dp = row.data.pop()
+
+        self.assertEquals(len(row.data), 1)
+        self.assertEquals(dp.ts_epoch, self.ctr.agg_ts)
+        self.assertEquals(dp.val, self.ctr.agg_max)
+        self.assertEquals(dp.m_ts, self.ctr.agg_max_ts)
 
     def test_snmp_bulk_get(self):
         filters = ApiFilters()

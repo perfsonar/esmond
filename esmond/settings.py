@@ -2,10 +2,11 @@ import os
 import os.path
 from esmond.config import get_config
 
-# Django settings for ed project.
+#
+# Only Django specific things are kept in here and if they are configurable
+# the value is derived from the config setting in esmond.conf.
+#
 
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 TESTING = os.environ.get("ESMOND_TESTING", False)
 ESMOND_CONF = os.environ.get("ESMOND_CONF")
 ESMOND_ROOT = os.environ.get("ESMOND_ROOT")
@@ -19,6 +20,9 @@ if not ESMOND_CONF:
     ESMOND_CONF = os.path.join(ESMOND_ROOT, "esmond.conf")
 
 ESMOND_SETTINGS = get_config(ESMOND_CONF)
+
+DEBUG = ESMOND_SETTINGS.debug
+TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -104,3 +108,12 @@ INSTALLED_APPS = (
     'discover_runner',
     'tastypie',
 )
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+if ESMOND_SETTINGS.allowed_hosts:
+    ALLOWED_HOSTS.extend(ESMOND_SETTINGS.allowed_hosts)
+else:
+    import socket
+    hostname = socket.gethostname()
+    ALLOWED_HOSTS.append(hostname)
+    ALLOWED_HOSTS.append(hostname.split(".")[0])

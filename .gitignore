@@ -23,3 +23,6 @@ util/configure_cluster.orig
 pysqlite2-doc/install-source.txt
 /crashlog
 .coverage
+# sublime
+*.sublime-project
+*.sublime-workspace

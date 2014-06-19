@@ -14,6 +14,9 @@ fi
 # create the virtualenv
 virtualenv --prompt="(esmond)" .
 . bin/activate
+# Have pip upgrade install tools before installing
+pip install -U pip
+pip install -U setuptools
 
 # XXX(jdugan) FreeBSD hack look for headers and libraries in /usr/local
 # ObRant: WTF is with distutils/setuputils/pip not offerring a way to handle this?!?

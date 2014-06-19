@@ -14,6 +14,7 @@ class QueryUtil(object):
     and data structures to validate incoming request elements."""
 
     _timerange_limits = {
+        11: datetime.timedelta(days=30),
         30: datetime.timedelta(days=30),
         60: datetime.timedelta(days=30),
         300: datetime.timedelta(days=30),
@@ -80,13 +81,16 @@ class QueryUtil(object):
             if coerce_to_bins:
                 ts -= ts % coerce_to_bins
 
-            d = [ts/divs[in_ms], row['val']]
+            d = {'ts': ts/divs[in_ms], 'val': row['val']}
             
             # Further options for different data sets.
             if row.has_key('is_valid'): # Base rates
-                if row['is_valid'] == 0: d[1] = None
+                if row['is_valid'] == 0 : d['val'] = None
             elif row.has_key('cf'): # Aggregations
-                pass
+                if row['cf'] == 'min' or row['cf'] == 'max':
+                    d['m_ts'] = row['m_ts']
+                    if d['m_ts']:
+                        d['m_ts'] = d['m_ts']/divs[in_ms]
             else: # Raw Data
                 pass
             
@@ -164,20 +168,19 @@ class Fill(object):
         filled_range = []
         s = start_bin + 0 # copy it
         while s <= end_bin:
-            filled_range.append((s,None))
+            filled_range.append((s,dict(ts=s, val=None)))
             s += freq
-
+        
         # Make it a ordered dict
         fill = OrderedDict(filled_range)
-
+        
         # Go through the original data and plug in 
         # good values
-
         for dp in data:
-            fill[dp[0]] = dp[1]
+            fill[dp['ts']]['val'] = dp['val']
 
-        for i in fill.items():
-            yield list(i)
+        for i in fill.values():
+            yield i
 
     @staticmethod
     def verify_fill(begin, end, freq, data):
@@ -195,4 +198,135 @@ class Fill(object):
             #print 'verify: filling'
             return list(Fill.generate_filled_series(start_bin,end_bin,freq,data))
 
+
+def fit_to_bins(freq, ts_prev, val_prev, ts_curr, val_curr):
+    """Fit successive counter measurements into evenly spaced bins.
+
+    The return value is a dictionary with bin names as keys and integer amounts to
+    increment the bin by as values.
+
+    In order to be able to compare metrics to one another we need to have a
+    common sequence of equally spaced timestamps. The data comes from the
+    network in imprecise intervals. This code converts measurements as them come
+    in into bins with evenly spaced time stamps.
+
+    bin_prev      bin_mid (0..n bins)         bin_curr      bin_next
+    |             |                           |             |
+    |   ts_prev   |                           |   ts_curr   |
+    |       |     |                           |       |     |
+    v       v     v                           v       v     v
+    +-------------+-------------+-------------+-------------+
+    |       [.....|..... current|measurement .|.......]     |
+    +-------------+-------------+-------------+-------------+  ----> time
+            \     /\                          /\      /
+             \   /  \                        /  \    /
+              \ /    \__________  __________/    \  /
+               v                \/                \/
+            frac_prev        frac_mid           frac_curr
+
+    The diagram shows the equally spaced bins (freq units apart) which this
+    function will fit the data into.
+
+    The diagram above captures all the possible collection states, allowing for
+    data that belongs a partial bin on the left, zero or more bins in the middle
+    and a partial bin on the right.  In the common cases there will be zero or
+    one bin in bin_mid, but if measurements are come in less frequently than
+    freq there may be more than one bin.
+
+    The input data is the frequency of the bins, followed by the timestamp and
+    value of the previous measurement and the timestamp and value of the current
+    measurement. The measurements are expect to be counters that always
+    increase.
+
+    This code goes to great lengths to deal with allocating the remainder of
+    integer division in proporionate fashion.
+
+    Here are some examples.  In this case everything is in bin_prev:
+
+    >>> fit_to_bins(30, 0, 0, 30, 100)
+    {0: 100, 30: 0}
+
+    The data is perfectly aligned with the bins and all of the data ends up in
+    bin 0.
+
+    In this case, there is no bin_mid at all:
+
+    >>> fit_to_bins(30, 31, 100, 62, 213)
+    {60: 7, 30: 106}
+
+    We 29/31 of data goes into bin 30 and the remaining 2/31 goes into bin 60.
+    The example counter values here were chosen to show how the remainder code
+    operates.
+
+    In this case there is no bin_mid, everything is in bin_prev or bin_curr:
+
+    >>> fit_to_bins(30, 90, 100, 121, 200)
+    {120: 3, 90: 97}
+
+    30/31 of the data goes into bin 90 and 1/31 goes into bin 120.
+
+    This example shows where bin_mid is larger than one:
+
+    >>> fit_to_bins(30, 89, 100, 181, 200)
+    {120: 33, 180: 1, 90: 33, 60: 0, 150: 33}
+    """
+
+    assert ts_curr > ts_prev
+
+    bin_prev = ts_prev - (ts_prev % freq)
+    bin_mid = (ts_prev + freq) - (ts_prev % freq)
+    bin_curr = ts_curr - (ts_curr % freq)
+
+    delta_t = ts_curr - ts_prev
+    delta_v = val_curr - val_prev
+
+    # if samples are less than freq apart and both in the same bin
+    # all of the data goes into the same bin
+    if bin_curr == bin_prev:
+        return {bin_prev: delta_v}
+
+    assert bin_prev < bin_mid <= bin_curr
+
+    frac_prev = (bin_mid - ts_prev)/float(delta_t)
+    frac_curr = (ts_curr - bin_curr)/float(delta_t)
+
+    p = int(round(frac_prev * delta_v))
+    c = int(round(frac_curr * delta_v))
+
+    # updates maps bins to byte deltas
+    updates = {}
+    updates[bin_prev] = p
+    updates[bin_curr] = c
+
+    fractions = []
+    fractions.append((bin_prev, frac_prev))
+    fractions.append((bin_curr, frac_curr))
+
+    if bin_curr - bin_mid > 0:
+        frac_mid = (bin_curr - bin_mid)/float(delta_t)
+        m = frac_mid * delta_v
+        n_mid_bins = (bin_curr-bin_mid)/freq
+        m_per_midbin = int(round(m / n_mid_bins))
+        frac_per_midbin = frac_mid / n_mid_bins
+
+        for b in range(bin_mid, bin_curr, freq):
+            updates[b] = m_per_midbin
+            fractions.append((b, frac_per_midbin))
+
+    remainder = delta_v - sum(updates.itervalues())
+    if remainder != 0:
+        #print "%d bytes left over, %d bins" % (remainder, len(updates))
+        if remainder > 0:
+            incr = 1
+            reverse = True
+        else:
+            incr = -1
+            reverse = False
+
+        fractions.sort(key=lambda x: x[1], reverse=reverse)
+        for i in range(abs(remainder)):
+            b = fractions[i % len(updates)][0]
+            updates[b] += incr
+
+    return updates
 

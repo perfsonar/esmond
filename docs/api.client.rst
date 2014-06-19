@@ -1,5 +1,5 @@
-client Package
-==============
+REST API Client Libary
+======================
 
 :mod:`snmp` Module
 ------------------

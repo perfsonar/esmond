@@ -72,7 +72,7 @@ def main():
     p = PostRawData(api_url=options.api_url, path=path, freq=30000,
         username=options.user, api_key=options.key)
     # set_payload will completely replace the internal payload of the object.
-    p.set_payload(payload)
+    p.set_payload(payload[:])
     # add_to_payload will just add new items to internal payload.
     p.add_to_payload({'ts': ts+1000, 'val': 5000})
     # send the request and clear the internal payload list.
@@ -83,6 +83,11 @@ def main():
 
     read_insert(options.api_url, ts, 'RawData', path, options.user, 
         options.key)
+
+    # Massage timestamps to bins like the persister would do or the 
+    # fill code will freak out.
+    for p in payload:
+        p['ts'] = (p['ts']/30000)*30000
 
     p = PostBaseRate(api_url=options.api_url, path=path, freq=30000,
         username=options.user, api_key=options.key)

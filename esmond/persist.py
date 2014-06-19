@@ -19,18 +19,23 @@ import cPickle as pickle
 
 import json
 
+import django
 from django.utils.timezone import now, utc, make_aware
 
-import tsdb
-import tsdb.row
-from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
-        TSDBVarDoesNotExistError, InvalidMetaData
+try:
+    import tsdb
+    import tsdb.row
+    from tsdb.error import TSDBError, TSDBAggregateDoesNotExistError, \
+            TSDBVarDoesNotExistError, InvalidMetaData
+except ImportError:
+    tsdb = None
 
 from esmond.util import setproctitle, init_logging, get_logger, \
         remove_metachars,  build_alu_sap_name
 from esmond.util import daemonize, setup_exc_handler, max_datetime
 from esmond.config import get_opt_parser, get_config, get_config_path
 from esmond.error import ConfigError
+from esmond.api.dataseries import fit_to_bins
 
 from esmond.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus, \
                               OutletRef
@@ -172,6 +177,8 @@ class PollPersister(object):
                 if not self.sleeping:
                     self.flush()
                     self.sleeping = True
+                    if self.config.debug:
+                        django.db.reset_queries()
                 time.sleep(PERSIST_SLEEP_TIME)
 
         if self.config.profile_persister:
@@ -215,298 +222,168 @@ class StreamingPollPersister(PollPersister):
         self.log.debug("stored %s %s %s to streaming log" % (result.oidset_name,
             result.oid_name, result.device_name))
 
-class TSDBPollPersister(PollPersister):
-    """Given a ``PollResult`` write the data to a TSDB.
+if tsdb:
+    class TSDBPollPersister(PollPersister):
+        """Given a ``PollResult`` write the data to a TSDB.
 
-    The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
-    write to.
+        The TSDBWriter will use ``tsdb_root`` in ``config`` as the TSDB instance to
+        write to.
 
-    The ``data`` member of the PollResult must be a list of (name,value)
-    pairs.  The ``metadata`` member of PollResult must contain the following
-    keys::
+        The ``data`` member of the PollResult must be a list of (name,value)
+        pairs.  The ``metadata`` member of PollResult must contain the following
+        keys::
 
-        ``tsdb_flags``
-            TSDB flags to be used
+            ``tsdb_flags``
+                TSDB flags to be used
 
-    """
+        """
 
-    def __init__(self, config, qname, persistq):
-        PollPersister.__init__(self, config, qname, persistq)
+        def __init__(self, config, qname, persistq):
+            PollPersister.__init__(self, config, qname, persistq)
 
-        self.tsdb = tsdb.TSDB(self.config.tsdb_root)
+            self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
-        self.oidsets = {}
-        self.poller_args = {}
-        self.oids = {}
-        self.oid_type_map = {}
+            self.oidsets = {}
+            self.poller_args = {}
+            self.oids = {}
+            self.oid_type_map = {}
 
-        oidsets = OIDSet.objects.all()
+            oidsets = OIDSet.objects.all()
 
-        for oidset in oidsets:
-            self.oidsets[oidset.name] = oidset
-            d = {}
-            if oidset.poller_args:
-                for arg in oidset.poller_args.split():
-                    (k, v) = arg.split('=')
-                    d[k] = v
-                self.poller_args[oidset.name] = d
+            for oidset in oidsets:
+                self.oidsets[oidset.name] = oidset
+                d = {}
+                if oidset.poller_args:
+                    for arg in oidset.poller_args.split():
+                        (k, v) = arg.split('=')
+                        d[k] = v
+                    self.poller_args[oidset.name] = d
 
-            for oid in oidset.oids.all():
-                self.oids[oid.name] = oid
+                for oid in oidset.oids.all():
+                    self.oids[oid.name] = oid
+                    try:
+                        self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
+                                oid.oid_type.name)
+                    except AttributeError:
+                        self.log.warning(
+                                "warning don't have a TSDBRow for %s in %s" %
+                                (oid.oid_type.name, oidset.name))
+
+        def store(self, result):
+            oidset = self.oidsets[result.oidset_name]
+            set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
+            basename = os.path.join(result.device_name, set_name)
+            oid = self.oids[result.oid_name]
+            flags = result.metadata['tsdb_flags']
+
+            var_type = self.oid_type_map[oid.name]
+
+            t0 = time.time()
+            nvar = 0
+            
+            for var, val in result.data:
+                if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
+                    val = float(val) * 100
+                nvar += 1
+
+                var_name = os.path.join(basename, *map(remove_metachars, var))
+
                 try:
-                    self.oid_type_map[oid.name] = eval("tsdb.row.%s" % \
-                            oid.oid_type.name)
-                except AttributeError:
-                    self.log.warning(
-                            "warning don't have a TSDBRow for %s in %s" %
-                            (oid.oid_type.name, oidset.name))
+                    tsdb_var = self.tsdb.get_var(var_name)
+                except tsdb.TSDBVarDoesNotExistError:
+                    tsdb_var = self._create_var(var_type, var_name, oidset, oid)
+                except tsdb.InvalidMetaData:
+                    tsdb_var = self._repair_var_metadata(var_type, var_name,
+                            oidset, oid)
+                    continue  # XXX(jdugan): remove this once repair actually works
 
-    def store(self, result):
-        oidset = self.oidsets[result.oidset_name]
-        set_name = self.poller_args[oidset.name].get('set_name', oidset.name)
-        basename = os.path.join(result.device_name, set_name)
-        oid = self.oids[result.oid_name]
-        flags = result.metadata['tsdb_flags']
+                tsdb_var.insert(var_type(result.timestamp, flags, val))
 
-        var_type = self.oid_type_map[oid.name]
+                if oid.aggregate:
+                    # XXX:refactor uptime should be handled better
+                    uptime_name = os.path.join(basename, 'sysUpTime')
+                    try:
+                        self._aggregate(tsdb_var, var_name, result.timestamp,
+                                uptime_name, oidset)
+                    except TSDBError, e:
+                        self.log.error("Error aggregating: %s %s: %s" %
+                                (result.device_name, result.oidset_name, str(e)))
 
-        t0 = time.time()
-        nvar = 0
-        
-        for var, val in result.data:
-            if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
-                val = float(val) * 100
-            nvar += 1
+            self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
+                time.time() - t0, result))
 
-            var_name = os.path.join(basename, *map(remove_metachars, var))
+        def _create_var(self, var_type, var, oidset, oid):
+            self.log.debug("creating TSDBVar: %s" % str(var))
+            chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
 
-            try:
-                tsdb_var = self.tsdb.get_var(var_name)
-            except tsdb.TSDBVarDoesNotExistError:
-                tsdb_var = self._create_var(var_type, var_name, oidset, oid)
-            except tsdb.InvalidMetaData:
-                tsdb_var = self._repair_var_metadata(var_type, var_name,
-                        oidset, oid)
-                continue  # XXX(jdugan): remove this once repair actually works
-
-            tsdb_var.insert(var_type(result.timestamp, flags, val))
+            tsdb_var = self.tsdb.add_var(var, var_type,
+                    oidset.frequency, chunk_mapper)
 
             if oid.aggregate:
-                # XXX:refactor uptime should be handled better
-                uptime_name = os.path.join(basename, 'sysUpTime')
-                try:
-                    self._aggregate(tsdb_var, var_name, result.timestamp,
-                            uptime_name, oidset)
-                except TSDBError, e:
-                    self.log.error("Error aggregating: %s %s: %s" %
-                            (result.device_name, result.oidset_name, str(e)))
+                self._create_aggs(tsdb_var, oidset)
 
-        self.log.debug("stored %d vars in %f seconds: %s" % (nvar,
-            time.time() - t0, result))
-
-    def _create_var(self, var_type, var, oidset, oid):
-        self.log.debug("creating TSDBVar: %s" % str(var))
-        chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
-
-        tsdb_var = self.tsdb.add_var(var, var_type,
-                oidset.frequency, chunk_mapper)
-
-        if oid.aggregate:
-            self._create_aggs(tsdb_var, oidset)
-
-        tsdb_var.flush()
-
-        return tsdb_var
-
-    def _create_agg(self, tsdb_var, oidset, period):
-        chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
-        if period == oidset.frequency:
-            aggs = ['average', 'delta']
-        else:
-            aggs = ['average', 'delta', 'min', 'max']
-
-        try:
-            tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
-        except Exception, e:
-            self.log.error("Couldn't create aggregate %s" % (e))
-
-    def _create_aggs(self, tsdb_var, oidset):
-        self._create_agg(tsdb_var, oidset, oidset.frequency)
-
-        if 'aggregates' in self.poller_args[oidset.name]:
-            aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
-            for agg in aggregates:
-                self._create_agg(tsdb_var, oidset, int(agg))
-
-    def _repair_var_metadata(self, var_type, var, oidset, oid):
-        self.log.error("var needs repair, skipping: %s" % var)
-        #chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
-
-    def _aggregate(self, tsdb_var, var_name, timestamp, uptime_name, oidset):
-        try:
-            uptime = self.tsdb.get_var(uptime_name)
-        except TSDBVarDoesNotExistError:
-            # XXX this is killing the logger in testing revisit
-            #self.log.warning("unable to get uptime for %s" % var_name)
-            uptime = None
-
-        # XXX(jdugan): revisit min_last_update
-        min_last_update = timestamp - oidset.frequency * 40
-
-        def log_bad(ancestor, agg, rate, prev, curr):
-            self.log.debug("bad data for %s at %d: %f" % (ancestor.path,
-                curr.timestamp, rate))
-
-        def update_agg():
-            tsdb_var.update_aggregate(str(oidset.frequency),
-                uptime_var=uptime,
-                min_last_update=min_last_update,
-                # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
-                max_rate=int(110e9),
-                max_rate_callback=log_bad)
-
-        try:
-            update_agg()
-        except TSDBAggregateDoesNotExistError:
-            # XXX(jdugan): this needs to be reworked when we update all aggs
-            self.log.error("creating missing aggregate for %s" % var_name)
-            self._create_agg(tsdb_var, oidset, oidset.frequency)
             tsdb_var.flush()
-            update_agg()
-        except InvalidMetaData:
-            self.log.error("bad metadata for %s" % var_name)
-            
 
-def fit_to_bins(freq, ts_prev, val_prev, ts_curr, val_curr):
-    """Fit successive counter measurements into evenly spaced bins.
+            return tsdb_var
 
-    The return value is a dictionary with bin names as keys and integer amounts to
-    increment the bin by as values.
+        def _create_agg(self, tsdb_var, oidset, period):
+            chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
+            if period == oidset.frequency:
+                aggs = ['average', 'delta']
+            else:
+                aggs = ['average', 'delta', 'min', 'max']
 
-    In order to be able to compare metrics to one another we need to have a
-    common sequence of equally spaced timestamps. The data comes from the
-    network in imprecise intervals. This code converts measurements as them come
-    in into bins with evenly spaced time stamps.
+            try:
+                tsdb_var.add_aggregate(str(period), chunk_mapper, aggs)
+            except Exception, e:
+                self.log.error("Couldn't create aggregate %s" % (e))
 
-    bin_prev      bin_mid (0..n bins)         bin_curr      bin_next
-    |             |                           |             |
-    |   ts_prev   |                           |   ts_curr   |
-    |       |     |                           |       |     |
-    v       v     v                           v       v     v
-    +-------------+-------------+-------------+-------------+
-    |       [.....|..... current|measurement .|.......]     |
-    +-------------+-------------+-------------+-------------+  ----> time
-            \     /\                          /\      /
-             \   /  \                        /  \    /
-              \ /    \__________  __________/    \  /
-               v                \/                \/
-            frac_prev        frac_mid           frac_curr
+        def _create_aggs(self, tsdb_var, oidset):
+            self._create_agg(tsdb_var, oidset, oidset.frequency)
 
-    The diagram shows the equally spaced bins (freq units apart) which this
-    function will fit the data into.
+            if 'aggregates' in self.poller_args[oidset.name]:
+                aggregates = self.poller_args[oidset.name]['aggregates'].split(',')
+                for agg in aggregates:
+                    self._create_agg(tsdb_var, oidset, int(agg))
 
-    The diagram above captures all the possible collection states, allowing for
-    data that belongs a partial bin on the left, zero or more bins in the middle
-    and a partial bin on the right.  In the common cases there will be zero or
-    one bin in bin_mid, but if measurements are come in less frequently than
-    freq there may be more than one bin.
+        def _repair_var_metadata(self, var_type, var, oidset, oid):
+            self.log.error("var needs repair, skipping: %s" % var)
+            #chunk_mapper = eval(self.poller_args[oidset.name]['chunk_mapper'])
 
-    The input data is the frequency of the bins, followed by the timestamp and
-    value of the previous measurement and the timestamp and value of the current
-    measurement. The measurements are expect to be counters that always
-    increase.
+        def _aggregate(self, tsdb_var, var_name, timestamp, uptime_name, oidset):
+            try:
+                uptime = self.tsdb.get_var(uptime_name)
+            except TSDBVarDoesNotExistError:
+                # XXX this is killing the logger in testing revisit
+                #self.log.warning("unable to get uptime for %s" % var_name)
+                uptime = None
 
-    This code goes to great lengths to deal with allocating the remainder of
-    integer division in proporionate fashion.
+            # XXX(jdugan): revisit min_last_update
+            min_last_update = timestamp - oidset.frequency * 40
 
-    Here are some examples.  In this case everything is in bin_prev:
+            def log_bad(ancestor, agg, rate, prev, curr):
+                self.log.debug("bad data for %s at %d: %f" % (ancestor.path,
+                    curr.timestamp, rate))
 
-    >>> fit_to_bins(30, 0, 0, 30, 100)
-    {0: 100, 30: 0}
+            def update_agg():
+                tsdb_var.update_aggregate(str(oidset.frequency),
+                    uptime_var=uptime,
+                    min_last_update=min_last_update,
+                    # XXX(jdugan): should compare to ifHighSpeed?  this is BAD:
+                    max_rate=int(110e9),
+                    max_rate_callback=log_bad)
 
-    The data is perfectly aligned with the bins and all of the data ends up in
-    bin 0.
+            try:
+                update_agg()
+            except TSDBAggregateDoesNotExistError:
+                # XXX(jdugan): this needs to be reworked when we update all aggs
+                self.log.error("creating missing aggregate for %s" % var_name)
+                self._create_agg(tsdb_var, oidset, oidset.frequency)
+                tsdb_var.flush()
+                update_agg()
+            except InvalidMetaData:
+                self.log.error("bad metadata for %s" % var_name)
 
-    In this case, there is no bin_mid at all:
-
-    >>> fit_to_bins(30, 31, 100, 62, 213)
-    {60: 7, 30: 106}
-
-    We 29/31 of data goes into bin 30 and the remaining 2/31 goes into bin 60.
-    The example counter values here were chosen to show how the remainder code
-    operates.
-
-    In this case there is no bin_mid, everything is in bin_prev or bin_curr:
-
-    >>> fit_to_bins(30, 90, 100, 121, 200)
-    {120: 3, 90: 97}
-
-    30/31 of the data goes into bin 90 and 1/31 goes into bin 120.
-
-    This example shows where bin_mid is larger than one:
-
-    >>> fit_to_bins(30, 89, 100, 181, 200)
-    {120: 33, 180: 1, 90: 33, 60: 0, 150: 33}
-    """
-
-    assert ts_curr > ts_prev
-
-    bin_prev = ts_prev - (ts_prev % freq)
-    bin_mid = (ts_prev + freq) - (ts_prev % freq)
-    bin_curr = ts_curr - (ts_curr % freq)
-
-    delta_t = ts_curr - ts_prev
-    delta_v = val_curr - val_prev
-
-    # if samples are less than freq apart and both in the same bin
-    # all of the data goes into the same bin
-    if bin_curr == bin_prev:
-        return {bin_prev: delta_v}
-
-    assert bin_prev < bin_mid <= bin_curr
-
-    frac_prev = (bin_mid - ts_prev)/float(delta_t)
-    frac_curr = (ts_curr - bin_curr)/float(delta_t)
-
-    p = int(round(frac_prev * delta_v))
-    c = int(round(frac_curr * delta_v))
-
-    # updates maps bins to byte deltas
-    updates = {}
-    updates[bin_prev] = p
-    updates[bin_curr] = c
-
-    fractions = []
-    fractions.append((bin_prev, frac_prev))
-    fractions.append((bin_curr, frac_curr))
-
-    if bin_curr - bin_mid > 0:
-        frac_mid = (bin_curr - bin_mid)/float(delta_t)
-        m = frac_mid * delta_v
-        n_mid_bins = (bin_curr-bin_mid)/freq
-        m_per_midbin = int(round(m / n_mid_bins))
-        frac_per_midbin = frac_mid / n_mid_bins
-
-        for b in range(bin_mid, bin_curr, freq):
-            updates[b] = m_per_midbin
-            fractions.append((b, frac_per_midbin))
-
-    remainder = delta_v - sum(updates.itervalues())
-    if remainder != 0:
-        #print "%d bytes left over, %d bins" % (remainder, len(updates))
-        if remainder > 0:
-            incr = 1
-            reverse = True
-        else:
-            incr = -1
-            reverse = False
-
-        fractions.sort(key=lambda x: x[1], reverse=reverse)
-        for i in range(abs(remainder)):
-            b = fractions[i % len(updates)][0]
-            updates[b] += incr
-
-    return updates
 
 class CassandraPollPersister(PollPersister):
     """Given a ``PollResult`` write the data to a Cassandra backend.
@@ -528,8 +405,6 @@ class CassandraPollPersister(PollPersister):
         self.log.debug("connecting to cassandra")
         self.db = CASSANDRA_DB(config, qname=qname)
         self.log.debug("connected to cassandra")
-
-        self.tsdb = tsdb.TSDB(self.config.tsdb_root)
 
         self.ns = "snmp"
 
@@ -565,7 +440,7 @@ class CassandraPollPersister(PollPersister):
         nvar = 0
 
         for var, val in result.data:
-            if set_name == "SparkySet": # This is pure hack. A new TSDB row type should be created for floats
+            if set_name == "SparkySet": # This is pure hack. A new row type should be created for floats
                 val = float(val) * 100
             nvar += 1
             
@@ -1565,11 +1440,12 @@ class PersistManager(object):
 
         self.processes = {}
 
-        if config.tsdb_root and not os.path.isdir(config.tsdb_root):
-            try:
-                tsdb.TSDB.create(config.tsdb_root)
-            except Exception, e:
-                print >>sys.stderr, "unable to create TSDB root: %s: %s" % (config.tsdb_root, str(e))
+        if tsdb:
+            if config.tsdb_root and not os.path.isdir(config.tsdb_root):
+                try:
+                    tsdb.TSDB.create(config.tsdb_root)
+                except Exception, e:
+                    print >>sys.stderr, "unable to create TSDB root: %s: %s" % (config.tsdb_root, str(e))
 
         init_logging(name, config.syslog_facility, level=config.syslog_priority,
             debug=opts.debug)
@@ -1695,3 +1571,22 @@ def espersistd():
         stats(name, config, opts)
     else:
         print >>sys.stderr, "unknown role: %s" % opts.role
+
+def espersistq():
+    """Entry point for espersistq.
+
+    """
+
+    argv = sys.argv
+    oparse = get_opt_parser(default_config_file=get_config_path())
+    (opts, args) = oparse.parse_args(args=argv)
+
+    opts.config_file = os.path.abspath(opts.config_file)
+
+    try:
+        config = get_config(opts.config_file, opts)
+    except ConfigError, e:
+        print >>sys.stderr, e
+        sys.exit(1)
+
+    stats("espersistq", config, opts)
