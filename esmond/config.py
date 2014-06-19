@@ -52,6 +52,7 @@ class EsmondConfig(object):
         self.api_throttle_at = None
         self.api_throttle_timeframe = None
         self.api_throttle_expiration = None
+        self.cassandra_keyspace = 'esmond'
         self.cassandra_pass = None
         self.cassandra_servers = []
         self.cassandra_user = None

@@ -474,6 +474,7 @@ class TestCassandraPollPersister(TestCase):
 
     def test_sys_uptime(self):
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         q = TestPersistQueue(json.loads(sys_uptime_test_data))
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
@@ -494,6 +495,7 @@ class TestCassandraPollPersister(TestCase):
     def test_persister(self):
         """This is a very basic smoke test for a cassandra persister."""
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         test_data = json.loads(timeseries_test_data)
         #return
         q = TestPersistQueue(test_data)
@@ -508,9 +510,10 @@ class TestCassandraPollPersister(TestCase):
         Although this isn't supposed to happen, sometimes it does.
         The example data is real data from conf-rtr.sc13.org."""
         
-        config = get_config(get_config_path())
         test_data = json.loads(backwards_counters_test_data)
 
+        config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
@@ -559,6 +562,7 @@ class TestCassandraPollPersister(TestCase):
         config = get_config(get_config_path())
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         # return
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         config.db_profile_on_testing = True
 
@@ -629,6 +633,7 @@ class TestCassandraPollPersister(TestCase):
         """Test the hearbeat code"""
 
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
 
         freq = 30
         iface = 'GigabitEthernet0/1'
@@ -712,6 +717,7 @@ class TestCassandraPollPersister(TestCase):
         Shows the three query methods that return json formatted data.
         """
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         db = CASSANDRA_DB(config)
         
         start_time = self.ctr.begin*1000
@@ -816,6 +822,7 @@ class TestCassandraApiQueries(ResourceTestCase):
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         # return
         test_data = load_test_data("rtr_d_ifhcin_long.json")
@@ -1407,6 +1414,7 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
+        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         # return
         test_data = load_test_data("rtr_alu_ifhcin_long.json")
