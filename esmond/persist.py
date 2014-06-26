@@ -864,7 +864,7 @@ class IfRefPollPersister(HistoryTablePersister):
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
-        self.key = 'ifDescr'
+        self.key = 'ifName'
 
         adds, changes, deletes = self.update_db()
 
@@ -905,23 +905,6 @@ class IfRefPollPersister(HistoryTablePersister):
                 ifref_objs[ifIndex_map[ifIndex]][oid] = val
 
         return ifref_objs
-
-class ALUIfRefPollPersister(IfRefPollPersister):
-    """ALU specific hacks for IfRef"""
-
-    def _resolve_ifdescr(self, ifdescr, ifindex):
-        """The interface description which is in ifAlias on most platforms is
-        the third comma separated field in ifDescr on the ALU.  We normalize
-        ifDescr just be the interface name and put a copy of the interface
-        description in ifAlias."""
-
-        parts = ifdescr.split(',')
-        if len(parts) > 2:
-            if not self.data.has_key('ifAlias'):
-                self.data['ifAlias'] = []
-            ifalias = parts[2].replace('"','')
-            self.data['ifAlias'].append(('ifAlias.%d' % ifindex, ifalias))
-        return parts[0]
 
 class ALUSAPRefPersister(HistoryTablePersister):
     int_oids = ('sapIngressQosPolicyId', 'sapEgressQosPolicyId')
