@@ -199,16 +199,16 @@ class SentryCorrelator(object):
             d[k] = val
         return d
 
-class InfIfDescrCorrelator(PollCorrelator):
-    """correlates an IfIndex to it's IfDescr with Infinera tweaks.
+class InfIfNameCorrelator(PollCorrelator):
+    """correlates an IfIndex to it's IfName with Infinera tweaks.
 
     On the Infinera the tables only contain entries if an interface is
     configured so we want to collect them all, but ifAlias is not set."""
 
-    oids = ['ifDescr']
+    oids = ['ifName']
 
     def setup(self, data):
-        self.xlate = self._table_parse(filter_data('ifDescr', data))
+        self.xlate = self._table_parse(filter_data('ifName', data))
 
     def lookup(self, oid, var):
         # XXX this sucks
