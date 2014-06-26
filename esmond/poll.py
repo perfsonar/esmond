@@ -138,36 +138,6 @@ class IfNameCorrelator(PollCorrelator):
         except KeyError:
             raise PollUnknownIfIndex(ifIndex)
 
-class IfDescrCorrelator(PollCorrelator):
-    """correlates an IfIndex to an it's IfDescr"""
-
-    oids = ['ifDescr', 'ifAlias']
-
-    def setup(self, data, ignore_no_ifalias=True):
-        self.xlate = self._table_parse(filter_data('ifDescr', data))
-
-        if ignore_no_ifalias:
-            for (var, val) in filter_data('ifAlias', data):
-                ifIndex = var.split(".")[-1]
-                if not val:
-                    self.xlate[ifIndex] = None
-
-    def lookup(self, oid, var):
-        # XXX this sucks
-        if oid.name == 'sysUpTime':
-            return ['sysUpTime']
-
-        ifIndex = var.split('.')[-1]
-
-        try:
-            r = self.xlate[ifIndex]
-            if r:
-                return [oid.name, r]
-            else:
-                return None
-
-        except KeyError:
-            raise PollUnknownIfIndex(ifIndex)
 
 class SentryCorrelator(object):
     oids = ['outletID', 'tempHumidSensorID']
@@ -228,38 +198,6 @@ class InfIfNameCorrelator(PollCorrelator):
         return [oid.name, r]
 
 
-class ALUIfDescrCorrelator(IfDescrCorrelator):
-    """correlates an IfIndex to its IfDescr with ALU tweaks.
-
-    The ALU doesn't store the interface description in ifAlias like a normal
-    box, it's in the third comma separated field in ifDescr."""
-
-    def setup(self, data, ignore_no_ifalias=False):
-        self.xlate = self._table_parse(filter_data('ifDescr', data))
-
-    def _table_parse(self, data):
-        d = {}
-        for (var, val) in data:
-            val = val.split(',')[0] # weird comma separated thing
-            d[var.split('.')[-1]] = val
-        return d
-
-    def lookup(self, oid, var):
-        # XXX this sucks
-        if oid.name == 'sysUpTime':
-            return ['sysUpTime']
-
-        ifIndex = var.split('.')[-1]
-
-        try:
-            r = self.xlate[ifIndex]
-            if r:
-                return [oid.name, r]
-            else:
-                return None
-
-        except KeyError:
-            raise PollUnknownIfIndex(ifIndex)
 
 class ALUSAPCorrelator(PollCorrelator):
     """correlates an ALU SAP
@@ -293,7 +231,7 @@ class JnxFirewallCorrelator(PollCorrelator):
         return [filter_type, filter_name, counter]
 
 
-class JnxCOSCorrelator(IfDescrCorrelator):
+class JnxCOSCorrelator(IfNameCorrelator):
     """Correlates entries from the COS MIB.
 
     This is known to work for:

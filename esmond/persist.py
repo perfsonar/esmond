@@ -1017,10 +1017,10 @@ class InfIfRefPollPersister(IfRefPollPersister):
             _, ifidx = k.split('.', 1)
             ifalias[ifidx] = v
 
-        for k, v in result.data['ifDescr']:
+        for k, v in result.data['ifName']:
             if v.startswith('GIGECLIENTCTP'):
-                _, ifdescr = v.split('=', 1)
-                keep.append((k, ifdescr))
+                _, ifname = v.split('=', 1)
+                keep.append((k, ifname))
                 _, ifidx = k.split('.', 1)
                 result.data['ifAlias'].append(
                             ('ifAlias.' + ifidx, ifalias.get(ifidx, '')))
@@ -1028,7 +1028,7 @@ class InfIfRefPollPersister(IfRefPollPersister):
                     result.data[x].append(
                             ('%s.%s' % (x, ifidx), 0))
 
-        result.data['ifDescr'] = keep
+        result.data['ifName'] = keep
         del result.data['gigeClientCtpPmRealCktId']
 
         IfRefPollPersister.store(self, result)

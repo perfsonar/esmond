@@ -211,11 +211,11 @@ class Device(NodeInfo):
                 return
                 yield
 
-    def get_interface(self, ifDescr):
-        ifaces = list(self.get_interfaces(ifDescr=ifDescr))
+    def get_interface(self, ifName):
+        ifaces = list(self.get_interfaces(ifName=ifName))
         if len(ifaces) == 0:
             if self.filters.verbose > 1:
-                print "[bad interface: {0}]".format(ifDescr)
+                print "[bad interface: {0}]".format(ifName)
             raise InterfaceNotFound()
 
         return ifaces[0]
@@ -298,7 +298,7 @@ class DeviceCollection(object):
     @property
     def children(self):
         if self.name == "interface":
-            return [ dict(path="", name=i.ifDescr, label="%s %s" % (i.ifDescr, i.ifAlias)) for i in self.device.get_interfaces() ]
+            return [ dict(path="", name=i.ifName, label="%s %s" % (i.ifName, i.ifAlias)) for i in self.device.get_interfaces() ]
         else:
             return []
 
@@ -310,7 +310,7 @@ class DeviceCollection(object):
             print "[DeviceCollection.get_child {0} {1} {2}]".format(name, args, path)
 
         try:
-            interface = self.device.get_interface(ifDescr=name)
+            interface = self.device.get_interface(ifName=name)
         except InterfaceNotFound:
             return None
 
@@ -342,6 +342,10 @@ class Interface(NodeInfo):
     @property
     def ifDescr(self):
         return self._data.get('ifDescr', None)
+
+    @property
+    def ifName(self):
+        return self._data.get('ifName', None)
 
     @property
     def ifHighSpeed(self):
@@ -414,7 +418,7 @@ class Interface(NodeInfo):
         return endpoint
 
     def __repr__(self):
-        return '<Interface/{0}: uri:{1}>'.format(self.ifDescr, self.resource_uri)
+        return '<Interface/{0}: uri:{1}>'.format(self.ifName, self.resource_uri)
 
 class Endpoint(NodeInfo):
     wrn = EndpointWarning
@@ -743,7 +747,7 @@ class ApiConnect(AlertMixin, object):
 
         for i in self.get_interfaces(**filters):
             if self.filters.verbose > 1: print i
-            interfaces.append({'device': i.device, 'iface': i.ifDescr})
+            interfaces.append({'device': i.device, 'iface': i.ifName})
             # if self.filters.verbose > 1: print i.dump
 
         return self._execute_get_interface_bulk_data(interfaces)
