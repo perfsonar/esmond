@@ -353,6 +353,7 @@ class PSArchiveResource(ModelResource):
         detail_uri_name = 'metadata_key'
         allowed_methods = ['get', 'post']
         excludes = ['id']
+        limit = 0
         authentication = AnonymousGetElseApiAuthentication()
         authorization = DjangoAuthorization()
         filtering = {
