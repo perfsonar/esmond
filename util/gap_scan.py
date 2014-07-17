@@ -76,15 +76,15 @@ def get_interface_list(device, oidset):
     }
 
     if oidsets.has_key(oidset.name):
-        interface_set, ifdescr_source = oidsets[oidset.name]
+        interface_set, ifname_source = oidsets[oidset.name]
         interfaces = getattr(device, interface_set).all()
         # If the set does not have the same named attributes
         # as an IfRef object, massage the objects so the usual
         # generation logic works correctly.
-        if ifdescr_source:
+        if ifname_source:
             for i in interfaces:
-                i.ifAlias = getattr(i, ifdescr_source)
-                i.ifDescr = getattr(i, ifdescr_source)
+                i.ifAlias = getattr(i, ifname_source)
+                i.ifName = getattr(i, ifname_source)
         return interfaces
     else:
         return device.ifref_set.all()
@@ -128,7 +128,7 @@ def generate_or_update_inventory(limit=0, allow_blank_ifalias=False, verbose=Fal
                         ts_max = calendar.timegm(iface.end_time.utctimetuple())
 
                     row_key_range = get_key_range(
-                        [SNMP_NAMESPACE, device.name, oidset.set_name, oid.name, iface.ifDescr], 
+                        [SNMP_NAMESPACE, device.name, oidset.set_name, oid.name, iface.ifName], 
                         oidset.frequency_ms, ts_min, ts_max)
 
                     for key in row_key_range:

@@ -120,7 +120,7 @@ Notes:
             else:
                 iface['dns'] = ''
 
-            iface['key'] = '%s:%s' % (device, iface['ifDescr'])
+            iface['key'] = '%s:%s' % (device, iface['ifName'])
 
             iface['device'] = device
             iface['device_fqdn'] = device_fqdn
@@ -148,7 +148,7 @@ Notes:
     i = 0
 
     for iface in interfaces:
-        if not iface['ifDescr']:
+        if not iface['ifName']:
             continue
 
         if iface['ipAddr']:
@@ -175,9 +175,9 @@ Notes:
 \t<nmwg:metadata xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/" id="meta%(i)d">
 \t\t<%(subj)s:subject xmlns:%(subj)s="http://ggf.org/ns/nmwg/characteristic/%(event_type)s/2.0/" id="subj%(i)d">
 \t\t\t<nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">
-\t\t\t\t<nmwgt3:urn xmlns:nmwgt3="http://ggf.org/ns/nmwg/topology/base/3.0/">urn:ogf:network:domain=%(domain)s:node=%(device)s:port=%(ifDescr)s</nmwgt3:urn>%(ipaddr_line)s
+\t\t\t\t<nmwgt3:urn xmlns:nmwgt3="http://ggf.org/ns/nmwg/topology/base/3.0/">urn:ogf:network:domain=%(domain)s:node=%(device)s:port=%(ifName)s</nmwgt3:urn>%(ipaddr_line)s
 \t\t\t\t<nmwgt:hostName>%(device_fqdn)s</nmwgt:hostName>
-\t\t\t\t<nmwgt:ifName>%(ifDescr)s</nmwgt:ifName>
+\t\t\t\t<nmwgt:ifName>%(ifName)s</nmwgt:ifName>
 \t\t\t\t<nmwgt:ifDescription>%(ifAlias)s</nmwgt:ifDescription>
 \t\t\t\t<nmwgt:capacity>%(speed)s</nmwgt:capacity>
 \t\t\t\t<nmwgt:direction>%(dir)s</nmwgt:direction>

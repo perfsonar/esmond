@@ -58,7 +58,7 @@ ifref_test_data = """
         "ifAlias": [ [ "ifAlias.1", "test one" ] ],
         "ifPhysAddress": [ [ "ifPhysAddress.1", "\u0000\u001c\u000fFk@" ] ],
         "ifAdminStatus": [ [ "ifAdminStatus.1", 1 ] ],
-        "ifDescr": [ [ "ifDescr.1", "Vlan1" ] ],
+        "ifName": [ [ "ifName.1", "Vlan1" ] ],
         "ifMtu": [ [ "ifMtu.1", 1500 ] ],
         "ifOperStatus": [ [ "ifOperStatus.1", 1 ] ]
     }
@@ -76,7 +76,7 @@ ifref_test_data = """
         "ifAlias": [ [ "ifAlias.1", "test two" ] ],
         "ifPhysAddress": [ [ "ifPhysAddress.1", "\u0000\u001c\u000fFk@" ] ],
         "ifAdminStatus": [ [ "ifAdminStatus.1", 1 ] ],
-        "ifDescr": [ [ "ifDescr.1", "Vlan1" ] ],
+        "ifName": [ [ "ifName.1", "Vlan1" ] ],
         "ifMtu": [ [ "ifMtu.1", 1500 ] ],
         "ifOperStatus": [ [ "ifOperStatus.1", 1 ] ]
     }
@@ -97,7 +97,7 @@ empty_ifref_test_data = """
         "ifAlias": [],
         "ifPhysAddress": [],
         "ifAdminStatus": [],
-        "ifDescr": [],
+        "ifName": [],
         "ifMtu": [],
         "ifOperStatus": []
     }
@@ -146,7 +146,7 @@ class TestIfRefPersister(TestCase):
         self.assertEqual(d.name, "rtr_d")
 
     def test_persister(self):
-        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
+        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifName="Vlan1")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 0)
 
@@ -154,7 +154,7 @@ class TestIfRefPersister(TestCase):
         p = IfRefPollPersister(MockConfig(), "test", persistq=q)
         p.run()
 
-        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
+        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifName="Vlan1")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
@@ -168,7 +168,7 @@ class TestIfRefPersister(TestCase):
         p = IfRefPollPersister(MockConfig(), "test", persistq=q)
         p.run()
 
-        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifDescr="Vlan1")
+        ifrefs = IfRef.objects.filter(device__name="rtr_d", ifName="Vlan1")
         ifrefs = ifrefs.order_by("end_time").all()
         self.assertTrue(len(ifrefs) == 2)
 
@@ -1207,11 +1207,11 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_interface_info(self):
-        response = self.api_client.get('/v1/interface/?limit=0&ifDescr__contains=fxp')
+        response = self.api_client.get('/v1/interface/?limit=0&ifName__contains=fxp')
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         self.assertTrue(len(data['children']))
-        self.assertEquals(data['children'][0]['ifDescr'], 'fxp0.0')
+        self.assertEquals(data['children'][0]['ifName'], 'fxp0.0')
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_oidset_info(self):

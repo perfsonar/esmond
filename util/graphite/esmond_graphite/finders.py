@@ -63,13 +63,13 @@ class EsmondFinder:
                 label = None
                 if child.has_key('name'):
                     if path.endswith('interface') and \
-                            (not child.has_key('descr')
-                                    or child['descr'] == ''):
+                            (not child.has_key('name')
+                                    or child['name'] == ''):
                         if not 'dev-alu' in path:
                             continue
                     name = child['name']
-                    if child.has_key('descr'):
-                        label = "%s %s" % (name, child['descr'])
+                    if child.has_key('name'):
+                        label = "%s %s" % (name, child['name'])
                         label = label.replace('"','')
                 else:
                     name = parts[-1]
@@ -104,13 +104,13 @@ class EsmondFinder:
         #print "SEARCHING"
         data = []
         for pattern in patterns:
-            data.extend(self.client.get("?interface_descr=%s" % pattern))
+            data.extend(self.client.get("?interface_name=%s" % pattern))
 
         r = []
         for d in data:
             for child in d["children"]:
                 r.append( dict(
-                    label="%s %s %s" % (child["uri"].split("/")[-1], d["ifDescr"], d["ifAlias"]),
+                    label="%s %s %s" % (child["uri"].split("/")[-1], d["ifName"], d["ifAlias"]),
                     metric_path=child["uri"].replace("/snmp/", "").replace(".", "@").replace("/", ".") 
                     ))
 

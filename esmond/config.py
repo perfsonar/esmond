@@ -179,7 +179,7 @@ class EsmondConfig(object):
         """update_types -- convert input from config file to appropriate types"""
 
         if self.allowed_hosts:
-            self.allowed_hosts = map(str.strip, self.allowed_hsots.split(','))
+            self.allowed_hosts = map(str.strip, self.allowed_hosts.split(','))
 
         if self.mib_dirs:
             self.mib_dirs = map(str.strip, self.mib_dirs.split(','))

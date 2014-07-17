@@ -820,8 +820,9 @@ class HistoryTablePersister(PollPersister):
 
                 for attr in attrs:
                     if not hasattr(old, attr):
-                        self.log.error("Field " + attr + " is not contained in the object: %s" % str(old))
-                        continue
+                        self.log.error("Field " + attr + " is not contained in the object: %s. Adding it." % str(old))
+                        changed = True
+                        break
 
                     if getattr(old, attr) != new[attr]:
                         changed = True
@@ -863,7 +864,7 @@ class IfRefPollPersister(HistoryTablePersister):
 
         self.new_data = self._build_objs()
         nvar = len(self.new_data)
-        self.key = 'ifDescr'
+        self.key = 'ifName'
 
         adds, changes, deletes = self.update_db()
 
@@ -876,26 +877,23 @@ class IfRefPollPersister(HistoryTablePersister):
         obj['end_time'] = max_datetime
         return IfRef(**obj)
 
-    def _resolve_ifdescr(self, ifdescr, ifindex):
-        return ifdescr
-
     def _build_objs(self):
         ifref_objs = {}
         ifIndex_map = {}
 
-        for name, val in self.data['ifDescr']:
+        for name, val in self.data['ifName']:
             foo, ifIndex = name.split('.')
             ifIndex = int(ifIndex)
-            ifDescr = self._resolve_ifdescr(val, ifIndex)
-            ifIndex_map[ifIndex] = ifDescr
-            ifref_objs[ifDescr] = dict(ifDescr=ifDescr, ifIndex=ifIndex)
+            ifName = val
+            ifIndex_map[ifIndex] = ifName
+            ifref_objs[ifName] = dict(ifName=ifName, ifIndex=ifIndex)
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
             ifref_objs[ifIndex_map[val]]['ipAddr'] = ipAddr
 
         remaining_oids = self.data.keys()
-        remaining_oids.remove('ifDescr')
+        remaining_oids.remove('ifName')
         remaining_oids.remove('ipAdEntIfIndex')
 
         for oid in remaining_oids:
@@ -907,23 +905,6 @@ class IfRefPollPersister(HistoryTablePersister):
                 ifref_objs[ifIndex_map[ifIndex]][oid] = val
 
         return ifref_objs
-
-class ALUIfRefPollPersister(IfRefPollPersister):
-    """ALU specific hacks for IfRef"""
-
-    def _resolve_ifdescr(self, ifdescr, ifindex):
-        """The interface description which is in ifAlias on most platforms is
-        the third comma separated field in ifDescr on the ALU.  We normalize
-        ifDescr just be the interface name and put a copy of the interface
-        description in ifAlias."""
-
-        parts = ifdescr.split(',')
-        if len(parts) > 2:
-            if not self.data.has_key('ifAlias'):
-                self.data['ifAlias'] = []
-            ifalias = parts[2].replace('"','')
-            self.data['ifAlias'].append(('ifAlias.%d' % ifindex, ifalias))
-        return parts[0]
 
 class ALUSAPRefPersister(HistoryTablePersister):
     int_oids = ('sapIngressQosPolicyId', 'sapEgressQosPolicyId')
@@ -1036,10 +1017,10 @@ class InfIfRefPollPersister(IfRefPollPersister):
             _, ifidx = k.split('.', 1)
             ifalias[ifidx] = v
 
-        for k, v in result.data['ifDescr']:
+        for k, v in result.data['ifName']:
             if v.startswith('GIGECLIENTCTP'):
-                _, ifdescr = v.split('=', 1)
-                keep.append((k, ifdescr))
+                _, ifname = v.split('=', 1)
+                keep.append((k, ifname))
                 _, ifidx = k.split('.', 1)
                 result.data['ifAlias'].append(
                             ('ifAlias.' + ifidx, ifalias.get(ifidx, '')))
@@ -1047,7 +1028,7 @@ class InfIfRefPollPersister(IfRefPollPersister):
                     result.data[x].append(
                             ('%s.%s' % (x, ifidx), 0))
 
-        result.data['ifDescr'] = keep
+        result.data['ifName'] = keep
         del result.data['gigeClientCtpPmRealCktId']
 
         IfRefPollPersister.store(self, result)

@@ -261,7 +261,7 @@ class DeviceResource(ModelResource):
 
     def dispatch_interface_detail(self, request, **kwargs):
         return InterfaceResource().dispatch_detail(request,
-                device__name=kwargs['name'], ifDescr=kwargs['iface_name'] )
+                device__name=kwargs['name'], ifName=kwargs['iface_name'] )
 
     def dispatch_interface_data(self, request, **kwargs):
         return InterfaceDataResource().dispatch_detail(request, **kwargs)
@@ -363,10 +363,10 @@ class InterfaceResource(ModelResource):
         resource_name = 'interface'
         queryset = IfRef.objects.all()
         allowed_methods = ['get']
-        detail_uri_name = 'ifDescr'
+        detail_uri_name = 'ifName'
         filtering = {
             'device': ALL_WITH_RELATIONS,
-            'ifDescr': ALL,
+            'ifName': ALL,
             'ifAlias': ALL,
         }
         authentication = AnonymousGetElseApiAuthentication()
@@ -380,10 +380,10 @@ class InterfaceResource(ModelResource):
         the greatest end_time is returned.
 
         This also massages the incoming URL fragment to restore characters in 
-        ifDescr which were encoded to avoid URL metacharacters back to
+        ifName which were encoded to avoid URL metacharacters back to
         their original state.
         """
-        kwargs['ifDescr'] = atdecode(kwargs['ifDescr'])
+        kwargs['ifName'] = atdecode(kwargs['ifName'])
         kwargs = build_time_filters(bundle.request.GET, kwargs)
 
         object_list = self.get_object_list(bundle.request).filter(**kwargs)
@@ -431,7 +431,7 @@ class InterfaceResource(ModelResource):
             uri = "%s%s%s" % (
                 DeviceResource().get_resource_uri(obj.device),
                 'interface/',
-                obj.encoded_ifDescr())
+                obj.encoded_ifName())
         else:
             uri = ''
 
@@ -526,7 +526,7 @@ class InterfaceDataResource(Resource):
         try:
             iface = InterfaceResource().obj_get(bundle,
                     device__name=kwargs['name'],
-                    ifDescr=kwargs['iface_name'])
+                    ifName=kwargs['iface_name'])
         except IfRef.DoesNotExist:
             raise BadRequest("no such device/interface: dev: {0} int: {1}".format(kwargs['name'], kwargs['iface_name']))
 

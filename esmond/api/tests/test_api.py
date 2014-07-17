@@ -143,7 +143,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEquals(len(data['children']), 1)
-        self.assertEquals(data['children'][0]['ifDescr'], 'xe-1/0/0')
+        self.assertEquals(data['children'][0]['ifName'], 'xe-1/0/0')
 
         url = '/v1/device/rtr_alu/interface/'
 
@@ -155,7 +155,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         # print json.dumps(data, indent=4)
 
         self.assertEquals(len(data['children']), 1)
-        self.assertEquals(data['children'][0]['ifDescr'], '3/1/1')
+        self.assertEquals(data['children'][0]['ifName'], '3/1/1')
 
     def test_get_device_interface_detail(self):
         for device, iface in (
@@ -171,7 +171,7 @@ class DeviceAPITests(DeviceAPITestsBase):
             self.assertEquals(response.status_code, 200)
 
             data = json.loads(response.content)
-            self.assertEquals(data['ifDescr'], iface.replace("_", "/"))
+            self.assertEquals(data['ifName'], iface.replace("_", "/"))
 
             for field in [
                     'begin_time',
@@ -179,7 +179,7 @@ class DeviceAPITests(DeviceAPITestsBase):
                     'device_uri',
                     'end_time',
                     'ifAlias',
-                    'ifDescr',
+                    'ifName',
                     'ifHighSpeed',
                     'ifIndex',
                     'ifSpeed',
@@ -219,7 +219,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         response = self.client.get(url, dict(begin=begin, end=end))
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(data['ifDescr'], iface)
+        self.assertEquals(data['ifName'], iface)
         self.assertEquals(data['ifAlias'], "test interface")
         self.assertEquals(data['ipAddr'], "10.0.0.2")
 
@@ -231,7 +231,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         response = self.client.get(url, dict(begin=begin, end=end))
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(data['ifDescr'], iface)
+        self.assertEquals(data['ifName'], iface)
         self.assertEquals(data['ifAlias'], "test interface with new ifAlias")
         self.assertEquals(data['ipAddr'], "10.0.1.2")
 
@@ -242,7 +242,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         response = self.client.get(url, dict(begin=begin, end=end))
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(data['ifDescr'], iface)
+        self.assertEquals(data['ifName'], iface)
         self.assertEquals(data['ifAlias'], "test interface with new ifAlias")
         self.assertEquals(data['ipAddr'], "10.0.1.2")
 

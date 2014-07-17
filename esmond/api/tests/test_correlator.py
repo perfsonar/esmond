@@ -1,13 +1,13 @@
 from django.test import TestCase
-from esmond.poll import IfDescrCorrelator, JnxFirewallCorrelator, \
+from esmond.poll import IfNameCorrelator, JnxFirewallCorrelator, \
                             JnxCOSCorrelator, SentryCorrelator, \
                             ALUSAPCorrelator
 class MockSession(object):
     def walk(self, oid):
-        if oid == 'ifDescr':
-            return (('ifDescr.115', 'ae0'),
-                    ('ifDescr.116', 'ge-1/0/0'),
-                    ('ifDescr.117', ''))
+        if oid == 'ifName':
+            return (('ifName.115', 'ae0'),
+                    ('ifName.116', 'ge-1/0/0'),
+                    ('ifName.117', ''))
         if oid == 'ifAlias':
             return (('ifAlias.115', 'ae0'),
                     ('ifAlias.116', 'ge-1/0/0'),
@@ -95,7 +95,7 @@ class MockOID(object):
 class TestCorrelators(TestCase):
     def test_correlators(self):
         for (correlator, oid) in (
-            (IfDescrCorrelator, MockOID('ifHCInOctets')),
+            (IfNameCorrelator, MockOID('ifHCInOctets')),
             (JnxFirewallCorrelator, MockOID('jnxFWCounterByteCount')),
             (JnxCOSCorrelator, MockOID('jnxCosIfqQedBytes')),
             (SentryCorrelator, MockOID('outletLoadValue')),

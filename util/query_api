@@ -61,7 +61,7 @@ def main():
         device_filters = {}
 
     if options.interface:
-        interface_filters = {'ifDescr': options.interface}
+        interface_filters = {'ifName': options.interface}
     else:
         interface_filters = {}
 

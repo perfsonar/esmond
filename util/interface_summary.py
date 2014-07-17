@@ -12,9 +12,9 @@ Usage and args:
 etc.  This is required - defaults to http://localhost.
 
 -a or -i : specifies a search patter for either an interface alias (-a) or 
-an interface name/ifdescr (-i).  One or the other is required.  This is used
+an interface name/ifname (-i).  One or the other is required.  This is used
 to perform a django filtering search to generate a group of interfaces. A 
-django '__contains' (ifDescr__contains, etc) query on the interfaces.
+django '__contains' (ifName__contains, etc) query on the interfaces.
 
 -e : specifies an endpoint type (in, out, error/in, discard/out, etc) to 
 retrieve and aggregate data for.  This option may be specified more than 
@@ -74,8 +74,8 @@ to show the way that the users can manage this, all of the these have
 been put in a configuration file (see: interface_summary.conf).  Example
 entries:
 
-# Mappings for ifdescr filters
-[ifDescr__contains]
+# Mappings for ifname filters
+[ifName__contains]
 me0.0: TotalTrafficMe0.0
 
 # Mappings for ifalias filters
@@ -90,7 +90,7 @@ formulating the row key.  So this row key:
 summary:TotalTrafficMe0.0:in:30000:2013
 
 contains the aggregations for the 'in' endpoints on all the interfaces 
-returned by the query "ifDescr__contains=me0.0".
+returned by the query "ifName__contains=me0.0".
 
 Retrieval:
 
@@ -121,15 +121,15 @@ from esmond.api.client.util import SUMMARY_NS, get_summary_name, \
     aggregate_to_ts_and_endpoint
 
 def main():    
-    usage = '%prog [ -U rest url (required) | -i ifDescr pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
+    usage = '%prog [ -U rest url (required) | -i ifName pattern | -a alias pattern | -e endpoint -e endpoint (multiple ok) ]'
     parser = OptionParser(usage=usage)
     parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
             type='string', dest='api_url', 
             help='URL for the REST API (default=%default) - required.',
             default='http://localhost')
-    parser.add_option('-i', '--ifdescr', metavar='IFDESCR',
-            type='string', dest='ifdescr_pattern', 
-            help='Pattern to apply to interface ifdescr search.')
+    parser.add_option('-i', '--ifname', metavar='IFNAME',
+            type='string', dest='ifname_pattern', 
+            help='Pattern to apply to interface ifname search.')
     parser.add_option('-a', '--alias', metavar='ALIAS',
             type='string', dest='alias_pattern', 
             help='Pattern to apply to interface alias search.')
@@ -167,18 +167,18 @@ def main():
         bin_point = time_point - (time_point % 30)
         filters.begin_time = filters.end_time = bin_point
 
-    if not options.ifdescr_pattern and not options.alias_pattern:
+    if not options.ifname_pattern and not options.alias_pattern:
         # Don't grab *everthing*.
-        print 'Specify an ifdescr or alias filter option.'
+        print 'Specify an ifname or alias filter option.'
         parser.print_help()
         return -1
-    elif options.ifdescr_pattern and options.alias_pattern:
+    elif options.ifname_pattern and options.alias_pattern:
         print 'Specify only one filter option.'
         parser.print_help()
         return -1
     else:
-        if options.ifdescr_pattern:
-            interface_filters = { 'ifDescr__contains': options.ifdescr_pattern }
+        if options.ifname_pattern:
+            interface_filters = { 'ifName__contains': options.ifname_pattern }
         elif options.alias_pattern:
             interface_filters = { 'ifAlias__contains': options.alias_pattern }
 

@@ -72,6 +72,7 @@ CREATE TABLE IfRef (
 
     ifIndex       int,
     ifDescr       varchar(512),
+    ifName        varchar(512),
     ifAlias       varchar(512),
     ipAddr        inet,
     ifSpeed       int8,  -- pg doesn't have unsigned ints

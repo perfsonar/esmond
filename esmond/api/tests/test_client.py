@@ -74,7 +74,7 @@ class TestClientLibs(LiveServerTestCase):
         interface = ifaces[0]
 
         self.assertEquals(interface.device, '/v1/device/rtr_d/')
-        self.assertEquals(interface.ifDescr, 'fxp0.0')
+        self.assertEquals(interface.ifName, 'fxp0.0')
 
         endpoints = list(interface.get_endpoints())
         self.assertEquals(len(endpoints), 2)
@@ -103,7 +103,7 @@ class TestClientLibs(LiveServerTestCase):
             username=self.td.user_admin.username, 
             api_key=self.td.user_admin_apikey.key)
 
-        iface_filt = {'ifDescr__contains': 'fxp0.0'}
+        iface_filt = {'ifName__contains': 'fxp0.0'}
 
         i = list(conn.get_interfaces(**iface_filt))
         self.assertEquals(len(i), 1)
@@ -111,12 +111,12 @@ class TestClientLibs(LiveServerTestCase):
         interface = i[0]
 
         self.assertEquals(interface.device, '/v1/device/rtr_d/')
-        self.assertEquals(interface.ifDescr, 'fxp0.0')
+        self.assertEquals(interface.ifName, 'fxp0.0')
 
         self.assertTrue(interface.device)
         self.assertTrue(interface.ifAdminStatus)
         self.assertTrue(interface.ifAlias)
-        self.assertTrue(interface.ifDescr)
+        self.assertTrue(interface.ifName)
         self.assertTrue(interface.ifHighSpeed)
         self.assertTrue(interface.ifIndex)
         self.assertTrue(interface.ifMtu)
@@ -138,7 +138,7 @@ class TestClientLibs(LiveServerTestCase):
             username=self.td.user_admin.username, 
             api_key=self.td.user_admin_apikey.key)
 
-        i = list(conn.get_interfaces(**{'ifDescr': 'fxp0.0'})).pop()
+        i = list(conn.get_interfaces(**{'ifName': 'fxp0.0'})).pop()
 
         e = i.get_endpoint('in')
 
@@ -167,7 +167,7 @@ class TestClientLibs(LiveServerTestCase):
             username=self.td.user_admin.username, 
             api_key=self.td.user_admin_apikey.key)
 
-        payload = conn.get_interface_bulk_data(**{'ifDescr': 'fxp0.0'})
+        payload = conn.get_interface_bulk_data(**{'ifName': 'fxp0.0'})
         
         row = payload.data.pop()
 
@@ -180,7 +180,7 @@ class TestClientLibs(LiveServerTestCase):
 
         filters.cf = 'max'
 
-        payload = conn.get_interface_bulk_data(**{'ifDescr': 'fxp0.0'})
+        payload = conn.get_interface_bulk_data(**{'ifName': 'fxp0.0'})
         
         row = payload.data.pop()
 
@@ -201,7 +201,7 @@ class TestClientLibs(LiveServerTestCase):
             username=self.td.user_admin.username, 
             api_key=self.td.user_admin_apikey.key)
 
-        iface_filt = {'ifDescr__contains': 'xe-'}
+        iface_filt = {'ifName__contains': 'xe-'}
 
         data = conn.get_interface_bulk_data(**iface_filt)
         self.assertEquals(len(data.data), 24)
