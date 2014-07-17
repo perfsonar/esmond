@@ -33,12 +33,12 @@ Running the Build
 
 #. Copy the .spec file to your rpmbuild directory::
 
-    cp esmond-VERSION/esmond.spec $HOME/rpmbuild/SPECS/
+    cp rpm/esmond.spec $HOME/rpmbuild/SPECS/
 
 #. Build a source RPM::
 
     cd $HOME/rpmbuild
-    rpmbuild -bs SPEC/esmond.spec
+    rpmbuild -bs SPECS/esmond.spec
 
 #. Build the RPM with mock::
 
