@@ -138,8 +138,8 @@
 <span id="snmp-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">snmp</span></tt> Module<a class="headerlink" href="#module-api.client.snmp" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="api.client.snmp.ApiConnect">
-<em class="property">class </em><tt class="descclassname">api.client.snmp.</tt><tt class="descname">ApiConnect</tt><big>(</big><em>api_url</em>, <em>filters=&lt;api.client.snmp.ApiFilters object at 0x108ae4a90&gt;</em>, <em>username=''</em>, <em>api_key=''</em><big>)</big><a class="reference internal" href="_modules/api/client/snmp.html#ApiConnect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.ApiConnect" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">esmond.api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<em class="property">class </em><tt class="descclassname">api.client.snmp.</tt><tt class="descname">ApiConnect</tt><big>(</big><em>api_url</em>, <em>filters=&lt;api.client.snmp.ApiFilters object at 0x103116550&gt;</em>, <em>username=''</em>, <em>api_key=''</em><big>)</big><a class="reference internal" href="_modules/api/client/snmp.html#ApiConnect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.ApiConnect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <dl class="attribute">
 <dt id="api.client.snmp.ApiConnect.children">
 <tt class="descname">children</tt><a class="reference internal" href="_modules/api/client/snmp.html#ApiConnect.children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.ApiConnect.children" title="Permalink to this definition">¶</a></dt>
@@ -198,7 +198,7 @@
 <dl class="class">
 <dt id="api.client.snmp.ApiFilters">
 <em class="property">class </em><tt class="descclassname">api.client.snmp.</tt><tt class="descname">ApiFilters</tt><a class="reference internal" href="_modules/api/client/snmp.html#ApiFilters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.ApiFilters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">esmond.api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <dl class="attribute">
 <dt id="api.client.snmp.ApiFilters.begin_time">
 <tt class="descname">begin_time</tt><a class="reference internal" href="_modules/api/client/snmp.html#ApiFilters.begin_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.ApiFilters.begin_time" title="Permalink to this definition">¶</a></dt>
@@ -366,8 +366,13 @@ a bulk request for interface data.</p>
 
 <dl class="class">
 <dt id="api.client.snmp.DataPoint">
-<em class="property">class </em><tt class="descclassname">api.client.snmp.</tt><tt class="descname">DataPoint</tt><big>(</big><em>ts</em>, <em>val</em><big>)</big><a class="reference internal" href="_modules/api/client/snmp.html#DataPoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.DataPoint" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">api.client.snmp.</tt><tt class="descname">DataPoint</tt><big>(</big><em>ts</em>, <em>val</em>, <em>m_ts=None</em><big>)</big><a class="reference internal" href="_modules/api/client/snmp.html#DataPoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.DataPoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="attribute">
+<dt id="api.client.snmp.DataPoint.m_ts">
+<tt class="descname">m_ts</tt><a class="headerlink" href="#api.client.snmp.DataPoint.m_ts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="api.client.snmp.DataPoint.ts">
 <tt class="descname">ts</tt><a class="headerlink" href="#api.client.snmp.DataPoint.ts" title="Permalink to this definition">¶</a></dt>
@@ -411,7 +416,7 @@ a bulk request for interface data.</p>
 
 <dl class="method">
 <dt id="api.client.snmp.Device.get_interface">
-<tt class="descname">get_interface</tt><big>(</big><em>ifDescr</em><big>)</big><a class="reference internal" href="_modules/api/client/snmp.html#Device.get_interface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.Device.get_interface" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">get_interface</tt><big>(</big><em>ifName</em><big>)</big><a class="reference internal" href="_modules/api/client/snmp.html#Device.get_interface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.Device.get_interface" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -586,6 +591,11 @@ a call to the API, it is a <a href="#id1"><span class="problematic" id="id2">get
 <dd></dd></dl>
 
 <dl class="attribute">
+<dt id="api.client.snmp.Interface.ifName">
+<tt class="descname">ifName</tt><a class="reference internal" href="_modules/api/client/snmp.html#Interface.ifName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.Interface.ifName" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="api.client.snmp.Interface.ifOperStatus">
 <tt class="descname">ifOperStatus</tt><a class="reference internal" href="_modules/api/client/snmp.html#Interface.ifOperStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.Interface.ifOperStatus" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -639,7 +649,7 @@ a call to the API, it is a <a href="#id1"><span class="problematic" id="id2">get
 <dl class="class">
 <dt id="api.client.snmp.NodeInfo">
 <em class="property">class </em><tt class="descclassname">api.client.snmp.</tt><tt class="descname">NodeInfo</tt><big>(</big><em>data</em>, <em>api_url</em>, <em>filters</em><big>)</big><a class="reference internal" href="_modules/api/client/snmp.html#NodeInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.NodeInfo" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">esmond.api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <dl class="attribute">
 <dt id="api.client.snmp.NodeInfo.begin_time">
 <tt class="descname">begin_time</tt><a class="reference internal" href="_modules/api/client/snmp.html#NodeInfo.begin_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.snmp.NodeInfo.begin_time" title="Permalink to this definition">¶</a></dt>
@@ -745,7 +755,7 @@ a call to the API, it is a <a href="#id1"><span class="problematic" id="id2">get
 <dl class="class">
 <dt id="api.client.timeseries.GetBulkData">
 <em class="property">class </em><tt class="descclassname">api.client.timeseries.</tt><tt class="descname">GetBulkData</tt><big>(</big><em>api_url='http://localhost'</em>, <em>username=''</em>, <em>api_key=''</em><big>)</big><a class="reference internal" href="_modules/api/client/timeseries.html#GetBulkData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.timeseries.GetBulkData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">esmond.api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <dl class="method">
 <dt id="api.client.timeseries.GetBulkData.get_data">
 <tt class="descname">get_data</tt><big>(</big><em>paths</em>, <em>begin=None</em>, <em>end=None</em><big>)</big><a class="reference internal" href="_modules/api/client/timeseries.html#GetBulkData.get_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.timeseries.GetBulkData.get_data" title="Permalink to this definition">¶</a></dt>
@@ -966,7 +976,7 @@ been previously defined (and issue a warning).</p>
 <dl class="class">
 <dt id="api.client.timeseries.TimeSeriesDataPayload">
 <em class="property">class </em><tt class="descclassname">api.client.timeseries.</tt><tt class="descname">TimeSeriesDataPayload</tt><big>(</big><em>data={'data': []}</em><big>)</big><a class="reference internal" href="_modules/api/client/timeseries.html#TimeSeriesDataPayload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.timeseries.TimeSeriesDataPayload" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">esmond.api.client.snmp.DataPayload</span></tt></p>
+<dd><p>Bases: <a class="reference internal" href="#api.client.snmp.DataPayload" title="api.client.snmp.DataPayload"><tt class="xref py py-class docutils literal"><span class="pre">api.client.snmp.DataPayload</span></tt></a></p>
 <dl class="attribute">
 <dt id="api.client.timeseries.TimeSeriesDataPayload.begin_time">
 <tt class="descname">begin_time</tt><a class="reference internal" href="_modules/api/client/timeseries.html#TimeSeriesDataPayload.begin_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.timeseries.TimeSeriesDataPayload.begin_time" title="Permalink to this definition">¶</a></dt>
@@ -1005,8 +1015,18 @@ been previously defined (and issue a warning).</p>
 <dl class="class">
 <dt id="api.client.timeseries.TimeseriesBase">
 <em class="property">class </em><tt class="descclassname">api.client.timeseries.</tt><tt class="descname">TimeseriesBase</tt><big>(</big><em>api_url='http://localhost/'</em>, <em>path=</em>, <span class="optional">[</span><span class="optional">]</span><em>freq=None</em>, <em>username=''</em>, <em>api_key=''</em><big>)</big><a class="reference internal" href="_modules/api/client/timeseries.html#TimeseriesBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.timeseries.TimeseriesBase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">esmond.api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">api.client.util.AlertMixin</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <p>Base class for the GET and POST timeseries interaction objects.</p>
+<dl class="attribute">
+<dt id="api.client.timeseries.TimeseriesBase.get_error">
+<tt class="descname">get_error</tt><a class="reference internal" href="_modules/api/client/timeseries.html#TimeseriesBase.get_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.timeseries.TimeseriesBase.get_error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="api.client.timeseries.TimeseriesBase.set_error_state">
+<tt class="descname">set_error_state</tt><big>(</big><em>errno</em>, <em>errms</em><big>)</big><a class="reference internal" href="_modules/api/client/timeseries.html#TimeseriesBase.set_error_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.client.timeseries.TimeseriesBase.set_error_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 </div>

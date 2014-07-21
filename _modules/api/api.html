@@ -144,7 +144,7 @@
     <span class="n">AnonymousBulkLimitElseApiAuthentication</span><span class="p">,</span> <span class="n">AnonymousTimeseriesBulkLimitElseApiAuthentication</span><span class="p">,</span> \
     <span class="n">AnonymousThrottle</span>
 <span class="kn">from</span> <span class="nn">esmond.api.dataseries</span> <span class="kn">import</span> <span class="n">QueryUtil</span><span class="p">,</span> <span class="n">Fill</span>
-<span class="kn">from</span> <span class="nn">esmond.api.models</span> <span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">IfRef</span><span class="p">,</span> <span class="n">DeviceOIDSetMap</span><span class="p">,</span> <span class="n">OIDSet</span><span class="p">,</span> <span class="n">OID</span><span class="p">,</span> <span class="n">OutletRef</span>
+<span class="kn">from</span> <span class="nn">esmond.api.models</span> <span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">IfRef</span><span class="p">,</span> <span class="n">DeviceOIDSetMap</span><span class="p">,</span> <span class="n">OIDSet</span><span class="p">,</span> <span class="n">OID</span><span class="p">,</span> <span class="n">OutletRef</span><span class="p">,</span> <span class="n">Inventory</span>
 <span class="kn">from</span> <span class="nn">esmond.cassandra</span> <span class="kn">import</span> <span class="n">CASSANDRA_DB</span><span class="p">,</span> <span class="n">AGG_TYPES</span><span class="p">,</span> <span class="n">ConnectionException</span><span class="p">,</span> <span class="n">RawRateData</span><span class="p">,</span> <span class="n">BaseRateBin</span>
 <span class="kn">from</span> <span class="nn">esmond.config</span> <span class="kn">import</span> <span class="n">get_config_path</span><span class="p">,</span> <span class="n">get_config</span>
 <span class="kn">from</span> <span class="nn">esmond.util</span> <span class="kn">import</span> <span class="n">atdecode</span><span class="p">,</span> <span class="n">atencode</span>
@@ -377,7 +377,7 @@
 </div>
 <div class="viewcode-block" id="DeviceResource.dispatch_interface_detail"><a class="viewcode-back" href="../../api.html#api.api.DeviceResource.dispatch_interface_detail">[docs]</a>    <span class="k">def</span> <span class="nf">dispatch_interface_detail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">InterfaceResource</span><span class="p">()</span><span class="o">.</span><span class="n">dispatch_detail</span><span class="p">(</span><span class="n">request</span><span class="p">,</span>
-                <span class="n">device__name</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="n">ifDescr</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;iface_name&#39;</span><span class="p">]</span> <span class="p">)</span>
+                <span class="n">device__name</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="n">ifName</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;iface_name&#39;</span><span class="p">]</span> <span class="p">)</span>
 </div>
 <div class="viewcode-block" id="DeviceResource.dispatch_interface_data"><a class="viewcode-back" href="../../api.html#api.api.DeviceResource.dispatch_interface_data">[docs]</a>    <span class="k">def</span> <span class="nf">dispatch_interface_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">InterfaceDataResource</span><span class="p">()</span><span class="o">.</span><span class="n">dispatch_detail</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -479,10 +479,10 @@
         <span class="n">resource_name</span> <span class="o">=</span> <span class="s">&#39;interface&#39;</span>
         <span class="n">queryset</span> <span class="o">=</span> <span class="n">IfRef</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
         <span class="n">allowed_methods</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;get&#39;</span><span class="p">]</span>
-        <span class="n">detail_uri_name</span> <span class="o">=</span> <span class="s">&#39;ifDescr&#39;</span>
+        <span class="n">detail_uri_name</span> <span class="o">=</span> <span class="s">&#39;ifName&#39;</span>
         <span class="n">filtering</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s">&#39;device&#39;</span><span class="p">:</span> <span class="n">ALL_WITH_RELATIONS</span><span class="p">,</span>
-            <span class="s">&#39;ifDescr&#39;</span><span class="p">:</span> <span class="n">ALL</span><span class="p">,</span>
+            <span class="s">&#39;ifName&#39;</span><span class="p">:</span> <span class="n">ALL</span><span class="p">,</span>
             <span class="s">&#39;ifAlias&#39;</span><span class="p">:</span> <span class="n">ALL</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="n">authentication</span> <span class="o">=</span> <span class="n">AnonymousGetElseApiAuthentication</span><span class="p">()</span>
@@ -496,10 +496,10 @@
 <span class="sd">        the greatest end_time is returned.</span>
 
 <span class="sd">        This also massages the incoming URL fragment to restore characters in </span>
-<span class="sd">        ifDescr which were encoded to avoid URL metacharacters back to</span>
+<span class="sd">        ifName which were encoded to avoid URL metacharacters back to</span>
 <span class="sd">        their original state.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;ifDescr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">atdecode</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;ifDescr&#39;</span><span class="p">])</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;ifName&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">atdecode</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;ifName&#39;</span><span class="p">])</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="n">build_time_filters</span><span class="p">(</span><span class="n">bundle</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">GET</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 
         <span class="n">object_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_object_list</span><span class="p">(</span><span class="n">bundle</span><span class="o">.</span><span class="n">request</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -547,7 +547,7 @@
             <span class="n">uri</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
                 <span class="n">DeviceResource</span><span class="p">()</span><span class="o">.</span><span class="n">get_resource_uri</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
                 <span class="s">&#39;interface/&#39;</span><span class="p">,</span>
-                <span class="n">obj</span><span class="o">.</span><span class="n">encoded_ifDescr</span><span class="p">())</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">encoded_ifName</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">uri</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
 
@@ -642,7 +642,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">iface</span> <span class="o">=</span> <span class="n">InterfaceResource</span><span class="p">()</span><span class="o">.</span><span class="n">obj_get</span><span class="p">(</span><span class="n">bundle</span><span class="p">,</span>
                     <span class="n">device__name</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span>
-                    <span class="n">ifDescr</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;iface_name&#39;</span><span class="p">])</span>
+                    <span class="n">ifName</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;iface_name&#39;</span><span class="p">])</span>
         <span class="k">except</span> <span class="n">IfRef</span><span class="o">.</span><span class="n">DoesNotExist</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="s">&quot;no such device/interface: dev: {0} int: {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;iface_name&#39;</span><span class="p">]))</span>
 
@@ -674,6 +674,7 @@
         <span class="n">obj</span><span class="o">.</span><span class="n">datapath</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">oidset</span><span class="o">.</span><span class="n">set_name</span>  <span class="c"># set_name defaults to oidset.name, but can be overidden in poller_args</span>
         <span class="n">obj</span><span class="o">.</span><span class="n">iface_dataset</span> <span class="o">=</span> <span class="n">iface_dataset</span>
         <span class="n">obj</span><span class="o">.</span><span class="n">iface</span> <span class="o">=</span> <span class="n">iface</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">bundle</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">user</span>
 
         <span class="n">filters</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">bundle</span><span class="o">.</span><span class="n">request</span><span class="p">,</span> <span class="s">&#39;GET&#39;</span><span class="p">,</span> <span class="p">{})</span>
 
@@ -718,7 +719,8 @@
                 <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">agg</span><span class="p">,</span> <span class="n">oidset</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
         <span class="c"># Make sure we&#39;re not exceeding allowable time range.</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">QueryUtil</span><span class="o">.</span><span class="n">valid_timerange</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">QueryUtil</span><span class="o">.</span><span class="n">valid_timerange</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="n">obj</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">username</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="s">&#39;exceeded valid timerange for agg level: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
                     <span class="n">obj</span><span class="o">.</span><span class="n">agg</span><span class="p">)</span>
         
@@ -1075,6 +1077,7 @@
         <span class="n">obj</span><span class="o">.</span><span class="n">datapath</span> <span class="o">=</span> <span class="p">[</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ns&#39;</span><span class="p">)]</span> <span class="o">+</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;path&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
         <span class="n">obj</span><span class="o">.</span><span class="n">agg</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">datapath</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
         <span class="n">obj</span><span class="o">.</span><span class="n">datapath</span> <span class="o">=</span> <span class="n">QueryUtil</span><span class="o">.</span><span class="n">decode_datapath</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">datapath</span><span class="p">)</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">bundle</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">user</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">obj</span><span class="o">.</span><span class="n">agg</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">agg</span><span class="p">)</span>
@@ -1199,7 +1202,8 @@
 <span class="sd">        method call to the cassandra backend.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c"># Make sure we&#39;re not exceeding allowable time range.</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">QueryUtil</span><span class="o">.</span><span class="n">valid_timerange</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">in_ms</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">QueryUtil</span><span class="o">.</span><span class="n">valid_timerange</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">in_ms</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="n">obj</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">username</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="s">&#39;exceeded valid timerange for agg level: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
                     <span class="n">obj</span><span class="o">.</span><span class="n">agg</span><span class="p">)</span>
         
@@ -1614,6 +1618,31 @@
 
         <span class="k">return</span> <span class="n">obj</span>
 </div>
+<div class="viewcode-block" id="InventoryResource"><a class="viewcode-back" href="../../api.html#api.api.InventoryResource">[docs]</a><span class="k">class</span> <span class="nc">InventoryResource</span><span class="p">(</span><span class="n">ModelResource</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Resource to query cassandra key inventory from gap filling </span>
+<span class="sd">    db tables since querying &quot;real&quot; cassandra keys is expensive.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="InventoryResource.Meta"><a class="viewcode-back" href="../../api.html#api.api.InventoryResource.Meta">[docs]</a>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">resource_name</span> <span class="o">=</span> <span class="s">&#39;inventory&#39;</span>
+        <span class="n">allowed_methods</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;get&#39;</span><span class="p">]</span>
+        <span class="n">queryset</span> <span class="o">=</span> <span class="n">Inventory</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="n">authentication</span> <span class="o">=</span> <span class="n">AnonymousGetElseApiAuthentication</span><span class="p">()</span>
+        <span class="n">filtering</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;row_key&#39;</span><span class="p">:</span> <span class="n">ALL</span><span class="p">,</span>
+        <span class="p">}</span>
+</div>
+<div class="viewcode-block" id="InventoryResource.get_object_list"><a class="viewcode-back" href="../../api.html#api.api.InventoryResource.get_object_list">[docs]</a>    <span class="k">def</span> <span class="nf">get_object_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">qs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="o">.</span><span class="n">queryset</span><span class="o">.</span><span class="n">_clone</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">qs</span>
+</div>
+<div class="viewcode-block" id="InventoryResource.alter_list_data_to_serialize"><a class="viewcode-back" href="../../api.html#api.api.InventoryResource.alter_list_data_to_serialize">[docs]</a>    <span class="k">def</span> <span class="nf">alter_list_data_to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;objects&#39;</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="InventoryResource.dehydrate"><a class="viewcode-back" href="../../api.html#api.api.InventoryResource.dehydrate">[docs]</a>    <span class="k">def</span> <span class="nf">dehydrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bundle</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">bundle</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;row_key&#39;</span><span class="p">]</span>
+
+</div></div>
 <span class="sd">&quot;&quot;&quot;Connect the &#39;root&#39; resources to the URL schema.&quot;&quot;&quot;</span>
 <span class="n">v1_api</span> <span class="o">=</span> <span class="n">Api</span><span class="p">(</span><span class="n">api_name</span><span class="o">=</span><span class="s">&#39;v1&#39;</span><span class="p">)</span>
 <span class="n">v1_api</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">DeviceResource</span><span class="p">())</span>
@@ -1624,6 +1653,7 @@
 <span class="n">v1_api</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">BulkDispatch</span><span class="p">())</span>
 <span class="n">v1_api</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">PDUResource</span><span class="p">())</span>
 <span class="n">v1_api</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">OutletResource</span><span class="p">())</span>
+<span class="n">v1_api</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">InventoryResource</span><span class="p">())</span>
 
 <span class="n">__doc__</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\n\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">snmp_ns_doc</span><span class="p">,</span> <span class="n">bulk_ns_doc</span><span class="p">,</span> <span class="n">bulk_interface_ns_doc</span><span class="p">,</span> <span class="n">ts_ns_doc</span><span class="p">,</span> <span class="n">bulk_namespace_ns_doc</span><span class="p">])</span>
 </pre></div>

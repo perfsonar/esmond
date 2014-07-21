@@ -122,7 +122,7 @@
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
-<span class="kn">from</span> <span class="nn">esmond.api.client.util</span> <span class="kn">import</span> <span class="n">add_apikey_header</span><span class="p">,</span> <span class="n">AlertMixin</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">add_apikey_header</span><span class="p">,</span> <span class="n">AlertMixin</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Library to fetch data from &#39;simplified&#39; API /v1/snmp/ namespace.</span>
@@ -327,11 +327,11 @@
                 <span class="k">return</span>
                 <span class="k">yield</span>
 </div>
-<div class="viewcode-block" id="Device.get_interface"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.get_interface">[docs]</a>    <span class="k">def</span> <span class="nf">get_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ifDescr</span><span class="p">):</span>
-        <span class="n">ifaces</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_interfaces</span><span class="p">(</span><span class="n">ifDescr</span><span class="o">=</span><span class="n">ifDescr</span><span class="p">))</span>
+<div class="viewcode-block" id="Device.get_interface"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.get_interface">[docs]</a>    <span class="k">def</span> <span class="nf">get_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ifName</span><span class="p">):</span>
+        <span class="n">ifaces</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_interfaces</span><span class="p">(</span><span class="n">ifName</span><span class="o">=</span><span class="n">ifName</span><span class="p">))</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ifaces</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&quot;[bad interface: {0}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifDescr</span><span class="p">)</span>
+                <span class="k">print</span> <span class="s">&quot;[bad interface: {0}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifName</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">InterfaceNotFound</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">ifaces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -414,7 +414,7 @@
     <span class="nd">@property</span>
 <div class="viewcode-block" id="DeviceCollection.children"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DeviceCollection.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&quot;interface&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[</span> <span class="nb">dict</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">i</span><span class="o">.</span><span class="n">ifDescr</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">ifDescr</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">ifAlias</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">get_interfaces</span><span class="p">()</span> <span class="p">]</span>
+            <span class="k">return</span> <span class="p">[</span> <span class="nb">dict</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">i</span><span class="o">.</span><span class="n">ifName</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">ifName</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">ifAlias</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">get_interfaces</span><span class="p">()</span> <span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[]</span>
 </div>
@@ -426,7 +426,7 @@
             <span class="k">print</span> <span class="s">&quot;[DeviceCollection.get_child {0} {1} {2}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">interface</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">get_interface</span><span class="p">(</span><span class="n">ifDescr</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">interface</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">get_interface</span><span class="p">(</span><span class="n">ifName</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">InterfaceNotFound</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">None</span>
 
@@ -458,6 +458,10 @@
     <span class="nd">@property</span>
 <div class="viewcode-block" id="Interface.ifDescr"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifDescr">[docs]</a>    <span class="k">def</span> <span class="nf">ifDescr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifDescr&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifName"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifName">[docs]</a>    <span class="k">def</span> <span class="nf">ifName</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifName&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
 </div>
     <span class="nd">@property</span>
 <div class="viewcode-block" id="Interface.ifHighSpeed"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifHighSpeed">[docs]</a>    <span class="k">def</span> <span class="nf">ifHighSpeed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -530,7 +534,7 @@
         <span class="k">return</span> <span class="n">endpoint</span>
 </div>
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s">&#39;&lt;Interface/{0}: uri:{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ifDescr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_uri</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Interface/{0}: uri:{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ifName</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_uri</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="Endpoint"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Endpoint">[docs]</a><span class="k">class</span> <span class="nc">Endpoint</span><span class="p">(</span><span class="n">NodeInfo</span><span class="p">):</span>
     <span class="n">wrn</span> <span class="o">=</span> <span class="n">EndpointWarning</span>
@@ -588,7 +592,7 @@
     <span class="nd">@property</span>
 <div class="viewcode-block" id="DataPayload.data"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPayload.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return internal data from payload as list of DataPoint.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">DataPoint</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">DataPoint</span><span class="p">(</span><span class="o">**</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])]</span>
 </div>
     <span class="nd">@property</span>
 <div class="viewcode-block" id="DataPayload.dump"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPayload.dump">[docs]</a>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -599,12 +603,13 @@
             <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">begin_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="DataPoint"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPoint">[docs]</a><span class="k">class</span> <span class="nc">DataPoint</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ts&#39;</span><span class="p">,</span> <span class="s">&#39;val&#39;</span><span class="p">]</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ts&#39;</span><span class="p">,</span> <span class="s">&#39;val&#39;</span><span class="p">,</span> <span class="s">&#39;m_ts&#39;</span><span class="p">]</span>
     <span class="sd">&quot;&quot;&quot;Class to encapsulate the returned data points.&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">m_ts</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DataPoint</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m_ts</span> <span class="o">=</span> <span class="n">m_ts</span>
 
     <span class="nd">@property</span>
 <div class="viewcode-block" id="DataPoint.ts_epoch"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPoint.ts_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">ts_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -654,7 +659,7 @@
 </div>
     <span class="nd">@property</span>
 <div class="viewcode-block" id="BulkDataRow.data"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataRow.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">DataPoint</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">DataPoint</span><span class="p">(</span><span class="o">**</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
 </div>
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s">&#39;&lt;BulkDataRow: dev:{0} iface:{1} endpoint:{2} len:{3}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -790,7 +795,6 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_apikey</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ApiConnect.get_devices"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.get_devices">[docs]</a>    <span class="k">def</span> <span class="nf">get_devices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">):</span>
-        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span>
         <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;{0}/v1/device/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">),</span>
             <span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">compose_filters</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span>
             <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
@@ -859,7 +863,7 @@
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_interfaces</span><span class="p">(</span><span class="o">**</span><span class="n">filters</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="k">print</span> <span class="n">i</span>
-            <span class="n">interfaces</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;device&#39;</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="s">&#39;iface&#39;</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">ifDescr</span><span class="p">})</span>
+            <span class="n">interfaces</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;device&#39;</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="s">&#39;iface&#39;</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">ifName</span><span class="p">})</span>
             <span class="c"># if self.filters.verbose &gt; 1: print i.dump</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_get_interface_bulk_data</span><span class="p">(</span><span class="n">interfaces</span><span class="p">)</span>
