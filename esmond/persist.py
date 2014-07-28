@@ -717,7 +717,7 @@ class CassandraPollPersister(PollPersister):
                     self.db.update_rate_bin(bad_bin)
                     fill_count += 1
                 self.log.error('Backfilled {0} from {1}({2}) to {3}({4})({5} slots).'.format(
-                    data.path,time.ctime(last_data_ts),last_data_ts,time.ctime(curr_data_ts),curr_data_ts,fill_count))
+                    data.path,time.ctime(last_data_ts/1000),last_data_ts,time.ctime(curr_data_ts/1000),curr_data_ts,fill_count))
 
 
             curr_frac = int(delta_v * ((curr_data_ts - curr_slot)/float(delta_t)))
