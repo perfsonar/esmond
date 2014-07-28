@@ -716,7 +716,9 @@ class CassandraPollPersister(PollPersister):
                         is_valid=0, path=data.path)
                     self.db.update_rate_bin(bad_bin)
                     fill_count += 1
-                self.log.error('Backfilled {0} slots.'.format(fill_count))
+                self.log.error('Backfilled {0} from {1}({2}) to {3}({4})({5} slots).'.format(
+                    data.path,time.ctime(last_data_ts),last_data_ts,time.ctime(curr_data_ts),curr_data_ts,fill_count))
+
 
             curr_frac = int(delta_v * ((curr_data_ts - curr_slot)/float(delta_t)))
             # Update only the "current" bin and return.
@@ -1170,7 +1172,8 @@ class MemcachedPersistQueue(PersistQueue):
         if ser:
             qid = self.mc.incr(self.last_added)
             k = '%s_%s_%d' % (self.PREFIX, self.qname, qid)
-            self.mc.set(k, ser)
+            if not self.mc.set(k, ser):
+                self.log.warn("Memcache 'set' failed! Polling data lost!")
         else:
             self.log.error("failed to serialize: %s" % str(val))
 
