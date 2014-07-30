@@ -179,6 +179,25 @@ Test REST api
 
 * If so, the authentication is set up properly (the PostRawDataWarning is there on purpose and does not indicate an error state.
 
+Memcached Configuration
+=======================
+
+Memcached can lose data if it runs out of memory. A few configuration options can
+help prevent this.
+
+Specify the '-M' option. This tells memcached to return a failure if there is not
+any storage available rather than evicting some other item from the cache. That
+particular poll result will still be lost but the failure lets Esmond log the
+event.
+
+Use the '-m 1024' or similar to give it plenty of RAM.
+
+Use the 'espersistq' utility or monitor memcached directly to make sure you have
+enough persist processes to handle the load. If the backlog is growing add more
+processes by adjusting the 'cassandra = CassandraPollPersister:4' line in esmond.conf.
+
+Finally, check for log entries stating "Memcache 'set' failed! Polling data lost!"
+
 Initial Cassandra Tuning
 ========================
 
