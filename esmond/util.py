@@ -134,7 +134,8 @@ def init_logging(name, facility, level=logging.INFO,
     else:
         syslog = logging.handlers.SysLogHandler("/dev/log", facility=facility)
     syslog.setFormatter(logging.Formatter(format))
-    syslog.addFilter(logging.Filter(name=name))
+# There may be a need for filtering but this is too blunt a hammer.
+#    syslog.addFilter(logging.Filter(name=name))
     log.addHandler(syslog)
 
     if debug:
