@@ -1173,7 +1173,7 @@ class MemcachedPersistQueue(PersistQueue):
             qid = self.mc.incr(self.last_added)
             k = '%s_%s_%d' % (self.PREFIX, self.qname, qid)
             if not self.mc.set(k, ser):
-                self.log.warn("Memcache 'set' failed! Polling data lost!")
+                self.log.error("memcache 'set' failed! Polling data lost!")
         else:
             self.log.error("failed to serialize: %s" % str(val))
 
