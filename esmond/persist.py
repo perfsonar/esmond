@@ -40,8 +40,8 @@ from esmond.api.dataseries import fit_to_bins
 from esmond.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus, \
                               OutletRef
 
-from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin, \
-        SEEK_BACK_THRESHOLD
+from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin
+
 
 try:
     import cmemcache as memcache
@@ -549,18 +549,14 @@ class CassandraPollPersister(PollPersister):
             prev_slot = last_data_ts - (last_data_ts % data.freq)
             curr_slot = curr_data_ts - (curr_data_ts % data.freq)
 
-            if delta_t < SEEK_BACK_THRESHOLD:
-                # Only execute the invalid value backfill if delta_t is
-                # less than 30 days.
-                fill_count = 0
-                for bin_name in range(prev_slot, curr_slot, data.freq):
-                    bad_bin = BaseRateBin(ts=bin_name, freq=data.freq, val=0,
-                        is_valid=0, path=data.path)
-                    self.db.update_rate_bin(bad_bin)
-                    fill_count += 1
-                self.log.error('Backfilled {0} from {1}({2}) to {3}({4})({5} slots).'.format(
-                    data.path,time.ctime(last_data_ts/1000),last_data_ts,time.ctime(curr_data_ts/1000),curr_data_ts,fill_count))
-
+            self.log.warning(
+              'gap exceeds heartbeat for {0} from {1}({2}) to {3}({4})'.format(
+                    data.path,
+                    time.ctime(last_data_ts/1000),
+                    last_data_ts,
+                    time.ctime(curr_data_ts/1000),
+                    curr_data_ts)
+            )
 
             curr_frac = int(delta_v * ((curr_data_ts - curr_slot)/float(delta_t)))
             # Update only the "current" bin and return.
