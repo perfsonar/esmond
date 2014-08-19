@@ -428,6 +428,10 @@ class PSArchiveResource(ModelResource):
         for obj in data['objects']:
             formatted_obj = self.format_metadata_obj(obj, formatted_subj_fields)
             formatted_objs.append(formatted_obj)
+        
+        #add total count to first item in list
+        if len(formatted_objs) > 0:
+            formatted_objs[0]['metadata-count-total'] = data['meta']['total_count']
             
         return formatted_objs
     
