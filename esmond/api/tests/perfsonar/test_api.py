@@ -287,11 +287,7 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         self.assertHttpOK(response)
         ipv6_data = json.loads(response.content)
         self.assertEquals(len(ipv6_data), 1)
-        self.assertExpectedResponse(ipv4_data + ipv6_data, url, {'source': self.v4v6_name})
-        
-        #test query using DNS name on name with both A and AAAA records and telling it to return all v4 and v6 results
-        self.assertExpectedResponse(ipv4_data + ipv6_data, url, {'source': self.v4v6_name, DNS_MATCH_RULE_FILTER: DNS_MATCH_V4_V6})
-       
+               
         #test query using DNS name that only does v4 lookups on name both A and AAAA records
         self.assertExpectedResponse(ipv4_data, url, {'source': self.v4v6_name, DNS_MATCH_RULE_FILTER: DNS_MATCH_ONLY_V4})
         
@@ -304,6 +300,15 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         #test query using DNS name that prefers v6 on name with both A and AAAA records
         self.assertExpectedResponse(ipv6_data, url, {'source': self.v4v6_name, DNS_MATCH_RULE_FILTER: DNS_MATCH_PREFER_V6})
         
+        #test query using DNS name on name with both A and AAAA records
+        ipv4_data[0]['metadata-count-total'] = 2
+        del ipv6_data[0]['metadata-count-total']
+        self.assertExpectedResponse(ipv4_data + ipv6_data, url, {'source': self.v4v6_name})
+        
+        #test query using DNS name on name with both A and AAAA records and telling it to return all v4 and v6 results
+        self.assertExpectedResponse(ipv4_data + ipv6_data, url, {'source': self.v4v6_name, DNS_MATCH_RULE_FILTER: DNS_MATCH_V4_V6})
+
+
         #test query using time-range
         self.assertMetadataCount(1, url, {TIME_RANGE_FILTER: 600})
         
@@ -327,7 +332,17 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         
         #test query using source, dest, and event-type. Added because common query.
         self.assertMetadataCount(1, url, {'source': self.v4_ip, 'destination': self.dest,  'event-type': 'throughput'})
-    
+        
+        #test limit keyword
+        self.assertMetadataCount(1, url, {LIMIT_FILTER: 1})
+        self.assertMetadataCount(2, url, {LIMIT_FILTER: 2})
+        
+        #test offset keyword
+        self.assertMetadataCount(15, url, {OFFSET_FILTER: 1})
+        self.assertMetadataCount(5, url, {OFFSET_FILTER: 0, LIMIT_FILTER: 5})
+        self.assertMetadataCount(5, url, {OFFSET_FILTER: 5, LIMIT_FILTER: 5})
+        self.assertMetadataCount(6, url, {OFFSET_FILTER: 10, LIMIT_FILTER: 10})
+        
     def test_get_metadata_detail(self):
         url = '/perfsonar/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/'
         response = self.client.get(url)
