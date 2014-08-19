@@ -68,10 +68,16 @@ EVENT_TYPE_CONFIG = {
     "packet-retransmits": {
         "type": "integer",
     },
+    "packet-retransmits-subintervals": {
+        "type": "subinterval",
+    },
     "path-mtu": {
         "type": "integer",
     },
     "streams-packet-retransmits": {
+        "type": "json",
+    },
+    "streams-packet-retransmits-subintervals": {
         "type": "json",
     },
     "streams-throughput": {
