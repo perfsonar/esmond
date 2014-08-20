@@ -1,0 +1,2277 @@
+[
+{
+    "pk": 32, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "02e0dfad195358be807dcf99007639b0ec8005cd305e1ce4fee4c7e3432a58fa", 
+        "metadata_key": "67a3c298de0b4237abee56b879e03587", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 33, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "c62e58941ab80224db8dd48704f981d9b2924703db4f2bde1efae4dd99b94370", 
+        "metadata_key": "2355e337a7214611ab1bc5db51e40424", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 34, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "5dd461f7d810c30f7f64a0c281aeeff0d65de8dc362b3e39a59743eda5dabea6", 
+        "metadata_key": "638e53d546924c58b067f3d6f6926059", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 35, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "aefa0c84291f56d902c57c41861caac94f1ac5e40ee3788eea2e9aa7e54aeb0c", 
+        "metadata_key": "66ce5fc42d764eb891f6a8e4415c8b86", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 36, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "a1ddcfbb30966b05f7cf8417ef2ad642c14fd8a48c2ccc88643d22e890f2d654", 
+        "metadata_key": "445e3d75c89d44c0bf6e1eba1316137e", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 37, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "35afcc95ddc7b602d1bbb5f78092e5e3d12b683d211f18c601cbb26189c64498", 
+        "metadata_key": "8b904c72410b44f68938ee46082889f6", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 38, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "e5e272a807e98dfd58ff26d96187aa7fb873622d70a51969bbcb70f616877e33", 
+        "metadata_key": "89764bfcbc8d4f4bada5b1bfdd451e91", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 39, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "a2467b7ef86081e35d4f6f320673ee6c9ff6ab39005c92ce8eeae1a0f7fc8427", 
+        "metadata_key": "a0368603e2e8458b9ee687df4e7cc762", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 40, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "ae7f11db899f3cf1421db96b735032b02c81a313d2ea92e63153ac7628550f06", 
+        "metadata_key": "e99bbc44b7b041c7ad9e51dc6a053b8c", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 41, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "fc9363ced983fa2230e4f09a7c18b8e90ec7d772abfa1d0ba95456fba8e147b9", 
+        "metadata_key": "f6b732e9f351487a96126f0c25e5e546", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 42, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "f591168a11346fedf69f70415fa26407ed1e98816b7ece3b853aef1c5900e840", 
+        "metadata_key": "1af831f8c5cc4cfa9909fde64c04aad5", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 43, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "906f67b35e0897c2dd19544463654dbe2d4e693f854870f8ea87121b616eb266", 
+        "metadata_key": "4b6ad6067fbb4b15b1d1611e20b16252", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 44, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "7c855df3824a44c72121b013321fbcb6b3c31bcc2bb0dad8d9916149bc9251f5", 
+        "metadata_key": "641860b2004c46a7b21fe26e5ffea9af", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 45, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "66f7894e6d046b8b52b5b1a65326e5f6b91bbc01c1ff7835a978c8778aa538a3", 
+        "metadata_key": "c29e6813b31846b7bfc0b5415acee78a", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 46, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "67eeaa28fd6678dd34cd236c26a1a81712eb9fb6f16c92be951c05ff367c6abb", 
+        "metadata_key": "143fc5da192841b68bec067a317a833d", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 47, 
+    "model": "api.psmetadata", 
+    "fields": {
+        "checksum": "b52987f24183735e34a75281dd8c77c431b33635de546269bf3ed1c2baeeb83f", 
+        "metadata_key": "481ceff181e34bacae35e35f2544623e", 
+        "subject_type": "point-to-point"
+    }
+},
+{
+    "pk": 32, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "bost-pt1.es.net", 
+        "destination": "198.124.238.66", 
+        "source": "198.129.254.187", 
+        "input_source": "ps-lat.es.net", 
+        "metadata": 32, 
+        "tool_name": "bwctl/ping", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 33, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "bois-pt1-v6.es.net", 
+        "destination": "2001:400:1601:1150::3", 
+        "source": "2001:400:201:11ff::87", 
+        "input_source": "ps-lat.es.net", 
+        "metadata": 33, 
+        "tool_name": "bwctl/ping", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 34, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "bost-pt1.es.net", 
+        "destination": "198.124.238.66", 
+        "source": "198.129.254.30", 
+        "input_source": "lbl-pt1.es.net", 
+        "metadata": 34, 
+        "tool_name": "bwctl/tracepath", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 35, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "bois-pt1.es.net", 
+        "destination": "198.129.254.114", 
+        "source": "198.129.254.30", 
+        "input_source": "lbl-pt1.es.net", 
+        "metadata": 35, 
+        "tool_name": "bwctl/tracepath", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 36, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "bois-pt1-v6.es.net", 
+        "destination": "2001:400:1601:1150::3", 
+        "source": "2001:400:201:1150::3", 
+        "input_source": "lbl-pt1-v6.es.net", 
+        "metadata": 36, 
+        "tool_name": "bwctl/iperf", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 37, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "lbl-pt1-v6.es.net", 
+        "destination": "2001:400:201:1150::3", 
+        "source": "2001:400:6201:1150::3", 
+        "input_source": "bost-pt1-v6.es.net", 
+        "metadata": 37, 
+        "tool_name": "bwctl/iperf", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 38, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "lbl-pt1-v6.es.net", 
+        "destination": "2001:400:201:1150::3", 
+        "source": "2001:400:1601:1150::3", 
+        "input_source": "bois-pt1-v6.es.net", 
+        "metadata": 38, 
+        "tool_name": "bwctl/iperf", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 39, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "bost-pt1-v6.es.net", 
+        "destination": "2001:400:6201:1150::3", 
+        "source": "2001:400:201:1150::3", 
+        "input_source": "lbl-pt1-v6.es.net", 
+        "metadata": 39, 
+        "tool_name": "bwctl/iperf", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 40, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "lbl-pt1.es.net", 
+        "destination": "198.129.254.30", 
+        "source": "198.124.238.66", 
+        "input_source": "bost-pt1.es.net", 
+        "metadata": 40, 
+        "tool_name": "bwctl/iperf3", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 41, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "bost-pt1.es.net", 
+        "destination": "198.124.238.66", 
+        "source": "198.129.254.30", 
+        "input_source": "lbl-pt1.es.net", 
+        "metadata": 41, 
+        "tool_name": "bwctl/iperf3", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 42, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "lbl-pt1.es.net", 
+        "destination": "198.129.254.30", 
+        "source": "198.129.254.114", 
+        "input_source": "bois-pt1.es.net", 
+        "metadata": 42, 
+        "tool_name": "bwctl/iperf3", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 43, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "bois-pt1.es.net", 
+        "destination": "198.129.254.114", 
+        "source": "198.129.254.30", 
+        "input_source": "lbl-pt1.es.net", 
+        "metadata": 43, 
+        "tool_name": "bwctl/iperf3", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 44, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "lbl-pt1.es.net", 
+        "destination": "198.129.254.30", 
+        "source": "198.124.238.66", 
+        "input_source": "bost-pt1.es.net", 
+        "metadata": 44, 
+        "tool_name": "bwctl/tracepath", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 45, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "lbl-pt1.es.net", 
+        "destination": "198.129.254.30", 
+        "source": "198.129.254.114", 
+        "input_source": "bois-pt1.es.net", 
+        "metadata": 45, 
+        "tool_name": "bwctl/ping", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 46, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "lbl-pt1.es.net", 
+        "destination": "198.129.254.30", 
+        "source": "198.129.254.114", 
+        "input_source": "bois-pt1.es.net", 
+        "metadata": 46, 
+        "tool_name": "bwctl/tracepath", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 47, 
+    "model": "api.pspointtopointsubject", 
+    "fields": {
+        "input_destination": "lbl-pt1.es.net", 
+        "destination": "198.129.254.30", 
+        "source": "198.124.238.66", 
+        "input_source": "bost-pt1.es.net", 
+        "metadata": 47, 
+        "tool_name": "bwctl/ping", 
+        "measurement_agent": "198.129.254.30"
+    }
+},
+{
+    "pk": 220, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 221, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 222, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 223, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 224, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 225, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:16:04Z", 
+        "event_type": "histogram-ttl", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 226, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:16:04Z", 
+        "event_type": "histogram-ttl", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 227, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "packet-count-lost", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 228, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "packet-count-sent", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 229, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "packet-duplicates", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 230, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 3600, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 231, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 232, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 233, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "packet-reorders", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 234, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 235, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 236, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 237, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 238, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 239, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:15:09Z", 
+        "event_type": "histogram-ttl", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 240, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:15:09Z", 
+        "event_type": "histogram-ttl", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 241, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "packet-count-lost", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 242, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "packet-count-sent", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 243, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "packet-duplicates", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 244, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 3600, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 245, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 246, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 247, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:15:10Z", 
+        "event_type": "packet-reorders", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 248, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 34
+    }
+},
+{
+    "pk": 249, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:06:28Z", 
+        "event_type": "packet-trace", 
+        "metadata": 34
+    }
+},
+{
+    "pk": 250, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:06:28Z", 
+        "event_type": "path-mtu", 
+        "metadata": 34
+    }
+},
+{
+    "pk": 251, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 35
+    }
+},
+{
+    "pk": 252, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:14:43Z", 
+        "event_type": "packet-trace", 
+        "metadata": 35
+    }
+},
+{
+    "pk": 253, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:14:43Z", 
+        "event_type": "path-mtu", 
+        "metadata": 35
+    }
+},
+{
+    "pk": 254, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-09T15:03:56Z", 
+        "event_type": "failures", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 255, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "packet-retransmits", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 256, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-retransmits", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 257, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-throughput", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 258, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-throughput-subintervals", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 260, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "throughput", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 261, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "throughput-subintervals", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 262, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-09T16:20:08Z", 
+        "event_type": "failures", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 263, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "packet-retransmits", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 264, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-retransmits", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 265, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-throughput", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 266, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-throughput-subintervals", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 268, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "throughput", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 269, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "throughput-subintervals", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 270, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-09T15:39:37Z", 
+        "event_type": "failures", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 271, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "packet-retransmits", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 272, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-retransmits", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 273, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-throughput", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 274, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-throughput-subintervals", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 276, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "throughput", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 277, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "throughput-subintervals", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 278, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-09T16:29:18Z", 
+        "event_type": "failures", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 279, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "packet-retransmits", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 280, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-retransmits", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 281, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-throughput", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 282, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "streams-throughput-subintervals", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 283, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "average", 
+        "time_updated": null, 
+        "event_type": "throughput", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 284, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "throughput", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 285, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "throughput-subintervals", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 286, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 287, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T15:29:29Z", 
+        "event_type": "packet-retransmits", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 288, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T15:29:30Z", 
+        "event_type": "streams-retransmits", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 289, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T15:29:30Z", 
+        "event_type": "streams-throughput", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 290, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T15:29:30Z", 
+        "event_type": "streams-throughput-subintervals", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 291, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 3600, 
+        "summary_type": "average", 
+        "time_updated": "2014-04-29T15:29:29Z", 
+        "event_type": "throughput", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 292, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T15:29:29Z", 
+        "event_type": "throughput", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 293, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T15:29:30Z", 
+        "event_type": "throughput-subintervals", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 294, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-12T15:18:50Z", 
+        "event_type": "failures", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 295, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T18:56:30Z", 
+        "event_type": "packet-retransmits", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 296, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T18:56:32Z", 
+        "event_type": "streams-retransmits", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 297, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T18:56:33Z", 
+        "event_type": "streams-throughput", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 298, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T18:56:33Z", 
+        "event_type": "streams-throughput-subintervals", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 299, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "average", 
+        "time_updated": "2014-04-29T18:56:31Z", 
+        "event_type": "throughput", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 300, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T18:56:31Z", 
+        "event_type": "throughput", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 301, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T18:56:32Z", 
+        "event_type": "throughput-subintervals", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 302, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 303, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T17:29:19Z", 
+        "event_type": "packet-retransmits", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 304, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T17:29:24Z", 
+        "event_type": "streams-retransmits", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 305, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T17:29:24Z", 
+        "event_type": "streams-throughput", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 306, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T17:29:24Z", 
+        "event_type": "streams-throughput-subintervals", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 307, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "average", 
+        "time_updated": "2014-04-29T17:29:22Z", 
+        "event_type": "throughput", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 308, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T17:29:22Z", 
+        "event_type": "throughput", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 309, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T17:29:24Z", 
+        "event_type": "throughput-subintervals", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 310, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 311, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T14:30:30Z", 
+        "event_type": "packet-retransmits", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 312, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T14:30:31Z", 
+        "event_type": "streams-retransmits", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 313, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T14:30:31Z", 
+        "event_type": "streams-throughput", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 314, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T14:30:31Z", 
+        "event_type": "streams-throughput-subintervals", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 315, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "average", 
+        "time_updated": "2014-04-29T14:30:30Z", 
+        "event_type": "throughput", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 316, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T14:30:30Z", 
+        "event_type": "throughput", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 317, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T14:30:31Z", 
+        "event_type": "throughput-subintervals", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 318, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 44
+    }
+},
+{
+    "pk": 319, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:17:41Z", 
+        "event_type": "packet-trace", 
+        "metadata": 44
+    }
+},
+{
+    "pk": 320, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:17:41Z", 
+        "event_type": "path-mtu", 
+        "metadata": 44
+    }
+},
+{
+    "pk": 321, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 322, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:07:34Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 323, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:07:34Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 324, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:07:34Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 325, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:07:34Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 326, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:07:32Z", 
+        "event_type": "histogram-ttl", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 327, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:07:32Z", 
+        "event_type": "histogram-ttl", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 328, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:07:34Z", 
+        "event_type": "packet-count-lost", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 329, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:07:34Z", 
+        "event_type": "packet-count-sent", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 330, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:07:32Z", 
+        "event_type": "packet-duplicates", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 331, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 3600, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:07:33Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 332, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:07:33Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 333, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:07:33Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 334, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:07:34Z", 
+        "event_type": "packet-reorders", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 335, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 46
+    }
+},
+{
+    "pk": 336, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:13:43Z", 
+        "event_type": "packet-trace", 
+        "metadata": 46
+    }
+},
+{
+    "pk": 337, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:13:43Z", 
+        "event_type": "path-mtu", 
+        "metadata": 46
+    }
+},
+{
+    "pk": 338, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": null, 
+        "event_type": "failures", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 339, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 340, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 341, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 342, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "histogram-rtt", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 343, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "histogram-ttl", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 344, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "statistics", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "histogram-ttl", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 345, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "packet-count-lost", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 346, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "packet-count-sent", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 347, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "packet-duplicates", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 348, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 3600, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 349, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 350, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "packet-loss-rate", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 351, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:21:30Z", 
+        "event_type": "packet-reorders", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 352, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T15:29:29Z", 
+        "event_type": "throughput", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 353, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 0, 
+        "summary_type": "base", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "time-error-estimates", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 354, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "average", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "time-error-estimates", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 355, 
+    "model": "api.pseventtypes", 
+    "fields": {
+        "summary_window": 86400, 
+        "summary_type": "aggregation", 
+        "time_updated": "2014-04-29T19:16:05Z", 
+        "event_type": "time-error-estimates", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 116, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-packet-interval", 
+        "parameter_value": "1", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 117, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-packet-size", 
+        "parameter_value": "1000", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 118, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "icmp", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 119, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "sample-size", 
+        "parameter_value": "100", 
+        "metadata": 32
+    }
+},
+{
+    "pk": 120, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-packet-interval", 
+        "parameter_value": "1", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 121, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-packet-size", 
+        "parameter_value": "1000", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 122, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "icmp", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 123, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "sample-size", 
+        "parameter_value": "100", 
+        "metadata": 33
+    }
+},
+{
+    "pk": 124, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "icmp", 
+        "metadata": 34
+    }
+},
+{
+    "pk": 125, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "icmp", 
+        "metadata": 35
+    }
+},
+{
+    "pk": 126, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "bw-parallel-streams", 
+        "parameter_value": "2", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 127, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-tos", 
+        "parameter_value": "32", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 128, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "tcp", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 129, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "time-duration", 
+        "parameter_value": "20", 
+        "metadata": 36
+    }
+},
+{
+    "pk": 130, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "bw-parallel-streams", 
+        "parameter_value": "2", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 131, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-tos", 
+        "parameter_value": "32", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 132, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "tcp", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 133, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "time-duration", 
+        "parameter_value": "20", 
+        "metadata": 37
+    }
+},
+{
+    "pk": 134, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "bw-parallel-streams", 
+        "parameter_value": "2", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 135, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-tos", 
+        "parameter_value": "32", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 136, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "tcp", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 137, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "time-duration", 
+        "parameter_value": "20", 
+        "metadata": 38
+    }
+},
+{
+    "pk": 138, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "bw-parallel-streams", 
+        "parameter_value": "2", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 139, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-tos", 
+        "parameter_value": "32", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 140, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "tcp", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 141, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "time-duration", 
+        "parameter_value": "20", 
+        "metadata": 39
+    }
+},
+{
+    "pk": 142, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "bw-parallel-streams", 
+        "parameter_value": "2", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 143, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-tos", 
+        "parameter_value": "32", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 144, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "tcp", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 145, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "time-duration", 
+        "parameter_value": "20", 
+        "metadata": 40
+    }
+},
+{
+    "pk": 146, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "bw-parallel-streams", 
+        "parameter_value": "2", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 147, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-tos", 
+        "parameter_value": "32", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 148, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "tcp", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 149, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "time-duration", 
+        "parameter_value": "20", 
+        "metadata": 41
+    }
+},
+{
+    "pk": 150, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "bw-parallel-streams", 
+        "parameter_value": "2", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 151, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-tos", 
+        "parameter_value": "32", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 152, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "tcp", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 153, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "time-duration", 
+        "parameter_value": "20", 
+        "metadata": 42
+    }
+},
+{
+    "pk": 154, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "bw-parallel-streams", 
+        "parameter_value": "2", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 155, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-tos", 
+        "parameter_value": "32", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 156, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "tcp", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 157, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "time-duration", 
+        "parameter_value": "20", 
+        "metadata": 43
+    }
+},
+{
+    "pk": 158, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "icmp", 
+        "metadata": 44
+    }
+},
+{
+    "pk": 159, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-packet-interval", 
+        "parameter_value": "1", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 160, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-packet-size", 
+        "parameter_value": "1000", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 161, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "icmp", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 162, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "sample-size", 
+        "parameter_value": "100", 
+        "metadata": 45
+    }
+},
+{
+    "pk": 163, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "icmp", 
+        "metadata": 46
+    }
+},
+{
+    "pk": 164, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-packet-interval", 
+        "parameter_value": "1", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 165, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-packet-size", 
+        "parameter_value": "1000", 
+        "metadata": 47
+    }
+},
+{
+    "pk": 166, 
+    "model": "api.psmetadataparameters", 
+    "fields": {
+        "parameter_key": "ip-transport-protocol", 
+        "parameter_value": "icmp", 
+        "metadata": 47
+    }
+}
+]
+

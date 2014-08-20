@@ -10,6 +10,7 @@ revisit logging  config
 revisit/remove exception handler
 
 Rewrite REST API with Tasty Pie
+Add support for perfsonar active measurements
 
 PUBSUB framework
 ----------------

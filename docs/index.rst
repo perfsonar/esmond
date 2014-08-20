@@ -50,12 +50,17 @@ Contents:
    install
    config
    deployment_cookbook
-
+   rpm_install
+   
    architecture
 
    api.client
    
    hacking
+   perfsonar_extension
+   rpm_build
+   perfsonar_client
+   
    api
 
 Indices and tables
