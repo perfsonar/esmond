@@ -80,6 +80,7 @@ Test Cassandra/base install
     cassandra_servers = localhost:9160
     cassandra_user =
     cassandra_pass = 
+    cassandra_replicas = 2
 
 * Try installing the esmond keyspace/schema in cassandra by executing the following command: python esmond/manage.py cassandra_init
 * If successful, output like this should be generated::
@@ -209,6 +210,12 @@ the system memory but with a cap of 8G.  Then set the newgen memory at
 Setting the key cache to around 512M should be more than enough cache 
 for the keys.  The timeseries rows are not great candidates for row 
 caching.
+
+Changes to the cassandra_replicas factor will not automatically be
+reflected in the Cassandra database. The setting is only used when the 'esmond'
+keyspace is first created. If the number of replicas needs to be changed
+later it should be done directly in Cassandra with the ALTER KEYSPACE command.
+See http://www.datastax.com/documentation/cql/3.0/cql/cql_using/update_ks_rf_t.html for more information.
 
 If you ever delete rows from Cassandra it may be necessary to increase
 the value of tombstone_failure_threshold in the cassandra.yaml file.
