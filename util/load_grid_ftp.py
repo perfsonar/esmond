@@ -149,6 +149,11 @@ class LogEntryDataObject(object):
         val = self._data.get(name, None)
         if name in ['start', 'date'] and val is not None:
             return self._parse_date(val)
+        if name in ['retrans']:
+            if val is None:
+                return []
+            else:
+                return [int(x) for x in val.split(',')]
         try:
             val = int(val)
         except (ValueError, TypeError):
@@ -327,6 +332,12 @@ def scan_and_load(file_path, last_record, options, _log):
                 event_type='throughput')
             throughput = 8 * o.nbytes / (o.date - o.start).total_seconds()
             et.add_data_point(_epoch(o.start), throughput)
+            et.post_data()
+            et = EventTypePost(options.api_url, username=options.user,
+                api_key=options.key, script_alias=options.script_alias, 
+                metadata_key=metadata.metadata_key,
+                event_type='streams-packet-retransmits')
+            et.add_data_point(_epoch(o.start), o.retrans)
             et.post_data()
         else:
             et = EventTypePost(options.api_url, username=options.user,
