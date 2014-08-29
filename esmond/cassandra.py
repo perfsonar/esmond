@@ -156,7 +156,8 @@ class CASSANDRA_DB(object):
             sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=UTF8_TYPE,
-                    key_validation_class=UTF8_TYPE)
+                    key_validation_class=UTF8_TYPE,
+                    compaction_strategy='LeveledCompactionStrategy')
             self.log.info('Created CF: %s' % self.raw_cf)
         # Base Rate CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.rate_cf):
@@ -164,7 +165,8 @@ class CASSANDRA_DB(object):
             sysman.create_column_family(self.keyspace, self.rate_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
-                    key_validation_class=UTF8_TYPE)
+                    key_validation_class=UTF8_TYPE,
+                    compaction_strategy='LeveledCompactionStrategy')
             self.log.info('Created CF: %s' % self.rate_cf)
         # Rate aggregation CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.agg_cf):
@@ -172,7 +174,8 @@ class CASSANDRA_DB(object):
             sysman.create_column_family(self.keyspace, self.agg_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=COUNTER_COLUMN_TYPE,
-                    key_validation_class=UTF8_TYPE)
+                    key_validation_class=UTF8_TYPE,
+                    compaction_strategy='LeveledCompactionStrategy')
             self.log.info('Created CF: %s' % self.agg_cf)
         # Stat aggregation CF
         if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.stat_cf):
@@ -180,7 +183,8 @@ class CASSANDRA_DB(object):
             sysman.create_column_family(self.keyspace, self.stat_cf, super=True, 
                     comparator_type=LONG_TYPE, 
                     default_validation_class=LONG_TYPE,
-                    key_validation_class=UTF8_TYPE)
+                    key_validation_class=UTF8_TYPE,
+                    compaction_strategy='LeveledCompactionStrategy')
             self.log.info('Created CF: %s' % self.stat_cf)
                     
         sysman.close()
