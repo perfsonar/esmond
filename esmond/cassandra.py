@@ -144,7 +144,7 @@ class CASSANDRA_DB(object):
             _schema_modified = True
             self.log.info('Creating keyspace %s' % self.keyspace)
             sysman.create_keyspace(self.keyspace, SIMPLE_STRATEGY, 
-                {'replication_factor': config.cassandra_replicas})
+                {'replication_factor': str(config.cassandra_replicas)})
             time.sleep(3)
         # Create column families if they don't already exist.
         # If a new column family is added, make sure to set 
