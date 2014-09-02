@@ -8,7 +8,7 @@ This document describes how to install and configure esmond as an RPM on CentOS 
 
 System Requirements
 ===================
-The RPM currently MUST be installed with **yum** on a `CentOS 6 <https://www.centos.org>`_ system with an i386/i686 or x86_64 architecture. It will not currently work correctly on other flavors of Linux including other flavors of RedHat. It assumes a particular Python 2.7 package available for CentOS 6. Other operating systems should look at the instructions for installing from source.
+The RPM currently MUST be installed with **yum** on a `CentOS 6 <https://www.centos.org>`_ system with an i386/i686 or x86_64 architecture. It may also work on other flavors of RedHat Linux but it is only tested on CentOS. It assumes a particular Python 2.7 package available for CentOS 6. Other operating systems should look at the instructions for installing from source.
 
 Configuring Yum
 ===================
@@ -21,13 +21,6 @@ Configuring EPEL
     #. Install the RPM using `yum localinstall`. Example::
 
         yum localinstall epel-release-6-VERSION.noarch.rpm
-
-Configuring CentOS Software Collections (SCL) (x86_64-only)
------------------------------------------------------------
-`CentOS Software Collections (SCL) <http://wiki.centos.org/AdditionalResources/Repositories/SCL>`_ provides newer versions of certain packages than what a default CentOS installation provides. One of these packages is Python 2.7, which is required by Python. This repository is only supported for x86_64. i386/i686 installations may skip this step as the perfSONAR repository contains he Python 2.7 packages for those architectures.  On x86_64 hosts, you configure the SCL yum repo with the following command::
-
-    yum install centos-release-SCL
-
 
 Configuring Datastax
 --------------------
@@ -54,8 +47,10 @@ After setting-up the yum repositories you can install esmond with the following:
 
     yum install esmond
 
-Verify that the repository providing the python27* packages is marked as *scl*. In some cases there may be other yum repositories that have versions of these packages, but the versions MUST be the ones from CentOS SCL. 
+.. note::
 
+    Verify that the *python27-mod_wsgi* package is the one from the Internet2 repo as issues can occur if a different version is installed from another repo.
+    
 After the command completes logout and re-login so that certain environment variables will be set. You are now ready to begin configuration.
 
 
@@ -98,11 +93,13 @@ Now that esmond is installed you will need to do some configuration of esmond an
     sql_db_password = changeit
     ...
 
-#. Python 2.7 is required for the remaining configuration commands. Initialize the Python 2.7 virtualenv with the commands below::
+#. Python 2.7 is required for the remaining configuration commands. Initialize the Python 2.7 virtualenv with the commands below (*NOTE: the commands below must be run from a bash shell*)::
 
     cd /opt/esmond
+    source /opt/rh/python27/enable
+    /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
     . bin/activate
-        
+
 #. Build the esmond databases and create an admin user for Django when prompted with the following command::
 
     python esmond/manage.py syncdb
