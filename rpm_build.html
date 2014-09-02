@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>RPM Build Instructions &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="index.html" />
+    <link rel="next" title="Using perfSONAR data client libraries" href="perfsonar_client.html" />
+    <link rel="prev" title="Extending the perfSONAR API" href="perfsonar_extension.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png _static/logo-esnet-ball-sm.png --><img src="_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_install.html">RPM Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_extension.html">Extending the perfSONAR API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">RPM Build Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client.html">Using perfSONAR data client libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="perfsonar_extension.html" title="Previous Chapter: Extending the perfSONAR API">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+      <span class="hidden-sm">
+        Extending the pe...
+      </span>
+    </a>
+  </li>
+  <li>
+    <a href="perfsonar_client.html" title="Next Chapter: Using perfSONAR data client libraries">
+      <span class="hidden-sm">
+        Using perfSONAR ...
+      </span>
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href="http://github.com/esnet/esmond"><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">RPM Build Instructions</a><ul>
+<li><a class="reference internal" href="#summary">Summary</a></li>
+<li><a class="reference internal" href="#build-environment">Build Environment</a><ul>
+<li><a class="reference internal" href="#adding-centos-scl-yum-repo">Adding CentOS SCL Yum Repo</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-the-build">Running the Build</a></li>
+<li><a class="reference internal" href="#other-packages">Other Packages</a><ul>
+<li><a class="reference internal" href="#mod-wsgi-for-python-2-7">mod_wsgi for python 2.7</a></li>
+<li><a class="reference internal" href="#python-2-7-for-centos-i386">python 2.7 for CentOS i386</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9">
+      
+  <div class="section" id="rpm-build-instructions">
+<h1>RPM Build Instructions<a class="headerlink" href="#rpm-build-instructions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>This document describes how to build esmond as an RPM. It does NOT cover installation of the RPM by an end-user. It is intended for developers wishing to package esmond.</p>
+</div>
+<div class="section" id="build-environment">
+<h2>Build Environment<a class="headerlink" href="#build-environment" title="Permalink to this headline">¶</a></h2>
+<p>The RPM currently supports <a class="reference external" href="http://centos.org">CentOS 6</a>. At a minimum you must have the rpmbuild tool installed but it is highly recommended you have <a class="reference external" href="https://fedoraproject.org/wiki/Projects/Mock">mock</a> installed as well. Mock creates clean environments for building RPMs and allows you to easily build RPMs for different architectures and platforms on the same build host. Installing and configuring mock is outside the scope of this document. See the mock documentation for more details. This document will assume you have mock installed and provide instructions accordingly.</p>
+<div class="section" id="adding-centos-scl-yum-repo">
+<h3>Adding CentOS SCL Yum Repo<a class="headerlink" href="#adding-centos-scl-yum-repo" title="Permalink to this headline">¶</a></h3>
+<p>Open your epel-6 x86_64 profile and add the CentOS Software Collections (SCL) repo. This is required since esmond needs python 2.7 but CentOS ships with python 2.6. The SCL repo has newer versions that CentOS does not want to make a default but are largely popular with users. This repo is not available for i386 so only add it for x86_64. See the Other Packages section for notes on i386. Add the following to your epel6 x86_64 profile (e.g. /etc/mock/epel-6-x86_64.cfg):</p>
+<div class="highlight-python"><div class="highlight"><pre>[scl]
+name=CentOS-$releasever - SCL
+baseurl=http://mirror.centos.org/centos/6/SCL/x86_64/
+enabled=1
+failovermethod=priority
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="running-the-build">
+<h2>Running the Build<a class="headerlink" href="#running-the-build" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">Checkout a clean copy of the source code:</p>
+<div class="highlight-python"><div class="highlight"><pre>git clone https://github.com/esnet/esmond.git ./esmond
+</pre></div>
+</div>
+</li>
+<li><p class="first">Create a tarball (where VERSION is the major version to be built such as 1.0):</p>
+<div class="highlight-python"><div class="highlight"><pre>cd esmond
+git archive --format=tar --prefix=esmond-VERSION/ HEAD | gzip &gt;$HOME/rpmbuild/SOURCES/esmond-VERSION.tar.gz
+</pre></div>
+</div>
+</li>
+<li><p class="first">Copy the .spec file to your rpmbuild directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>cp rpm/esmond.spec $HOME/rpmbuild/SPECS/
+</pre></div>
+</div>
+</li>
+<li><p class="first">Build a source RPM:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd $HOME/rpmbuild
+rpmbuild -bs SPECS/esmond.spec
+</pre></div>
+</div>
+</li>
+<li><p class="first">Build the RPM with mock:</p>
+<div class="highlight-python"><div class="highlight"><pre>mock -r epel-6-x86_64 --resultdir=$HOME/mock-results/epel-6-x86_64/ --arch=x86_64 $HOME/rpmbuild/SRPMS/esmond-VERSION.el6.src.rpm
+</pre></div>
+</div>
+</li>
+<li><p class="first">You&#8217;re done!</p>
+</li>
+</ol>
+</div>
+<div class="section" id="other-packages">
+<h2>Other Packages<a class="headerlink" href="#other-packages" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="mod-wsgi-for-python-2-7">
+<h3>mod_wsgi for python 2.7<a class="headerlink" href="#mod-wsgi-for-python-2-7" title="Permalink to this headline">¶</a></h3>
+<p>Currently CentOS does not provide a version of mod_wsgi built against python 2.7. This is true for both x86_64 and i386. See the SPEC file in the SRPM <a class="reference external" href="http://software.internet2.edu/branches/release-3.4/rpms/el6/SRPMS/python27-mod_wsgi-3.2-3.el6.src.rpm">here</a> for an example of the changes required to the default mod_wsgi RPM. Essentially the change boils down to the following:</p>
+<ol class="arabic">
+<li><p class="first">Change the package name from mod_wsgi to python27-mod_wsgi</p>
+</li>
+<li><p class="first">Add python27-python-devel and python27 to the BuildRequires.</p>
+</li>
+<li><p class="first">Update %build section to link against python2.7:</p>
+<div class="highlight-python"><div class="highlight"><pre>%build
+...
+export LD_LIBRARY_PATH=/opt/rh/python27/root/usr/lib64/:/opt/rh/python27/root/usr/lib/:$   LD_LIBRARY_PATH
+%configure --enable-shared --with-python=/opt/rh/python27/root/usr/bin/python2.7
+</pre></div>
+</div>
+</li>
+<li><p class="first">In the post section, make httpd aware of python 2.7:</p>
+<div class="highlight-python"><div class="highlight"><pre>%post
+grep -q &quot;source /opt/rh/python27/enable&quot; /etc/sysconfig/httpd || echo &quot;source /opt/rh/python27/enable&quot; &gt;&gt; /etc/sysconfig/httpd
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="python-2-7-for-centos-i386">
+<h3>python 2.7 for CentOS i386<a class="headerlink" href="#python-2-7-for-centos-i386" title="Permalink to this headline">¶</a></h3>
+<p>The CentOS Software Collections only provide Python 2.7 for x86_64. For i386 architectures you will need to rebuild the python27 RPMs. Mock is required to rebuild these RPMs (at least if you want to keep your sanity). Assuming you have mock setup, follow the steps below to rebuild the RPMS.</p>
+<ol class="arabic">
+<li><p class="first">Under the /rpm/mock_configs of the esmond source tree there are two files: epel-6-i386-scl.cfg and epel-6-i386-scl-python27.cfg. Move both of these files to /etc/mock of your build system.</p>
+</li>
+<li><p class="first">At the bottom of each file is a section called [holding-repo]. Update the path to point at a local holding repo on your system where you can install RPMs.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Download the following SRPMS from <a class="reference external" href="http://vault.centos.org/6.5/SCL/Source/SPackages/">here</a>:</dt>
+<dd><ul class="first last simple">
+<li>scl-utils</li>
+<li>python27</li>
+<li>python27-python</li>
+<li>python27-python-markupsafe</li>
+<li>python27-python-simplejson</li>
+<li>python27-python-sqlalchemy</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Download the following RPMS and place them in your local holding-repo:</dt>
+<dd><ul class="first last simple">
+<li>python27-python-setuptools</li>
+<li>python27-python-nose</li>
+<li>python27-python-sphinx</li>
+<li>python27-python-jinja2</li>
+<li>python27-python-babel</li>
+<li>python27-python-pygments</li>
+<li>python27-python-docutils</li>
+<li>python27-python-virtualenv</li>
+<li>python27-python-werkzeug</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Rebuild the scl-utils SRPM for i386 and sign the result:</p>
+<div class="highlight-python"><div class="highlight"><pre>mock -r epel-6-i386 --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/scl-utils-*.el6.centos.alt.src.rpm
+rpmsign --resign $HOME/mock-results/epel-6-i386/scl-utils-*
+</pre></div>
+</div>
+</li>
+<li><p class="first">Move the scl-utils RPMs you just created to your holding repo and rebuild it:</p>
+<div class="highlight-python"><div class="highlight"><pre>cp $HOME/mock-results/epel-6-i386/scl-utils-\*.i386.rpm $HOME/mock-holding-repo/epel-6-i386/i386/RPMS/
+createrepo -d --update $HOME/mock-holding-repo/epel-6-i386/
+</pre></div>
+</div>
+</li>
+<li><p class="first">Rebuild python27 using the scl profile and sign the result:</p>
+<div class="highlight-python"><div class="highlight"><pre>mock -r epel-6-i386-scl --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/python27-1-10.el6.centos.alt.src.rpm
+rpmsign --resign $HOME/mock-results/epel-6-i386/python27-*
+</pre></div>
+</div>
+</li>
+<li><p class="first">Move the python27 RPMs to your local holding repo and update it:</p>
+<div class="highlight-python"><div class="highlight"><pre>cp $HOME/mock-results/epel-6-i386/python27-*.i386.rpm $HOME/mock-holding-repo/epel-6-i386/i386/RPMS/
+createrepo -d --update $HOME/mock-holding-repo/epel-6-i386/
+</pre></div>
+</div>
+</li>
+<li><p class="first">Rebuild the remaining SRPMs downloaded earlier using the scl-python27 profile. Build them in the order below adding them to the local holding repo as you finish each:</p>
+<div class="highlight-python"><div class="highlight"><pre>mock -r epel-6-i386-scl-python27 --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/python27-python-2.7.5-7.el6.centos.alt.src.rpm
+rpmsign --resign $HOME/mock-results/epel-6-i386/python27-*
+cp $HOME/mock-results/epel-6-i386/python27-*.i386.rpm $HOME/mock-holding-repo/epel-6-i386/i386/RPMS/
+createrepo -d --update $HOME/mock-holding-repo/epel-6-i386/
+
+mock -r epel-6-i386-scl-python27 --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/python27-python-markupsafe-0.11-11.el6.centos.alt.src.rpm
+rpmsign --resign $HOME/mock-results/epel-6-i386/python27-*
+cp $HOME/mock-results/epel-6-i386/python27-*.i386.rpm  $HOME/mock-holding-repo/epel-6-i386/i386/RPMS/
+createrepo -d --update $HOME/mock-holding-repo/epel-6-i386/
+
+mock -r epel-6-i386-scl-python27 --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/python27-python-simplejson-3.0.5-2.el6.centos.alt.src.rpm
+rpmsign --resign $HOME/mock-results/epel-6-i386/python27-*
+cp $HOME/mock-results/epel-6-i386/python27-*.i386.rpm  $HOME/mock-holding-repo/epel-6-i386/i386/RPMS/
+createrepo -d --update $HOME/mock-holding-repo/epel-6-i386/
+
+mock -r epel-6-i386-scl-python27 --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/python27-python-sqlalchemy-0.7.9-2.el6.centos.alt.src.rpm
+rpmsign --resign $HOME/mock-results/epel-6-i386/python27-*
+cp $HOME/mock-results/epel-6-i386/python27-*.i386.rpm  $HOME/mock-holding-repo/epel-6-i386/i386/RPMS/
+createrepo -d --update $HOME/mock-holding-repo/epel-6-i386/
+</pre></div>
+</div>
+</li>
+<li><p class="first">Finally rebuild python27-mod_wsgi using the SRPM from <a class="reference external" href="http://software.internet2.edu/branches/release-3.4/rpms/el6/SRPMS/">here</a> and sign the result:</p>
+<div class="highlight-python"><div class="highlight"><pre>mock -r epel-6-i386 --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/python27-mod_wsgi-3.2-3.el6.src.rpm
+rpmsign --resign $HOME/mock-results/epel-6-i386/python27-*
+</pre></div>
+</div>
+</li>
+<li><p class="first">Upload the RPMs where you keep esmond. You will need to rebuild esmond since it contains many files from these RPMs.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/rpm_build.txt"
+     rel="nofollow">Source</a>
+</div>
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>

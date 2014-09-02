@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>esmond subsystems &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="index.html" />
+    <link rel="next" title="REST API Client Libary" href="api.client.html" />
+    <link rel="prev" title="RPM Installation" href="rpm_install.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png _static/logo-esnet-ball-sm.png --><img src="_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_install.html">RPM Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_extension.html">Extending the perfSONAR API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_build.html">RPM Build Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client.html">Using perfSONAR data client libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="rpm_install.html" title="Previous Chapter: RPM Installation">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+      <span class="hidden-sm">
+        RPM Installation
+      </span>
+    </a>
+  </li>
+  <li>
+    <a href="api.client.html" title="Next Chapter: REST API Client Libary">
+      <span class="hidden-sm">
+        REST API Client ...
+      </span>
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href="http://github.com/esnet/esmond"><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">esmond subsystems</a><ul>
+<li><a class="reference internal" href="#espolld"><cite>espolld</cite></a><ul>
+<li><a class="reference internal" href="#operation">Operation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#esdbd"><cite>esdbd</cite></a></li>
+<li><a class="reference internal" href="#espersistd"><cite>espersistd</cite></a></li>
+<li><a class="reference internal" href="#espersistq"><cite>espersistq</cite></a><ul>
+<li><a class="reference internal" href="#id1">Operation</a></li>
+<li><a class="reference internal" href="#data-flow">Data Flow</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cassandra"><cite>cassandra</cite></a><ul>
+<li><a class="reference internal" href="#row-keys">Row Keys</a></li>
+<li><a class="reference internal" href="#column-families">Column Families</a></li>
+<li><a class="reference internal" href="#raw-data-cf">Raw Data cf</a></li>
+<li><a class="reference internal" href="#base-rate-cf">Base Rate cf</a></li>
+<li><a class="reference internal" href="#rate-aggregation-cf">Rate Aggregation cf</a></li>
+<li><a class="reference internal" href="#stat-aggregation-cf">Stat Aggregation cf</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#newdb"><cite>newdb</cite></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9">
+      
+  <div class="section" id="esmond-subsystems">
+<h1>esmond subsystems<a class="headerlink" href="#esmond-subsystems" title="Permalink to this headline">¶</a></h1>
+<img alt="_images/arch.png" src="_images/arch.png" />
+<div class="section" id="espolld">
+<h2><cite>espolld</cite><a class="headerlink" href="#espolld" title="Permalink to this headline">¶</a></h2>
+<p><cite>espolld</cite> is the process which polls the devices, correlates the data (if
+necessary) and puts the data into a work queue which is consumed by
+<cite>espersistd</cite>.</p>
+<div class="section" id="operation">
+<h3>Operation<a class="headerlink" href="#operation" title="Permalink to this headline">¶</a></h3>
+<p>When <cite>espolld</cite> is started it will query the database for a list of currently
+active devices and which OIDSets should be polled for each device.  <cite>espolld</cite>
+has two threads of execution: a thread to perform the polling and a thread to
+hand data off to <cite>espersistd</cite>.</p>
+<p><cite>espersistd</cite> manages writing the collected data to disk.  Data collected by
+<cite>espolld</cite> is placed into a work queue in <cite>memcached</cite>.  A worker <cite>espersistd</cite>
+process removes data from the <cite>memcached</cite> work queue, performs the necessary
+calculations on the data and writes it to persistent storage.  The persistent
+storage is either a Cassandra database or a SQL database.</p>
+<p>At present <cite>espolld</cite> and <cite>espersistd</cite> do not use <cite>esdbd</cite> for database
+interactions but instead contacts the SQL and Cassandra databases directly.
+This issue will be addressed in future versions of esmond.</p>
+</div>
+</div>
+<div class="section" id="esdbd">
+<h2><cite>esdbd</cite><a class="headerlink" href="#esdbd" title="Permalink to this headline">¶</a></h2>
+<p><cite>esdbd</cite> provides a consistent interface to the esmond databases.  It provides
+a front end service to query both the SQL and TSDB datastores.  <cite>esdb</cite> is
+deprecated, see <cite>newdbd</cite></p>
+</div>
+<div class="section" id="espersistd">
+<h2><cite>espersistd</cite><a class="headerlink" href="#espersistd" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><cite>espersistd</cite> is the process which consumes data from the work queue that is</dt>
+<dd>populated by <cite>espolld</cite>.  There is a manager process and a number of worker
+processes.</dd>
+</dl>
+</div>
+<div class="section" id="espersistq">
+<h2><cite>espersistq</cite><a class="headerlink" href="#espersistq" title="Permalink to this headline">¶</a></h2>
+<p><cite>espersistq</cite> displays details about the stat of the persist queue.</p>
+<div class="section" id="id1">
+<h3>Operation<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>When <cite>espersistd</cite> is started, the manager spawns a number of worker processes -
+the number and type of which are defined in the [persist_queue] section of
+the configuration file.  The bulk of the incoming snmp data is being handled
+by the CassandraPollPersister class/worker processes so the bulk of this
+discussion will focus on that.</p>
+</div>
+<div class="section" id="data-flow">
+<h3>Data Flow<a class="headerlink" href="#data-flow" title="Permalink to this headline">¶</a></h3>
+<p>As the datum is pulled off of the work queue, it is distributed to the worker
+processes in a non-random way.  Data coming from a particular device is handed
+to the same worker process.  This is necessary for some of the calculations
+that is done to the data.  The entry point for the persister class that the
+worker proces is running is the store() method.  The incoming datum is first
+inserted into the raw_data table/column family.</p>
+<p>If the data for that particular oid (measurment) is to be aggregated (the
+bulk of the snmp data is), it is then passed to a method to caluculate a
+base rate.  A base rate is a &#8220;bin&#8221; of a certain time frequency (generally
+30 seconds) that can be the sum of more than one incoming raw data measurment.
+The incoming raw data is a monotonically increasing counter coming from the
+network devices.</p>
+<p>Since the incoming values are these monotonic values, the first thing that
+is done is calculating a delta.  This is done by comparing the incoming value
+to the previously seen value from the same device/interface.  This is
+accomplished by maintaining an in-memory collection of metadata (essentially
+a python dictionary) and why the data from a given device is always
+distributed to the same worker process.  This way a worker can maintain its
+own internal state of device data.  If the internal metadata collection does
+not contain a value for a particular device/interface (due to a restart of
+the persister, etc), it will do a lookup on the raw data table/column family
+for the last value seen and the metadata for that device is initialized from
+there.</p>
+<p>The delta is calculated and then is potentally fractionally split between
+two bins of the relevant frequency.  For example, if 30 second rate bins are
+being generated (one on the minute and one 30 seconds after the minute), a
+measurement coming in 10 seconds after the minute will be fractionally
+distributed between the two appropriate bins (see lines 510 to 518 of
+persist.py for an example of how this done).</p>
+<p>Another thing that is determined when calculating the delta is the time since
+the last value for that device/interface was seen.  Ideally there will be a
+contiguous stream of data, but if not, one of two things will additionally
+occur.  If there is a particularly long gap between the current value and
+the previously seen one, then the persister will backtrack and fill the gap
+of bins with data that is marked as not valid.  This is how the client can
+differentiate between a &#8220;valid measurement of zero bytes&#8221; and a zero that
+is a corollary to a NULL value in a traditional relational database.
+Alternately, if the gap is larger than &#8220;ideal&#8221; but not so large as to
+indicate a gap of no measurements (perhaps the device was offline), then
+additional fractional values are calculated distributed over this smaller
+gap.</p>
+<p>After a valid delta is calculated and the base rates are calculated and
+stored on disc, then additional &#8220;higher level&#8221; aggregations are calculated
+and stored.  The frequencies of these aggregations are associated with
+a particular oidset&#8217;s metadata - generally hourly and daily.  These higher
+level aggs are the minimum/maximum values seen during a particular time
+range, and also the values necessary to calculate the average over that
+hour/day/etc.  These higher level values are added to the backend, and
+then the worker process accepts the next datum for processing.</p>
+</div>
+</div>
+<div class="section" id="cassandra">
+<h2><cite>cassandra</cite><a class="headerlink" href="#cassandra" title="Permalink to this headline">¶</a></h2>
+<p>Apache Cassandra is a row-oriented datastore that has some things in
+common with a key-value store.  Data are stored with a unique row key
+pointing at a wide &#8216;row&#8217; of &#8216;columns&#8217; of data.  This was chosen because
+it is well suited for handling timeseries data - both the data model works
+well with that kind of data, and the read/write performance is suitable
+as well.  Data in a given row are written to contiguous disc locations,
+data ordering is handled internally by cassandra and the schema that
+is defined for a given column family (the cassandra corollary to a table
+in a traditional RDBMS) so it does not need to be sorted when it is read
+from the backend, and due to the nature of the row key/data model, data
+is not so much queried (where the engine needs to find the data) as it
+is merely retrieved based on the row key and time range.</p>
+<div class="section" id="row-keys">
+<h3>Row Keys<a class="headerlink" href="#row-keys" title="Permalink to this headline">¶</a></h3>
+<p>The core of storing and retrieving data from cassandra is the unique key
+that points at a row of data.  One does not &#8216;query&#8217; the row keys, rather
+it is something that can be constructed by the client querying the data.</p>
+<p>The row keys for the stored snmp data is of the following form:</p>
+<div class="highlight-python"><div class="highlight"><pre>snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012
+</pre></div>
+</div>
+<p>The components of the row key are:</p>
+<div class="highlight-python"><div class="highlight"><pre>ns:device_name:oidset:oid:interface_name:data_frequency:year
+</pre></div>
+</div>
+<p>The namespace component is a prefix to differentiate different kinds of
+data that might later be put into the backend - currently just &#8216;snmp.&#8217;
+The device name and interface names are self explanitory, the oidset is a
+grouping of a particular type of mesurement (like data traffic), the oid is
+the measurement itself (the direction of the data traffic), and the
+frequency is the is frequency of the measurements/bins of the measurement
+in milliseconds.</p>
+<p>The year is an artifical construct of how the data are stored.  Rows are
+divided up into a year&#8217;s worth of data to keep a given row from growing
+arbitrarily wide.  A row of a year&#8217;s worth of 30 second data is somewhere
+around 1.3 million columns long which is a nice healthy width for a row
+inside a cassandra store.  Cassandra rows should be wide to properly use
+the technology, but partitioning them by year makes for an nice easy cap
+on row width.  A querying client does not need to know the year
+segment of the row key because the query code in the cassandra.py module
+will automatically determine this from the time range specified for the
+query.</p>
+</div>
+<div class="section" id="column-families">
+<h3>Column Families<a class="headerlink" href="#column-families" title="Permalink to this headline">¶</a></h3>
+<p>A column family is the cassandra corollary to a table in a RDBMS.  It is
+a collection of rows/columns defined by a &#8216;strongly typed&#8217; schema, and the
+unique row keys that point to the rows.  They come in two varieties: a
+regular column family and a &#8216;supercolumn.&#8217;  A regular column family is
+basically a row of key/value pairs.  A supercolumn is a row of keys that
+point to mulitple values (like a C struct for example) - one key, multiple
+values.  This will become more clear in the following examples on how the
+esmond cassandra keyspace is designed.</p>
+<p>As noted before, the schema of a column family is what could be called
+strongly typed.  Row keys, row column headers, the associated value (or
+in the case of a supercolumn, associated values) are all defined in the
+schema of being of a given type like UTF-8 strings, LONG numbers, counters
+and etc.  Even though the structure of a supercolumn might look like a
+form of associative array, they contain a fixed and not arbitrary mix of
+data types.  There is also an internal sort order that is defined on a row
+as well so that the data are returned in a certain pre-defined order.</p>
+<p>This is a perennially referenced (and appropriately titled) article
+describing the nature of columns and more importanly supercolumns:</p>
+<p><a class="reference external" href="http://jayant7k.blogspot.com/2010/07/cassandra-data-model-wtf-is-supercolumn.html">http://jayant7k.blogspot.com/2010/07/cassandra-data-model-wtf-is-supercolumn.html</a></p>
+<p>Following are discussions of the structure of the column families the esmond
+data are stored in.  It has been said that this JSON-like representation of
+a column family structure isn&#8217;t technically optimal, however, I don&#8217;t think
+that someone has come up with a better way.</p>
+</div>
+<div class="section" id="raw-data-cf">
+<h3>Raw Data cf<a class="headerlink" href="#raw-data-cf" title="Permalink to this headline">¶</a></h3>
+<p>The raw data are stored in a regular column family with the following schema:</p>
+<div class="highlight-python"><div class="highlight"><pre>// regular col family
+&quot;raw_data&quot; : {
+    &quot;snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012&quot; : {
+        &quot;1343955624&quot; :   // long column name
+        &quot;16150333739148&quot; // UTF-8 containing JSON for values.
+    }
+}
+</pre></div>
+</div>
+<p>This is a regular column family - the column name is the timestamp and the
+value is the numeric value that came from the devices.  We were originaly
+storing the value as a numeric type, but it&#8217;s been changed to UTF-8 in case
+in the future we want to start storing more arbitrary information in JSON
+blobs.  The sort order on this (and all the other esmond column families) is
+on the column name - all of the columns are ordered on the timestamp.</p>
+</div>
+<div class="section" id="base-rate-cf">
+<h3>Base Rate cf<a class="headerlink" href="#base-rate-cf" title="Permalink to this headline">¶</a></h3>
+<p>The base rate data are store in a supercolumn family with the following schema:</p>
+<div class="highlight-python"><div class="highlight"><pre>// supercolumn
+&quot;base_rates&quot; : {
+    &quot;snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:30000:2012&quot; : {
+        &quot;1343955600&quot; : {     // long column name.
+            &quot;val&quot;: &quot;123&quot;,    // string key, counter type value.
+            &quot;is_valid&quot; : &quot;2&quot; // zero or positive non-zero.
+        }
+    }
+}
+</pre></div>
+</div>
+<p>The base rates are stored in a supercolumn.  Column name is the timestamp,
+and the values in the supercol are a string &#8216;key&#8217; and a counter type value.
+Counter types, and the name implies, is an i64 numeric data type that can be
+incremented and decremented.  They initialize to a zero value and inserting
+a number works like a += operation in a programming language.</p>
+<p>The &#8216;val&#8217; counter is the actual value of the base rate delta and is the sum
+of multiple fractional values (a base rate bin may be made of more than just
+one delta).  The &#8216;is_valid&#8217; element is also a counter type and all we care
+about is &#8220;does it have a value of zero or greater than zero?&#8221;  That element
+is incremented by 1 every time a delta is written to the bin which will
+generate a greater than zero value.  When the persister code is gap-filling
+a range of data where there is missing data, that element is set to zero.
+That way we can differentiate between a &#8220;valid measurement val of zero&#8221; or
+a &#8220;zero value that is basically a NULL.&#8221;</p>
+</div>
+<div class="section" id="rate-aggregation-cf">
+<h3>Rate Aggregation cf<a class="headerlink" href="#rate-aggregation-cf" title="Permalink to this headline">¶</a></h3>
+<p>The rate aggregation data are stored in a supercolumn family with the following schema:</p>
+<div class="highlight-python"><div class="highlight"><pre>// supercolumn
+&quot;rate_aggregations&quot; : {
+    &quot;snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:3600000:2012&quot; : {
+        &quot;1343955600&quot; : {   // long column name.
+            &quot;val&quot;: &quot;1234&quot;, // string key, counter type.
+            &quot;30&quot;: &quot;38&quot;     // key of the &#39;non-val&#39; column is freq of the base rate.
+        }                  // the value of said is the count used in the average.
+    }
+}
+</pre></div>
+</div>
+<p>This is one of two column families that contain the higher level
+aggregations.  This one is how we generate the aggregated averages.  It
+has the same basic structure as the base rate cf - timestamp column name,
+string element names and a counter type for the value.  And as before,the
+&#8216;val&#8217; element contains the actual aggregated delta sums.  The wrinkle is
+with the other element - in this example the element name is &#8216;30&#8217; and the
+value is &#8216;38.&#8217;  What&#8217;s going on there is that the &#8216;30&#8217; (ie: the element name
+that is not &#8216;val&#8217;) is the frequency of the base rates that this aggregation
+is made of and the &#8216;38&#8217; is the number of of deltas that are summed to make
+up the &#8216;val&#8217; element.  We need the sum, the base frequency and the number of
+sums to calculate the average.  To wit:</p>
+<p>average = sum_value / ( sum_count * base_frequency )</p>
+<p>Or in this case:</p>
+<p>average = 1234 / ( 38 * 30 )</p>
+<p>These calculations are masked/performed by the cassandra.py module when
+the data are retrieved, so it is transparent to the client.  But it is a
+point to note how the data are stored.</p>
+</div>
+<div class="section" id="stat-aggregation-cf">
+<h3>Stat Aggregation cf<a class="headerlink" href="#stat-aggregation-cf" title="Permalink to this headline">¶</a></h3>
+<p>The stat aggregation data are stored in a supercolumn family with the following schema:</p>
+<div class="highlight-python"><div class="highlight"><pre>// supercolumn
+&quot;stat_aggregations&quot; : {
+    &quot;snmp:router_a:FastPollHC:ifHCInOctets:xe-0_2_0:86400000:2012&quot; : {
+        &quot;1343955600&quot; : { // long column name.
+            &quot;min&quot;: &quot;0&quot;,  // string keys, long types.
+            &quot;max&quot;: &quot;484140&quot;
+        }
+    }
+}
+</pre></div>
+</div>
+<p>This is different and somewhat more straightforward.  As usual, timestamp
+column name and the super column elements are just string names and
+numeric values.  This just stores the min/max rates over the given period.
+No calculations or other tomfoolery like in the last example.</p>
+</div>
+</div>
+<div class="section" id="newdb">
+<h2><cite>newdb</cite><a class="headerlink" href="#newdb" title="Permalink to this headline">¶</a></h2>
+<p><cite>newdb</cite> provides a RESTful interface to the data.  It is typically run under
+mod_wsgi inside Apache, however it can be run standalone.</p>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/architecture.txt"
+     rel="nofollow">Source</a>
+</div>
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>

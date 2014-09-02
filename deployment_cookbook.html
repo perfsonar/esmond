@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Deployment Cookbook &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="index.html" />
+    <link rel="next" title="RPM Installation" href="rpm_install.html" />
+    <link rel="prev" title="Configuration" href="config.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png _static/logo-esnet-ball-sm.png --><img src="_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_install.html">RPM Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_extension.html">Extending the perfSONAR API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_build.html">RPM Build Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client.html">Using perfSONAR data client libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="config.html" title="Previous Chapter: Configuration">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+      <span class="hidden-sm">
+        Configuration
+      </span>
+    </a>
+  </li>
+  <li>
+    <a href="rpm_install.html" title="Next Chapter: RPM Installation">
+      <span class="hidden-sm">
+        RPM Installation
+      </span>
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href="http://github.com/esnet/esmond"><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">Deployment Cookbook</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#initial-installation">Initial installation</a></li>
+<li><a class="reference internal" href="#set-up-database">Set up database</a></li>
+<li><a class="reference internal" href="#test-cassandra-base-install">Test Cassandra/base install</a></li>
+<li><a class="reference internal" href="#test-the-persister">Test the Persister</a></li>
+<li><a class="reference internal" href="#set-up-rest-api">Set up REST api</a></li>
+<li><a class="reference internal" href="#test-rest-api">Test REST api</a></li>
+<li><a class="reference internal" href="#memcached-configuration">Memcached Configuration</a></li>
+<li><a class="reference internal" href="#initial-cassandra-tuning">Initial Cassandra Tuning</a></li>
+<li><a class="reference internal" href="#cassandra-monitoring-hooks">Cassandra monitoring hooks</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9">
+      
+  <div class="section" id="deployment-cookbook">
+<h1>Deployment Cookbook<a class="headerlink" href="#deployment-cookbook" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This is a cookbook-style document outlining the steps in deploying the esmond
+codebase, databases, various moving parts and running some initial tests on
+the deployment to make sure things are running smoothly.</p>
+<p>In the case of installation of external tools/etc, what needs to be installed
+will be noted and the user may need to refer to the docs for said tools.  If
+there are any known gotchas, they will be noted here.</p>
+</div>
+<div class="section" id="initial-installation">
+<h2>Initial installation<a class="headerlink" href="#initial-installation" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">Install python-pip</p>
+</li>
+<li><p class="first">pip install virtualenv</p>
+</li>
+<li><p class="first">Install Java 7 of choice (openjdk-7 etc)</p>
+</li>
+<li><p class="first">Install cassandra: <a class="reference external" href="http://cassandra.apache.org/download/">http://cassandra.apache.org/download/</a></p>
+</li>
+<li><p class="first">Install mercurial</p>
+</li>
+<li><p class="first">Install postgres and related development packages (libpq-dev, etc) if using that as the DB backend.</p>
+</li>
+<li><p class="first">Install python development packages if your system does not already have them (python-dev, etc).</p>
+</li>
+<li><p class="first">Install memcached</p>
+</li>
+<li><p class="first">Get esmond source: hg clone <a class="reference external" href="https://code.google.com/p/esmond/">https://code.google.com/p/esmond/</a> and checkout/install source where you want it.</p>
+</li>
+<li><p class="first">Chdir to where source code is pulled to.  This will now be referred to as the ESMOND_ROOT</p>
+</li>
+<li><p class="first">Copy the example conf file to where you want - cp devel/esmond-devel.conf esmond.conf (for example)</p>
+</li>
+<li><p class="first">Set the following environment variables (modify paths as appropriate):</p>
+<div class="highlight-python"><div class="highlight"><pre>export DJANGO_SETTINGS_MODULE=esmond.settings
+export ESMOND_ROOT=/home/parallels/esmond/esmond
+export ESMOND_CONF=$ESMOND_ROOT/esmond.conf
+</pre></div>
+</div>
+</li>
+<li><p class="first">Create the virtualenv:</p>
+<div class="highlight-python"><div class="highlight"><pre>virtualenv --prompt=&quot;(esmond)&quot; venv
+. venv/bin/activate
+pip install -U pip
+pip install -U setuptools
+</pre></div>
+</div>
+</li>
+<li><p class="first">pip install -r requirements.txt</p>
+</li>
+<li><p class="first">Execute the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>mkdir $ESMOND_ROOT/tsdb-data
+touch $ESMOND_ROOT/tsdb-data/TSDB
+</pre></div>
+</div>
+</li>
+<li><p class="first">All binary components are installed into $ESMOND_ROOT/venv/bin - you may wish to add this to your $PATH.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="set-up-database">
+<h2>Set up database<a class="headerlink" href="#set-up-database" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">Modify the esmond.conf file you have pointed to with the $ESMOND_CONF variable to set up the database connection.</p>
+</li>
+<li><p class="first">If using sqlite as a backend, these directives will suffice:</p>
+<div class="highlight-python"><div class="highlight"><pre>sql_db_engine = django.db.backends.sqlite3
+sql_db_name = %(ESMOND_ROOT)s/esmond.db
+</pre></div>
+</div>
+</li>
+<li><p class="first">If using postgres (or another database that django is friendly with) directives like this are needed:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sql_db_engine</span> <span class="o">=</span> <span class="n">django</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">postgresql_psycopg2</span>
+<span class="n">sql_db_name</span> <span class="o">=</span> <span class="n">esmond</span>
+<span class="n">sql_db_user</span> <span class="o">=</span> <span class="n">snmp</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">If using a postgres/etc, the user will need to create the target database and give whatever users necessary access permissions to it.</p>
+</li>
+<li><p class="first">Populate schema with this command: python esmond/manage.py syncdb</p>
+</li>
+<li><p class="first">You can load some example oidset fixtures with the following commands:</p>
+<div class="highlight-python"><div class="highlight"><pre>python esmond/manage.py loaddata oidsets.json
+python esmond/manage.py loaddata test_devices.json
+</pre></div>
+</div>
+</li>
+<li><p class="first">You can look at some additional DB administration commands by looking under the [api] section of the output generated by python esmond/manage.py help</p>
+</li>
+</ul>
+</div>
+<div class="section" id="test-cassandra-base-install">
+<h2>Test Cassandra/base install<a class="headerlink" href="#test-cassandra-base-install" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">The following directives in $ESMOND_CONF need to be tailored to your cassandra installation:</p>
+<div class="highlight-python"><div class="highlight"><pre>cassandra_servers = localhost:9160
+cassandra_user =
+cassandra_pass =
+</pre></div>
+</div>
+</li>
+<li><p class="first">Try installing the esmond keyspace/schema in cassandra by executing the following command: python esmond/manage.py cassandra_init</p>
+</li>
+<li><p class="first">If successful, output like this should be generated:</p>
+<div class="highlight-python"><div class="highlight"><pre>Initializing cassandra esmond keyspace
+cassandra_db [INFO] Creating keyspace esmond
+cassandra_db [INFO] Checking/creating column families
+cassandra_db [INFO] Created CF: raw_data
+cassandra_db [INFO] Created CF: base_rates
+cassandra_db [INFO] Created CF: rate_aggregations
+cassandra_db [INFO] Created CF: stat_aggregations
+cassandra_db [INFO] Schema check done
+cassandra_db [INFO] Waiting for schema to propagate...
+cassandra_db [INFO] Done
+cassandra_db [DEBUG] Opening ConnectionPool
+cassandra_db [INFO] Connected to [&#39;localhost:9160’]
+</pre></div>
+</div>
+</li>
+<li><p class="first">With cassandra running and configured, execute the test suite: python esmond/manage.py test -v2 api</p>
+</li>
+</ul>
+</div>
+<div class="section" id="test-the-persister">
+<h2>Test the Persister<a class="headerlink" href="#test-the-persister" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">Now with the database loaded and cassandra running, test to see if the persister can consume data.</p>
+</li>
+<li><p class="first">Run memcached and configure the following lines in $ESMOND_CONF as apropos:</p>
+<div class="highlight-python"><div class="highlight"><pre>espersistd_uri = 127.0.0.1:11211
+espoll_persist_uri = MemcachedPersistHandler:127.0.0.1:11211
+</pre></div>
+</div>
+</li>
+<li><p class="first">Execute $ESMOND_ROOT/venv/bin/espersistd</p>
+</li>
+<li><p class="first">Execute $ESMOND_ROOT/util/poller_test_generator.py -W - you should see the approximate following output:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;MemcachedPersistQueue: cassandra_1 last_added: 0, last_read: 0&gt;
+&lt;MemcachedPersistQueue: cassandra_2 last_added: 0, last_read: 0&gt;
+&lt;MemcachedPersistQueue: cassandra_3 last_added: 0, last_read: 0&gt;
+Generating 8 data points.
+</pre></div>
+</div>
+</li>
+<li><p class="first">That program can be used to generate bogus testing poller data - run with the -h | —help flag to see further options.</p>
+</li>
+<li><p class="first">Now, verify that the persister consumed the data from memcache and entered it into cassandra:</p>
+</li>
+<li><p class="first">Execute $ESMOND_ROOT/util/dump_keys.py -p fake - you should see the following output (or something similar if you have different oidsets defined):</p>
+<div class="highlight-python"><div class="highlight"><pre>cassandra_db [INFO] Checking/creating column families
+cassandra_db [INFO] Schema check done
+cassandra_db [DEBUG] Opening ConnectionPool
+cassandra_db [INFO] Connected to [&#39;localhost:9160&#39;]
+snmp:fake_rtr_a:FastPoll:ifInOctets:fake_iface_0:30000:2013
+snmp:fake_rtr_a:FastPollHC:ifHCOutOctets:fake_iface_1:30000:2013
+snmp:fake_rtr_a:FastPollHC:ifHCInOctets:fake_iface_0:30000:2013
+snmp:fake_rtr_a:FastPollHC:ifHCInOctets:fake_iface_1:30000:2013
+snmp:fake_rtr_a:FastPollHC:ifHCOutOctets:fake_iface_0:30000:2013
+snmp:fake_rtr_a:FastPoll:ifOutOctets:fake_iface_1:30000:2013
+snmp:fake_rtr_a:FastPoll:ifOutOctets:fake_iface_0:30000:2013
+snmp:fake_rtr_a:FastPoll:ifInOctets:fake_iface_1:30000:2013
+</pre></div>
+</div>
+</li>
+<li><p class="first">That program can be used to dump the row keys from the various column families in the cassandra esmond keyspace - run with the -h | —help flag to see further options.  Meant as a debugging/testing utility.</p>
+</li>
+<li><p class="first">Alternately you can log into cassandra using cassandra-cli and look at the various column families to see the data was inserted.</p>
+</li>
+<li><p class="first">Shut the persister down: kill <cite>cat $ESMOND_ROOT/var/espersistd.manager.pid</cite></p>
+</li>
+</ul>
+</div>
+<div class="section" id="set-up-rest-api">
+<h2>Set up REST api<a class="headerlink" href="#set-up-rest-api" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Install apache2 (config examples are for current threaded)</li>
+<li>Install mod_wsgi and make sure that it’s the same version as your python.  When installing from packages (apt-get, et al), the python version that mod_wsgi was compiled against is commonly not what you want and you will need to compile it from source.</li>
+<li>See the example doc strings in $ESMOND_ROOT/esmond/wsgi.py, modify the paths as appropriate for your esmond deployment, modify httpd.conf with the modified directives.</li>
+<li>Along with modifying the paths, set the group that your apache is running under (www, www-data, etc) as appropriate in the WSGIDaemonProcess and WSGIProcessGroup directives.</li>
+<li>If using postgres/another database engine, it might be necessary to set the ‘sql_db_host’ (even if you are just running on localhost).  If you get an apache “peer authentication failed for user” error, setting sql_db_host will rectify this problem.</li>
+<li>Similarly, appropriate auth directives/configuration will need to be set up with the database engine so the user specified in sql_db_name is able to connect via the processes running in apache since the rules of engagement can be different than connecting locally/from the shell.  This might involve setting sql_db_password in esmond.conf, modifying pg_hba.conf, etc.</li>
+<li>Cassandra will not need any additional configuration as previous configuration steps are sufficient.</li>
+<li>Re/start apache to pick up the configuration changes - check the apache error log to verify that mod_wsgi loaded and there are no other errors.</li>
+</ul>
+</div>
+<div class="section" id="test-rest-api">
+<h2>Test REST api<a class="headerlink" href="#test-rest-api" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">Execute curl <a class="reference external" href="http://localhost/v1/oidset/">http://localhost/v1/oidset/</a> (or whatever host/port is apropos) and you should get a list of the oidsets you loaded from the fixtures.  If you didn’t you will just get an empty list returned.</p>
+</li>
+<li><p class="first">To make sure auth is properly set up, execute $ESMOND_ROOT/util/timeseries_post_get.py with only the -U arg set to point at the rest api (default: <a class="reference external" href="http://localhost">http://localhost</a>).  The following output/error should be generated: esmond.api.client.timeseries.PostException: &#8216;PostData requires username and api_key for rest interface.’</p>
+</li>
+<li><p class="first">Execute the following command to add a user that is allowed to post data through the api (note, this will give a user write access through the api so assign accordingly):</p>
+<div class="highlight-python"><div class="highlight"><pre>python esmond/manage.py add_timeseries_post_user &lt;username&gt;
+</pre></div>
+</div>
+</li>
+<li><p class="first">Re-execute the timeseries_post_data.py script now supplying the -u and -k as appropriate (the -k args is the api key string returned by manage.py).  The following output should be generated:</p>
+<div class="highlight-python"><div class="highlight"><pre>api/client/timeseries.py:160: PostRawDataWarning: Payload empty, no data sent.
+  self._issue_warning(&#39;Payload empty, no data sent.&#39;)
+&lt;DataPayload: len:5 b:1384804667000 e:1384804758000&gt;
+  + &lt;DataPoint: ts:1384804667000 val:1000&gt;
+  + &lt;DataPoint: ts:1384804697000 val:2000&gt;
+  + &lt;DataPoint: ts:1384804727000 val:3000&gt;
+  + &lt;DataPoint: ts:1384804757000 val:4000&gt;
+  + &lt;DataPoint: ts:1384804758000 val:5000&gt;
+&lt;DataPayload: len:5 b:1384804667000 e:1384804758000&gt;
+  + &lt;DataPoint: ts:1384804667000 val:33.3333333333&gt;
+  + &lt;DataPoint: ts:1384804697000 val:66.6666666667&gt;
+  + &lt;DataPoint: ts:1384804727000 val:100.0&gt;
+  + &lt;DataPoint: ts:1384804757000 val:133.333333333&gt;
+  + &lt;DataPoint: ts:1384804758000 val:166.666666667&gt;
+</pre></div>
+</div>
+</li>
+<li><p class="first">If so, the authentication is set up properly (the PostRawDataWarning is there on purpose and does not indicate an error state.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="memcached-configuration">
+<h2>Memcached Configuration<a class="headerlink" href="#memcached-configuration" title="Permalink to this headline">¶</a></h2>
+<p>Memcached can lose data if it runs out of memory. A few configuration options can
+help prevent this.</p>
+<p>Specify the &#8216;-M&#8217; option. This tells memcached to return a failure if there is not
+any storage available rather than evicting some other item from the cache. That
+particular poll result will still be lost but the failure lets Esmond log the
+event.</p>
+<p>Use the &#8216;-m 1024&#8217; or similar to give it plenty of RAM.</p>
+<p>Use the &#8216;espersistq&#8217; utility or monitor memcached directly to make sure you have
+enough persist processes to handle the load. If the backlog is growing add more
+processes by adjusting the &#8216;cassandra = CassandraPollPersister:4&#8217; line in esmond.conf.</p>
+<p>Finally, check for log entries stating &#8220;Memcache &#8216;set&#8217; failed! Polling data lost!&#8221;</p>
+</div>
+<div class="section" id="initial-cassandra-tuning">
+<h2>Initial Cassandra Tuning<a class="headerlink" href="#initial-cassandra-tuning" title="Permalink to this headline">¶</a></h2>
+<p>The main thing is to tune the Java heap size and newgen memory.  The rule
+of thumb on this is for a system with more than 4G memory, allocate 1/4
+the system memory but with a cap of 8G.  Then set the newgen memory at
+25-30% of that.</p>
+<p>Setting the key cache to around 512M should be more than enough cache
+for the keys.  The timeseries rows are not great candidates for row
+caching.</p>
+<p>If you ever delete rows from Cassandra it may be necessary to increase
+the value of tombstone_failure_threshold in the cassandra.yaml file.
+One full year of 30 second samples is just over 1 million values so
+deleting an entire row will leave behind enough tombstones to prevent
+any queries for that row key from working unless the threshold is
+increased. Note that these failures will normally show up as timeouts
+to the client (as of 2.0.7 at least) which can be misleading. The
+true cause of the failure does show up if the query is run with
+tracing enabled.</p>
+<p>More info: <a class="reference external" href="http://www.datastax.com/docs/1.1/operations/tuning">http://www.datastax.com/docs/1.1/operations/tuning</a></p>
+</div>
+<div class="section" id="cassandra-monitoring-hooks">
+<h2>Cassandra monitoring hooks<a class="headerlink" href="#cassandra-monitoring-hooks" title="Permalink to this headline">¶</a></h2>
+<p>The MX4J plugin can be used to get information about the state/health
+of a Cassandra server.  This gives a pointer to the java source and
+instructions how to install:</p>
+<p><a class="reference external" href="http://wiki.apache.org/cassandra/Operations#Monitoring_with_MX4J">http://wiki.apache.org/cassandra/Operations#Monitoring_with_MX4J</a></p>
+<p>It exposes an http interface that can be used to query JMX variables from cassandra and the OS as outlined here:</p>
+<p><a class="reference external" href="http://www.tomas.cat/blog/en/monitoring-cassandra-relevant-data-should-be-watched-and-how-send-it-graphite">http://www.tomas.cat/blog/en/monitoring-cassandra-relevant-data-should-be-watched-and-how-send-it-graphite</a></p>
+<p>The script util/query_jmx.py imports a client library from esmond.api.client
+that can query one of these MX4J endpoints for a variety of information.
+There is a nagios wrapper for that client in util/nagios.</p>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/deployment_cookbook.txt"
+     rel="nofollow">Source</a>
+</div>
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>
