@@ -1,7 +1,7 @@
 from calendar import timegm
 from esmond.api.auth import AnonymousGetElseApiAuthentication, EsmondAuthorization
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
-from esmond.api.perfsonar.types import *
+from esmond.api.client.perfsonar.types import *
 from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData, AggregationBin
 from esmond.config import get_config_path, get_config
 from esmond.util import get_logger

@@ -6,7 +6,7 @@ import warnings
 
 from esmond.api.client.util import add_apikey_header, AlertMixin
 from esmond.api.client.perfsonar.query import Metadata, ApiFilters
-from esmond.api.perfsonar.types import EVENT_TYPE_CONFIG, INVERSE_SUMMARY_TYPES
+from .types import EVENT_TYPE_CONFIG, INVERSE_SUMMARY_TYPES
 
 class PostException(Exception):
     def __init__(self, value):

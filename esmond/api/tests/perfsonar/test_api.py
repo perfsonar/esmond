@@ -6,7 +6,7 @@ from tastypie.exceptions import BadRequest
 from tastypie.models import ApiKey
 from tastypie.test import ResourceTestCase
 from esmond.api.models import PSEventTypes
-from esmond.api.perfsonar.types import *
+from esmond.api.client.perfsonar.types import *
 from esmond.cassandra import CASSANDRA_DB
 from esmond.config import get_config, get_config_path
 from esmond.api.perfsonar.validators import *
