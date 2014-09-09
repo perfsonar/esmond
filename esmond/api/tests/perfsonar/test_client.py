@@ -8,6 +8,9 @@ import os
 import os.path
 import json
 
+# This MUST be here in any testing modules that use cassandra!
+os.environ['ESMOND_UNIT_TESTS'] = 'True'
+
 from django.test import LiveServerTestCase
 
 from esmond.config import get_config, get_config_path

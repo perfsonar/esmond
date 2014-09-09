@@ -44,6 +44,7 @@ esmond schema in json-like notation:
 }
 """
 # Standard
+import ast
 import calendar
 import datetime
 import json
@@ -120,7 +121,12 @@ class CASSANDRA_DB(object):
 
         # Connect to cassandra with SystemManager, do a schema check 
         # and set up schema components if need be.
-        self.keyspace = config.cassandra_keyspace
+        if ast.literal_eval(os.environ.get('ESMOND_UNIT_TESTS', 'False')):
+            print '*** Using test keyspace'
+            self.keyspace = 'test_{0}'.format(config.cassandra_keyspace)
+        else:
+            self.keyspace = config.cassandra_keyspace
+
         try:
             sysman = SystemManager(config.cassandra_servers[0])                              
         except TTransportException, e:

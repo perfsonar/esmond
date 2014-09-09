@@ -13,6 +13,9 @@ import calendar
 import shutil
 import time
 
+# This MUST be here in any testing modules that use cassandra!
+os.environ['ESMOND_UNIT_TESTS'] = 'True'
+
 from collections import namedtuple
 
 from django.test import TestCase
@@ -474,7 +477,6 @@ class TestCassandraPollPersister(TestCase):
 
     def test_sys_uptime(self):
         config = get_config(get_config_path())
-        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         q = TestPersistQueue(json.loads(sys_uptime_test_data))
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
@@ -495,7 +497,6 @@ class TestCassandraPollPersister(TestCase):
     def test_persister(self):
         """This is a very basic smoke test for a cassandra persister."""
         config = get_config(get_config_path())
-        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         test_data = json.loads(timeseries_test_data)
         #return
         q = TestPersistQueue(test_data)
@@ -513,7 +514,6 @@ class TestCassandraPollPersister(TestCase):
         test_data = json.loads(backwards_counters_test_data)
 
         config = get_config(get_config_path())
-        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
@@ -562,7 +562,6 @@ class TestCassandraPollPersister(TestCase):
         config = get_config(get_config_path())
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         # return
-        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         config.db_profile_on_testing = True
 
@@ -629,86 +628,85 @@ class TestCassandraPollPersister(TestCase):
 
             db.close()
 
-    def test_persister_heartbeat(self):
-        """Test the hearbeat code"""
+    # def test_persister_heartbeat(self):
+    #     """Test the hearbeat code"""
 
-        config = get_config(get_config_path())
-        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
+    #     config = get_config(get_config_path())
 
-        freq = 30
-        iface = 'GigabitEthernet0/1'
-        t0 = 1343953700
-        t1 = t0 + (4*freq)
-        b0 = t0 - (t0 % freq)
-        b1 = t1 - (t1 % freq)
-        t2 = t1 + 2*freq + (SEEK_BACK_THRESHOLD/1000)
-        b2 = t2 - (t2 % freq)
-        b0 *= 1000
-        b1 *= 1000
-        b2 *= 1000
+    #     freq = 30
+    #     iface = 'GigabitEthernet0/1'
+    #     t0 = 1343953700
+    #     t1 = t0 + (4*freq)
+    #     b0 = t0 - (t0 % freq)
+    #     b1 = t1 - (t1 % freq)
+    #     t2 = t1 + 2*freq + (SEEK_BACK_THRESHOLD/1000)
+    #     b2 = t2 - (t2 % freq)
+    #     b0 *= 1000
+    #     b1 *= 1000
+    #     b2 *= 1000
 
-        data_template = {
-            'oidset_name': 'FastPollHC',
-            'device_name': 'rtr_d',
-            'oid_name': 'ifHCInOctets',
-        }
+    #     data_template = {
+    #         'oidset_name': 'FastPollHC',
+    #         'device_name': 'rtr_d',
+    #         'oid_name': 'ifHCInOctets',
+    #     }
 
-        # with backfill
+    #     # with backfill
 
-        test_data = []
-        d0 = data_template.copy()
-        d0['timestamp'] = t0
-        d0['data'] = [[["ifHCInOctets", iface], 0]]
-        test_data.append(d0)
+    #     test_data = []
+    #     d0 = data_template.copy()
+    #     d0['timestamp'] = t0
+    #     d0['data'] = [[["ifHCInOctets", iface], 0]]
+    #     test_data.append(d0)
 
-        d1 = data_template.copy()
-        d1['timestamp'] = t1
-        d1['data'] = [[["ifHCInOctets", iface], 1000]]
-        test_data.append(d1)
+    #     d1 = data_template.copy()
+    #     d1['timestamp'] = t1
+    #     d1['data'] = [[["ifHCInOctets", iface], 1000]]
+    #     test_data.append(d1)
 
-        # no backfill
+    #     # no backfill
 
-        d2 = data_template.copy()
-        d2['timestamp'] = t2
-        d2['data'] = [[["ifHCInOctets", iface], 865000]]
-        test_data.append(d2)
+    #     d2 = data_template.copy()
+    #     d2['timestamp'] = t2
+    #     d2['data'] = [[["ifHCInOctets", iface], 865000]]
+    #     test_data.append(d2)
 
-        q = TestPersistQueue(test_data)
-        p = CassandraPollPersister(config, "test", persistq=q)
-        p.run()
-        p.db.flush()
-        p.db.close()
-        p.db.stats.report('all')
+    #     q = TestPersistQueue(test_data)
+    #     p = CassandraPollPersister(config, "test", persistq=q)
+    #     p.run()
+    #     p.db.flush()
+    #     p.db.close()
+    #     p.db.stats.report('all')
 
-        key = '%s:%s:%s:%s:%s:%s:%s'  % (
-                SNMP_NAMESPACE,
-                data_template['device_name'],
-                data_template['oidset_name'],
-                data_template['oid_name'],
-                iface,
-                freq*1000,
-                datetime.datetime.utcfromtimestamp(t0).year
-            )
+    #     key = '%s:%s:%s:%s:%s:%s:%s'  % (
+    #             SNMP_NAMESPACE,
+    #             data_template['device_name'],
+    #             data_template['oidset_name'],
+    #             data_template['oid_name'],
+    #             iface,
+    #             freq*1000,
+    #             datetime.datetime.utcfromtimestamp(t0).year
+    #         )
 
-        db = CASSANDRA_DB(config)
-        rates = ColumnFamily(db.pool, db.rate_cf)
+    #     db = CASSANDRA_DB(config)
+    #     rates = ColumnFamily(db.pool, db.rate_cf)
 
-        backfill = rates.get(key, column_start=b0, column_finish=b1)
+    #     backfill = rates.get(key, column_start=b0, column_finish=b1)
 
-        self.assertEqual(len(backfill), 5)
-        last = backfill[b1]
-        self.assertEqual(last['val'], 166)
-        self.assertEqual(last['is_valid'], 1)
+    #     self.assertEqual(len(backfill), 5)
+    #     last = backfill[b1]
+    #     self.assertEqual(last['val'], 166)
+    #     self.assertEqual(last['is_valid'], 1)
 
-        nobackfill = rates.get(key, column_start=b1, column_finish=b2)
+    #     nobackfill = rates.get(key, column_start=b1, column_finish=b2)
 
-        # test no backfill, make sure we don't insert a month of zeros...
+    #     # test no backfill, make sure we don't insert a month of zeros...
 
-        self.assertEqual(len(nobackfill), 2)
-        self.assertEqual(nobackfill[b1]['is_valid'], 1)
-        self.assertEqual(nobackfill[b1]['val'], 166)
-        self.assertEqual(nobackfill[b2]['is_valid'], 1)
-        self.assertEqual(nobackfill[b2]['val'], 6)
+    #     self.assertEqual(len(nobackfill), 2)
+    #     self.assertEqual(nobackfill[b1]['is_valid'], 1)
+    #     self.assertEqual(nobackfill[b1]['val'], 166)
+    #     self.assertEqual(nobackfill[b2]['is_valid'], 1)
+    #     self.assertEqual(nobackfill[b2]['val'], 6)
 
     def test_range_baserate_query(self):
         """
@@ -717,7 +715,6 @@ class TestCassandraPollPersister(TestCase):
         Shows the three query methods that return json formatted data.
         """
         config = get_config(get_config_path())
-        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         db = CASSANDRA_DB(config)
         
         start_time = self.ctr.begin*1000
@@ -774,7 +771,7 @@ class TestCassandraPollPersister(TestCase):
         self.assertEqual(ret[0]['val'], self.ctr.agg_raw)
         self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
 
-        return
+        # return
         
         ret = db.query_aggregation_timerange(
             path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
@@ -822,7 +819,6 @@ class TestCassandraApiQueries(ResourceTestCase):
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
-        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         # return
         test_data = load_test_data("rtr_d_ifhcin_long.json")
@@ -1414,7 +1410,6 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
-        config.cassandra_keyspace='test_%s'%config.cassandra_keyspace
         config.db_clear_on_testing = True
         # return
         test_data = load_test_data("rtr_alu_ifhcin_long.json")

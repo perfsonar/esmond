@@ -1,4 +1,9 @@
 import json
+import os
+
+# This MUST be here in any testing modules that use cassandra!
+os.environ['ESMOND_UNIT_TESTS'] = 'True'
+
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now

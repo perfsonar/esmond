@@ -2,8 +2,12 @@ import json
 import time
 import calendar
 import datetime
+import os
 
 import mock 
+
+# This MUST be here in any testing modules that use cassandra!
+os.environ['ESMOND_UNIT_TESTS'] = 'True'
 
 from django.core.urlresolvers import reverse
 from tastypie.test import ResourceTestCase

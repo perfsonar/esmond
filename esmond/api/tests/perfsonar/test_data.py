@@ -7,6 +7,9 @@ import json
 import os
 import sys
 
+# This MUST be here in any testing modules that use cassandra!
+os.environ['ESMOND_UNIT_TESTS'] = 'True'
+
 from django.test import TestCase
 from django.conf import settings
 
