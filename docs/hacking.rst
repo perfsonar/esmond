@@ -94,6 +94,17 @@ But sizable blocks of code (something like: 1104-1119) are candidates for
 inspection to see if additional tests need to be formulated to execute 
 that block.
 
+Writing unit tests
+------------------
+
+Any unit test that uses cassandra (to write data to or read data from) needs 
+to have the following line of code at the top of the module after the core 
+python imports but before the other code is imported::
+
+    os.environ['ESMOND_UNIT_TESTS'] = 'True'
+
+Note that true is a string and not a boolean.
+
 Profiling the persister
 -----------------------
 
