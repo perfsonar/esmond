@@ -652,7 +652,40 @@ class CASSANDRA_DB(object):
                 results.append({'ts': kk, 'val': json.loads(vv)})
         
         return results
-            
+
+    def query_raw_first(self, path=None, freq=None, year=None):
+        """
+        Query interface to query the raw data.
+        """
+        key = get_rowkey(path,freq,year)
+        ret = self.raw_data._column_family.get(
+                key,
+                column_start="",
+                column_count=1
+                )
+        # Just return the results and format elsewhere.
+        results=[]
+        for k,v in ret.items():
+            results.append({'ts': k, 'val': json.loads(v)})
+        return results
+
+    def query_raw_last(self, path=None, freq=None, year=None):
+        """
+        Query interface to query the raw data.
+        """
+        key = get_rowkey(path,freq,year)
+        ret = self.raw_data._column_family.get(
+                key,
+                column_finish="",
+                column_reversed=True,
+                column_count=1
+                )
+        # Just return the results and format elsewhere.
+        results=[]
+        for k,v in ret.items():
+            results.append({'ts': k, 'val': json.loads(v)})
+        return results
+
     def __del__(self):
         pass
 
