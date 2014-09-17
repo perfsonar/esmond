@@ -799,6 +799,80 @@ class TestCassandraPollPersister(TestCase):
 
         db.close()
 
+    def test_cassandra_agg_cache(self):
+        """Exercise the aggregation cache lookup"""
+        start_time = self.ctr.begin*1000
+        end_time = self.ctr.end*1000
+
+        config = get_config(get_config_path())
+        test_data = load_test_data("rtr_d_ifhcin_long.json")
+        config.db_clear_on_testing = True
+
+        q = TestPersistQueue(test_data)
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+        p.db.flush()
+        # p.db.close()
+
+        ret = p.db.query_aggregation_timerange(
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
+            ts_min=start_time - 3600*1000,
+            ts_max=end_time,
+            freq=self.ctr.agg_freq*1000, # required!
+            cf='max',  # min | max | average - also required!
+        )
+        
+        self.assertEqual(ret[0]['cf'], 'max')
+        self.assertEqual(ret[0]['val'], self.ctr.agg_max)
+        self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
+        p.db.close()
+
+        # Set clear on testing to false and load the data
+        # again to work the aggregation cache lookup
+        # for coverage.  Double the incoming data values
+        # so we can check that the 2 X deltas produce 
+        # new aggregations.
+
+        config.db_clear_on_testing = False
+
+        test_data = load_test_data("rtr_d_ifhcin_long.json")
+
+        for i in test_data:
+            for ii in i.get('data'):
+                ii[1] = ii[1]*2
+        
+        q = TestPersistQueue(test_data)
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+        p.db.flush()
+
+        ret = p.db.query_aggregation_timerange(
+            path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
+            ts_min=start_time - 3600*1000,
+            ts_max=end_time,
+            freq=self.ctr.agg_freq*1000, # required!
+            cf='max',  # min | max | average - also required!
+        )
+
+        # Check that the max is twice the expected amount
+        self.assertEqual(ret[0]['cf'], 'max')
+        self.assertEqual(ret[0]['val'], self.ctr.agg_max*2)
+        self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
+        p.db.close()
+
+        # Put the data back to what it should be in case another
+        # test wants to read it.
+        config.db_clear_on_testing = True
+
+        test_data = load_test_data("rtr_d_ifhcin_long.json")
+
+        q = TestPersistQueue(test_data)
+        p = CassandraPollPersister(config, "test", persistq=q)
+        p.run()
+        p.db.flush()
+        p.db.close()
+
+
 class TestCassandraApiQueries(ResourceTestCase):
     fixtures = ['oidsets.json']
 
