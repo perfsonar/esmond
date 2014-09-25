@@ -3,6 +3,9 @@ python:
   - "2.7"
 services:
   - cassandra
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y libsnmp-base
 install:
   - pip install -r requirements.txt
 # The env var stuff needs to be on one line.
@@ -12,15 +15,15 @@ before_script:
   - python esmond/manage.py syncdb --noinput
   - python esmond/manage.py loaddata oidsets.json
 script:
-  - python esmond/manage.py test api.tests.test_api
-  - python esmond/manage.py test api.tests.test_client
-  # - python esmond/manage.py test -v2 api.tests.test_correlator
-  - python esmond/manage.py test api.tests.test_persist
+  # - python esmond/manage.py test api.tests.test_api
+  # - python esmond/manage.py test api.tests.test_client
+  - python esmond/manage.py test -v2 api.tests.test_correlator
+  # - python esmond/manage.py test api.tests.test_persist
   # - python esmond/manage.py test -v2 api.tests.test_translator
-  - python esmond/manage.py test api.tests.test_util
-  - python esmond/manage.py test api.tests.perfsonar.test_api
-  - python esmond/manage.py test api.tests.perfsonar.test_client
-  - python esmond/manage.py test api.tests.perfsonar.test_data
+  # - python esmond/manage.py test api.tests.test_util
+  # - python esmond/manage.py test api.tests.perfsonar.test_api
+  # - python esmond/manage.py test api.tests.perfsonar.test_client
+  # - python esmond/manage.py test api.tests.perfsonar.test_data
 
 
 
