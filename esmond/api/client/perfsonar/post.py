@@ -6,7 +6,6 @@ import warnings
 
 from esmond.api.client.util import add_apikey_header, AlertMixin
 from esmond.api.client.perfsonar.query import Metadata, ApiFilters
-from esmond.api.perfsonar.types import EVENT_TYPE_CONFIG, INVERSE_SUMMARY_TYPES
 
 class PostException(Exception):
     def __init__(self, value):
@@ -82,16 +81,6 @@ class PostBase(AlertMixin, object):
         checks on the internal payload data before sending it to the API."""
         raise NotImplementedError('Must be implemented in subclass')
 
-    def _check_event_type(self, et):
-        """Validate user supplied event type strings."""
-        if et not in EVENT_TYPE_CONFIG.keys():
-            raise MetadataPostException('{0} is not a valid event type'.format(et))
-
-    def _check_summary_type(self, st):
-        """Validate user supplied summary type strings."""
-        if st not in INVERSE_SUMMARY_TYPES.keys():
-            raise MetadataPostException('{0} is not a valid summary type'.format(st))
-
     def json_payload(self, pp=False):
         self._validate()
         if pp:
@@ -154,7 +143,6 @@ class MetadataPost(PostBase):
     def add_event_type(self, et):
         """Add event-type data to the metadata before POSTing to 
         the backend.  Will normally be called more than once."""
-        self._check_event_type(et)
 
         for i in self._payload['event-types']:
             if i.get('event-type', None) == et:
@@ -164,8 +152,6 @@ class MetadataPost(PostBase):
 
     def add_summary_type(self, et, st, windows=[]):
         """Add associated summary-type data to metadata before POSTing."""
-        self._check_event_type(et)
-        self._check_summary_type(st)
 
         if not windows:
             self.warn('No summary windows were defined - skipping')
@@ -249,7 +235,6 @@ class EventTypePost(PostBase):
 
         if not self.metadata_key or not self.event_type:
             raise EventTypePostException('Must set metadata_key and event_type args')
-        self._check_event_type(self.event_type)
 
         # Slightly different than payload in meta data class.
         # List will hold data points, but whole thing will not
@@ -327,7 +312,7 @@ class EventTypeBulkPost(PostBase):
         """Adds data points to the payload.  Adds new ts/datapoint to
         a specific event-type in the internal payload.  Will be called
         multiple times."""
-        self._check_event_type(event_type)
+
         if not isinstance(ts, int):
             raise EventTypeBulkPostException('ts arg must be an integer')
         if not isinstance(val, numbers.Number) and \
