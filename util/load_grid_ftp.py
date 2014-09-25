@@ -109,7 +109,7 @@ import sys
 
 from optparse import OptionParser
 
-from esmond.api.client.perfsonar.post import MetadataPost, EventTypePost
+from esmond_client.perfsonar.post import MetadataPost, EventTypePost
 
 import logging
 import time
