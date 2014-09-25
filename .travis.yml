@@ -8,7 +8,6 @@ env:
 before_script:
   - python esmond/manage.py syncdb --noinput
   - python esmond/manage.py loaddata oidsets.json
-  - python esmond/manage.py loaddata test_devices.json
 
 
 
