@@ -5,7 +5,7 @@ services:
   - cassandra
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -y libsnmp-base
+  - sudo apt-get install -y libsnmp-base libsnmp-dev libsnmp-python
 install:
   - pip install -r requirements.txt
 # The env var stuff needs to be on one line.
