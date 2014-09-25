@@ -17,8 +17,8 @@ from esmond.config import get_config, get_config_path
 from esmond.persist import CassandraPollPersister
 from esmond.api import SNMP_NAMESPACE
 
-from esmond.api.client.snmp import ApiConnect, ApiFilters
-from esmond.api.client.timeseries import GetRawData, GetBaseRate, \
+from esmond_client.snmp import ApiConnect, ApiFilters
+from esmond_client.timeseries import GetRawData, GetBaseRate, \
     GetBulkRawData, GetBulkBaseRate
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
      build_metadata_from_test_data, load_test_data

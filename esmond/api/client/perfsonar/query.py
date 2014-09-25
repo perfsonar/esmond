@@ -6,7 +6,7 @@ import requests
 import time
 import warnings
 
-from esmond.api.client.util import add_apikey_header
+from ..util import add_apikey_header
 
 MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
 MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())

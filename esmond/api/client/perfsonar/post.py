@@ -4,8 +4,8 @@ import pprint
 import requests
 import warnings
 
-from esmond.api.client.util import add_apikey_header, AlertMixin
-from esmond.api.client.perfsonar.query import Metadata, ApiFilters
+from ..util import add_apikey_header, AlertMixin
+from .query import Metadata, ApiFilters
 
 class PostException(Exception):
     def __init__(self, value):
