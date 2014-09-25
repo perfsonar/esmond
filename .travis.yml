@@ -1,0 +1,17 @@
+language: python
+python:
+  - "2.7"
+install:
+  - pip install -r requirements.txt
+env:
+  - VENV_ROOT=`pwd`
+  - ESMOND_ROOT=${VENV_ROOT}/devel
+  - ESMOND_CONF=${ESMOND_ROOT}/esmond-devel.conf
+  - DJANGO_SETTINGS_MODULE=esmond.settings
+before_script:
+  - python esmond/manage.py syncdb
+  - python esmond/manage.py loaddata oidsets.json
+  - python esmond/manage.py loaddata test_devices.json
+
+
+
