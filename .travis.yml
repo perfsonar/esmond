@@ -11,7 +11,7 @@ before_script:
   - python esmond/manage.py syncdb --noinput
   - python esmond/manage.py loaddata oidsets.json
 script:
-  - python esmond/manage.py test api.tests.test_client
+  - python esmond/manage.py test api.tests
 
 
 
