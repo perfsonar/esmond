@@ -246,9 +246,6 @@ class EventTypePost(PostBase):
         before sending to api.  Will be called more than once."""
         if not isinstance(ts, int):
             raise EventTypePostException('ts arg must be an integer')
-        if not isinstance(val, numbers.Number) and \
-            not isinstance(val, dict):
-            raise EventTypePostException('val arg must be number or dict for histograms')
         self._payload.append( { 'ts': ts, 'val': val } )
 
     def post_data(self):
@@ -315,9 +312,6 @@ class EventTypeBulkPost(PostBase):
 
         if not isinstance(ts, int):
             raise EventTypeBulkPostException('ts arg must be an integer')
-        if not isinstance(val, numbers.Number) and \
-            not isinstance(val, dict):
-            raise EventTypeBulkPostException('val arg must be number or dict for histograms')
 
         data_entry = self._get_ts_payload_entry(ts)
         data_entry['val'].append({'event-type': event_type, 'val': val})
