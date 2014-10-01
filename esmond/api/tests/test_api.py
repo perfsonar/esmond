@@ -375,33 +375,36 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
         self.patcher.start()
 
+        self.authn = self.create_apikey(self.td.user_admin.username,
+                self.td.user_admin_apikey.key)
+
     def tearDown(self):
         self.patcher.stop()
 
     def test_bad_endpoints(self):
         # there is no router called nonexistent
         url = '/v1/device/nonexistent/interface/xe-0@2F0@2F0/in'
-        response = self.client.get(url)
+        response = self.client.get(url, authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         # rtr_a does not have an nonexistent interface
         url = '/v1/device/rtr_a/interface/nonexistent/in'
-        response = self.client.get(url)
+        response = self.client.get(url, authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         # there is no nonexistent sub collection in traffic
         url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent'
-        response = self.client.get(url)
+        response = self.client.get(url, authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         # there is no nonexistent collection 
         url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent/in'
-        response = self.client.get(url)
+        response = self.client.get(url, authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         # rtr_b has no traffic oidsets defined
         url = '/v1/device/rtr_b/interface/xe-0@2F0@2F0/nonexistent/in'
-        response = self.client.get(url)
+        response = self.client.get(url, authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
 
@@ -475,10 +478,10 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 400)
 
-        authn = self.create_apikey(self.td.user_seeall.username,
-                self.td.user_seeall_apikey.key)
+        # authn = self.create_apikey(self.td.user_seeall.username,
+        #         self.td.user_seeall_apikey.key)
 
-        response = self.api_client.get(url, authentication=authn)
+        response = self.api_client.get(url, authentication=self.authn)
 
         self.assertEqual(response.status_code, 200)
 
@@ -827,16 +830,16 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.post(url)
         self.assertEquals(response.status_code, 401)
 
-        authn = self.create_apikey(self.td.user_admin.username,
-                self.td.user_admin_apikey.key)
+        # authn = self.create_apikey(self.td.user_admin.username,
+        #         self.td.user_admin_apikey.key)
 
         # incorrect header
-        response = self.api_client.post(url, authentication=authn)
+        response = self.api_client.post(url, authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         # correct header but payload not serialized as json
         response = self.api_client.post(url, data={},
-                format='json', authentication=authn)
+                format='json', authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         # Below: correct header and json serialization, but incorrect
@@ -850,7 +853,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         payload = { 'bunk': 'data is not a list' }
 
         response = self.api_client.post(url, data=payload,
-                format='json', authentication=authn)
+                format='json', authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         payload = [
@@ -858,7 +861,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         ]
 
         response = self.api_client.post(url, data=payload,
-                format='json', authentication=authn)
+                format='json', authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         payload = [
@@ -866,7 +869,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         ]
 
         response = self.api_client.post(url, data=payload,
-                format='json', authentication=authn)
+                format='json', authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
         payload = [
@@ -874,7 +877,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         ]
 
         response = self.api_client.post(url, data=payload,
-                format='json', authentication=authn)
+                format='json', authentication=self.authn)
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_post_requests(self):
@@ -887,17 +890,17 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         # Params sent as json list and not post vars now.
         payload = [ params ]
-        authn = self.create_apikey(self.td.user_admin.username,
-                self.td.user_admin_apikey.key)
+        # authn = self.create_apikey(self.td.user_admin.username,
+        #         self.td.user_admin_apikey.key)
 
         response = self.api_client.post(url, data=payload, format='json',
-                authentication=authn)
+                authentication=self.authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
         url = '/v1/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
         response = self.api_client.post(url, data=payload, format='json',
-                authentication=authn)
+                authentication=self.authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
 
