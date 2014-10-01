@@ -8,6 +8,7 @@ before_install:
   - sudo apt-get install -y libsnmp-base libsnmp-dev libsnmp-python
 install:
   - pip install -r requirements.txt
+  - pip install coveralls
 # The env var stuff needs to be on one line.
 env:
   - VENV_ROOT=`pwd` ESMOND_ROOT=${VENV_ROOT}/devel ESMOND_CONF=${ESMOND_ROOT}/esmond-devel.conf DJANGO_SETTINGS_MODULE=esmond.settings
@@ -15,16 +16,18 @@ before_script:
   - python esmond/manage.py syncdb --noinput
   - python esmond/manage.py loaddata oidsets.json
 script:
-  - python esmond/manage.py test api.tests.test_api
-  - python esmond/manage.py test api.tests.test_client
-  - python esmond/manage.py test api.tests.test_correlator
-  - python esmond/manage.py test api.tests.test_persist
-  - python esmond/manage.py test api.tests.test_translator
-  - python esmond/manage.py test api.tests.test_util
-  - python esmond/manage.py test api.tests.perfsonar.test_api
-  - python esmond/manage.py test api.tests.perfsonar.test_client
-  - python esmond/manage.py test api.tests.perfsonar.test_data
-
+  - python esmond/manage.py test api.tests
+  # - python esmond/manage.py test api.tests.test_api
+  # - python esmond/manage.py test api.tests.test_client
+  # - python esmond/manage.py test api.tests.test_correlator
+  # - python esmond/manage.py test api.tests.test_persist
+  # - python esmond/manage.py test api.tests.test_translator
+  # - python esmond/manage.py test api.tests.test_util
+  # - python esmond/manage.py test api.tests.perfsonar.test_api
+  # - python esmond/manage.py test api.tests.perfsonar.test_client
+  # - python esmond/manage.py test api.tests.perfsonar.test_data
+# after_success:
+#   - coveralls
 
 
 
