@@ -16,6 +16,7 @@ before_script:
   - python esmond/manage.py syncdb --noinput
   - python esmond/manage.py loaddata oidsets.json
 script:
+  # Run each test seperately but append to same coverage report.
   - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_api
   - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_client
   - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_correlator
