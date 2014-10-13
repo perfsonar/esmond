@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Extending the perfSONAR API &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="index.html" />
+    <link rel="next" title="RPM Build Instructions" href="rpm_build.html" />
+    <link rel="prev" title="Hacking on esmond" href="hacking.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png _static/logo-esnet-ball-sm.png --><img src="_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_install.html">RPM Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Extending the perfSONAR API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_build.html">RPM Build Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client.html">Using perfSONAR data client libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="hacking.html" title="Previous Chapter: Hacking on esmond">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+      <span class="hidden-sm">
+        Hacking on esmon...
+      </span>
+    </a>
+  </li>
+  <li>
+    <a href="rpm_build.html" title="Next Chapter: RPM Build Instructions">
+      <span class="hidden-sm">
+        RPM Build Instru...
+      </span>
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href="http://github.com/esnet/esmond"><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">Extending the perfSONAR API</a><ul>
+<li><a class="reference internal" href="#summary">Summary</a></li>
+<li><a class="reference internal" href="#terminology">Terminology</a></li>
+<li><a class="reference internal" href="#adding-new-event-types">Adding New Event Types</a><ul>
+<li><a class="reference internal" href="#using-an-existing-data-type">Using an Existing Data Type</a></li>
+<li><a class="reference internal" href="#adding-a-new-data-type">Adding a New Data Type</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#adding-new-subject-types">Adding New Subject Types</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9">
+      
+  <div class="section" id="extending-the-perfsonar-api">
+<h1>Extending the perfSONAR API<a class="headerlink" href="#extending-the-perfsonar-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>This document describes how developers can extend the perfSONAR API to support new types of data and metadata.</p>
+</div>
+<div class="section" id="terminology">
+<h2>Terminology<a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>Below is a definition of common terms used throughout this document:</dt>
+<dd><ul class="first last simple">
+<li><strong>subject</strong> - The thing being measured. For example, a router interface, a point-to-point measurement, tea in china or really just about anything about which information can be collected.</li>
+<li><strong>event type</strong> - The kind of measurement being performed. For example, utilization, throughput, the price, etc. The event type provides context for interpreting the measurement (e.g. an event type of throughput is always expressed as an integer in bits per second and represents the speed of a transfer).</li>
+<li><strong>metadata</strong> - A set of parameters describing the subject including the list of event types being measured about that subject.</li>
+<li><strong>data</strong> - The measurement results. All data belongs to a particular event type and is defined by the time it was performed and the value it measured at that time.</li>
+<li><strong>data type</strong> - The fundamental form of the data. For example: integer, floating-point number, JSON object, etc. Each event type has a particular data type and multiple event types may have the same data type. The difference between the data type and the event type is that event type carries additional context with it such as the units or meaning of the data, whereas data just tells you how it will look (e.g. this is a number).</li>
+<li><strong>summarization</strong> - A transformation of the data over a particular time period into a form that provides additional information about the measurement or combines multiple data points of the same event type to accomplish goals such as reducing the number of data points returned.</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="adding-new-event-types">
+<h2>Adding New Event Types<a class="headerlink" href="#adding-new-event-types" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="using-an-existing-data-type">
+<span id="event-type-use-existing"></span><h3>Using an Existing Data Type<a class="headerlink" href="#using-an-existing-data-type" title="Permalink to this headline">¶</a></h3>
+<p>Adding a new event type to esmond is relatively easy if you would like to use an existing data type. The supported data types are as follows:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="11%" />
+<col width="81%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Data Type</th>
+<th class="head">Supported Summarizations</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><strong>float</strong></td>
+<td>aggregation
+average</td>
+<td>A floating point number</td>
+</tr>
+<tr class="row-odd"><td><strong>histogram</strong></td>
+<td>aggregation
+statistics</td>
+<td>A histogram where the key is a string bucket and the value is the count of items in that bucket.  The <em>statistics</em> summary is only available for histograms where the buckets are numeric.</td>
+</tr>
+<tr class="row-even"><td><strong>integer</strong></td>
+<td>aggregation
+average</td>
+<td>A whole number integer</td>
+</tr>
+<tr class="row-odd"><td><strong>json</strong></td>
+<td><em>None</em></td>
+<td>A JSON object or array. Any valid JSON is accepted.</td>
+</tr>
+<tr class="row-even"><td><strong>percentage</strong></td>
+<td>aggregation</td>
+<td>A special type that is registered as a numerator and a denominator but is returned in queries as a float. The registration form is used to improve summaries.</td>
+</tr>
+<tr class="row-odd"><td><strong>subinterval</strong></td>
+<td><em>None</em></td>
+<td>An object with a time, duration and val that represents a time interval.</td>
+</tr>
+</tbody>
+</table>
+<p>You may add a new event type by editing the file <strong>esmond/api/perfsonar/types.py</strong> and adding a new entry to the <tt class="docutils literal"><span class="pre">EVENT_TYPE_CONFIG</span></tt> dictionary. The <tt class="docutils literal"><span class="pre">EVENT_TYPE_CONFIG</span></tt> dictionary has keys with the event type name and another dictionary as the value indicating the <em>type</em> (a.k.a data type). For example, to add a new event type called <em>process-count</em> of type <em>integer</em> you would do the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>EVENT_TYPE_CONFIG = {
+    &quot;process-count&quot;: {
+        &quot;type&quot;: &quot;integer&quot;,
+    },
+    ...
+}
+</pre></div>
+</div>
+<p>That&#8217;s it! Restart esmond and your new event type is available for use.</p>
+</div>
+<div class="section" id="adding-a-new-data-type">
+<h3>Adding a New Data Type<a class="headerlink" href="#adding-a-new-data-type" title="Permalink to this headline">¶</a></h3>
+<p>If you would like to add a new data type not already supported there are a few additional steps. Most types can fit into the <tt class="docutils literal"><span class="pre">json</span></tt> data type, but you may want to define an explicit type if you want to be able to summarize an object. The following steps need to be performed to define a new data type:</p>
+<ol class="arabic">
+<li><p class="first">Open <em>esmond/api/perfsonar/validator.py</em></p>
+</li>
+<li><p class="first">Define a new class that extends <tt class="docutils literal"><span class="pre">DataValidator</span></tt>. You may override the following functions (none are required and all have a default behavior):</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>validate(obj)</strong> - Validate the given object, perform any required formatting (if any) and return the formatted value. By default just returns obj.value.</li>
+<li><strong>summary_cf(db, summary_type)</strong> - Return the name of the column family that should be used for the given summary type. By default returns <tt class="docutils literal"><span class="pre">None</span></tt> which means use the default. You may not need to override this if all your summaries are stored in the same column family as your base data.</li>
+<li><strong>average(db, obj)</strong> - Calculate an average on the given obj and store the result in obj.value. By default a <tt class="docutils literal"><span class="pre">NotImplementedError</span></tt> is raised.</li>
+<li><strong>aggregation(db, obj)</strong> - Aggregate given obj and store the result in obj.value. The meaning of aggregation is context-specific (e.g. for integer or float types it means calculate the sum). By default a <tt class="docutils literal"><span class="pre">NotImplementedError</span></tt> is raised.</li>
+<li><strong>statistics(db, obj)</strong> - Calculate the common statistical measures on obj such as min, median, max, etc and store result in obj.value. By default a <tt class="docutils literal"><span class="pre">NotImplementedError</span></tt> is raised.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Open <em>esmond/api/perfsonar/types.py</em></p>
+</li>
+<li><p class="first">In the file add a mapping of your data type to the <tt class="docutils literal"><span class="pre">DataValidator</span></tt> you just defined in <tt class="docutils literal"><span class="pre">TYPE_VALIDATOR_MAP</span></tt>. The key will be the name of your data type that you will use to reference it. For example, to add a new type <strong>foo</strong> you would do the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>TYPE_VALIDATOR_MAP = {
+    ...
+    &quot;foo&quot;: FooValidator(),
+    ...
+}
+</pre></div>
+</div>
+</li>
+<li><p class="first">Update <tt class="docutils literal"><span class="pre">ALLOWED_SUMMARIES</span></tt> to indicate which summaries your data type supports. For example, if our new type <em>foo</em> supports an <em>aggregation</em> and <em>average</em> you would define it as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>ALLOWED_SUMMARIES = {
+    ...
+    &quot;foo&quot;: [&#39;aggregation&#39;, &#39;average&#39;],
+    ...
+}
+</pre></div>
+</div>
+</li>
+<li><p class="first">Open <em>esmond/api/perfsonar/api.py</em> and modify <tt class="docutils literal"><span class="pre">EVENT_TYPE_CF_MAP</span></tt> to map your new data type to a column family:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">EVENT_TYPE_CF_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;histogram&#39;</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">raw_cf</span><span class="p">,</span>
+    <span class="s">&#39;integer&#39;</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">rate_cf</span><span class="p">,</span>
+    <span class="s">&#39;json&#39;</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">raw_cf</span><span class="p">,</span>
+    <span class="s">&#39;percentage&#39;</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">agg_cf</span><span class="p">,</span>
+    <span class="s">&#39;subinterval&#39;</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">raw_cf</span><span class="p">,</span>
+    <span class="s">&#39;foo&#39;</span><span class="p">:</span> <span class="n">db</span><span class="o">.</span><span class="n">rate_cf</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>That completes the steps required to define the new data type. You can now follow the steps in <a class="reference internal" href="#event-type-use-existing"><em>Using an Existing Data Type</em></a> to add a new event type using your data type.</p>
+</div>
+</div>
+<div class="section" id="adding-new-subject-types">
+<h2>Adding New Subject Types<a class="headerlink" href="#adding-new-subject-types" title="Permalink to this headline">¶</a></h2>
+<p><strong>NOTE:</strong> This section assumes some familiarity with <a class="reference external" href="https://www.djangoproject.com">Django</a> and <a class="reference external" href="http://tastypieapi.org">Tastypie</a>. See the provided links for more details</p>
+<p>It may be desirable to add support a new type of subject for which measurements can be collected. For example, the default esmond implementation comes with a <em>point-to-point</em> subject type for describing measurements performed between two IP addresses. Let&#8217;s say instead we want to measure some statistics about a car. Before we can define new event types like speed and miles per gallon, we need to define how we will describe our car. To do so, we perform the following steps:</p>
+<ol class="arabic">
+<li><p class="first"><strong>Create a new Django model with required parameters for all subjects of this type.</strong> We do this by opening <em>esmond/api/models.py</em> and defining a new class that extends <tt class="docutils literal"><span class="pre">django.db.models.Model</span></tt>.  There is one required foreign key to the <tt class="docutils literal"><span class="pre">PSMetadata</span></tt> table that must be named <em>metadata</em>. Continuing our car example we might define something like below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">PSCarSubject</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">OneToOneField</span><span class="p">(</span><span class="n">PSMetadata</span><span class="p">)</span>
+    <span class="n">vehicle_id_number</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+    <span class="n">make</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+    <span class="n">color</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">db_table</span> <span class="o">=</span> <span class="s">&quot;ps_car_subject&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Define a REST resource for your new subject.</strong> Open <em>esmond/api/perfsonar/api.py</em> and add a class that extends <tt class="docutils literal"><span class="pre">tastypie.resources.ModelResorce</span></tt> and maps to the model defined in the previous step. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">PSCarSubjectResource</span><span class="p">(</span><span class="n">ModelResource</span><span class="p">):</span>
+    <span class="n">psmetadata</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">ToOneField</span><span class="p">(</span><span class="s">&#39;esmond.api.perfsonar.api.PSArchiveResource&#39;</span><span class="p">,</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">queryset</span><span class="o">=</span><span class="n">PSCarSubject</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="n">resource_name</span> <span class="o">=</span> <span class="s">&#39;car_subject&#39;</span>
+        <span class="n">allowed_methods</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;get&#39;</span><span class="p">,</span> <span class="s">&#39;post&#39;</span><span class="p">]</span>
+        <span class="n">authentication</span> <span class="o">=</span> <span class="n">AnonymousGetElseApiAuthentication</span><span class="p">()</span>
+        <span class="n">authorization</span> <span class="o">=</span> <span class="n">DjangoAuthorization</span><span class="p">()</span>
+        <span class="n">excludes</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span>
+        <span class="n">filtering</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&quot;vehicle_id_number&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;exact&#39;</span><span class="p">],</span>
+            <span class="s">&quot;make&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;exact&#39;</span><span class="p">],</span>
+            <span class="s">&quot;model&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;exact&#39;</span><span class="p">],</span>
+            <span class="s">&quot;color&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;exact&#39;</span><span class="p">]</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">alter_detail_data_to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">formatted_objs</span> <span class="o">=</span> <span class="n">format_detail_keys</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">formatted_objs</span>
+
+    <span class="k">def</span> <span class="nf">alter_list_data_to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">formatted_objs</span> <span class="o">=</span> <span class="n">format_list_keys</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">formatted_objs</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Add the subject to the REST API&#8217;s PSArchiveResource.</strong> Open <em>esmond/api/perfsonar/api.py</em> and add your new subject type as a field to <tt class="docutils literal"><span class="pre">PSArchiveResource</span></tt>. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">PSArchiveResource</span><span class="p">(</span><span class="n">ModelResource</span><span class="p">):</span>
+    <span class="n">event_types</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">ToManyField</span><span class="p">(</span><span class="n">PSEventTypesResource</span><span class="p">,</span> <span class="s">&#39;pseventtypes&#39;</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s">&#39;psmetadata&#39;</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">p2p_subject</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">ToOneField</span><span class="p">(</span><span class="n">PSPointToPointSubjectResource</span><span class="p">,</span> <span class="s">&#39;pspointtopointsubject&#39;</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s">&#39;psmetadata&#39;</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">car_subject</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">ToOneField</span><span class="p">(</span><span class="n">PSCarSubjectResource</span><span class="p">,</span> <span class="s">&#39;pscarsubject&#39;</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s">&#39;psmetadata&#39;</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">md_parameters</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">ToManyField</span><span class="p">(</span><span class="n">PSMetadataParametersResource</span><span class="p">,</span> <span class="s">&#39;psmetadataparameters&#39;</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s">&#39;psmetadata&#39;</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Update the list of valid subject types</strong> The list of valid subject types lives in <strong>esmond/api/perfsonar/types.py</strong> as the <tt class="docutils literal"><span class="pre">SUBJECT_FIELDS</span></tt> array. Add the <tt class="docutils literal"><span class="pre">resource_name</span></tt> from the <cite>Meta`</cite> class of the <tt class="docutils literal"><span class="pre">tastypie.resources.ModelResorce</span></tt> (e.g. <tt class="docutils literal"><span class="pre">PSCarSubjectResource</span></tt>) previously defined. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SUBJECT_FIELDS</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;p2p_subject&#39;</span><span class="p">,</span> <span class="s">&#39;car_subject&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Map a subject type string to the REST Resource and Model Resource</strong> In the REST API metadata object there is a <em>subject-type</em> field that indicates the type of subject the metadata describes. You must define this string and add it to the <tt class="docutils literal"><span class="pre">SUBJECT_TYPE_MAP</span></tt> and <tt class="docutils literal"><span class="pre">SUBJECT_MODEL_MAP</span></tt> dictionaries in <strong>esmond/api/perfsonar/types.py</strong>. From a style perspective, the string should contain hyphens and not underscores (e.g. <em>point-to-point</em>). The <tt class="docutils literal"><span class="pre">SUBJECT_TYPE_MAP</span></tt> uses the string as the key and has the <tt class="docutils literal"><span class="pre">resource_name</span></tt> defined in the <tt class="docutils literal"><span class="pre">Meta</span></tt> class of the <tt class="docutils literal"><span class="pre">tastypie.resources.ModelResorce</span></tt> you defined earlier (e.g. <tt class="docutils literal"><span class="pre">PSCarSubjectResource</span></tt>). The <tt class="docutils literal"><span class="pre">SUBJECT_MODEL_MAP</span></tt> also uses the string as the key and the value is the name of our <tt class="docutils literal"><span class="pre">django.db.models.Model</span></tt> in all lowercase (e.g. <em>pscarsubject</em>). Putting it all together, you can add the <em>car</em> subject type as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SUBJECT_TYPE_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;car&quot;</span><span class="p">:</span> <span class="s">&quot;car_subject&quot;</span>
+<span class="p">}</span>
+
+<span class="n">SUBJECT_MODEL_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;point-to-point&quot;</span><span class="p">:</span> <span class="s">&quot;pspointtopointsubject&quot;</span><span class="p">,</span>
+    <span class="s">&quot;car&quot;</span><span class="p">:</span> <span class="s">&quot;pscarsubject&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Define how the subject parameters look in the REST interface</strong> You can map particular filters and fields in the REST interface to columns in your Django model by updating the <tt class="docutils literal"><span class="pre">SUBJECT_FILTER_MAP</span></tt> in <strong>esmond/api/perfsonar/types.py</strong>. The key is the name as it appears in the REST interface and the value is the column name as it would be seen by the <tt class="docutils literal"><span class="pre">PSMetadata</span></tt> model. The name as it appears in the REST Interface must not conflict with any existing subject fields. As a good practice, you may want to prefix your fields with something that indicates the subject to limit future conflicts. For example we will prefix <em>car-</em> in all our fields  Also, as a general style you will also want o use hyphens instead of underscored in your fields.  Continuing our example:</p>
+<div class="highlight-python"><div class="highlight"><pre>SUBJECT_FILTER_MAP = {
+    #point-to-point subject fields
+    &quot;source&quot;: &#39;p2p_subject__source&#39;,
+    &quot;destination&quot;: &#39;p2p_subject__destination&#39;,
+    &quot;tool-name&quot;: &#39;p2p_subject__tool_name&#39;,
+    &quot;measurement-agent&quot;: &#39;p2p_subject__measurement_agent&#39;,
+    &quot;input-source&quot;: &#39;p2p_subject__input_source&#39;,
+    &quot;input-destination&quot;: &#39;p2p_subject__input_destination&#39;
+    #car subject fields
+    &quot;car-vin&quot;: &#39;car_subject__vehicle_id_number&#39;,
+    &quot;car-make&quot;: &#39;car_subject__make&#39;,
+    &quot;car-model&quot;: &#39;car_subject__model&#39;,
+    &quot;car-color&quot;: &#39;car_subject__color&#39;,
+}
+</pre></div>
+</div>
+</li>
+</ol>
+<p>That completes the basic process. A few additional notes worth considering:</p>
+<ul class="simple">
+<li>If any of your subject fields are IP addresses you may add them to the <tt class="docutils literal"><span class="pre">IP_FIELDS</span></tt> array in <strong>esmond/api/perfsonar/types.py</strong>. This will allow users to search on this field using a hostname or IP address.</li>
+<li>As a reminder you are NOT limited to only the fields in the subject for your metadata. All <tt class="docutils literal"><span class="pre">PSMetadata</span></tt> models reference both the subject model and the <tt class="docutils literal"><span class="pre">PSMetadataParameters</span></tt> model. The latter allows arbitrary defining of new fields by the client registering with the API. This can lead to a performance hit if too many of these fields are searched on simultaneously due to the way database JOINs will be structured which is why here are subject fields as well. Only fields that are required and are most commonly searched should go in the subject table to allow for greatest flexibility.</li>
+</ul>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/perfsonar_extension.txt"
+     rel="nofollow">Source</a>
+</div>
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>
