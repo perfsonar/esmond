@@ -1,6 +1,6 @@
-************************
+****************
 RPM Installation
-************************
+****************
 
 Summary
 =======
@@ -11,16 +11,17 @@ System Requirements
 The RPM currently MUST be installed with **yum** on a `CentOS 6 <https://www.centos.org>`_ system with an i386/i686 or x86_64 architecture. It may also work on other flavors of RedHat Linux but it is only tested on CentOS. It assumes a particular Python 2.7 package available for CentOS 6. Other operating systems should look at the instructions for installing from source.
 
 Configuring Yum
-===================
+===============
 You will need to configure a few additional yum repositories on your target host to install the esmond RPM. This includes the yum repository containing esmond and a few others hosting its dependencies.
 
 Configuring EPEL
 ----------------
 `Extra Packages for Enterprise Linux (EPEL) <https://fedoraproject.org/wiki/EPEL>`_ is a repository run by Fedora containing additional packages commonly needed for systems. They provide an RPM for setting-up the yum repository. You can setup EPEL with the following:
-    #. Download the latest EPEL RPM. An architecture independent version of this RPM can be found on `this page <http://dl.fedoraproject.org/pub/epel/6/x86_64/repoview/epel-release.html>`_.
-    #. Install the RPM using `yum localinstall`. Example::
 
-        yum localinstall epel-release-6-VERSION.noarch.rpm
+#. Download the latest EPEL RPM. An architecture independent version of this RPM can be found on `this page <http://dl.fedoraproject.org/pub/epel/6/x86_64/repoview/epel-release.html>`_.
+#. Install the RPM using `yum localinstall`. Example::
+
+    yum localinstall epel-release-6-VERSION.noarch.rpm
 
 Configuring Datastax
 --------------------
@@ -36,10 +37,11 @@ Esmond also uses the `Cassandra Database <http://cassandra.apache.org>`_ as the 
 Configuring the perfSONAR Yum repository
 ----------------------------------------
 The final repo you need to configure is the repository containing the perfSONAR packages. Esmond currently lives in a pre-release yum repository. It also contains Python 2.7 packages for i386/i686 architectures. You can configure that repository with the following:
-    #. Download the architecture independent RPM `here <http://software.internet2.edu/branches/release-3.4/rpms/el6/x86_64/RPMS.main/Internet2-repo-0.5-2.noarch.rpm>`_
-    #. Run the following command::
+
+#. Download the architecture independent RPM `here <http://software.internet2.edu/branches/release-3.4/rpms/el6/x86_64/RPMS.main/Internet2-repo-0.5-2.noarch.rpm>`_
+#. Run the following command::
     
-        yum localinstall Internet2-repo-0.5-2.noarch.rpm
+    yum localinstall Internet2-repo-0.5-2.noarch.rpm
 
 Installing esmond
 ===================
@@ -123,4 +125,16 @@ Verifying the Installation
     * /var/log/esmond/django.log
     
 #. Verify you can login as a Django administrator by trying to open http://<your-host>/esmond/admin and logging-in with the username and password created when you ran `python esmond/manage.py syncdb` and were prompted. From this page you can manage API keys and user permissions for writing data.
+
+Debugging Common Issues
+=======================
+* If cassandra refuses to start and the log contains the error ``Error: Exception thrown by the agent : java.net.MalformedURLException: Local host name unknown: java.net.UnknownHostException``, you may need to adjust your cassandra configuration. The easiest method for correcting this situation is to open */etc/cassandra/cassandra-env.sh* and comment out lines referencing `com.sun.management.jmxremote` by adding a # character at the start of the line. They commented out lines should look like the following::
+
+    #JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.port=$JMX_PORT"
+    #JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.rmi.port=$JMX_PORT"
+    #JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.ssl=false"
+    #JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.authenticate=false"
+    #JVM_OPTS="$JVM_OPTS-Dcom.sun.management.jmxremote.password.file=/etc/cassandra/jmxremote.password"
+
+
 
