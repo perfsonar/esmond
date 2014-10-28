@@ -6,8 +6,7 @@ import requests
 import time
 import warnings
 
-from esmond.api.client.util import add_apikey_header
-from esmond.api.perfsonar.types import EVENT_TYPE_CONFIG
+from ..util import add_apikey_header
 
 MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
 MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())
@@ -183,7 +182,13 @@ class EventType(NodeInfo):
 
     @property
     def data_type(self):
-        return EVENT_TYPE_CONFIG[self.event_type]['type']
+        """Returns whether this data type is a histogram. Decision
+        based on event prefix which always indicates histogram type"""
+        
+        if self.event_type is not None and self.event_type.startswith("histogram-"):
+            return "histogram"
+        else:
+            return "unspecified"
 
     @property
     def summaries(self):

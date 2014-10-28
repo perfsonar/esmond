@@ -109,7 +109,7 @@ import sys
 
 from optparse import OptionParser
 
-from esmond.api.client.perfsonar.post import MetadataPost, EventTypePost
+from esmond_client.perfsonar.post import MetadataPost, EventTypePost
 
 import logging
 import time
@@ -302,6 +302,7 @@ def scan_and_load(file_path, last_record, options, _log):
             api_key=options.key, script_alias=options.script_alias, 
             **_generate_metadata_args(o))
         mp.add_event_type('throughput')
+        mp.add_event_type('streams-packet-retransmits')
         mp.add_event_type('failures')
         # Additional/optional data
         mp.add_freeform_key_value('bw-parallel-streams', o.streams)

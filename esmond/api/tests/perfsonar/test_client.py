@@ -15,7 +15,7 @@ from django.test import LiveServerTestCase
 
 from esmond.config import get_config, get_config_path
 from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin
-from esmond.api.client.perfsonar.query import ApiConnect, ApiFilters
+from esmond_client.perfsonar.query import ApiConnect, ApiFilters
 from esmond.api.tests.example_data import load_test_data
 from esmond.api.tests.perfsonar.test_data import TestResults, hist_data, rate_data
 

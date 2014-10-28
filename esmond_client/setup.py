@@ -4,13 +4,13 @@ from setuptools import setup
 
 setup(
     name='esmond_client',
-    version='1.0',
+    version='1.1',
     description='esmond API client libraries',
     long_description='esmond API client libraries.',
     author='Monte M. Goode',
     author_email='MMGoode@lbl.gov',
     url='http://software.es.net/esmond/',
-    packages=['esmond_client'],
+    packages=['esmond_client', 'esmond_client.perfsonar'],
     install_requires=['requests'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',

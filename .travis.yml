@@ -1,0 +1,33 @@
+language: python
+python:
+  - "2.7"
+services:
+  - cassandra
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y libsnmp-base libsnmp-dev libsnmp-python
+install:
+  - pip install -r requirements.txt
+  - pip install coveralls
+# The env var stuff needs to be on one line.
+env:
+  - VENV_ROOT=`pwd` ESMOND_ROOT=${VENV_ROOT}/devel ESMOND_CONF=${ESMOND_ROOT}/esmond-devel.conf DJANGO_SETTINGS_MODULE=esmond.settings
+before_script:
+  - python esmond/manage.py syncdb --noinput
+  - python esmond/manage.py loaddata oidsets.json
+script:
+  # Run each test seperately but append to same coverage report.
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_api
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_client
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_correlator
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_persist
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_translator
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_util
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.perfsonar.test_api
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.perfsonar.test_client
+  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.perfsonar.test_data
+after_success:
+  - coveralls
+
+
+

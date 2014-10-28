@@ -254,6 +254,7 @@ class CASSANDRA_DB(object):
         # Class members
         # Just the dict for the metadata cache.
         self.metadata_cache = {}
+        self.aggregation_cache = {}
         
     def flush(self):
         """
@@ -406,6 +407,73 @@ class CASSANDRA_DB(object):
             {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): 1}})
         
         if self.profiling: self.stats.aggregation_update((time.time() - t))
+
+    def get_agg_from_cache(self, agg, raw_data):
+        """
+        Manage aggregations using in-memory state similar to tracking
+        the previous value when calculating the base rates.  Cache is a 
+        multi-level dictionary that looks like:
+
+        cache[row_key][timestamp_of_agg_bin] = {'min': 900 'max': .....}
+
+        If a row key is not present in the cache, a lookup is done on 
+        the stat aggregation column family to see if this is a restart
+        situation.  If an entry is found for the agg timestamp/bin 
+        that is being processed, the cache is seeded with those values.  
+        This is the only time the database is read.
+
+        If no entry is found, then the cache is seeded with the initial
+        incoming values (new interface added, etc.)
+
+        Subsequent lookups will use the state in the cache.  When 
+        a new aggregation bin is started, the entry for the row 
+        key is 'zeroed out':
+
+        cache[row_key] = dict()
+
+        to remove entries for previous aggregation bins avoiding
+        memory leaks.
+        """
+
+        ret = None
+
+        if not self.aggregation_cache.get(agg.get_key(), None):
+            self.aggregation_cache[agg.get_key()] = dict()
+            # there is no row key for this aggregation so to 
+            # an initial lookup to see if this is a restart and seed 
+            # the cache from the currently requested aggregation.
+            # this read will only happen once per aggregation row
+            # after startup or when seeing a new interface, etc.
+            try:
+                lookup = self.stat_agg._column_family.get(agg.get_key(), 
+                            super_column=agg.ts_to_jstime())
+                self.aggregation_cache[agg.get_key()][agg.ts_to_jstime()] = dict(lookup)
+            except NotFoundException:
+                pass
+
+
+        if not self.aggregation_cache[agg.get_key()].get(agg.ts_to_jstime(), None):
+            # a new bin is being started, so blow away previous 
+            # timestamped key for this row and start again so as to 
+            # not be leaking memory.
+            self.aggregation_cache[agg.get_key()] = dict()
+            # and update with the new aggregation bin values.  do not
+            # return a value so update_stat_aggregations will do the 
+            # initial insert().
+            self.aggregation_cache[agg.get_key()][agg.ts_to_jstime()] = \
+                {'min': agg.val, 'max': agg.val, 'min_ts': raw_data.ts_to_jstime(), 'max_ts': raw_data.ts_to_jstime()}
+        else:
+            ret = self.aggregation_cache[agg.get_key()].get(agg.ts_to_jstime())
+
+        return ret
+
+    def update_agg_cache(self, agg, raw_data, minmax):
+        """Helper function to update agg cache when a new min or max happens."""
+        assert minmax in ['min', 'max']
+
+        self.aggregation_cache[agg.get_key()][agg.ts_to_jstime()]['{0}'.format(minmax)] = agg.val
+        self.aggregation_cache[agg.get_key()][agg.ts_to_jstime()]['{0}_ts'.format(minmax)] = raw_data.ts_to_jstime()
+
         
     def update_stat_aggregation(self, raw_data, agg_ts, freq):
         """
@@ -430,16 +498,8 @@ class CASSANDRA_DB(object):
         )
         
         t = time.time()
-        
-        ret = None
-        
-        try:
-            # Retrieve the appropriate stat aggregation.
-            ret = self.stat_agg._column_family.get(agg.get_key(), 
-                        super_column=agg.ts_to_jstime())
-        except NotFoundException:
-            # Nothing will be found if the rollup bin does not yet exist.
-            pass
+
+        ret = self.get_agg_from_cache(agg, raw_data)
         
         if self.profiling: self.stats.stat_fetch((time.time() - t))
         
@@ -454,10 +514,12 @@ class CASSANDRA_DB(object):
             updated = True
         elif agg.val > ret['max']:
             # Update max.
+            self.update_agg_cache(agg, raw_data, 'max')
             self.stat_agg.insert(agg.get_key(),
                 {agg.ts_to_jstime(): {'max': agg.val, 'max_ts': raw_data.ts_to_jstime()}})
             updated = True
         elif agg.val < ret['min']:
+            self.update_agg_cache(agg, raw_data, 'min')
             # Update min.
             self.stat_agg.insert(agg.get_key(),
                 {agg.ts_to_jstime(): {'min': agg.val, 'min_ts': raw_data.ts_to_jstime()}})
@@ -656,7 +718,40 @@ class CASSANDRA_DB(object):
                 results.append({'ts': kk, 'val': json.loads(vv)})
         
         return results
-            
+
+    def query_raw_first(self, path=None, freq=None, year=None):
+        """
+        Query interface to query the raw data.
+        """
+        key = get_rowkey(path,freq,year)
+        ret = self.raw_data._column_family.get(
+                key,
+                column_start="",
+                column_count=1
+                )
+        # Just return the results and format elsewhere.
+        results=[]
+        for k,v in ret.items():
+            results.append({'ts': k, 'val': json.loads(v)})
+        return results
+
+    def query_raw_last(self, path=None, freq=None, year=None):
+        """
+        Query interface to query the raw data.
+        """
+        key = get_rowkey(path,freq,year)
+        ret = self.raw_data._column_family.get(
+                key,
+                column_finish="",
+                column_reversed=True,
+                column_count=1
+                )
+        # Just return the results and format elsewhere.
+        results=[]
+        for k,v in ret.items():
+            results.append({'ts': k, 'val': json.loads(v)})
+        return results
+
     def __del__(self):
         pass
 

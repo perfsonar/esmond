@@ -24,9 +24,6 @@ To setup the database and load the basic config data (OIDs, OIDSets, etc)::
     # this loads the oidsets
     python esmond/manage.py loaddata oidsets.json
 
-    # this loads the test devices
-    python esmond/manage.py loaddata test_devices.json
-
 To run tests do::
 
     # run all the tests in the api app
