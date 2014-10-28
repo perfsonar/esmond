@@ -1,12 +1,23 @@
 #!/bin/sh
+#
+# crashsweep [directory with logfiles] [email address to send report to]
 
-MAILTO=me@example.com
-CRASHDIR=/data/esmond/crashlog
+if [ "$#" -ne 2 ]; then
+    echo "Usage: crashsweep [crashfile directory] [email address]"
+    exit 1
+fi
+
+CRASHDIR=$1
+MAILTO=$2
 TMPFILE=/tmp/crashsweep.$$
 
 cd ${CRASHDIR}
+if [ -e ${CRASHDIR}/.lastsweep ]; then
+    find ${CRASHDIR} -newer ${CRASHDIR}/.lastsweep -type f > ${TMPFILE}
+else
+    find ${CRASHDIR} -type f > ${TMPFILE}
+fi
 
-find ${CRASHDIR} -newer ${CRASHDIR}/.lastsweep -type f > ${TMPFILE}
 
 for f in `cat ${TMPFILE}`; do
     head -1 ${f} | grep 'KeyError.*TYPE_ID' > /dev/null
