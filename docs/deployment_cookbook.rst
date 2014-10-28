@@ -80,7 +80,7 @@ Test Cassandra/base install
     cassandra_servers = localhost:9160
     cassandra_user =
     cassandra_pass = 
-    cassandra_replicas = 2
+    cassandra_replicas = 1
 
 * Try installing the esmond keyspace/schema in cassandra by executing the following command: python esmond/manage.py cassandra_init
 * If successful, output like this should be generated::
