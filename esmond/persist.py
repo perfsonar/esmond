@@ -40,7 +40,7 @@ from esmond.api.dataseries import fit_to_bins
 from esmond.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus, \
                               OutletRef
 
-from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin
+from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin, MaximumRetryException
 
 
 try:
@@ -428,7 +428,10 @@ class CassandraPollPersister(PollPersister):
 
     def flush(self):
         self.log.debug('flush state called.')
-        self.db.flush()
+        try:
+            self.db.flush()
+        except MaximumRetryException:
+            self.log.warn("flush failed. MaximumRetryException")
 
     def store(self, result):
         oidset = self.oidsets[result.oidset_name]

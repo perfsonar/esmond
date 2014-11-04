@@ -59,7 +59,7 @@ from esmond.util import get_logger
 
 # Third party
 from pycassa import PycassaLogger
-from pycassa.pool import ConnectionPool, AllServersUnavailable
+from pycassa.pool import ConnectionPool, AllServersUnavailable, MaximumRetryException
 from pycassa.columnfamily import ColumnFamily, NotFoundException
 from pycassa.system_manager import *
 
@@ -380,9 +380,12 @@ class CASSANDRA_DB(object):
         
         t = time.time()
         # A super column insert.  Both val and is_valid are counter types.
-        self.rates.insert(ratebin.get_key(),
-            {ratebin.ts_to_jstime(): {'val': ratebin.val, 'is_valid': ratebin.is_valid}})
-        
+        try:
+            self.rates.insert(ratebin.get_key(),
+                {ratebin.ts_to_jstime(): {'val': ratebin.val, 'is_valid': ratebin.is_valid}})
+        except MaximumRetryException:
+            self.log.warn("update_rate_bin failed. MaximumRetryException")
+
         if self.profiling: self.stats.baserate_update((time.time() - t))
         
     def update_rate_aggregation(self, raw_data, agg_ts, freq):
@@ -403,9 +406,12 @@ class CASSANDRA_DB(object):
         # Super column update.  The base rate frequency is stored as the column
         # name key that is not 'val' - this will be used by the query interface
         # to generate the averages.  Both values are counter types.
-        self.aggs.insert(agg.get_key(), 
-            {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): 1}})
-        
+        try:
+            self.aggs.insert(agg.get_key(),
+                {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): 1}})
+        except MaximumRetryException:
+            self.log.warn("update_rate_aggregation failed. MaximumRetryException")
+
         if self.profiling: self.stats.aggregation_update((time.time() - t))
 
     def get_agg_from_cache(self, agg, raw_data):
