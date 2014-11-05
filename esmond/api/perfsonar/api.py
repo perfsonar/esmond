@@ -412,7 +412,10 @@ class PSArchiveResource(CustomModelResource):
             return None
         GLOBAL_BASE_URI = uri.rstrip('/')
         if obj is not None:
-            uri = "%s%s" % (uri, obj.metadata_key)
+            #this is a detail URL
+            parts = uri.strip('/').split('/')
+            del parts[-1]
+            GLOBAL_BASE_URI = "/%s" % ('/'.join(parts))
             
         return uri
     

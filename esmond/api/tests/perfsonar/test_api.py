@@ -84,7 +84,7 @@ class PSArchiveResourceTest(PSAPIBaseTest):
            "measurement-agent":"198.129.254.30",
            "input-destination":"lbl-pt1.es.net",
            "destination":"198.129.254.30",
-           "uri":"/perfsonar/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/",
+           "uri":"/perfsonar/archive/e99bbc44b7b041c7ad9e51dc6a053b8c",
            "event-types":[
               {
                  "time-updated":1398785370,
