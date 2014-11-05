@@ -51,6 +51,7 @@ EVENT_TYPE_CF_MAP = {
     'subinterval': db.raw_cf,
     'float': db.agg_cf
 }
+GLOBAL_BASE_URI = None
 
 #global utility functions
 def format_key(k):
@@ -98,6 +99,27 @@ def valid_time(t):
     except ValueError:
         raise BadRequest("Time parameter must be an integer")
     return t
+
+def get_base_uri(metadata):
+    # Performance hack as looking up base URL for multiple metadata objects
+    # gets expenisive according to profiling
+    
+    # need to tell it we want the global version 
+    global GLOBAL_BASE_URI
+    if GLOBAL_BASE_URI is not None:
+        return GLOBAL_BASE_URI
+    
+    #build base url if not already available
+    uri = PSArchiveResource().get_resource_uri(metadata)
+    if uri is None:
+        return None
+    uri = uri.strip('/')
+    parts = uri.split('/')
+    del parts[-1]
+    GLOBAL_BASE_URI = "/%s" % ('/'.join(parts))
+    
+    return GLOBAL_BASE_URI
+    
     
 def handle_time_filters(filters):
     end_time = int(time())
@@ -257,8 +279,10 @@ class PSEventTypesResource(ModelResource):
         if obj:
             if(obj.encoded_summary_type() not in INVERSE_SUMMARY_TYPES):
                 raise BadRequest("Invalid summary type %s" % obj.encoded_summary_type())
-            uri = "%s%s/%s" % (
-                PSArchiveResource().get_resource_uri(obj.metadata),
+            
+            uri = "%s/%s/%s/%s" % (
+                get_base_uri(obj.metadata) ,
+                obj.metadata.metadata_key,
                 obj.encoded_event_type(),
                 INVERSE_SUMMARY_TYPES[obj.encoded_summary_type()])
             if obj.summary_type != 'base':
