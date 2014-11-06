@@ -377,7 +377,7 @@ class PSArchiveResource(CustomModelResource):
     md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters', related_name='psmetadata', full=True, null=True, blank=True)
     
     class Meta:
-        queryset=PSMetadata.objects.all()
+        queryset=PSMetadata.objects.select_related('pspointtopointsubject').prefetch_related('pseventtypes', 'psmetadataparameters').all()
         always_return_data = True
         resource_name = 'archive'
         detail_uri_name = 'metadata_key'
