@@ -57,6 +57,7 @@ class EsmondConfig(object):
         self.cassandra_pass = None
         self.cassandra_servers = []
         self.cassandra_user = None
+        self.cassandra_replicas = 1
         # Leave this here so testing code can explicitly set but remove
         # from config file parsing.
         self.db_clear_on_testing = False
