@@ -404,7 +404,7 @@ class PSArchiveResource(CustomModelResource):
         # need to tell it we want the global version 
         global GLOBAL_BASE_URI
         if (GLOBAL_BASE_URI is not None) and (obj is not None):
-            return "%s/%s" % (GLOBAL_BASE_URI, obj.metadata_key)
+            return "%s/%s/" % (GLOBAL_BASE_URI, obj.metadata_key)
         
         #build base url if not already available
         uri = super(CustomModelResource, self).get_resource_uri(obj)
