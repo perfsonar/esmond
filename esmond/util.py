@@ -143,6 +143,8 @@ def init_logging(name, facility, level=logging.INFO,
         console = logging.StreamHandler()
         console.setFormatter(logging.Formatter(format))
         log.addHandler(console)
+    dlogger=logging.getLogger('django.db.backends')
+    dlogger.setLevel(logging.WARN)
 
 def get_logger(name):
     return logging.getLogger(name)
