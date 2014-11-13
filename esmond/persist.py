@@ -733,7 +733,10 @@ class IfRefPollPersister(HistoryTablePersister):
 
         for name, val in self.data['ipAdEntIfIndex']:
             foo, ipAddr = name.split('.', 1)
-            ifref_objs[ifIndex_map[val]]['ipAddr'] = ipAddr
+            try:
+                ifref_objs[ifIndex_map[val]]['ipAddr'] = ipAddr
+            except KeyError as e:
+                self.log.warn("device has an ipAddr entry with no ifTable row. ifIndex is: %s ipAddr is: %s"%(val,ipAddr))
 
         remaining_oids = self.data.keys()
         remaining_oids.remove('ifName')
@@ -745,7 +748,11 @@ class IfRefPollPersister(HistoryTablePersister):
                     val = int(val)
                 foo, ifIndex = name.split('.')
                 ifIndex = int(ifIndex)
-                ifref_objs[ifIndex_map[ifIndex]][oid] = val
+                try:
+                    ifref_objs[ifIndex_map[ifIndex]][oid] = val
+                except KeyError as e:
+                    self.log.warn("Key error: %s"%e)
+                    self.log.warn("ifIndex is: %s Oid is: %s"%(ifIndex,oid))
 
         return ifref_objs
 
