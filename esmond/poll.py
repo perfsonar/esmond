@@ -112,7 +112,7 @@ class IfNameCorrelator(PollCorrelator):
 
     oids = ['ifName', 'ifAlias']
 
-    def setup(self, data, ignore_no_ifalias=True):
+    def setup(self, data, ignore_no_ifalias=False):
         self.xlate = self._table_parse(filter_data('ifName', data))
 
         if ignore_no_ifalias:
