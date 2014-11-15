@@ -693,6 +693,37 @@ class HistoryTablePersister(PollPersister):
 
         return (adds, changes, deletes)
 
+class GenericTablePersister(HistoryTablePersister):
+    """
+    This class provides a way to try and collect fairly
+    arbitrary SNMP tables for viewing. Since cassandra
+    doesn't list the keys easily we need to track them
+    in postgres using a method similar to IfRefPoll
+    """
+    def store(self, result):
+        t0 = time.time()
+        self.data = result.data
+        self.device = Device.objects.active().get(name=result.device_name)
+        self.old_data = RowRef.objects.active().filter(device=self.device)
+        self.new_data = self._build_objs()
+        nvar = len(self.new_data)
+        adds, changes, deletes = self.update_db()
+        self.log.debug("processed %d vars [%d/%d/%d] in %f seconds: %s" % (
+            nvar, adds, changes, deletes, time.time() - t0, result))
+
+    def _new_row_from_obj(self, obj):
+        obj['device'] = self.device
+        obj['begin_time'] = now()
+        obj['end_time'] = max_datetime
+        return RowRef(**obj)
+
+    def _build_objs(self):
+        objs = {}
+        for oid, entries in self.data.iteritems():
+            for k, val in entries:
+                index='.'.join(k.split('.')[1:])
+                objs[k] = dict(index=index,val=val)
+        return objs
 
 class IfRefPollPersister(HistoryTablePersister):
     int_oids = ('ifSpeed', 'ifHighSpeed', 'ifMtu', 'ifType',

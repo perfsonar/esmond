@@ -339,6 +339,27 @@ class OutletRef(models.Model):
                     outletStatus=self.outletStatus,
                     outletControlState=self.outletControlState)
 
+class RowRef(models.Model):
+    device = models.ForeignKey(Device, db_column="deviceid")
+    rowkey = models.CharField(max_length=128)
+    index = models.CharField(max_length=128)
+    val = models.CharField(max_length=128)
+    begin_time = models.DateTimeField()
+    end_time = models.DateTimeField(default=max_datetime)
+    objects = HistoryTableManager()
+    class Meta:
+        db_table = "rowref"
+        ordering = ["device__name", "rowkey"]
+
+    def __unicode__(self):
+        return "%s %s: %s" % (self.device, self.rowkey, self.val)
+
+    def to_dict(self):
+        return dict(device=self.device.name, 
+                    rowkey=self.outletID,
+                    index=self.outletName,
+                    val=self.outletStatus)
+
 class LSPOpStatus(models.Model):
     """Metadata about MPLS LSPs."""
     device = models.ForeignKey(Device, db_column="deviceid")
