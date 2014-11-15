@@ -42,7 +42,7 @@ class PollCorrelator(object):
     """polling correlators correlate an oid to some other field.  this is
     typically used to generate the key needed to store the variable."""
 
-    def __init__(self):
+    def __init__(self,args=None):
         pass
 
     def setup(self, data):
@@ -139,6 +139,31 @@ class IfNameCorrelator(PollCorrelator):
             raise PollUnknownIfIndex(ifIndex)
 
 
+class GenericOidCorrelator(PollCorrelator):
+    """This translates indexes via a simple lookup
+    on another row in the table with similar indexes.
+    The OID to correlate is specified as an argument
+    to the Poller.
+    """
+
+    def __init__(self,args):
+        self.oids=[args['correlate_oid'],]
+
+    def setup(self, data):
+        self.xlate = self._table_parse(filter_data(self.oids[0], data))
+
+    def lookup(self, oid, var):
+        tableIndex = var.split('.')[-1]
+        try:
+            r = self.xlate[tableIndex]
+            if r:
+                return [oid.name, r]
+            else:
+                return None
+        except KeyError:
+            raise PollUnknownIfIndex(ifIndex)
+
+
 class SentryCorrelator(object):
     oids = ['outletID', 'tempHumidSensorID']
 
@@ -217,7 +242,7 @@ class JnxFirewallCorrelator(PollCorrelator):
 
     oids = []
 
-    def __init__(self):
+    def __init__(self,args=None):
         PollCorrelator.__init__(self)
         self.oidex = re.compile('([^"]+)\."([^"]+)"\."([^"]+)"\.(.+)')
 
@@ -241,7 +266,7 @@ class JnxCOSCorrelator(IfNameCorrelator):
         jnxCosIfqTailDropPkts
         jnxCosIfqTotalRedDropPkts
     """
-    def __init__(self):
+    def __init__(self,args=None):
         PollCorrelator.__init__(self)
         self.oidex = re.compile('([^.]+)\.(\d+)\."([^"]+)"')
 
@@ -677,7 +702,7 @@ class CorrelatedPoller(Poller):
     def __init__(self, config, device, oidset, poller, persistq):
         Poller.__init__(self, config, device, oidset, poller, persistq)
 
-        self.correlator = eval(self.poller_args['correlator'])()
+        self.correlator = eval(self.poller_args['correlator'])(args=self.poller_args)
         self.poll_oids.extend(self.correlator.oids)
 
         self.results = {}
