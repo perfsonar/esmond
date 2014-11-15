@@ -51,6 +51,7 @@ EVENT_TYPE_CF_MAP = {
     'subinterval': db.raw_cf,
     'float': db.agg_cf
 }
+GLOBAL_BASE_URI = None
 
 #global utility functions
 def format_key(k):
@@ -98,6 +99,19 @@ def valid_time(t):
     except ValueError:
         raise BadRequest("Time parameter must be an integer")
     return t
+
+def get_base_uri(metadata):
+    # Performance hack as looking up base URL for multiple metadata objects
+    # gets expenisive according to profiling
+    
+    # need to tell it we want the global version 
+    global GLOBAL_BASE_URI
+    if GLOBAL_BASE_URI is not None:
+        return GLOBAL_BASE_URI
+    
+    #build base url if not already available
+    return PSArchiveResource().get_resource_uri(metadata)
+    
     
 def handle_time_filters(filters):
     end_time = int(time())
@@ -129,8 +143,16 @@ def handle_time_filters(filters):
             "end": end_time,
             "has_filters": has_filters}
 
-# Resource classes 
-class PSEventTypesResource(ModelResource):
+# Resource classes
+class CustomModelResource(ModelResource):
+    
+    def __init__(self, api_name=None):
+        self.fields = self.base_fields
+
+        if not api_name is None:
+            self._meta.api_name = api_name
+            
+class PSEventTypesResource(CustomModelResource):
     psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
      
     class Meta:
@@ -257,8 +279,10 @@ class PSEventTypesResource(ModelResource):
         if obj:
             if(obj.encoded_summary_type() not in INVERSE_SUMMARY_TYPES):
                 raise BadRequest("Invalid summary type %s" % obj.encoded_summary_type())
-            uri = "%s%s/%s" % (
-                PSArchiveResource().get_resource_uri(obj.metadata),
+            
+            uri = "%s/%s/%s/%s" % (
+                get_base_uri(obj.metadata) ,
+                obj.metadata.metadata_key,
                 obj.encoded_event_type(),
                 INVERSE_SUMMARY_TYPES[obj.encoded_summary_type()])
             if obj.summary_type != 'base':
@@ -277,7 +301,7 @@ class PSEventTypesResource(ModelResource):
             else:
                 formatted_filters[filter] = filters[filter]
                 
-        return super(ModelResource, self).build_filters(formatted_filters)
+        return super(CustomModelResource, self).build_filters(formatted_filters)
             
 class PSEventTypeSummaryResource(PSEventTypesResource):
     class Meta:
@@ -303,7 +327,7 @@ class PSEventTypeSummaryResource(PSEventTypesResource):
              
         return formatted_summary_objs
 
-class PSPointToPointSubjectResource(ModelResource):
+class PSPointToPointSubjectResource(CustomModelResource):
     psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
     
     class Meta:
@@ -329,8 +353,11 @@ class PSPointToPointSubjectResource(ModelResource):
     def alter_list_data_to_serialize(self, request, data):
         formatted_objs = format_list_keys(data)
         return formatted_objs
-
-class PSMetadataParametersResource(ModelResource):
+    
+    def get_resource_uri(self, bundle_or_obj=None):
+        return None
+    
+class PSMetadataParametersResource(CustomModelResource):
     psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
     
     class Meta:
@@ -340,14 +367,17 @@ class PSMetadataParametersResource(ModelResource):
         authentication = AnonymousGetElseApiAuthentication()
         authorization = DjangoAuthorization()
         excludes = ['id']
-        
-class PSArchiveResource(ModelResource):
+    
+    def get_resource_uri(self, bundle_or_obj=None):
+        return None
+    
+class PSArchiveResource(CustomModelResource):
     event_types = fields.ToManyField(PSEventTypesResource, 'pseventtypes', related_name='psmetadata', full=True, null=True, blank=True)
     p2p_subject = fields.ToOneField(PSPointToPointSubjectResource, 'pspointtopointsubject', related_name='psmetadata', full=True, null=True, blank=True)
     md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters', related_name='psmetadata', full=True, null=True, blank=True)
     
     class Meta:
-        queryset=PSMetadata.objects.all()
+        queryset=PSMetadata.objects.select_related('pspointtopointsubject').prefetch_related('pseventtypes', 'psmetadataparameters').all()
         always_return_data = True
         resource_name = 'archive'
         detail_uri_name = 'metadata_key'
@@ -363,13 +393,40 @@ class PSArchiveResource(ModelResource):
             "p2p_subject" : ALL_WITH_RELATIONS
         }
     
+    def get_resource_uri(self, bundle_or_obj=None):
+        # Performance hack as looking up base URL for multiple metadata objects
+        # gets expenisive according to profiling
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+        
+        # need to tell it we want the global version 
+        global GLOBAL_BASE_URI
+        if (GLOBAL_BASE_URI is not None) and (obj is not None):
+            return "%s/%s/" % (GLOBAL_BASE_URI, obj.metadata_key)
+        
+        #build base url if not already available
+        uri = super(CustomModelResource, self).get_resource_uri(obj)
+        if uri is None:
+            return None
+        GLOBAL_BASE_URI = uri.rstrip('/')
+        if obj is not None:
+            #this is a detail URL
+            parts = uri.strip('/').split('/')
+            del parts[-1]
+            GLOBAL_BASE_URI = "/%s" % ('/'.join(parts))
+            
+        return uri
+    
+    
     def obj_create(self, bundle, **kwargs):
         #check if medata already exists. if it does, return existing object
         existing_md = PSMetadata.objects.filter(checksum=bundle.data["checksum"])
         if existing_md.count() > 0:
             bundle.obj = existing_md[0]
         else:
-            bundle = super(ModelResource, self).obj_create(bundle, **kwargs)
+            bundle = super(CustomModelResource, self).obj_create(bundle, **kwargs)
             
         return bundle
     
@@ -383,9 +440,9 @@ class PSArchiveResource(ModelResource):
         subject_obj = bundle.related_objects_to_save.get(subject_type, None)
         if subject_obj is not None:
             subject_obj.metadata_id = bundle.obj.id
-        super(ModelResource, self).save_related(bundle)
+        super(CustomModelResource, self).save_related(bundle)
         
-        return super(ModelResource, self).save_m2m(bundle)
+        return super(CustomModelResource, self).save_m2m(bundle)
     
     def format_metadata_obj(self, obj, formatted_subj_fields):     
         obj = format_detail_keys(obj)
@@ -477,7 +534,7 @@ class PSArchiveResource(ModelResource):
         #set metatadatakey
         formatted_data['metadata_key'] = slugify(unicode(uuid.uuid4().hex))
         
-        return super(ModelResource, self).alter_deserialized_detail_data(request, formatted_data)
+        return super(CustomModelResource, self).alter_deserialized_detail_data(request, formatted_data)
     
     def calculate_checksum(self, data, subject_field):
         data['md_parameters'] = sorted(data['md_parameters'], key=lambda md_param: md_param["parameter_key"])
@@ -518,7 +575,7 @@ class PSArchiveResource(ModelResource):
     def dispatch_detail(self, request, **kwargs):
         if request.method.lower() == 'post':
             return PSBulkTimeSeriesResource().dispatch_list(request, **kwargs)
-        return super(ModelResource, self).dispatch_detail(request, **kwargs)
+        return super(CustomModelResource, self).dispatch_detail(request, **kwargs)
     
     
     def dispatch_event_type_detail(self, request, **kwargs):
@@ -659,7 +716,7 @@ class PSArchiveResource(ModelResource):
             event_type_qs.append(Q(pseventtypes__time_updated__lte=end))
             
         # Create standard ORM filters
-        orm_filters = super(ModelResource, self).build_filters(formatted_filters)
+        orm_filters = super(CustomModelResource, self).build_filters(formatted_filters)
         
         #Add event type and parameters filters separately for special processing in apply_filters
         orm_filters.update({'event_type_qs': event_type_qs})
@@ -681,7 +738,7 @@ class PSArchiveResource(ModelResource):
         if 'parameter_qs' in applicable_filters:
             parameter_qs = applicable_filters.pop('parameter_qs')
             
-        query = super(ModelResource, self).apply_filters(request, applicable_filters)
+        query = super(CustomModelResource, self).apply_filters(request, applicable_filters)
         if event_type_qs:
             query = query.filter(*event_type_qs)
         for parameter_q in parameter_qs:
