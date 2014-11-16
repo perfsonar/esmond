@@ -150,10 +150,13 @@ class OIDSet(models.Model):
         ttl = None
         if self.poller_args:
             for i in self.poller_args.split(" "):
-                k,v = i.split("=")
-                if k == "ttl":
-                    ttl = int(v)
-                    break
+                try:
+                    k,v = i.split("=")
+                    if k == "ttl":
+                        ttl = int(v)
+                        break
+                except ValueError:
+                    pass
         return ttl
 
     @property
