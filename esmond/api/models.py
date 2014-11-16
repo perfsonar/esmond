@@ -344,7 +344,7 @@ class OutletRef(models.Model):
 
 class RowRef(models.Model):
     device = models.ForeignKey(Device, db_column="deviceid")
-    rowkey = models.CharField(max_length=128)
+    oid = models.ForeignKey(OID, db_column="oidid")
     index = models.CharField(max_length=128)
     val = models.CharField(max_length=128)
     begin_time = models.DateTimeField()

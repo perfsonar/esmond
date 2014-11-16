@@ -720,9 +720,10 @@ class GenericTablePersister(HistoryTablePersister):
     def _build_objs(self):
         objs = {}
         for oid, entries in self.data.iteritems():
+            db_oid = OID.objects.get(name=oid)
             for k, val in entries:
                 index='.'.join(k.split('.')[1:])
-                objs[k] = dict(index=index,val=val)
+                objs[k] = dict(index=index,val=val,oid=dboid)
         return objs
 
 class IfRefPollPersister(HistoryTablePersister):
