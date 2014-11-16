@@ -347,21 +347,23 @@ class RowRef(models.Model):
     oid = models.ForeignKey(OID, db_column="oidid")
     index = models.CharField(max_length=128)
     val = models.CharField(max_length=128)
+    rowkey = models.CharField(max_length=256)
     begin_time = models.DateTimeField()
     end_time = models.DateTimeField(default=max_datetime)
     objects = HistoryTableManager()
     class Meta:
         db_table = "rowref"
-        ordering = ["device__name", "rowkey"]
+        ordering = ["device__name", "oid", "val"]
 
     def __unicode__(self):
-        return "%s %s: %s" % (self.device, self.rowkey, self.val)
+        return "%s %s: %s" % (self.device, self.oid, self.val)
 
     def to_dict(self):
         return dict(device=self.device.name, 
-                    rowkey=self.outletID,
-                    index=self.outletName,
-                    val=self.outletStatus)
+                    oid=self.oid.name,
+                    index=self.index,
+                    val=self.val,
+                    rowkey=self.rowkey)
 
 class LSPOpStatus(models.Model):
     """Metadata about MPLS LSPs."""

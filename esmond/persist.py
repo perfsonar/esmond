@@ -38,7 +38,7 @@ from esmond.error import ConfigError
 from esmond.api.dataseries import fit_to_bins
 
 from esmond.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus, \
-                              OutletRef, RowRef
+                              OutletRef, RowRef, OID
 
 from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin, MaximumRetryException
 
@@ -701,6 +701,7 @@ class GenericTablePersister(HistoryTablePersister):
     in postgres using a method similar to IfRefPoll
     """
     def store(self, result):
+        self.key='rowkey'
         t0 = time.time()
         self.data = result.data
         self.device = Device.objects.active().get(name=result.device_name)
@@ -723,7 +724,7 @@ class GenericTablePersister(HistoryTablePersister):
             db_oid = OID.objects.get(name=oid)
             for k, val in entries:
                 index='.'.join(k.split('.')[1:])
-                objs[k] = dict(index=index,val=val,oid=dboid)
+                objs[k] = dict(index=index,val=val,oid=db_oid,rowkey=k)
         return objs
 
 class IfRefPollPersister(HistoryTablePersister):
