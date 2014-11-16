@@ -38,7 +38,7 @@ from esmond.error import ConfigError
 from esmond.api.dataseries import fit_to_bins
 
 from esmond.api.models import Device, OIDSet, IfRef, ALUSAPRef, LSPOpStatus, \
-                              OutletRef
+                              OutletRef, RowRef
 
 from esmond.cassandra import CASSANDRA_DB, RawRateData, BaseRateBin, AggregationBin, MaximumRetryException
 
