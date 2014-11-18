@@ -28,7 +28,7 @@ from esmond.api.auth import EsmondAuthorization, AnonymousGetElseApiAuthenticati
     AnonymousBulkLimitElseApiAuthentication, AnonymousTimeseriesBulkLimitElseApiAuthentication, \
     AnonymousThrottle
 from esmond.api.dataseries import QueryUtil, Fill
-from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef, Inventory
+from esmond.api.models import Device, IfRef, DeviceOIDSetMap, OIDSet, OID, OutletRef, Inventory, TableConfig, RowRef
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 from esmond.util import atdecode, atencode
@@ -231,6 +231,22 @@ class DeviceResource(ModelResource):
                 % (self._meta.resource_name,),
                 self.wrap_view('dispatch_interface_list'),
                 name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<device>[\w\d_.-]+)/table/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_table_list'),
+                name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<device>[\w\d_.-]+)/table/(?P<table_name>[\w\d_.\-@]+)/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_table_detail'),
+                name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<device>[\w\d_.-]+)/table/(?P<table_name>[\w\d_.\-@]+)/(?P<target>[\w\d_.\-@]+)/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_table_oid'),
+                name="api_get_children"),
+            url(r"^(?P<resource_name>%s)/(?P<device>[\w\d_.-]+)/table/(?P<table_name>[\w\d_.\-@]+)/(?P<target>[\w\d_.\-@]+)/(?P<oid>[\w\d_.\-@]+)/?$"
+                % (self._meta.resource_name,),
+                self.wrap_view('dispatch_table_oid_data'),
+                name="api_get_children"),
             url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/interface/(?P<iface_name>[\w\d_.\-@]+)/?$"
                 % (self._meta.resource_name,),
                 self.wrap_view('dispatch_interface_detail'),
@@ -259,6 +275,28 @@ class DeviceResource(ModelResource):
         return InterfaceResource().dispatch_list(request,
                 device__name=kwargs['name'])
 
+    def dispatch_table_list(self, request, **kwargs):
+        return TableResource().dispatch_list(request,
+                device_name=kwargs['device'])
+
+    def dispatch_table_detail(self, request, **kwargs):
+        return TableDetailResource().dispatch_list(request,
+                device_name=kwargs['device'], 
+                table_name=kwargs['table_name'] )
+
+    def dispatch_table_oid(self, request, **kwargs):
+        return TableOIDResource().dispatch_list(request,
+                device_name=kwargs['device'],
+                table_name=kwargs['table_name'],
+                target=kwargs['target'] )
+
+    def dispatch_table_oid_data(self, request, **kwargs):
+        return TableDataResource().dispatch_detail(request,
+                device_name=kwargs['device'],
+                table_name=kwargs['table_name'],
+                target=kwargs['target'],
+                oid=kwargs['oid'] )
+
     def dispatch_interface_detail(self, request, **kwargs):
         return InterfaceResource().dispatch_detail(request,
                 device__name=kwargs['name'], ifName=kwargs['iface_name'] )
@@ -267,7 +305,7 @@ class DeviceResource(ModelResource):
         return InterfaceDataResource().dispatch_detail(request, **kwargs)
 
     def dehydrate_children(self, bundle):
-        children = ['interface', 'system', 'all']
+        children = ['interface', 'system', 'table']
 
         base_uri = self.get_resource_uri(bundle)
         return [ dict(leaf=False, uri='%s%s' % (base_uri, x), name=x)
@@ -346,6 +384,331 @@ class OidResource(ModelResource):
     def obj_get_list(self, bundle, **kwargs):
         return super(OidResource, self).obj_get_list(bundle, **kwargs)
 
+
+class TableResource(Resource):
+    """A table of SNMP OIDs being collected. It may be
+    interfaces, or something else entirely.
+    """
+    name = fields.CharField(attribute="name")
+    leaf = fields.BooleanField(attribute="leaf")
+    keyoid = fields.CharField(attribute="keyoid")
+    dataoidset = fields.CharField(attribute="dataoidset")
+
+    class Meta:
+        resource_name = 'table'
+        queryset = TableConfig.objects.all()
+        allowed_methods = ['get']
+        authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
+
+    def obj_get_list(self, bundle, **kwargs):
+        device_name = kwargs['device_name']
+        device = Device.objects.get(name=device_name)
+        device_oidsets = [ x.oid_set for x in device.deviceoidsetmap_set.all() ]
+        table_configs = TableConfig.objects.filter(dataoidset__in=device_oidsets)
+
+        results = []
+
+        for table_config in table_configs.all():
+            obj = DataObject()
+            # stash device in the object to build URI
+            obj.device = device
+            obj.leaf = False
+            obj.name = table_config.name
+            obj.keyoid = table_config.keyoid.name
+            obj.dataoidset = table_config.dataoidset.name
+            results.append(obj)
+
+        return results
+
+    def get_resource_uri(self, bundle_or_obj=None):
+        """Generates the resource uri element that is returned in json payload."""
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+
+        if obj:
+            uri = "%s%s%s" % (
+                DeviceResource().get_resource_uri(obj.device),
+                'table/',
+                obj.name)
+        else:
+            uri = ''
+
+        return uri
+
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        Modify resource object default format before this is returned 
+        and serialized as json.
+        """
+        data['children'] = data['objects']
+        del data['objects']
+        return data
+
+class TableDetailResource(Resource):
+    """A table of SNMP OIDs being collected. It may be
+    interfaces, or something else entirely.
+    """
+    name = fields.CharField(attribute="name")
+    leaf = fields.BooleanField(attribute="leaf")
+
+    class Meta:
+        resource_name = 'table'
+        queryset = TableConfig.objects.all()
+        allowed_methods = ['get']
+        authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
+
+    def obj_get_list(self, bundle, **kwargs):
+        device_name = kwargs['device_name']
+        device = Device.objects.get(name=device_name)
+        table_name = kwargs['table_name']
+        table_config = TableConfig.objects.get(name=table_name)
+
+        results = []
+
+        for refrow in RowRef.objects.filter(device=device, oid=table_config.keyoid):
+            obj = DataObject()
+            # stash device in the object to build URI
+            obj.device = device
+            obj.table_config = table_config
+            obj.leaf = False
+            obj.name = refrow.val
+            results.append(obj)
+
+        return results
+
+    def obj_get(self, bundle, **kwargs):
+        device_name = kwargs['device_name']
+        device = Device.objects.get(name=device_name)
+        table_name = kwargs['name']
+        table_config = TableConfig.objects.get(name=table_name)
+
+    def get_resource_uri(self, bundle_or_obj=None):
+        """Generates the resource uri element that is returned in json payload."""
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+
+        if obj:
+            uri = "%s%s/%s/%s" % (
+                DeviceResource().get_resource_uri(obj.device),
+                'table',
+                obj.table_config.name,
+                atencode(obj.name))
+        else:
+            uri = ''
+
+        return uri
+
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        Modify resource object default format before this is returned 
+        and serialized as json.
+        """
+        data['children'] = data['objects']
+        del data['objects']
+        return data
+
+class TableOIDResource(Resource):
+    """A table of SNMP OIDs being collected. It may be
+    interfaces, or something else entirely.
+    """
+    name = fields.CharField(attribute="name")
+    leaf = fields.BooleanField(attribute="leaf")
+
+    class Meta:
+        resource_name = 'table'
+        queryset = TableConfig.objects.all()
+        allowed_methods = ['get']
+        authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
+
+    def obj_get_list(self, bundle, **kwargs):
+        print "FOFOFO"
+        device_name = kwargs['device_name']
+        device = Device.objects.get(name=device_name)
+        table_name = kwargs['table_name']
+        table_config = TableConfig.objects.get(name=table_name)
+        target_name = kwargs['target']
+
+        results = []
+
+        for oid in table_config.dataoidset.oids.all():
+            obj = DataObject()
+            # stash device in the object to build URI
+            obj.device = device
+            obj.table_config = table_config
+            obj.target_name = target_name
+            obj.leaf = False
+            obj.name = oid.name
+            results.append(obj)
+
+        return results
+
+    def obj_get(self, bundle, **kwargs):
+        device_name = kwargs['device_name']
+        device = Device.objects.get(name=device_name)
+        table_name = kwargs['table_name']
+        table_config = TableConfig.objects.get(name=table_name)
+        target_name = kwargs['target']
+        
+        return DataObject(name="FOO", device=device, table_config=table_config, target_name=target_name)
+
+    def get_resource_uri(self, bundle_or_obj=None):
+        """Generates the resource uri element that is returned in json payload."""
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+
+        if obj:
+            uri = "%s%s/%s/%s/%s" % (
+                DeviceResource().get_resource_uri(obj.device),
+                'table',
+                obj.table_config.name,
+                obj.target_name,
+                obj.name)
+        else:
+            uri = ''
+
+        return uri
+
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        Modify resource object default format before this is returned 
+        and serialized as json.
+        """
+        data['children'] = data['objects']
+        del data['objects']
+        return data
+
+class TableDataResource(Resource):
+    """A table of SNMP OIDs being collected. It may be
+    interfaces, or something else entirely.
+    """
+    data = fields.ListField(attribute="data")
+    leaf = fields.BooleanField(attribute="leaf")
+
+    class Meta:
+        resource_name = 'table'
+        queryset = TableConfig.objects.all()
+        allowed_methods = ['get']
+        authentication = AnonymousGetElseApiAuthentication()
+        throttle = AnonymousThrottle(**THROTTLE_ARGS)
+
+    def obj_get(self, bundle, **kwargs):
+        device_name = kwargs['device_name']
+        device = Device.objects.get(name=device_name)
+        table_name = kwargs['table_name']
+        target_name = atdecode(kwargs['target'])
+        oid_name = kwargs['oid']
+
+        obj = DataObject()
+        obj.data = [] # put data here!
+        obj.leaf = True
+        obj.device = device
+        obj.table_name = table_name
+        try:
+            table = TableConfig.objects.get(name=table_name)
+        except:
+            raise BadRequest("Unable to find TableConfig '%s'"%table_name)
+        oidset = table.dataoidset
+        obj.target_name = target_name
+        obj.oid_name = oid_name
+        obj.datapath=[
+            SNMP_NAMESPACE,
+            device.name,
+            oidset.name,
+            oid_name,
+            target_name
+        ]
+        print obj.datapath
+
+        filters = getattr(bundle.request, 'GET', {})
+        # Make sure incoming begin/end timestamps are ints
+        if filters.has_key('begin'):
+            obj.begin_time = int(float(filters['begin']))
+        else:
+            obj.begin_time = int(time.time() - 3600)
+        if filters.has_key('end'):
+            obj.end_time = int(float(filters['end']))
+        else:
+            obj.end_time = int(time.time())
+        if filters.has_key('cf'):
+            obj.cf = filters['cf']
+        else:
+            obj.cf = 'average'
+        if filters.has_key('agg'):
+            obj.agg = int(filters['agg'])
+        else:
+            obj.agg = None
+        # If no aggregate level defined in request, set to the frequency, 
+        # otherwise, check if the requested aggregate level is valid.
+        if not obj.agg:
+            obj.agg = oidset.frequency
+        elif obj.agg and not oidset.aggregates:
+            raise BadRequest('there are no aggregations for oidset {0} - {1} was requested'.format(oidset.name, obj.agg))
+        elif obj.agg not in oidset.aggregates:
+            raise BadRequest('no valid aggregation %s in oidset %s' %
+                (obj.agg, oidset.name))
+        # Make sure we're not exceeding allowable time range.
+        if not QueryUtil.valid_timerange(obj) and \
+            not obj.user.username:
+            raise BadRequest('exceeded valid timerange for agg level: %s' %
+                    obj.agg)
+        
+        # db = CASSANDRA_DB(get_config(get_config_path()))
+        if obj.agg == oidset.frequency:
+            # Fetch the base rate data.
+            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg*1000,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
+        else:
+            # Get the aggregation.
+            if obj.cf not in AGG_TYPES:
+                raise BadRequest('%s is not a valid consolidation function' %
+                        (obj.cf))
+            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
+        obj.data = QueryUtil.format_data_payload(data)
+        obj.data = Fill.verify_fill(obj.begin_time, obj.end_time,
+                obj.agg, obj.data)
+        return obj
+
+    def get_resource_uri(self, bundle_or_obj=None):
+        """Generates the resource uri element that is returned in json payload."""
+        if isinstance(bundle_or_obj, Bundle):
+            obj = bundle_or_obj.obj
+        else:
+            obj = bundle_or_obj
+
+
+        if obj:
+            uri = "%s%s/%s/%s/%s" % (
+                DeviceResource().get_resource_uri(obj.device),
+                'table',
+                obj.table_name,
+                obj.target_name,
+                obj.oid_name)
+        else:
+            uri = ''
+
+        return uri
+
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        Modify resource object default format before this is returned 
+        and serialized as json.
+        """
+        data['children'] = data['objects']
+        del data['objects']
+        return data
 
 class InterfaceResource(ModelResource):
     """An interface on a device.
@@ -1533,6 +1896,7 @@ v1_api.register(DeviceResource())
 v1_api.register(TimeseriesResource())
 v1_api.register(OidsetResource())
 v1_api.register(InterfaceResource())
+v1_api.register(TableResource())
 v1_api.register(OidsetEndpointResource())
 v1_api.register(BulkDispatch())
 v1_api.register(PDUResource())

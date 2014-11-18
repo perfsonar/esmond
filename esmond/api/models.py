@@ -341,6 +341,16 @@ class OutletRef(models.Model):
                     outletName=self.outletName,
                     outletStatus=self.outletStatus,
                     outletControlState=self.outletControlState)
+class TableConfig(models.Model):
+    name = models.CharField(max_length=128)
+    keyoid = models.ForeignKey(OID, db_column="oidid")
+    dataoidset = models.ForeignKey(OIDSet, db_column="dataoidset")
+    
+    class Meta:
+        db_table = "tableconfig"
+
+    def __unicode__(self):
+        return "TableConfig'%s'"%self.name
 
 class RowRef(models.Model):
     device = models.ForeignKey(Device, db_column="deviceid")
