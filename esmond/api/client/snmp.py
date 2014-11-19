@@ -243,7 +243,7 @@ class Device(NodeInfo):
         except DeviceCollectionNotFound:
             return None
 
-        path.append(name)
+        path=path+[name,]
         if args:
             return collection.get_child(args, path=path)
         else:
@@ -314,7 +314,7 @@ class DeviceCollection(object):
         except InterfaceNotFound:
             return None
 
-        path.append(name)
+        path=path+[name,]
         if len(args):
             return interface.get_child(args, path=path)
         else:
@@ -706,20 +706,48 @@ class ApiConnect(AlertMixin, object):
     @property
     def children(self):
         return [ device.name for device in self.get_devices() ]
+    
+    @property
+    def gchildren(self, **filters):
+        r = requests.get('{0}/v1/device/'.format(self.api_url),
+            params=self.filters.compose_filters(filters),
+            headers=self.request_headers)
+        self.inspect_request(r)
+        if r.status_code == 200 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            if self.filters.verbose > 1:
+                print "[ApiConnect.gchildren{0}]".format(len(data))
+            return [n['name'] for n in data]
+        else:
+            self.http_alert(r)
+            return []
 
-    def get_child(self, args, path=[]):
+    def get_gchild(self, args, path=[]):
         name = args[0]
         args = args[1:]
-
         if self.filters.verbose > 1:
-            print "[ApiConnect.get_child {0} {1} {2}]".format(name, args, path)
-
+            print "[ApiConnect.get_gchild {0} {1} {2}]".format(name, args, path)
         try:
             device = self.get_device(name)
         except DeviceNotFound:
             return None
+        path=path+[name,]
+        if args:
+            return device.get_child(args, path=path)
+        else:
+            return device
 
-        path.append(name)
+    def get_child(self, args, path=[]):
+        name = args[0]
+        args = args[1:]
+        if self.filters.verbose > 1:
+            print "[ApiConnect.get_child {0} {1} {2}]".format(name, args, path)
+        try:
+            device = self.get_device(name)
+        except DeviceNotFound:
+            return None
+        path=path+[name,]
         if args:
             return device.get_child(args, path=path)
         else:
