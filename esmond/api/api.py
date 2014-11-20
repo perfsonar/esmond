@@ -545,7 +545,7 @@ class TableOIDResource(Resource):
             obj.device = device
             obj.table_config = table_config
             obj.target_name = target_name
-            obj.leaf = False
+            obj.leaf = True
             obj.name = oid.name
             results.append(obj)
 
@@ -595,6 +595,8 @@ class TableDataResource(Resource):
     """
     data = fields.ListField(attribute="data")
     leaf = fields.BooleanField(attribute="leaf")
+    agg = fields.CharField(attribute='agg')
+    cf = fields.CharField(attribute='cf')
 
     class Meta:
         resource_name = 'table'
@@ -693,9 +695,9 @@ class TableDataResource(Resource):
             uri = "%s%s/%s/%s/%s" % (
                 DeviceResource().get_resource_uri(obj.device),
                 'table',
-                obj.table_name,
-                obj.target_name,
-                obj.oid_name)
+                atencode(obj.table_name),
+                atencode(obj.target_name),
+                atencode(obj.oid_name))
         else:
             uri = ''
 
