@@ -164,7 +164,7 @@ class GenericOidCorrelator(PollCorrelator):
             raise PollUnknownIfIndex(ifIndex)
 
 
-class SentryCorrelator(object):
+class SentryCorrelator(PollCorrelator):
     oids = ['outletID', 'tempHumidSensorID']
 
     def setup(self, data):
