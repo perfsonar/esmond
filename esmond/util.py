@@ -421,12 +421,40 @@ def check_ifref():
     check = IfRefNagiosCheck().setup().run()
 
 def decode_alu_port(x):
+    """Extract port information from TmnxPortID.
+
+    See TmnxPortID definition at approximately line 2378 of the
+    TIMETRA-TC-MIB."""
+
+    ALU_INVALID = 0x1e000000
+
     x = int(x)
+    if x == ALU_INVALID:
+        return 'invalid-portid'
+
     a = (x & int('00011110000000000000000000000000', 2)) >> 25
     b = (x & int('00000001111000000000000000000000', 2)) >> 21
     c = (x & int('00000000000111111000000000000000', 2)) >> 15
 
-    return "%d/%d/%d" % (a,b,c)
+    type_code = (x & int('11100000000000000000000000000000', 2)) >> 29
+
+    if type_code == 0:
+        port = "%d/%d/%d" % (a,b,c)
+    elif type_code == 1: # channel
+        channel = (x & int('111111111111111', 2))
+        port = "%d/%d/%d.%d" % (a,b,c,channel)
+    elif type_code == 2:
+        sub_type = (x & int('00010000000000000000000000000000', 2)) >> 28
+        if sub_type == 0: # virtual port
+            virtual = (x & int('111111111', 2))
+            port = "virtual-%d" % virtual
+        elif sub_type == 1: # LAG
+            lag = (x & int('11111111', 2))
+            port = "lag-%d" % lag
+    else:
+        port = "ERR-%d" % x
+
+    return port
 
 def build_alu_sap_name(s):
     """convert the last parts of a SAP OID to an intelligible name.
