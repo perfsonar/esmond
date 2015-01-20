@@ -31,7 +31,7 @@ log = get_logger(__name__)
 
 #Get db connection
 try:
-    db = CASSANDRA_DB(get_config(get_config_path()))
+    db = CASSANDRA_DB(get_config(get_config_path()), qname='perfsonar')
 except ConnectionException, e:
     # Check the stack before raising an error - if test_api is 
     # the calling code, we won't need a running db instance.

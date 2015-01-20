@@ -138,7 +138,7 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True
         },
-        'cassandra_db': { 
+        'espersistd.perfsonar.cass_db': { 
             'handlers': ['esmond_handler'],
             'level': 'INFO',
             'propagate': True
