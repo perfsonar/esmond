@@ -708,10 +708,10 @@ class PSArchiveResource(CustomModelResource):
         #add time filters if there are any
         time_filters = handle_time_filters(filters)
         if(time_filters["has_filters"]):
-            print "begin_ts=%d, end_ts=%d" % (time_filters['begin'], time_filters['end'])
+            #print "begin_ts=%d, end_ts=%d" % (time_filters['begin'], time_filters['end'])
             begin = datetime.utcfromtimestamp(time_filters['begin']).replace(tzinfo=utc)
             end = datetime.utcfromtimestamp(time_filters['end']).replace(tzinfo=utc)
-            print "begin=%s, end=%s" % (begin, end)
+            #print "begin=%s, end=%s" % (begin, end)
             event_type_qs.append(Q(pseventtypes__time_updated__gte=begin))
             event_type_qs.append(Q(pseventtypes__time_updated__lte=end))
             
