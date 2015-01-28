@@ -509,9 +509,10 @@ class PSArchiveResource(CustomModelResource):
             raise BadRequest("metadata-key is not allowed to be specified")
         
         #Build deserialized object
-        subject_model = SUBJECT_TYPE_MAP[data['subject-type']]
+        subject_model = SUBJECT_MODEL_MAP[data['subject-type']]
+        subject_type = SUBJECT_TYPE_MAP[data['subject-type']]
         formatted_data = {}
-        formatted_data[subject_model] = {}
+        formatted_data[subject_type] = {}
         formatted_data['md_parameters'] = []
         subject_prefix = "%s__" % subject_model
         for k in data:
@@ -519,9 +520,13 @@ class PSArchiveResource(CustomModelResource):
                 formatted_data[deformat_key(k)] = data[k]
             elif k == 'event-types':
                 formatted_data[deformat_key(k)] = PSEventTypesResource.deserialize_event_types(data[k])
-            elif k in SUBJECT_FILTER_MAP and SUBJECT_FILTER_MAP[k].startswith(subject_prefix):
-                subj_k = SUBJECT_FILTER_MAP[k].replace(subject_prefix, '', 1)
-                formatted_data[subject_model][subj_k] = data[k]
+            elif k in SUBJECT_FILTER_MAP:
+                subj_k = ""
+                for f in SUBJECT_FILTER_MAP[k]:
+                    if f.startswith(subject_prefix):
+                        subj_k = f.replace(subject_prefix, '', 1)
+                        break
+                formatted_data[subject_type][subj_k] = data[k]
             else:
                 formatted_data['md_parameters'].append({
                     'parameter_key': k,
@@ -529,7 +534,7 @@ class PSArchiveResource(CustomModelResource):
                     })
         
         #calculate checksum
-        formatted_data['checksum'] = self.calculate_checksum(formatted_data, subject_model)
+        formatted_data['checksum'] = self.calculate_checksum(formatted_data, subject_type)
         
         #set metatadatakey
         formatted_data['metadata_key'] = slugify(unicode(uuid.uuid4().hex))
@@ -665,6 +670,7 @@ class PSArchiveResource(CustomModelResource):
         
         # Process get parameters
         formatted_filters = {}
+        subject_qs = []
         event_type_qs = []
         parameter_qs = []
         dns_match_rule = None
@@ -676,13 +682,23 @@ class PSArchiveResource(CustomModelResource):
             #organize into database filters
             if filter in SUBJECT_FILTER_MAP:
                 # map subject to subject field
-                if filter in IP_FIELDS:
-                    filter_val = self.prepare_ip(filters[filter], dns_match_rule)
-                    filter_key = "%s__in" % SUBJECT_FILTER_MAP[filter]
-                    #call join because super expects comma-delimited string
-                    formatted_filters[filter_key] = join(filter_val, ',')
-                else:
-                    formatted_filters[SUBJECT_FILTER_MAP[filter]] = filters[filter]
+                subject_q = None
+                for subject_db_field in SUBJECT_FILTER_MAP[filter]:
+                    tmp_filters = {}
+                    if filter in IP_FIELDS:
+                        filter_val = self.prepare_ip(filters[filter], dns_match_rule)
+                        filter_key = "%s__in" % subject_db_field
+                        #call join because super expects comma-delimited string
+                        tmp_filters[filter_key] = filter_val
+                    else:
+                        tmp_filters[subject_db_field] = filters[filter]
+                    
+                    if(subject_q is None):
+                        subject_q = Q(**tmp_filters)
+                    else:
+                        subject_q = subject_q | Q(**tmp_filters)
+                if(subject_q is not None):
+                    subject_qs.append(subject_q)
             elif filter == EVENT_TYPE_FILTER:
                 event_type_qs.append(Q(pseventtypes__event_type=filters[filter]))
             elif filter == SUMMARY_TYPE_FILTER:
@@ -721,14 +737,16 @@ class PSArchiveResource(CustomModelResource):
         #Add event type and parameters filters separately for special processing in apply_filters
         orm_filters.update({'event_type_qs': event_type_qs})
         orm_filters.update({'parameter_qs': parameter_qs})
+        orm_filters.update({'subject_qs': subject_qs})
         
         return orm_filters
     
     def apply_filters(self, request, applicable_filters):
         """
-        Customize to do two things:
+        Customize to do three things:
         1. Make sure event type parameters match the same event type object
         2. Apply the free-form metadata parameter filters also making sure they match the same row
+        3. Create an OR condition between different subject types with same name
         """
         event_type_qs = None
         if 'event_type_qs' in applicable_filters:
@@ -737,13 +755,19 @@ class PSArchiveResource(CustomModelResource):
         parameter_qs = []
         if 'parameter_qs' in applicable_filters:
             parameter_qs = applicable_filters.pop('parameter_qs')
+        
+        subject_qs = []
+        if 'subject_qs' in applicable_filters:
+            subject_qs = applicable_filters.pop('subject_qs')
             
         query = super(CustomModelResource, self).apply_filters(request, applicable_filters)
         if event_type_qs:
             query = query.filter(*event_type_qs)
         for parameter_q in parameter_qs:
             query = query.filter(parameter_q)
-            
+        for subject_q in subject_qs:
+            query = query.filter(subject_q)
+        
         return query.distinct()
 
 class PSTimeSeriesObject(object):

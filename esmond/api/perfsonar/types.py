@@ -158,12 +158,12 @@ it maps
 '''
 SUBJECT_FILTER_MAP = {
     #point-to-point subject fields
-    "source": 'p2p_subject__source',
-    "destination": 'p2p_subject__destination',
-    "tool-name": 'p2p_subject__tool_name',
-    "measurement-agent": 'p2p_subject__measurement_agent',
-    "input-source": 'p2p_subject__input_source',
-    "input-destination": 'p2p_subject__input_destination'
+    "source": ['pspointtopointsubject__source'],
+    "destination": ['pspointtopointsubject__destination'],
+    "tool-name": ['pspointtopointsubject__tool_name'],
+    "measurement-agent": ['pspointtopointsubject__measurement_agent'],
+    "input-source": ['pspointtopointsubject__input_source'],
+    "input-destination": ['pspointtopointsubject__input_destination']
 }
 
 '''
