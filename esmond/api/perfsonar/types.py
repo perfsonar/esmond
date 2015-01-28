@@ -35,6 +35,33 @@ EVENT_TYPE_CONFIG = {
     "histogram-ttl-reverse": {
         "type": "histogram",
     },
+    "ntp-offset": {
+        "type": "float",
+    },
+    "ntp-jitter": {
+        "type": "float",
+    },
+    "ntp-rms-jitter": {
+        "type": "float",
+    },
+    "ntp-wander": {
+        "type": "float",
+    },
+    "ntp-polling-interval": {
+        "type": "float",
+    },
+    "ntp-stratum": {
+        "type": "int",
+    },
+    "ntp-reach": {
+        "type": "int",
+    },
+    "ntp-delay": {
+        "type": "float",
+    },
+    "ntp-dispersion": {
+        "type": "float",
+    },
     "packet-duplicates": {
         "type": "integer",
     },
