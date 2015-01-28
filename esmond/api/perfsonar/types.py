@@ -41,9 +41,6 @@ EVENT_TYPE_CONFIG = {
     "ntp-jitter": {
         "type": "float",
     },
-    "ntp-rms-jitter": {
-        "type": "float",
-    },
     "ntp-wander": {
         "type": "float",
     },
@@ -51,10 +48,10 @@ EVENT_TYPE_CONFIG = {
         "type": "float",
     },
     "ntp-stratum": {
-        "type": "int",
+        "type": "integer",
     },
     "ntp-reach": {
-        "type": "int",
+        "type": "integer",
     },
     "ntp-delay": {
         "type": "float",
