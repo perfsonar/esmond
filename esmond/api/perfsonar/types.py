@@ -136,10 +136,10 @@ SUMMARY_TYPES = {
 INVERSE_SUMMARY_TYPES: Same as SUMMARY_TYPES with the key and values swapped
 '''
 INVERSE_SUMMARY_TYPES = {v:k for k,v in SUMMARY_TYPES.items()}
-SUBJECT_FIELDS = ['p2p_subject']
+SUBJECT_FIELDS = ['p2p_subject', 'networkelement_subject']
 SUBJECT_TYPE_MAP = {
-    "point-to-point": "p2p_subject"
-    
+    "point-to-point": "p2p_subject",
+    "network-element": "networkelement_subject"
 }
 
 '''
@@ -147,8 +147,8 @@ SUBJECT_MODEL_MAP: Maps the subject-type specified in the key to the Django
 model (i.e. the database class) to store data of that subject-type
 '''
 SUBJECT_MODEL_MAP = {
-    "point-to-point": "pspointtopointsubject"
-    
+    "point-to-point": "pspointtopointsubject",
+    "network-element": "psnetworkelementsubject"
 }
 
 '''
@@ -158,11 +158,11 @@ it maps
 '''
 SUBJECT_FILTER_MAP = {
     #point-to-point subject fields
-    "source": ['pspointtopointsubject__source'],
+    "source": ['pspointtopointsubject__source', 'psnetworkelementsubject__source'],
     "destination": ['pspointtopointsubject__destination'],
-    "tool-name": ['pspointtopointsubject__tool_name'],
-    "measurement-agent": ['pspointtopointsubject__measurement_agent'],
-    "input-source": ['pspointtopointsubject__input_source'],
+    "tool-name": ['pspointtopointsubject__tool_name', 'psnetworkelementsubject__tool_name'],
+    "measurement-agent": ['pspointtopointsubject__measurement_agent', 'psnetworkelementsubject__measurement_agent'],
+    "input-source": ['pspointtopointsubject__input_source', 'psnetworkelementsubject__input_source'],
     "input-destination": ['pspointtopointsubject__input_destination']
 }
 

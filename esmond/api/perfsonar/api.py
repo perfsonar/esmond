@@ -1,6 +1,6 @@
 from calendar import timegm
 from esmond.api.auth import AnonymousGetElseApiAuthentication, EsmondAuthorization
-from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
+from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters, PSNetworkElementSubject
 from esmond.api.perfsonar.types import *
 from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData, AggregationBin
 from esmond.config import get_config_path, get_config
@@ -68,15 +68,16 @@ def deformat_key(k):
 
 def format_detail_keys(obj):
     formatted_data = {}
-    for k in obj.data.keys():
-        formatted_k = ""
-        if k == "resource_uri":
-            formatted_k = "uri"
-        elif k == "checksum":
-            continue
-        else:
-            formatted_k = format_key(k)
-        formatted_data[formatted_k] = obj.data[k]
+    if obj is not None:
+        for k in obj.data.keys():
+            formatted_k = ""
+            if k == "resource_uri":
+                formatted_k = "uri"
+            elif k == "checksum":
+                continue
+            else:
+                formatted_k = format_key(k)
+            formatted_data[formatted_k] = obj.data[k]
     
     return formatted_data
     
@@ -356,6 +357,34 @@ class PSPointToPointSubjectResource(CustomModelResource):
     
     def get_resource_uri(self, bundle_or_obj=None):
         return None
+
+class PSNetworkElementSubjectResource(CustomModelResource):
+    psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
+    
+    class Meta:
+        queryset=PSNetworkElementSubject.objects.all()
+        resource_name = 'networkelement_subject'
+        allowed_methods = ['get', 'post']
+        authentication = AnonymousGetElseApiAuthentication()
+        authorization = DjangoAuthorization()
+        excludes = ['id']
+        filtering = {
+            "source": ['exact', 'in'],  
+            "tool_name": ['exact'],
+            "measurement_agent": ['exact', 'in'],
+            "input_source":['exact'],
+        }
+        
+    def alter_detail_data_to_serialize(self, request, data):
+        formatted_objs = format_detail_keys(data)
+        return formatted_objs
+        
+    def alter_list_data_to_serialize(self, request, data):
+        formatted_objs = format_list_keys(data)
+        return formatted_objs
+    
+    def get_resource_uri(self, bundle_or_obj=None):
+        return None
     
 class PSMetadataParametersResource(CustomModelResource):
     psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
@@ -374,6 +403,7 @@ class PSMetadataParametersResource(CustomModelResource):
 class PSArchiveResource(CustomModelResource):
     event_types = fields.ToManyField(PSEventTypesResource, 'pseventtypes', related_name='psmetadata', full=True, null=True, blank=True)
     p2p_subject = fields.ToOneField(PSPointToPointSubjectResource, 'pspointtopointsubject', related_name='psmetadata', full=True, null=True, blank=True)
+    networkelement_subject = fields.ToOneField(PSNetworkElementSubjectResource, 'psnetworkelementsubject', related_name='psmetadata', full=True, null=True, blank=True)
     md_parameters = fields.ToManyField(PSMetadataParametersResource, 'psmetadataparameters', related_name='psmetadata', full=True, null=True, blank=True)
     
     class Meta:
@@ -455,7 +485,6 @@ class PSArchiveResource(CustomModelResource):
                         continue
                     obj[subj_k] =  subj_obj[subj_k]
                 del obj[subj_field]
-                break
         
         #Format event types          
         obj['event-types'] = PSEventTypesResource.serialize_event_types(obj['event-types'])

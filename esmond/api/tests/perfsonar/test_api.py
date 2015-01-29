@@ -306,12 +306,12 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         self.assertExpectedResponse(ipv6_data, url, {'source': self.v4v6_name, DNS_MATCH_RULE_FILTER: DNS_MATCH_PREFER_V6})
         
         #test query using DNS name on name with both A and AAAA records
-        ipv4_data[0]['metadata-count-total'] = 2
-        del ipv6_data[0]['metadata-count-total']
-        self.assertExpectedResponse(ipv4_data + ipv6_data, url, {'source': self.v4v6_name})
+        ipv6_data[0]['metadata-count-total'] = 2
+        del ipv4_data[0]['metadata-count-total']
+        self.assertExpectedResponse(ipv6_data + ipv4_data, url, {'source': self.v4v6_name})
         
         #test query using DNS name on name with both A and AAAA records and telling it to return all v4 and v6 results
-        self.assertExpectedResponse(ipv4_data + ipv6_data, url, {'source': self.v4v6_name, DNS_MATCH_RULE_FILTER: DNS_MATCH_V4_V6})
+        self.assertExpectedResponse(ipv6_data + ipv4_data, url, {'source': self.v4v6_name, DNS_MATCH_RULE_FILTER: DNS_MATCH_V4_V6})
 
 
         #test query using time-range

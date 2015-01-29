@@ -31,7 +31,7 @@ class Command(BaseCommand):
             u.save()
 
         print 'Setting metadata POST permissions.'
-        for model_name in ['psmetadata', 'pspointtopointsubject', 'pseventtypes', 'psmetadataparameters']:
+        for model_name in ['psmetadata', 'pspointtopointsubject', 'pseventtypes', 'psmetadataparameters', 'psnetworkelementsubject']:
             for perm_name in ['add', 'change', 'delete']:
                 perm = Permission.objects.get(codename='{0}_{1}'.format(perm_name, model_name))
                 print perm

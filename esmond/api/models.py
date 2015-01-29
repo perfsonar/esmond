@@ -483,6 +483,20 @@ class PSPointToPointSubject(models.Model):
     
     def __unicode__(self):
         return "%s-%s" % (self.source, self.destination)
+
+class PSNetworkElementSubject(models.Model):
+    metadata = models.OneToOneField(PSMetadata)
+    tool_name = models.CharField(max_length=128)
+    source = models.GenericIPAddressField(db_index=True)
+    measurement_agent = models.GenericIPAddressField()
+    input_source = models.CharField(max_length=128)
+    
+    class Meta:
+        db_table = "ps_networkelement_subject"
+        ordering = ["source","tool_name"]
+    
+    def __unicode__(self):
+        return "%s-%s" % (self.source, self.tool_name)
     
 class PSEventTypes(models.Model):
     metadata = models.ForeignKey(PSMetadata, related_name='pseventtypes')
