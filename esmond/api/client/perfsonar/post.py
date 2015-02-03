@@ -166,8 +166,10 @@ class MetadataPost(PostBase):
         for i in self._payload['event-types']:
             if i.get('summaries', None) and \
                 i.get('event-type', None) == et:
-                self.warn('A summary for {0} already exists - skipping'.format(et))
-                return
+                for summ in i['summaries']:
+                    if(summ['summary-type'] == st):
+                        self.warn('A summary for {0} already exists - skipping'.format(et))
+                        return
 
         suminfo = {
             'event-type': et,
