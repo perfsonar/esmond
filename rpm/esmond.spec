@@ -114,6 +114,11 @@ source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 . bin/activate
 
+#handle database updates
+if [ "$1" = "2" ]; then
+    python esmond/manage.py syncdb
+fi
+
 mkdir -p tsdb-data
 touch tsdb-data/TSDB
 
@@ -135,6 +140,7 @@ chown -R esmond:esmond /var/lib/esmond
 # Create the 'run' directory
 mkdir -p /var/run/esmond
 chown -R esmond:esmond /var/run/esmond
+
 
 %files
 %defattr(-,root,root,-)
