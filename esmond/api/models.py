@@ -4,6 +4,7 @@ import datetime
 
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
+from netfields import CidrAddressField, NetManager
 
 from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, atencode
 
@@ -530,9 +531,10 @@ class PSMetadataParameters(models.Model):
         return "%s" % (self.parameter_key)
 
 class UserIpAddress(models.Model):
-    ip = models.GenericIPAddressField(unique=True, db_index=True)
+    ip = CidrAddressField(unique=True, db_index=True)
     user = models.ForeignKey(User, related_name='user')
-
+    objects = NetManager()
+    
     class Meta:
         db_table = "useripaddress"
     

@@ -40,7 +40,7 @@ class IPAuthentication(Authentication):
     def is_authenticated(self, request, **kwargs):
         remoteip = request.META['REMOTE_ADDR']
         print "remote IP %s" % remoteip
-        userip = UserIpAddress.objects.filter(ip__contains=remoteip);
+        userip = UserIpAddress.objects.filter(ip__net_contains=remoteip);
         if userip:
             print "Authenticated to %s as %s" % (userip[0].ip, userip[0].user)
             request.user = userip[0].user
