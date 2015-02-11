@@ -537,6 +537,8 @@ class UserIpAddress(models.Model):
     
     class Meta:
         db_table = "useripaddress"
+        verbose_name = "User IP Address"
+        verbose_name_plural = "User IP Addresses"
     
     def __unicode__(self):
-        return self.ip
+        return "%s - %s" % (self.ip, self.user)
