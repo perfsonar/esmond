@@ -42,8 +42,8 @@ class IPAuthentication(Authentication):
         print "remote IP %s" % remoteip
         userip = UserIpAddress.objects.filter(ip__contains=remoteip);
         if userip:
-            print "Authenticated to %s as %s" % (userip.ip, userip.user.username)
-            request.user = userip.user
+            print "Authenticated to %s as %s" % (userip[0].ip, userip[0].user)
+            request.user = userip[0].user
             return True
         
         print "Unable to authenticate %s" % remoteip

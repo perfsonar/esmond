@@ -530,7 +530,7 @@ class PSMetadataParameters(models.Model):
         return "%s" % (self.parameter_key)
 
 class UserIpAddress(models.Model):
-    ip = models.IPAddressField(unique=True, db_index=True)
+    ip = models.GenericIPAddressField(unique=True, db_index=True)
     user = models.ForeignKey(User, related_name='user')
 
     class Meta:
