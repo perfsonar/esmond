@@ -51,7 +51,7 @@ class Command(BaseCommand):
             try:
                 userip = UserIpAddress.objects.get(ip=ip_addr)
                 print 'IP {0} already assigned to {1}, skipping creation'.format(userip.ip, userip.user)
-            except ApiKey.DoesNotExist:
+            except UserIpAddress.DoesNotExist:
                 print 'Creating entry for IP {0} belonging to {1}'.format(ip_addr, user)
                 userip = UserIpAddress(ip=ip_addr, user=u)
                 userip.save()
