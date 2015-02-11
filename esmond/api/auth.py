@@ -40,7 +40,13 @@ class IPAuthentication(Authentication):
     def is_authenticated(self, request, **kwargs):
         remoteip = request.META['REMOTE_ADDR']
         #sort so that most specific subnet is at top of list
-        userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip");
+        userip = []
+        try:
+            userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip");
+        except DatabaseError, e:
+            #if you are here then the backend doesn't support IP operations, moving on
+            return False
+            
         if userip:
             request.user = userip[0].user
             return True
