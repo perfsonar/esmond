@@ -1,7 +1,7 @@
 import json
 
 from esmond.api import ANON_LIMIT
-from esmond.models import UserIpAddress
+from esmond.api.models import UserIpAddress
 
 from tastypie.authorization import Authorization
 from tastypie.authentication import Authentication, ApiKeyAuthentication
