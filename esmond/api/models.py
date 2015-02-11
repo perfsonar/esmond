@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.timezone import now
 import datetime
 
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
 
 from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, atencode
@@ -529,4 +529,14 @@ class PSMetadataParameters(models.Model):
     def __unicode__(self):
         return "%s" % (self.parameter_key)
 
+class UserIpAddress(models.Model):
+    ip = models.IPAddressField(unique=True, db_index=True)
+    user = models.ForeignKey(User, related_name='user')
 
+    class Meta:
+        db_table = "useripaddress"
+    
+    def __unicode__(self):
+        return self.ip
+
+    =

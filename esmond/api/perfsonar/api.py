@@ -1,5 +1,5 @@
 from calendar import timegm
-from esmond.api.auth import AnonymousGetElseApiAuthentication, EsmondAuthorization
+from esmond.api.auth import AnonymousGetElseApiAuthentication, EsmondAuthorization, IPAuthentication
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters, PSNetworkElementSubject
 from esmond.api.perfsonar.types import *
 from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData, AggregationBin
@@ -14,6 +14,7 @@ from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
 from string import join
 from tastypie import fields
 from tastypie.api import Api
+from tastypie.authentication import MultiAuthentication
 from tastypie.authorization import Authorization, DjangoAuthorization
 from tastypie.bundle import Bundle
 from tastypie.http import HttpConflict
@@ -160,7 +161,7 @@ class PSEventTypesResource(CustomModelResource):
         queryset=PSEventTypes.objects.all()
         resource_name = 'event-type'
         allowed_methods = ['get', 'post']
-        authentication = AnonymousGetElseApiAuthentication()
+        authentication = MultiAuthentication(IPAuthentication(), AnonymousGetElseApiAuthentication())
         authorization = DjangoAuthorization()
         excludes = ['id']
         filtering = {
@@ -310,7 +311,7 @@ class PSEventTypeSummaryResource(PSEventTypesResource):
         resource_name = 'summary'
         allowed_methods = ['get']
         excludes = ['id']
-        authentication = AnonymousGetElseApiAuthentication()
+        authentication = MultiAuthentication(IPAuthentication(), AnonymousGetElseApiAuthentication())
         authorization = DjangoAuthorization()
         filtering = {
             "event_type": ['exact'],  
@@ -335,7 +336,7 @@ class PSPointToPointSubjectResource(CustomModelResource):
         queryset=PSPointToPointSubject.objects.all()
         resource_name = 'p2p_subject'
         allowed_methods = ['get', 'post']
-        authentication = AnonymousGetElseApiAuthentication()
+        authentication = MultiAuthentication(IPAuthentication(), AnonymousGetElseApiAuthentication())
         authorization = DjangoAuthorization()
         excludes = ['id']
         filtering = {
@@ -365,7 +366,7 @@ class PSNetworkElementSubjectResource(CustomModelResource):
         queryset=PSNetworkElementSubject.objects.all()
         resource_name = 'networkelement_subject'
         allowed_methods = ['get', 'post']
-        authentication = AnonymousGetElseApiAuthentication()
+        authentication = MultiAuthentication(IPAuthentication(), AnonymousGetElseApiAuthentication())
         authorization = DjangoAuthorization()
         excludes = ['id']
         filtering = {
@@ -393,7 +394,7 @@ class PSMetadataParametersResource(CustomModelResource):
         queryset=PSMetadataParameters.objects.all()
         resource_name = 'metadata-parameters'
         allowed_methods = ['get', 'post']
-        authentication = AnonymousGetElseApiAuthentication()
+        authentication = MultiAuthentication(IPAuthentication(), AnonymousGetElseApiAuthentication())
         authorization = DjangoAuthorization()
         excludes = ['id']
     
@@ -414,7 +415,7 @@ class PSArchiveResource(CustomModelResource):
         allowed_methods = ['get', 'post']
         excludes = ['id']
         limit = 0
-        authentication = AnonymousGetElseApiAuthentication()
+        authentication = MultiAuthentication(IPAuthentication(), AnonymousGetElseApiAuthentication())
         authorization = DjangoAuthorization()
         filtering = {
             "metadata_key": ['exact'],
@@ -851,7 +852,7 @@ class PSTimeSeriesResource(Resource):
     class Meta:
         resource_name = 'pstimeseries'
         allowed_methods = ['get', 'post']
-        authentication = AnonymousGetElseApiAuthentication()
+        authentication = MultiAuthentication(IPAuthentication(), AnonymousGetElseApiAuthentication())
         authorization = EsmondAuthorization('timeseries')
         limit = 0
         max_limit = 0
@@ -1061,7 +1062,7 @@ class PSBulkTimeSeriesResource(PSTimeSeriesResource):
     class Meta:
         resource_name = 'bulkpstimeseries'
         allowed_methods = ['post']
-        authentication = AnonymousGetElseApiAuthentication()
+        authentication = MultiAuthentication(IPAuthentication(), AnonymousGetElseApiAuthentication())
         authorization = EsmondAuthorization('timeseries')
         limit = 0
         max_limit = 0

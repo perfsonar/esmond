@@ -1,9 +1,10 @@
 import json
 
 from esmond.api import ANON_LIMIT
+from esmond.models import UserIpAddress
 
 from tastypie.authorization import Authorization
-from tastypie.authentication import ApiKeyAuthentication
+from tastypie.authentication import Authentication, ApiKeyAuthentication
 from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.throttle import CacheDBThrottle
 
@@ -33,6 +34,24 @@ class AnonymousGetElseApiAuthentication(ApiKeyAuthentication):
         else:
             return super(AnonymousGetElseApiAuthentication,
                     self).get_identifier(request)
+
+class IPAuthentication(Authentication):
+    
+    def is_authenticated(self, request, **kwargs):
+        remoteip = request.META['REMOTE_ADDR']
+        print "remote IP %s" % remoteip
+        userip = UserIpAddress.objects.filter(ip__contains=remoteip);
+        if userip:
+            print "Authenticated to %s as %s" % (userip.ip, userip.user.username)
+            request.user = userip.user
+            return True
+        
+        print "Unable to authenticate %s" % remoteip
+        return False
+    
+    def get_identifier(self, request):
+        return request.user.username
+            
 
 class EsmondAuthorization(Authorization):
     """
