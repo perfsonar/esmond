@@ -465,7 +465,8 @@ class PSMetadata(models.Model):
     
     class Meta:
         db_table = "ps_metadata"
-    
+        ordering = ["metadata_key"] #gives consistent ordering
+        
     def __unicode__(self):
         return self.metadata_key
     

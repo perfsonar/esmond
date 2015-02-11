@@ -3,6 +3,7 @@ import json
 from esmond.api import ANON_LIMIT
 from esmond.api.models import UserIpAddress
 
+from django.db.utils import DatabaseError
 from tastypie.authorization import Authorization
 from tastypie.authentication import Authentication, ApiKeyAuthentication
 from tastypie.exceptions import NotFound, BadRequest, Unauthorized
@@ -42,15 +43,14 @@ class IPAuthentication(Authentication):
         #sort so that most specific subnet is at top of list
         userip = []
         try:
-            userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip");
-        except DatabaseError, e:
+            userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip")
+            if userip:
+                request.user = userip[0].user
+                return True
+        except DatabaseError:
             #if you are here then the backend doesn't support IP operations, moving on
-            return False
+            pass
             
-        if userip:
-            request.user = userip[0].user
-            return True
-        
         return False
     
     def get_identifier(self, request):
