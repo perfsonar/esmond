@@ -57,8 +57,4 @@ class Command(BaseCommand):
                 userip.save()
         
 
-        key = ApiKey.objects.get(user=u)
-
-        print 'Key: {0}'.format(key)
-
         
