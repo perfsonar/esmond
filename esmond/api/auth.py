@@ -36,17 +36,15 @@ class AnonymousGetElseApiAuthentication(ApiKeyAuthentication):
                     self).get_identifier(request)
 
 class IPAuthentication(Authentication):
-    
+    """Class to aunthenticate based on client IP. Associates IP with a django user account"""
     def is_authenticated(self, request, **kwargs):
         remoteip = request.META['REMOTE_ADDR']
-        print "remote IP %s" % remoteip
+        #sort so that most specific subnet is at top of list
         userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip");
         if userip:
-            print "Authenticated to %s as %s" % (userip[0].ip, userip[0].user)
             request.user = userip[0].user
             return True
         
-        print "Unable to authenticate %s" % remoteip
         return False
     
     def get_identifier(self, request):
