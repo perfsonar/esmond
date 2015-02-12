@@ -148,7 +148,7 @@ class MetadataPost(PostBase):
             if i.get('event-type', None) == et:
                 self.warn('Event type {0} already exists - skipping'.format(et))
 
-        self._payload['event-types'].append({ 'event-type' : et })
+        self._payload['event-types'].append({ 'event-type' : et, 'summaries': []})
 
     def add_summary_type(self, et, st, windows=[]):
         """Add associated summary-type data to metadata before POSTing."""
@@ -163,14 +163,22 @@ class MetadataPost(PostBase):
             except ValueError:
                 raise MetadataPostException('Invalid summary window int: {0}'.format(i))
 
-        for i in self._payload['event-types']:
-            if i.get('summaries', None) and \
-                i.get('event-type', None) == et:
-                for summ in i['summaries']:
-                    if(summ['summary-type'] == st):
-                        self.warn('A summary for {0} already exists - skipping'.format(et))
-                        return
+        for existing_et_def in self._payload['event-types']:
+            if existing_et_def.get('event-type', None) == et:
+                #add new summaries
+                new_summaries = [{ 'summary-type': st, 'summary-window': x } for x in windows]
+                #clear out old summaries
+                for summ in existing_et_def['summaries']:
+                    if (summ['summary-type'] == st):
+                        #remove any existing summaries of same type
+                        pass
+                    else:
+                         new_summaries.append(summ)
+                existing_et_def['summaries'] = new_summaries
+                return
 
+        
+        #if event type does not exist then create and add summaries
         suminfo = {
             'event-type': et,
             'summaries' : [ 
