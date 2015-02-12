@@ -140,6 +140,10 @@ class Metadata(NodeInfo):
     @property
     def uri(self):
         return self._data.get('uri', None)
+    
+    @property
+    def get_freeform_key_value(self, key):
+        return self._data.get(key, None)
 
     def get_all_event_types(self):
         """Generator returning all the event-types from the metadata
