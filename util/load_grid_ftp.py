@@ -266,13 +266,6 @@ FTP_CODES = {
     553: 'Requested action not taken.',
 }
 
-def _filter_log(s):
-    t_stats = 'Transfer stats: '
-    if s.find(t_stats) == -1:
-        return None
-    else:
-        return s.split(t_stats)[1].strip()
-
 def scan_and_load(file_path, last_record, options, _log):
     # Load the log
 
@@ -289,10 +282,11 @@ def scan_and_load(file_path, last_record, options, _log):
     count = 0
 
     for row in data:
-        if not row.strip(): continue
-        row = _filter_log(row)
+        row = row.strip()
         if not row: continue
         o = LogEntryDataObject(row.split())
+        if o.type != 'RETR':
+            continue
         if last_record and not scanning:
             if o.to_dict() == last_record.to_dict():
                 scanning = True
@@ -445,8 +439,7 @@ def main():
             data = fh.read()
         data = data.split('\n')
         for row in data:
-            if not row.strip(): continue
-            row = _filter_log(row)
+            row = row.strip()
             if not row: continue
             o = LogEntryDataObject(row.split())
             if o.to_dict() == last_record.to_dict():
