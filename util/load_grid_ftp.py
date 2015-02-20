@@ -285,7 +285,7 @@ def scan_and_load(file_path, last_record, options, _log):
         row = row.strip()
         if not row: continue
         o = LogEntryDataObject(row.split())
-        if o.type != 'RETR':
+        if o.type != 'RETR' and o.type != 'STOR':
             continue
         if last_record and not scanning:
             if o.to_dict() == last_record.to_dict():
