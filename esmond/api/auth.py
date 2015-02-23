@@ -1,9 +1,11 @@
 import json
 
 from esmond.api import ANON_LIMIT
+from esmond.api.models import UserIpAddress
 
+from django.db.utils import DatabaseError
 from tastypie.authorization import Authorization
-from tastypie.authentication import ApiKeyAuthentication
+from tastypie.authentication import Authentication, ApiKeyAuthentication
 from tastypie.exceptions import NotFound, BadRequest, Unauthorized
 from tastypie.throttle import CacheDBThrottle
 
@@ -33,6 +35,27 @@ class AnonymousGetElseApiAuthentication(ApiKeyAuthentication):
         else:
             return super(AnonymousGetElseApiAuthentication,
                     self).get_identifier(request)
+
+class IPAuthentication(Authentication):
+    """Class to aunthenticate based on client IP. Associates IP with a django user account"""
+    def is_authenticated(self, request, **kwargs):
+        remoteip = request.META['REMOTE_ADDR']
+        #sort so that most specific subnet is at top of list
+        userip = []
+        try:
+            userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip")
+            if userip:
+                request.user = userip[0].user
+                return True
+        except DatabaseError:
+            #if you are here then the backend doesn't support IP operations, moving on
+            pass
+            
+        return False
+    
+    def get_identifier(self, request):
+        return request.user.username
+            
 
 class EsmondAuthorization(Authorization):
     """

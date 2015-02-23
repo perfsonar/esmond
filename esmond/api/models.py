@@ -2,8 +2,9 @@ from django.db import models
 from django.utils.timezone import now
 import datetime
 
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
+from netfields import CidrAddressField, NetManager
 
 from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, atencode
 
@@ -464,7 +465,8 @@ class PSMetadata(models.Model):
     
     class Meta:
         db_table = "ps_metadata"
-    
+        ordering = ["metadata_key"] #gives consistent ordering
+        
     def __unicode__(self):
         return self.metadata_key
     
@@ -529,4 +531,15 @@ class PSMetadataParameters(models.Model):
     def __unicode__(self):
         return "%s" % (self.parameter_key)
 
-
+class UserIpAddress(models.Model):
+    ip = CidrAddressField(unique=True, db_index=True)
+    user = models.ForeignKey(User, related_name='user')
+    objects = NetManager()
+    
+    class Meta:
+        db_table = "useripaddress"
+        verbose_name = "User IP Address"
+        verbose_name_plural = "User IP Addresses"
+    
+    def __unicode__(self):
+        return "%s - %s" % (self.ip, self.user)
