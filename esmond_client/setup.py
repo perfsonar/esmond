@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='esmond_client',
-    version='1.1',
+    version='1.2',
     description='esmond API client libraries',
     long_description='esmond API client libraries.',
     author='Monte M. Goode',
