@@ -11,7 +11,7 @@ setup(
     author_email='MMGoode@lbl.gov',
     url='http://software.es.net/esmond/',
     packages=['esmond_client', 'esmond_client.perfsonar'],
-    install_requires=['requests'],
+    install_requires=['requests', 'python-dateutil'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

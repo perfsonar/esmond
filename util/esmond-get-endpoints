@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+
+"""
+esmond-get-endpoints - get the tests stored in a Perfsonar esmond instance.
+"""
+
+import os
+import sys
+
+from esmond_client.perfsonar.query import ApiConnect
+from esmond_client.perfsonar.util import (perfsonar_client_opts, 
+    perfsonar_client_filters, output_factory)
+
+def main():
+    options, args = perfsonar_client_opts()
+
+    filters = perfsonar_client_filters(options)
+    conn = ApiConnect(options.url, filters)
+
+    data = list()
+
+    for m in conn.get_metadata():
+        row = dict(
+            source=m.source,
+            destination=m.destination,
+            measurement_agent=m.measurement_agent,
+            tool_name=m.tool_name,
+            event_type=[ et.event_type for et in m.get_all_event_types() ],
+        )
+        data.append(row)
+
+    column_ordering = [
+        'source', 
+        'destination', 
+        'measurement_agent', 
+        'tool_name', 
+        'event_type'
+    ]
+
+    o = output_factory(options, data, column_ordering)
+    print o.get_output()
+
+    pass
+
+if __name__ == '__main__':
+    main()

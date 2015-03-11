@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+"""
+esmond-get-endpoints - get the tests stored in a Perfsonar esmond instance.
+"""
+
+import collections
+import copy
+import os
+import sys
+
+from esmond_client.perfsonar.query import ApiConnect
+from esmond_client.perfsonar.util import (perfsonar_client_opts, 
+    perfsonar_client_filters, output_factory, DEFAULT_FIELDS)
+
+class MetadataDataObject(object):
+    def __init__(self, initial=None):
+        self.__dict__['_data'] = collections.OrderedDict()
+
+        if hasattr(initial, 'items'):
+            # sanitize dashes to underscores
+            for k in initial.keys():
+                initial[k.replace('-', '_')] = initial.pop(k)
+            # load it into a sorted dictionary in alpha key order
+            self.__dict__['_data'] = \
+                collections.OrderedDict(sorted(initial.items(), key=lambda t: t[0]))
+
+    def __getattr__(self, name):
+        return self._data.get(name, None)
+
+    def __setattr__(self, name, value):
+        self.__dict__['_data'][name] = value
+
+    def to_dict(self):
+        return self._data
+
+exclude_fields = ['event-types', 'uri', 'metadata-key']
+
+def main():
+    options, args = perfsonar_client_opts()
+
+    filters = perfsonar_client_filters(options)
+    conn = ApiConnect(options.url, filters)
+
+    data = list()
+
+    for m in conn.get_metadata():
+        if not options.metadata:
+            # just show the default fields.
+            row = dict(
+                source=m.source,
+                destination=m.destination,
+                measurement_agent=m.measurement_agent,
+                input_source=m.input_source,
+                input_destination=m.input_destination,
+                tool_name=m.tool_name,
+            )
+            data.append(row)
+        else:
+            # show defaults and extended per-tool fields as well.
+            d = copy.copy(m._data)
+            for ex in exclude_fields: d.pop(ex, None)
+            row = MetadataDataObject(d)
+            data.append(row.to_dict())
+    
+    o = output_factory(options, data, copy.copy(DEFAULT_FIELDS))
+    print o.get_output()
+
+    pass
+
+if __name__ == '__main__':
+    main()
+
