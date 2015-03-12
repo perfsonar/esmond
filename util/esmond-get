@@ -7,20 +7,284 @@ esmond-get - client to fetch perfsonar test results.
 import os
 import sys
 
-from esmond_client.perfsonar.query import ApiConnect
+from esmond_client.perfsonar.query import ApiConnect, DataPayload
 from esmond_client.perfsonar.util import (perfsonar_client_opts, 
-    perfsonar_client_filters, output_factory)
+    perfsonar_client_filters, output_factory, event_format)
+
+def data_format_factory(options):
+    """
+    Factory function to format the actual data for output.
+
+    The appropriate sub-function is identified by the format_map.
+    All functions hand back a header list of the appropriate columns
+    for that measurment type and a list of dicts with corresponding keys.
+    Both of which are passed off to the shared output rendering code.
+    """
+
+    # these columns/values are common to all measurements.
+    header_base = [
+        'source', 
+        'destination', 
+        'event_type', 
+        'tool', 
+        'summary_type', 
+        'summary_window',
+        'timestamp'
+    ]
+
+    def get_summary_type():
+        if not options.summary_type:
+            return 'base'
+        else:
+            return options.summary_type
+
+    def get_payload(et):
+        if not options.summary_type:
+            # unsummarized data
+            return et.get_data()
+        else:
+            # summary data
+            s = et.get_summary(options.summary_type, options.summary_window)
+            if not s: 
+                return DataPayload()
+            else:
+                return s.get_data()
+
+    def format_numeric(conn):
+        """aggregation, 300, 3600, 86400"""
+
+        header = header_base + ['value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+
+            for dp in get_payload(et).data:
+                d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        value=dp.val,
+                    )
+                # data.append(d)
+
+        return header, data
+
+    def format_failures(conn):
+
+        header = header_base + ['msg']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+            for dp in et.get_data().data:
+                d = dict(
+                    source=m.source,
+                    destination=m.destination,
+                    event_type=options.type,
+                    tool=m.tool_name,
+                    summary_type=get_summary_type(),
+                    summary_window=options.summary_window,
+                    timestamp=str(dp.ts),
+                    msg=dp.val.get('error')
+                )
+                data.append(d)
+
+        return header, data
+
+    def format_packet_trace(conn):
+
+        header = header_base + ['ttl', 'query', 'success', 'ip', 'rtt', 'mtu', 'error_message']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+            for dp in et.get_data().data:
+                for val in dp.val:
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        ttl=val.get('ttl'),
+                        query=val.get('query'),
+                        success=val.get('success'),
+                        ip=val.get('ip'),
+                        rtt=val.get('rtt'),
+                        mtu=val.get('mtu'),
+                        error_message=val.get('error_message')
+                    )
+                    data.append(d)
+
+        return header, data
+
+    def format_histogram(conn):
+        """aggregation, statistics, 300, 3600, 86400"""
+
+        if options.summary_type == 'statistics':
+            header = header_base + ['min', 'median', 'max', 
+                'mean', 'mode', 'standard_deviation', 'variance', 
+                'percentile_25', 'percentile_75', 'percentile_95']
+        else:
+            header = header_base + ['bucket', 'value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+
+            for dp in get_payload(et).data:
+                if options.summary_type == 'statistics':
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        min=dp.val.get('minimum'),
+                        median=dp.val.get('median'),
+                        max=dp.val.get('maximum'),
+                        mean=dp.val.get('mean'),
+                        mode=dp.val.get('mode'),
+                        standard_deviation=dp.val.get('standard-deviation'),
+                        variance=dp.val.get('variance'),
+                        percentile_25=dp.val.get('percentile-25'),
+                        percentile_75=dp.val.get('percentile-75'),
+                        percentile_95=dp.val.get('percentile-95'),
+
+                    )
+                else:
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        bucket=m.sample_bucket_width,
+                        value=dp.val
+                    )
+                data.append(d)
+
+        return header, data
+
+    def format_subintervals(conn):
+        
+        header = header_base + ['start', 'duration', 'value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+
+            for dp in et.get_data().data:
+                for val in dp.val:
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        start=val.get('start'),
+                        duration=val.get('duration'),
+                        value=val.get('val'),
+                    )
+                    data.append(d)
+
+        return header, data
+
+    def format_number_list(conn):
+
+        header = header_base + ['stream_num', 'value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+            for dp in et.get_data().data:
+                for i in range(len(dp.val)):
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        stream_num=i,
+                        value=dp.val[i],
+                    )
+                    data.append(d)
+
+        return header, data
+
+    def format_subinterval_list(conn):
+
+        header = header_base + ['stream_num', 'start', 'duration', 'value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+            for dp in et.get_data().data:
+                for val in dp.val:
+                    for i in range(len(val)):
+                        d = dict(
+                            source=m.source,
+                            destination=m.destination,
+                            event_type=options.type,
+                            tool=m.tool_name,
+                            summary_type=get_summary_type(),
+                            summary_window=options.summary_window,
+                            timestamp=str(dp.ts),
+                            stream_num=i,
+                            start=val[i].get('start'),
+                            duration=val[i].get('duration'),
+                            value=val[i].get('val'),
+                        )
+                        data.append(d)
+
+        return header, data
+
+    format_map = dict(
+        failures=format_failures,
+        histogram=format_histogram,
+        number_list=format_number_list,
+        numeric=format_numeric,
+        packet_trace=format_packet_trace,
+        subintervals=format_subintervals,
+        subinterval_list=format_subinterval_list,
+    )
+
+    return format_map.get(event_format(options.type))
 
 def main():
-    options, args = perfsonar_client_opts(require_src_dest=True)
+    options, args = perfsonar_client_opts(require_src_dest=True,
+        require_event=True)
 
     filters = perfsonar_client_filters(options)
     conn = ApiConnect(options.url, filters)
 
-    data = list()
+    header, data = data_format_factory(options)(conn)
+    print header
 
-    for m in conn.get_metadata():
-        pass
+    o = output_factory(options, data, header)
+    print o.get_output()
 
     pass
 

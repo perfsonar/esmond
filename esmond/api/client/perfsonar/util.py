@@ -13,45 +13,53 @@ import sys
 import urllib
 
 from optparse import OptionParser
+from collections import OrderedDict
 from dateutil.parser import parse
 
 from .query import ApiFilters
 
-EVENT_TYPES = [
-    'failures',
-    'histogram-owdelay',
-    'histogram-rtt',
-    'histogram-ttl',
-    'histogram-ttl-reverse',
-    'ntp-delay',
-    'ntp-dispersion',
-    'ntp-jitter',
-    'ntp-offset',
-    'ntp-polling-interval',
-    'ntp-reach',
-    'ntp-stratum',
-    'ntp-wander',
-    'packet-duplicates',
-    'packet-duplicates-bidir',
-    'packet-loss-rate',
-    'packet-loss-rate-bidir',
-    'packet-trace',
-    'packet-count-lost',
-    'packet-count-lost-bidir',
-    'packet-count-sent',
-    'packet-reorders',
-    'packet-reorders-bidir',
-    'packet-retransmits',
-    'packet-retransmits-subintervals',
-    'path-mtu',
-    'streams-packet-retransmits',
-    'streams-packet-retransmits-subintervals',
-    'streams-throughput',
-    'streams-throughput-subintervals',
-    'throughput',
-    'throughput-subintervals',
-    'time-error-estimates',
-]
+# Event types with an associated "formatting type" to be 
+# used by esmond-get, etc.
+EVENT_MAP = OrderedDict([
+    ('failures', 'failures'),
+    ('histogram-owdelay', 'histogram'),
+    ('histogram-rtt', 'histogram'),
+    ('histogram-ttl', 'histogram'),
+    ('histogram-ttl-reverse', 'histogram'),
+    ('ntp-delay', 'numeric'),
+    ('ntp-dispersion', 'numeric'),
+    ('ntp-jitter', 'numeric'),
+    ('ntp-offset', 'numeric'),
+    ('ntp-polling-interval', 'numeric'),
+    ('ntp-reach', 'numeric'),
+    ('ntp-stratum', 'numeric'),
+    ('ntp-wander', 'numeric'),
+    ('packet-duplicates', 'numeric'),
+    ('packet-duplicates-bidir', 'numeric'),
+    ('packet-loss-rate', 'numeric'),
+    ('packet-loss-rate-bidir', 'numeric'),
+    ('packet-trace', 'packet_trace'),
+    ('packet-count-lost', 'numeric'),
+    ('packet-count-lost-bidir', 'numeric'),
+    ('packet-count-sent', 'numeric'),
+    ('packet-reorders', 'numeric'),
+    ('packet-reorders-bidir', 'numeric'),
+    ('packet-retransmits', 'numeric'),
+    ('packet-retransmits-subintervals', 'subintervals'),
+    ('path-mtu', 'numeric'),
+    ('streams-packet-retransmits', 'number_list'),
+    ('streams-packet-retransmits-subintervals', 'subinterval_list'),
+    ('streams-throughput', 'number_list'),
+    ('streams-throughput-subintervals', 'subinterval_list'),
+    ('throughput', 'numeric'),
+    ('throughput-subintervals', 'subintervals'),
+    ('time-error-estimates', 'numeric'),
+])
+
+EVENT_TYPES = EVENT_MAP.keys()
+
+def event_format(et):
+    return EVENT_MAP[et]
 
 DEFAULT_FIELDS = [
         'source', 
@@ -76,7 +84,7 @@ class EsmondClientWarning(Warning): pass
 
 def check_url(options, parser):
     if not options.url:
-        print '--url is a require arg'
+        print '--url is a required arg\n'
         parser.print_help()
         sys.exit(-1)
     try:
@@ -93,10 +101,14 @@ def check_valid_hostnames(options, parser, hn_args=[]):
         print '--{0} arg had invalid hostname: {1}'.format(hn, getattr(options, hn))
         sys.exit(-1)
 
-def check_event_types(options, parser):
+def check_event_types(options, parser, require_event):
     if options.type and options.type not in EVENT_TYPES:
         print '{0} is not a valid event type'.format(options.type)
         list_event_types()
+        sys.exit(-1)
+    if require_event and not options.type:
+        print 'The --event-type arg is required. Use -L to see a list.\n'
+        parser.print_help()
         sys.exit(-1)
 
 def check_formats(options, parser):
@@ -108,9 +120,15 @@ def check_formats(options, parser):
         print '--output-format csv can not be used with --metadata-extended'
         sys.exit(-1)
 
+def check_summary(options, parser):
+    s_args = ['aggregation', 'average', 'statistics']
+    if options.summary_type and options.summary_type not in s_args:
+        print '{0} is not a valid --summary-type arg (one of: {1})'.format(options.summary_type, s_args)
+        sys.exit(-1)
+
 def src_dest_required(options, parser):
     if not options.src or not options.dest:
-        print '--src and --dest args are required'
+        print '--src and --dest args are required\n'
         parser.print_help()
         sys.exit(-1)
 
@@ -153,7 +171,7 @@ def list_event_types():
 
 # Canned option parsers for clients
 
-def perfsonar_client_opts(require_src_dest=False):
+def perfsonar_client_opts(require_src_dest=False, require_event=False):
     """
     Return a standard option parser for the perfsonar clients.
     """
@@ -190,6 +208,12 @@ def perfsonar_client_opts(require_src_dest=False):
     parser.add_option('-M', '--metadata-extended',
             dest='metadata', action='store_true', default=False,
             help='Show extended metadata tool-specific values (can not be used with -o csv).')
+    parser.add_option('-T', '--summary-type', metavar='SUMMARY_TYPE',
+            type='string', dest='summary_type', 
+            help='Request summary data of type [aggregation, average, statistics].')
+    parser.add_option('-W', '--summary-window', metavar='SUMMARY_WINDOW',
+            type='int', dest='summary_window', default=0,
+            help='Timeframe in seconds described by the summary (default: %default).')
     parser.add_option('-o', '--output-format', metavar='O_FORMAT',
             type='string', dest='format', default='human',
             help='Output format [human, json, csv] (default: human).')
@@ -209,7 +233,9 @@ def perfsonar_client_opts(require_src_dest=False):
 
     check_valid_hostnames(options, parser, hn_args=['src', 'dest', 'agent'])
 
-    check_event_types(options, parser)
+    check_event_types(options, parser, require_event)
+
+    check_summary(options, parser)
 
     check_formats(options, parser)
 
@@ -231,6 +257,9 @@ def perfsonar_client_filters(options):
     filters.time_start = calendar.timegm(start.utctimetuple())
     filters.time_end = calendar.timegm(end.utctimetuple())
     filters.tool_name = options.tool
+    filters.summary_type = options.summary_type
+    if options.summary_window:
+        filters.summary_window = options.summary_window
     filters.verbose = options.verbose
 
     return filters
@@ -272,7 +301,7 @@ class EsmondOutput(object):
 
         # turn any lists into comma separated sequences
         for lf in self._list_fields:
-            new_d[lf] = ', '.join(new_d.get(lf))
+            new_d[lf] = ', '.join( [ str(x) for x in new_d.get(lf) ] )
 
         return new_d
 
