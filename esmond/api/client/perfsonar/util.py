@@ -195,7 +195,7 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False):
             help='Type of data (loss, latency, throughput, etc) - see -L arg.')
     parser.add_option('-t', '--tool', metavar='TOOL',
             type='string', dest='tool', 
-            help='Tool used to run test (bwctl/iperf3, powstream, bwctl/traceroute, gridftp, etc).')
+            help='Tool used to run test (bwctl/iperf3, powstream, "bwctl/tracepath,traceroute", gridftp, etc).')
     parser.add_option('-S', '--start-time', metavar='START',
             type='string', dest='start', 
             help='Start time of query (default: 24 hours ago).')
