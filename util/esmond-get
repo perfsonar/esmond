@@ -71,7 +71,7 @@ def data_format_factory(options):
                         timestamp=str(dp.ts),
                         value=dp.val,
                     )
-                # data.append(d)
+                data.append(d)
 
         return header, data
 
