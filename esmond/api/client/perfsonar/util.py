@@ -16,7 +16,7 @@ from optparse import OptionParser
 from collections import OrderedDict
 from dateutil.parser import parse
 
-from .query import ApiFilters
+from .query import ApiFilters, DataPayload
 
 # Event types with an associated "formatting type" to be 
 # used by esmond-get, etc.
@@ -69,6 +69,9 @@ DEFAULT_FIELDS = [
         'input_destination',
         'tool_name', 
 ]
+
+class HeaderRow(OrderedDict):
+    pass
 
 # Exceptions for client operations
 
@@ -286,6 +289,8 @@ def perfsonar_client_filters(options):
 # Output classes for clients
 
 class EsmondOutput(object):
+    """Base class for output classes."""
+
     def __init__(self, data, columns):
         self._data = data
         self._columns = columns
@@ -326,6 +331,8 @@ class EsmondOutput(object):
 
 
 class HumanOutput(EsmondOutput):
+    """Output for human/console output."""
+
     def __init__(self, data, columns, extended_data=False):
         super(HumanOutput, self).__init__(data, columns)
 
@@ -337,25 +344,32 @@ class HumanOutput(EsmondOutput):
         if not self._output:
             self._output = ''
             for row in self._data:
-                row = self._massage_row_dict(row)
-                for c in self._columns:
-                    self._output += '{0}: {1}\n'.format(c, row.get(c))
-                if self._extended_data:
+                if isinstance(row, HeaderRow):
                     for k,v in row.items():
-                        if k in self._columns: continue
-                        self._output += '{0}: {1}\n'.format(k,v)
+                        self._output += '{0}: {1}\n'.format(k, v)
+                else:
+                    row = self._massage_row_dict(row)
+                    for c in self._columns:
+                        self._output += '{0}: {1}\n'.format(c, row.get(c))
+                    if self._extended_data:
+                        for k,v in row.items():
+                            if k in self._columns: continue
+                            self._output += '{0}: {1}\n'.format(k,v)
                 self._output += entry_delim
             self._output = self._output[:self._output.rfind(entry_delim)]
 
         return self._output
 
 class JsonOutput(EsmondOutput):
+    """Output results as a json blob."""
+
     def get_output(self):
         if not self._output:
             self._output = json.dumps(self._data)
         return self._output
 
 class CSVOutput(EsmondOutput):
+    """Format output for CSV."""
     def get_output(self):
         if not self._output:
             cfile = cStringIO.StringIO()
@@ -370,6 +384,10 @@ class CSVOutput(EsmondOutput):
         return self._output
 
 def output_factory(options, data, columns):
+    """
+    Factory function to hand the appropriate output class 
+    back to the client programs.
+    """
     if options.format == 'human':
         if not options.metadata:
             return HumanOutput(data, columns)
@@ -381,6 +399,315 @@ def output_factory(options, data, columns):
         return CSVOutput(data, columns)
 
 
+def data_format_factory(options):
+    """
+    Factory function to format the actual data for output.
 
+    The appropriate sub-function is identified by the format_map.
+    All functions hand back a header list of the appropriate columns
+    for that measurment type and a list of dicts with corresponding keys.
+    Both of which are passed off to the output rendering code.
+    """
+
+    # these columns/values are common to all measurements.
+    header_base = [
+        'source', 
+        'destination', 
+        'event_type', 
+        'tool', 
+        'summary_type', 
+        'summary_window',
+        'timestamp'
+    ]
+
+    ns_cache = dict()
+
+    def get_summary_type():
+        if not options.summary_type:
+            return 'base'
+        else:
+            return options.summary_type
+
+    def get_payload(et):
+        if not options.summary_type:
+            # unsummarized data
+            return et.get_data()
+        else:
+            # summary data
+            s = et.get_summary(options.summary_type, options.summary_window)
+            if not s: 
+                return DataPayload()
+            else:
+                return s.get_data()
+
+    def massage_output(d):
+        """any modifications to the data dicts here."""
+
+        # IP -> hostname conversion
+        if not options.ip:
+            for i in ['source', 'destination', 'ip']:
+                if d.get(i):
+                    ip = d.get(i)
+                    if not ns_cache.get(ip):
+                        ns_cache[ip] = socket.getfqdn(ip)
+                    d[i] = ns_cache.get(ip)
+
+        return d
+
+    def header_row(m, dp):
+        """Special row that will be handled by the human readable 
+        output class."""
+        header = [
+            ('source', m.source),
+            ('destination', m.destination),
+            ('event_type', options.type),
+            ('tool', m.tool_name),
+            ('summary_type', get_summary_type()),
+            ('summary_window', options.summary_window),
+            ('timestamp', str(dp.ts)),
+        ]
+        return HeaderRow(header)
+        
+
+    def format_numeric(conn):
+        """aggregation, 300, 3600, 86400"""
+
+        header = header_base + ['value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+
+            for dp in get_payload(et).data:
+                d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        value=dp.val,
+                    )
+                data.append(massage_output(d))
+
+        return header, data
+
+    def format_failures(conn):
+
+        header = header_base + ['msg']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+            for dp in et.get_data().data:
+                d = dict(
+                    source=m.source,
+                    destination=m.destination,
+                    event_type=options.type,
+                    tool=m.tool_name,
+                    summary_type=get_summary_type(),
+                    summary_window=options.summary_window,
+                    timestamp=str(dp.ts),
+                    msg=dp.val.get('error')
+                )
+                data.append(massage_output(d))
+
+        return header, data
+
+    def format_packet_trace(conn):
+
+        test_header = ['ttl', 'query', 'success', 'ip', 'rtt', 'mtu', 'error_message']
+
+        if options.format != 'human':
+            header = header_base + test_header
+        else:
+            header = test_header
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+            for dp in et.get_data().data:
+                if options.format == 'human':
+                    data.append(massage_output(header_row(m,dp)))
+                for val in dp.val:
+                    if options.format != 'human':
+                        d = dict(
+                            source=m.source,
+                            destination=m.destination,
+                            event_type=options.type,
+                            tool=m.tool_name,
+                            summary_type=get_summary_type(),
+                            summary_window=options.summary_window,
+                            timestamp=str(dp.ts),
+                            ttl=val.get('ttl'),
+                            query=val.get('query'),
+                            success=val.get('success'),
+                            ip=val.get('ip'),
+                            rtt=val.get('rtt'),
+                            mtu=val.get('mtu'),
+                            error_message=val.get('error_message')
+                        )
+                    else:
+                        d = dict(
+                            ttl=val.get('ttl'),
+                            query=val.get('query'),
+                            success=val.get('success'),
+                            ip=val.get('ip'),
+                            rtt=val.get('rtt'),
+                            mtu=val.get('mtu'),
+                            error_message=val.get('error_message')
+                        )
+                    data.append(massage_output(d))
+
+        return header, data
+
+    def format_histogram(conn):
+        """aggregation, statistics, 300, 3600, 86400"""
+
+        if options.summary_type == 'statistics':
+            header = header_base + ['min', 'median', 'max', 
+                'mean', 'mode', 'standard_deviation', 'variance', 
+                'percentile_25', 'percentile_75', 'percentile_95']
+        else:
+            header = header_base + ['bucket', 'value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+
+            for dp in get_payload(et).data:
+                if options.summary_type == 'statistics':
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        min=dp.val.get('minimum'),
+                        median=dp.val.get('median'),
+                        max=dp.val.get('maximum'),
+                        mean=dp.val.get('mean'),
+                        mode=dp.val.get('mode'),
+                        standard_deviation=dp.val.get('standard-deviation'),
+                        variance=dp.val.get('variance'),
+                        percentile_25=dp.val.get('percentile-25'),
+                        percentile_75=dp.val.get('percentile-75'),
+                        percentile_95=dp.val.get('percentile-95'),
+
+                    )
+                else:
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        bucket=m.sample_bucket_width,
+                        value=dp.val
+                    )
+                data.append(massage_output(d))
+
+        return header, data
+
+    def format_subintervals(conn):
+        
+        header = header_base + ['start', 'duration', 'value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+
+            for dp in et.get_data().data:
+                for val in dp.val:
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        start=val.get('start'),
+                        duration=val.get('duration'),
+                        value=val.get('val'),
+                    )
+                    data.append(massage_output(d))
+
+        return header, data
+
+    def format_number_list(conn):
+
+        header = header_base + ['stream_num', 'value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+            for dp in et.get_data().data:
+                for i in range(len(dp.val)):
+                    d = dict(
+                        source=m.source,
+                        destination=m.destination,
+                        event_type=options.type,
+                        tool=m.tool_name,
+                        summary_type=get_summary_type(),
+                        summary_window=options.summary_window,
+                        timestamp=str(dp.ts),
+                        stream_num=i,
+                        value=dp.val[i],
+                    )
+                    data.append(massage_output(d))
+
+        return header, data
+
+    def format_subinterval_list(conn):
+
+        header = header_base + ['stream_num', 'start', 'duration', 'value']
+
+        data = list()
+
+        for m in conn.get_metadata():
+            et = m.get_event_type(options.type)
+            for dp in et.get_data().data:
+                for stream_num in range(len(dp.val)):
+                    for i in range(len(dp.val[stream_num])):
+                        d = dict(
+                            source=m.source,
+                            destination=m.destination,
+                            event_type=options.type,
+                            tool=m.tool_name,
+                            summary_type=get_summary_type(),
+                            summary_window=options.summary_window,
+                            timestamp=str(dp.ts),
+                            stream_num=stream_num,
+                            start=dp.val[stream_num][i].get('start'),
+                            duration=dp.val[stream_num][i].get('duration'),
+                            value=dp.val[stream_num][i].get('val'),
+                        )
+                        data.append(massage_output(d))
+
+        return header, data
+
+    format_map = dict(
+        failures=format_failures,
+        histogram=format_histogram,
+        number_list=format_number_list,
+        numeric=format_numeric,
+        packet_trace=format_packet_trace,
+        subintervals=format_subintervals,
+        subinterval_list=format_subinterval_list,
+    )
+
+    return format_map.get(event_format(options.type))
 
 
