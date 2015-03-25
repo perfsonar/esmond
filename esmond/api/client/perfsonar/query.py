@@ -110,6 +110,10 @@ class Metadata(NodeInfo):
         return self._data.get('metadata-key', None)
 
     @property
+    def metadata_count_total(self):
+        return self._data.get('metadata-count-total', None)
+
+    @property
     def sample_bucket_width(self):
         return self._data.get('sample-bucket-width', None)
 
