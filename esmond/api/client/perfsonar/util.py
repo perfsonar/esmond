@@ -220,6 +220,9 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False):
     parser.add_option('-o', '--output-format', metavar='O_FORMAT',
             type='string', dest='format', default='human',
             help='Output format [human, json, csv] (default: human).')
+    parser.add_option('-I', '--ip',
+            dest='ip', action='store_true', default=False,
+            help='Show source/dest as IP addresses, not hostnames.')
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
@@ -265,17 +268,18 @@ def perfsonar_client_filters(options):
         filters.summary_window = options.summary_window
     filters.verbose = options.verbose
 
-    # Apply arbritrary metadata filters
-    for f in options.filter:
-        if f.find(':') == -1:
-            print '--filter arg {0} should be of the format key:value'.format(f)
-            continue
-        k,v = f.split(':')
-        key = k.replace('-', '_')
-        if not hasattr(filters, k):
-            print '--filter arg {0} is not a valid filtering value'.format(key)
-            continue
-        setattr(filters, key, v)
+    if options.filter:
+        # Apply arbritrary metadata filters
+        for f in options.filter:
+            if f.find(':') == -1:
+                print '--filter arg {0} should be of the format key:value'.format(f)
+                continue
+            k,v = f.split(':')
+            key = k.replace('-', '_')
+            if not hasattr(filters, k):
+                print '--filter arg {0} is not a valid filtering value'.format(key)
+                continue
+            setattr(filters, key, v)
 
     return filters
 

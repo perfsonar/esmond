@@ -5,6 +5,7 @@ esmond-get - client to fetch perfsonar test results.
 """
 
 import os
+import socket
 import sys
 
 from esmond_client.perfsonar.query import ApiConnect, DataPayload
@@ -32,6 +33,8 @@ def data_format_factory(options):
         'timestamp'
     ]
 
+    ns_cache = dict()
+
     def get_summary_type():
         if not options.summary_type:
             return 'base'
@@ -49,6 +52,20 @@ def data_format_factory(options):
                 return DataPayload()
             else:
                 return s.get_data()
+
+    def massage_output(d):
+        """any modifications to the data dicts here."""
+
+        # IP -> hostname conversion
+        if not options.ip:
+            for i in ['source', 'destination']:
+                if d.get(i):
+                    ip = d.get(i)
+                    if not ns_cache.get(ip):
+                        ns_cache[ip] = socket.getfqdn(ip)
+                    d[i] = ns_cache.get(ip)
+
+        return d
 
     def format_numeric(conn):
         """aggregation, 300, 3600, 86400"""
@@ -71,7 +88,7 @@ def data_format_factory(options):
                         timestamp=str(dp.ts),
                         value=dp.val,
                     )
-                data.append(d)
+                data.append(massage_output(d))
 
         return header, data
 
@@ -94,7 +111,7 @@ def data_format_factory(options):
                     timestamp=str(dp.ts),
                     msg=dp.val.get('error')
                 )
-                data.append(d)
+                data.append(massage_output(d))
 
         return header, data
 
@@ -140,7 +157,7 @@ def data_format_factory(options):
                             mtu=val.get('mtu'),
                             error_message=val.get('error_message')
                         )
-                    data.append(d)
+                    data.append(massage_output(d))
 
         return header, data
 
@@ -193,7 +210,7 @@ def data_format_factory(options):
                         bucket=m.sample_bucket_width,
                         value=dp.val
                     )
-                data.append(d)
+                data.append(massage_output(d))
 
         return header, data
 
@@ -220,7 +237,7 @@ def data_format_factory(options):
                         duration=val.get('duration'),
                         value=val.get('val'),
                     )
-                    data.append(d)
+                    data.append(massage_output(d))
 
         return header, data
 
@@ -245,7 +262,7 @@ def data_format_factory(options):
                         stream_num=i,
                         value=dp.val[i],
                     )
-                    data.append(d)
+                    data.append(massage_output(d))
 
         return header, data
 
@@ -273,7 +290,7 @@ def data_format_factory(options):
                             duration=dp.val[stream_num][i].get('duration'),
                             value=dp.val[stream_num][i].get('val'),
                         )
-                        data.append(d)
+                        data.append(massage_output(d))
 
         return header, data
 
