@@ -73,6 +73,9 @@ mkdir -p %{buildroot}/%{install_base}/bin/
 # Move the default RPM esmond.conf into place
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{install_base}/esmond.conf
 
+# Move the config script into place
+mv %{buildroot}/%{install_base}/rpm/scripts/configure_esmond %{buildroot}/%{install_base}/configure_esmond
+
 # Move the default settings.py into place
 mv %{buildroot}/%{install_base}/rpm/config_files/settings.py %{buildroot}/%{install_base}/esmond/settings.py
 
@@ -116,7 +119,8 @@ source /opt/rh/python27/enable
 
 #handle database updates
 if [ "$1" = "2" ]; then
-    python esmond/manage.py syncdb
+    chmod 755 configure_esmond
+    ./configure_esmond
 fi
 
 mkdir -p tsdb-data
