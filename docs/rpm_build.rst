@@ -77,7 +77,7 @@ The CentOS Software Collections only provide Python 2.7 for x86_64. For i386 arc
 
 #. At the bottom of each file is a section called [holding-repo]. Update the path to point at a local holding repo on your system where you can install RPMs.
 
-#. Download the following SRPMS from `here <http://vault.centos.org/6.5/SCL/Source/SPackages/>`_:
+#. Download the following `SRPMS here <http://vault.centos.org/6.5/SCL/Source/SPackages/>`_:
     * scl-utils 
  
     * python27
@@ -151,7 +151,7 @@ The CentOS Software Collections only provide Python 2.7 for x86_64. For i386 arc
         cp $HOME/mock-results/epel-6-i386/python27-*.i386.rpm  $HOME/mock-holding-repo/epel-6-i386/i386/RPMS/
         createrepo -d --update $HOME/mock-holding-repo/epel-6-i386/
         
-#. Finally rebuild python27-mod_wsgi using the SRPM from `here <http://software.internet2.edu/branches/release-3.4/rpms/el6/SRPMS/>`_ and sign the result::
+#. Finally rebuild python27-mod_wsgi using the `SRPM here <http://software.internet2.edu/branches/release-3.4/rpms/el6/SRPMS/>`_ and sign the result::
 
         mock -r epel-6-i386 --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/python27-mod_wsgi-3.2-3.el6.src.rpm 
         rpmsign --resign $HOME/mock-results/epel-6-i386/python27-* 

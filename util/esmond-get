@@ -242,8 +242,8 @@ def data_format_factory(options):
         for m in conn.get_metadata():
             et = m.get_event_type(options.type)
             for dp in et.get_data().data:
-                for val in dp.val:
-                    for i in range(len(val)):
+                for stream_num in range(len(dp.val)):
+                    for i in range(len(dp.val[stream_num])):
                         d = dict(
                             source=m.source,
                             destination=m.destination,
@@ -252,10 +252,10 @@ def data_format_factory(options):
                             summary_type=get_summary_type(),
                             summary_window=options.summary_window,
                             timestamp=str(dp.ts),
-                            stream_num=i,
-                            start=val[i].get('start'),
-                            duration=val[i].get('duration'),
-                            value=val[i].get('val'),
+                            stream_num=stream_num,
+                            start=dp.val[stream_num][i].get('start'),
+                            duration=dp.val[stream_num][i].get('duration'),
+                            value=dp.val[stream_num][i].get('val'),
                         )
                         data.append(d)
 
