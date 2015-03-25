@@ -100,7 +100,12 @@ def data_format_factory(options):
 
     def format_packet_trace(conn):
 
-        header = header_base + ['ttl', 'query', 'success', 'ip', 'rtt', 'mtu', 'error_message']
+        test_header = ['ttl', 'query', 'success', 'ip', 'rtt', 'mtu', 'error_message']
+
+        if options.format != 'human':
+            header = header_base + test_header
+        else:
+            header = test_header
 
         data = list()
 
@@ -108,22 +113,33 @@ def data_format_factory(options):
             et = m.get_event_type(options.type)
             for dp in et.get_data().data:
                 for val in dp.val:
-                    d = dict(
-                        source=m.source,
-                        destination=m.destination,
-                        event_type=options.type,
-                        tool=m.tool_name,
-                        summary_type=get_summary_type(),
-                        summary_window=options.summary_window,
-                        timestamp=str(dp.ts),
-                        ttl=val.get('ttl'),
-                        query=val.get('query'),
-                        success=val.get('success'),
-                        ip=val.get('ip'),
-                        rtt=val.get('rtt'),
-                        mtu=val.get('mtu'),
-                        error_message=val.get('error_message')
-                    )
+                    if options.format != 'human':
+                        d = dict(
+                            source=m.source,
+                            destination=m.destination,
+                            event_type=options.type,
+                            tool=m.tool_name,
+                            summary_type=get_summary_type(),
+                            summary_window=options.summary_window,
+                            timestamp=str(dp.ts),
+                            ttl=val.get('ttl'),
+                            query=val.get('query'),
+                            success=val.get('success'),
+                            ip=val.get('ip'),
+                            rtt=val.get('rtt'),
+                            mtu=val.get('mtu'),
+                            error_message=val.get('error_message')
+                        )
+                    else:
+                        d = dict(
+                            ttl=val.get('ttl'),
+                            query=val.get('query'),
+                            success=val.get('success'),
+                            ip=val.get('ip'),
+                            rtt=val.get('rtt'),
+                            mtu=val.get('mtu'),
+                            error_message=val.get('error_message')
+                        )
                     data.append(d)
 
         return header, data

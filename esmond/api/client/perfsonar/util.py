@@ -199,6 +199,9 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False):
     parser.add_option('-S', '--start-time', metavar='START',
             type='string', dest='start', 
             help='Start time of query (default: 24 hours ago).')
+    parser.add_option('-F', '--filter', metavar='FILTER',
+            type='string', dest='filter', action='append',
+            help='Specify additional query filters - format: -F key:value. Can be used multiple times, invalid filters will be ignored.')
     parser.add_option('-E', '--end-time', metavar='END',
             type='string', dest='end', 
             help='End time of query (default: now).')
@@ -261,6 +264,18 @@ def perfsonar_client_filters(options):
     if options.summary_window:
         filters.summary_window = options.summary_window
     filters.verbose = options.verbose
+
+    # Apply arbritrary metadata filters
+    for f in options.filter:
+        if f.find(':') == -1:
+            print '--filter arg {0} should be of the format key:value'.format(f)
+            continue
+        k,v = f.split(':')
+        key = k.replace('-', '_')
+        if not hasattr(filters, k):
+            print '--filter arg {0} is not a valid filtering value'.format(key)
+            continue
+        setattr(filters, key, v)
 
     return filters
 
