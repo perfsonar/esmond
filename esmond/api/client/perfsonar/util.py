@@ -127,7 +127,7 @@ def check_summary(options, parser):
         sys.exit(-1)
 
 def src_dest_required(options, parser):
-    if not options.src or not options.dest:
+    if not options.src or not (options.dest or options.type.startswith('ntp-')):
         print '--src and --dest args are required\n'
         parser.print_help()
         sys.exit(-1)
