@@ -59,7 +59,9 @@ Contents:
    hacking
    perfsonar_extension
    rpm_build
-   perfsonar_client
+   perfsonar_client_rest
+   perfsonar_client_python
+   perfsonar_client_perl
    
    api
 

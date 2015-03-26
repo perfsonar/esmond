@@ -1,6 +1,6 @@
-*************************************
-Using perfSONAR data client libraries
-*************************************
+*********************************
+perfSONAR Python Client Libraries
+*********************************
 
 The pS data can be queried, retrieved and posted to the esmond/cassandra backend 
 via a REST interface.  This is streamlined by the following libraries::
