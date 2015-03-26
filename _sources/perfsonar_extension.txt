@@ -103,7 +103,7 @@ Adding New Subject Types
 **NOTE:** This section assumes some familiarity with `Django <https://www.djangoproject.com>`_ and `Tastypie <http://tastypieapi.org>`_. See the provided links for more details
 
 
-It may be desirable to add support a new type of subject for which measurements can be collected. For example, the default esmond implementation comes with a *point-to-point* subject type for describing measurements performed between two IP addresses. Let's say instead we want to measure some statistics about a car. Before we can define new event types like speed and miles per gallon, we need to define how we will describe our car. To do so, we perform the following steps:
+It may be desirable to add support a new type of subject for which measurements can be collected. For example, the default esmond implementation comes with a *point-to-point* and *network-element* subject type for describing measurements performed between two IP addresses. Let's say instead we want to measure some statistics about a car. Before we can define new event types like speed and miles per gallon, we need to define how we will describe our car. To do so, we perform the following steps:
 
 #. **Create a new Django model with required parameters for all subjects of this type.** We do this by opening *esmond/api/models.py* and defining a new class that extends ``django.db.models.Model``.  There is one required foreign key to the ``PSMetadata`` table that must be named *metadata*. Continuing our car example we might define something like below::
 
@@ -117,9 +117,9 @@ It may be desirable to add support a new type of subject for which measurements 
         class Meta:
             db_table = "ps_car_subject"
 
-#. **Define a REST resource for your new subject.** Open *esmond/api/perfsonar/api.py* and add a class that extends ``tastypie.resources.ModelResorce`` and maps to the model defined in the previous step. For example::
+#. **Define a REST resource for your new subject.** Open *esmond/api/perfsonar/api.py* and add a class that extends ``esmond.api.perfsonar.api.CustomModelResorce`` and maps to the model defined in the previous step. For example::
 
-    class PSCarSubjectResource(ModelResource):
+    class PSCarSubjectResource(CustomModelResorce):
         psmetadata = fields.ToOneField('esmond.api.perfsonar.api.PSArchiveResource', 'metadata', null=True, blank=True)
     
         class Meta:
@@ -143,6 +143,9 @@ It may be desirable to add support a new type of subject for which measurements 
         def alter_list_data_to_serialize(self, request, data):
             formatted_objs = format_list_keys(data)
             return formatted_objs
+        
+        def get_resource_uri(self, bundle_or_obj=None):
+            return None
 
 
 #. **Add the subject to the REST API's PSArchiveResource.** Open *esmond/api/perfsonar/api.py* and add your new subject type as a field to ``PSArchiveResource``. For example::
@@ -155,35 +158,44 @@ It may be desirable to add support a new type of subject for which measurements 
         ...
 #. **Update the list of valid subject types** The list of valid subject types lives in **esmond/api/perfsonar/types.py** as the ``SUBJECT_FIELDS`` array. Add the ``resource_name`` from the `Meta`` class of the ``tastypie.resources.ModelResorce`` (e.g. ``PSCarSubjectResource``) previously defined. For example::
 
-    SUBJECT_FIELDS = ['p2p_subject', 'car_subject']
+    SUBJECT_FIELDS = ['p2p_subject', 'networkelement_subject', 'car_subject']
 
 #. **Map a subject type string to the REST Resource and Model Resource** In the REST API metadata object there is a *subject-type* field that indicates the type of subject the metadata describes. You must define this string and add it to the ``SUBJECT_TYPE_MAP`` and ``SUBJECT_MODEL_MAP`` dictionaries in **esmond/api/perfsonar/types.py**. From a style perspective, the string should contain hyphens and not underscores (e.g. *point-to-point*). The ``SUBJECT_TYPE_MAP`` uses the string as the key and has the ``resource_name`` defined in the ``Meta`` class of the ``tastypie.resources.ModelResorce`` you defined earlier (e.g. ``PSCarSubjectResource``). The ``SUBJECT_MODEL_MAP`` also uses the string as the key and the value is the name of our ``django.db.models.Model`` in all lowercase (e.g. *pscarsubject*). Putting it all together, you can add the *car* subject type as follows::
-    
+
     SUBJECT_TYPE_MAP = {
+        "point-to-point": "p2p_subject",
+        "network-element": "networkelement_subject",
         "car": "car_subject"
     }
-    
+
     SUBJECT_MODEL_MAP = {
         "point-to-point": "pspointtopointsubject",
+        "network-element": "psnetworkelementsubject",
         "car": "pscarsubject"
     }
 
-#. **Define how the subject parameters look in the REST interface** You can map particular filters and fields in the REST interface to columns in your Django model by updating the ``SUBJECT_FILTER_MAP`` in **esmond/api/perfsonar/types.py**. The key is the name as it appears in the REST interface and the value is the column name as it would be seen by the ``PSMetadata`` model. The name as it appears in the REST Interface must not conflict with any existing subject fields. As a good practice, you may want to prefix your fields with something that indicates the subject to limit future conflicts. For example we will prefix *car-* in all our fields  Also, as a general style you will also want o use hyphens instead of underscored in your fields.  Continuing our example::
+#. **Define how the subject parameters look in the REST interface** You can map particular filters and fields in the REST interface to columns in your Django model by updating the ``SUBJECT_FILTER_MAP`` in **esmond/api/perfsonar/types.py**. The key is the name as it appears in the REST interface and the value is the column name as it would be seen by the ``PSMetadata`` model. The name as it appears in the REST Interface must not conflict with any existing subject fields. If you want to share the name with another subject field, then add it to the array of the existing entry in the map. As a good practice, you may want to prefix your fields with something that indicates the subject to limit future conflicts. For example we will prefix *car-* in all our fields  Also, as a general style you will also want o use hyphens instead of underscored in your fields.  Continuing our example::
 
     SUBJECT_FILTER_MAP = {
         #point-to-point subject fields
-        "source": 'p2p_subject__source',
-        "destination": 'p2p_subject__destination',
-        "tool-name": 'p2p_subject__tool_name',
-        "measurement-agent": 'p2p_subject__measurement_agent',
-        "input-source": 'p2p_subject__input_source',
-        "input-destination": 'p2p_subject__input_destination'
+        "source": ['pspointtopointsubject__source', 'psnetworkelementsubject__source'],
+        "destination": ['pspointtopointsubject__destination'],
+        "tool-name": ['pspointtopointsubject__tool_name', 'psnetworkelementsubject__tool_name'],
+        "measurement-agent": ['pspointtopointsubject__measurement_agent', 'psnetworkelementsubject__measurement_agent'],
+        "input-source": ['pspointtopointsubject__input_source', 'psnetworkelementsubject__input_source'],
+        "input-destination": ['pspointtopointsubject__input_destination'],
         #car subject fields
-        "car-vin": 'car_subject__vehicle_id_number',
-        "car-make": 'car_subject__make',
-        "car-model": 'car_subject__model',
-        "car-color": 'car_subject__color',
+        "car-vin": ['car_subject__vehicle_id_number'],
+        "car-make": ['car_subject__make'],
+        "car-model": ['car_subject__model'],
+        "car-color": ['car_subject__color'],
     }
+
+#. Finally we want to be sure a user has permissions to post to the new subject. Open *esmond/api/management/commands/add_ps_metadata_post_user.py* and add the name of the the ``django.db.models.Model`` in all lowercase letters (same as we entered in SUBJECT_MODEL_MAP previously) to the array on line 34::
+
+     print 'Setting metadata POST permissions.'
+     for model_name in ['psmetadata', 'pspointtopointsubject', 'pseventtypes', 'psmetadataparameters', 'psnetworkelementsubject', 'pscarsubject']:
+            ...
 
 That completes the basic process. A few additional notes worth considering:
 

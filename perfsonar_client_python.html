@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Using perfSONAR data client libraries &mdash; esmond</title>
+    <title>perfSONAR Python Client Libraries &mdash; esmond</title>
     
     <link rel="stylesheet" href="_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -31,8 +31,8 @@
     <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="top" title="esmond" href="index.html" />
-    <link rel="next" title="Developer Reference" href="api.html" />
-    <link rel="prev" title="RPM Build Instructions" href="rpm_build.html" />
+    <link rel="next" title="perfSONAR Perl Client Libraries" href="perfsonar_client_perl.html" />
+    <link rel="prev" title="perfSONAR Client REST Interface" href="perfsonar_client_rest.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -77,7 +77,9 @@
 <li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
 <li class="toctree-l1"><a class="reference internal" href="perfsonar_extension.html">Extending the perfSONAR API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="rpm_build.html">RPM Build Instructions</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Using perfSONAR data client libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_rest.html">perfSONAR Client REST Interface</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">perfSONAR Python Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
 </ul>
 </ul>
@@ -88,17 +90,17 @@
               
                 
   <li>
-    <a href="rpm_build.html" title="Previous Chapter: RPM Build Instructions">
+    <a href="perfsonar_client_rest.html" title="Previous Chapter: perfSONAR Client REST Interface">
       <span class="glyphicon glyphicon-chevron-left"></span>
       <span class="hidden-sm">
-        RPM Build Instru...
+        perfSONAR Client...
       </span>
     </a>
   </li>
   <li>
-    <a href="api.html" title="Next Chapter: Developer Reference">
+    <a href="perfsonar_client_perl.html" title="Next Chapter: perfSONAR Perl Client Libraries">
       <span class="hidden-sm">
-        Developer Refere...
+        perfSONAR Perl C...
       </span>
       <span class="glyphicon glyphicon-chevron-right"></span>
     </a>
@@ -133,7 +135,7 @@
   <div class="row">
       <div class="col-md-3">
         <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
-<li><a class="reference internal" href="#">Using perfSONAR data client libraries</a><ul>
+<li><a class="reference internal" href="#">perfSONAR Python Client Libraries</a><ul>
 <li><a class="reference internal" href="#initializing-the-query-interface">Initializing the query interface</a></li>
 <li><a class="reference internal" href="#retrieving-the-data">Retrieving the data</a></li>
 <li><a class="reference internal" href="#writing-data-to-ps-esmond-backend">Writing data to pS esmond/backend</a></li>
@@ -146,8 +148,8 @@
       </div>
     <div class="col-md-9">
       
-  <div class="section" id="using-perfsonar-data-client-libraries">
-<h1>Using perfSONAR data client libraries<a class="headerlink" href="#using-perfsonar-data-client-libraries" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="perfsonar-python-client-libraries">
+<h1>perfSONAR Python Client Libraries<a class="headerlink" href="#perfsonar-python-client-libraries" title="Permalink to this headline">¶</a></h1>
 <p>The pS data can be queried, retrieved and posted to the esmond/cassandra backend
 via a REST interface.  This is streamlined by the following libraries:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">esmond</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">perfsonar</span><span class="o">.</span><span class="n">query</span>
@@ -421,7 +423,7 @@ the same way with the POST interface.</p>
         <br/>
         
 <div id="sourcelink">
-  <a href="_sources/perfsonar_client.txt"
+  <a href="_sources/perfsonar_client_python.txt"
      rel="nofollow">Source</a>
 </div>
         

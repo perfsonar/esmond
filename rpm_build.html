@@ -31,7 +31,7 @@
     <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="top" title="esmond" href="index.html" />
-    <link rel="next" title="Using perfSONAR data client libraries" href="perfsonar_client.html" />
+    <link rel="next" title="perfSONAR Client REST Interface" href="perfsonar_client_rest.html" />
     <link rel="prev" title="Extending the perfSONAR API" href="perfsonar_extension.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
@@ -77,7 +77,9 @@
 <li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
 <li class="toctree-l1"><a class="reference internal" href="perfsonar_extension.html">Extending the perfSONAR API</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">RPM Build Instructions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="perfsonar_client.html">Using perfSONAR data client libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_rest.html">perfSONAR Client REST Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_python.html">perfSONAR Python Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
 </ul>
 </ul>
@@ -96,9 +98,9 @@
     </a>
   </li>
   <li>
-    <a href="perfsonar_client.html" title="Next Chapter: Using perfSONAR data client libraries">
+    <a href="perfsonar_client_rest.html" title="Next Chapter: perfSONAR Client REST Interface">
       <span class="hidden-sm">
-        Using perfSONAR ...
+        perfSONAR Client...
       </span>
       <span class="glyphicon glyphicon-chevron-right"></span>
     </a>
@@ -243,7 +245,7 @@ grep -q &quot;source /opt/rh/python27/enable&quot; /etc/sysconfig/httpd || echo 
 <li><p class="first">At the bottom of each file is a section called [holding-repo]. Update the path to point at a local holding repo on your system where you can install RPMs.</p>
 </li>
 <li><dl class="first docutils">
-<dt>Download the following SRPMS from <a class="reference external" href="http://vault.centos.org/6.5/SCL/Source/SPackages/">here</a>:</dt>
+<dt>Download the following <a class="reference external" href="http://vault.centos.org/6.5/SCL/Source/SPackages/">SRPMS here</a>:</dt>
 <dd><ul class="first last simple">
 <li>scl-utils</li>
 <li>python27</li>
@@ -318,7 +320,7 @@ createrepo -d --update $HOME/mock-holding-repo/epel-6-i386/
 </pre></div>
 </div>
 </li>
-<li><p class="first">Finally rebuild python27-mod_wsgi using the SRPM from <a class="reference external" href="http://software.internet2.edu/branches/release-3.4/rpms/el6/SRPMS/">here</a> and sign the result:</p>
+<li><p class="first">Finally rebuild python27-mod_wsgi using the <a class="reference external" href="http://software.internet2.edu/branches/release-3.4/rpms/el6/SRPMS/">SRPM here</a> and sign the result:</p>
 <div class="highlight-python"><div class="highlight"><pre>mock -r epel-6-i386 --resultdir=$HOME/mock-results/epel-6-i386/ --arch=i386 $HOME/rpmbuild/SRPMS/python27-mod_wsgi-3.2-3.el6.src.rpm
 rpmsign --resign $HOME/mock-results/epel-6-i386/python27-*
 </pre></div>

@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>perfSONAR Client REST Interface &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="index.html" />
+    <link rel="next" title="perfSONAR Python Client Libraries" href="perfsonar_client_python.html" />
+    <link rel="prev" title="RPM Build Instructions" href="rpm_build.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png _static/logo-esnet-ball-sm.png --><img src="_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_install.html">RPM Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_extension.html">Extending the perfSONAR API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_build.html">RPM Build Instructions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">perfSONAR Client REST Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_python.html">perfSONAR Python Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="rpm_build.html" title="Previous Chapter: RPM Build Instructions">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+      <span class="hidden-sm">
+        RPM Build Instru...
+      </span>
+    </a>
+  </li>
+  <li>
+    <a href="perfsonar_client_python.html" title="Next Chapter: perfSONAR Python Client Libraries">
+      <span class="hidden-sm">
+        perfSONAR Python...
+      </span>
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href="http://github.com/esnet/esmond"><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">perfSONAR Client REST Interface</a><ul>
+<li><a class="reference internal" href="#querying-data">Querying Data</a><ul>
+<li><a class="reference internal" href="#getting-started">Getting Started</a></li>
+<li><a class="reference internal" href="#finding-the-right-measurements">Finding the right measurements</a><ul>
+<li><a class="reference internal" href="#listing-all-the-measurements">Listing all the measurements</a></li>
+<li><a class="reference internal" href="#searching-by-endpoint">Searching by Endpoint</a></li>
+<li><a class="reference internal" href="#searching-by-event-type">Searching by Event Type</a></li>
+<li><a class="reference internal" href="#searching-by-most-recent-result-time">Searching by most recent result time</a></li>
+<li><a class="reference internal" href="#limiting-results-returned">Limiting results returned</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#retrieving-measurement-results">Retrieving Measurement Results</a><ul>
+<li><a class="reference internal" href="#base-data-vs-summaries">Base Data vs Summaries</a></li>
+<li><a class="reference internal" href="#retrieving-time-series-data">Retrieving time series data</a></li>
+<li><a class="reference internal" href="#querying-throughput">Querying Throughput</a></li>
+<li><a class="reference internal" href="#querying-delay-one-way-delay">Querying Delay/One-way Delay</a></li>
+<li><a class="reference internal" href="#querying-packet-loss">Querying Packet Loss</a></li>
+<li><a class="reference internal" href="#querying-packet-traces">Querying Packet Traces</a></li>
+<li><a class="reference internal" href="#querying-subinterval-data">Querying Subinterval Data</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#publishing-data">Publishing Data</a><ul>
+<li><a class="reference internal" href="#id1">Getting Started</a></li>
+<li><a class="reference internal" href="#authentication-and-authorization">Authentication and Authorization</a></li>
+<li><a class="reference internal" href="#publishing-the-measurement-description">Publishing the Measurement Description</a></li>
+<li><a class="reference internal" href="#publishing-a-single-measurement-result">Publishing a Single Measurement Result</a></li>
+<li><a class="reference internal" href="#publishing-multiple-measurement-results">Publishing Multiple Measurement Results</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#publishing-throughput-data">Publishing Throughput Data</a></li>
+<li><a class="reference internal" href="#publishing-delay-one-way-delay-data">Publishing Delay/One-way Delay Data</a></li>
+<li><a class="reference internal" href="#publishing-packet-loss">Publishing Packet Loss</a></li>
+<li><a class="reference internal" href="#publishing-packet-traces">Publishing Packet Traces</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#full-list-of-event-types">Full List of Event Types</a></li>
+<li><a class="reference internal" href="#full-api-specification">Full API Specification</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9">
+      
+  <div class="section" id="perfsonar-client-rest-interface">
+<h1>perfSONAR Client REST Interface<a class="headerlink" href="#perfsonar-client-rest-interface" title="Permalink to this headline">¶</a></h1>
+<p>This document describes the basics of reading and writing data from the perfSONAR measurement archive. The measurement archive implements a REST interface where clients can retrieve descriptions of measurements being run and the results of those measurements. It currently offers support for a range of measurements related to throughput, packet delay, packet loss, packet traces and more (with additional data types being added all the time). This document is intended to give developers a basic programming language-neutral understanding of how to interact with the archive.</p>
+<div class="section" id="querying-data">
+<h2>Querying Data<a class="headerlink" href="#querying-data" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="getting-started">
+<h3>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h3>
+<p>Querying the measurement archive generally follows the two-step process below:
+#. Find the measurements with the type of data you want
+#. Retrieve the result data for the measurements you find</p>
+<p>A quick example helps illustrate this process. First, let&#8217;s say we we want to know about throughput for a particular set of measurements. In perfSONAR we call this the type of data we are interested-in the <strong>event type</strong>. Let&#8217;s say we also only want throughput for measurements between two hosts where the host <em>host1.example.net</em> sends data to <em>host2.example.net</em>.  Since host1.example.net sends the data we consider it a <strong>source</strong> and since host2.example.net receives data we call it the <strong>destination</strong>. Assuming our measurement archive runs on archive.example.net we can send the following HTTP GET using curl to get the results we want:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl http://archive.example.net/esmond/perfsonar/archive/?event-type=throughput&amp;source=host1.example.net&amp;destination=host2.example.net
+</pre></div>
+</div>
+<p>This returns the following JSON object:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;source&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+        <span class="s">&quot;destination&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.2&quot;</span><span class="p">,</span>
+        <span class="s">&quot;event-types&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+                <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/packet-retransmits/base&quot;</span><span class="p">,</span>
+                <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-retransmits&quot;</span><span class="p">,</span>
+                <span class="s">&quot;summaries&quot;</span><span class="p">:[],</span>
+                <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397482734</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base&quot;</span><span class="p">,</span>
+                <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput&quot;</span><span class="p">,</span>
+                <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+                    <span class="p">{</span>
+                    <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;average&quot;</span><span class="p">,</span>
+                    <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span><span class="p">,</span>
+                    <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397482735</span><span class="p">,</span>
+                    <span class="s">&quot;uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/averages/86400&quot;</span>
+                    <span class="p">}</span>
+                <span class="p">],</span>
+                <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397482735</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/failures/base&quot;</span><span class="p">,</span>
+                <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;failures&quot;</span><span class="p">,</span>
+                <span class="s">&quot;summaries&quot;</span><span class="p">:[],</span>
+                <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397315930</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput-subintervals/base&quot;</span><span class="p">,</span>
+                <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput-subintervals&quot;</span><span class="p">,</span>
+                <span class="s">&quot;summaries&quot;</span><span class="p">:[],</span>
+                <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397482735</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+        <span class="s">&quot;input-source&quot;</span><span class="p">:</span><span class="s">&quot;host1.example.net&quot;</span><span class="p">,</span>
+        <span class="s">&quot;input-destination&quot;</span><span class="p">:</span><span class="s">&quot;host2.example.net&quot;</span><span class="p">,</span>
+        <span class="s">&quot;ip-transport-protocol&quot;</span><span class="p">:</span><span class="s">&quot;tcp&quot;</span><span class="p">,</span>
+        <span class="s">&quot;measurement-agent&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+        <span class="s">&quot;metadata-key&quot;</span><span class="p">:</span><span class="s">&quot;f6b732e9f351487a96126f0c25e5e546&quot;</span><span class="p">,</span>
+        <span class="s">&quot;subject-type&quot;</span><span class="p">:</span><span class="s">&quot;point-to-point&quot;</span><span class="p">,</span>
+        <span class="s">&quot;time-duration&quot;</span><span class="p">:</span><span class="s">&quot;20&quot;</span><span class="p">,</span>
+        <span class="s">&quot;time-duration&quot;</span><span class="p">:</span><span class="s">&quot;14400&quot;</span><span class="p">,</span>
+        <span class="s">&quot;tool-name&quot;</span><span class="p">:</span><span class="s">&quot;bwctl/iperf3&quot;</span><span class="p">,</span>
+        <span class="s">&quot;uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/&quot;</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>Notice we get back an array of objects. In the example above there is just one measurement that matches our search. Notice the source and destination are IP addresses. The archive always stores IP addresses for a measurement but will automatically do any required conversions if you provided DNS names in your search. Also notice there are multiple <em>event-types</em> where one of them matches our search. These other event-types are other data available for the measurement. We just want throughput so we look at the object where <em>event-type</em> is <em>throughput</em> and extract the <strong>base-uri</strong> field which is <em>/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base</em>. We can then query the last 24 hours (i.e. 86,400 seconds) of throughput measurements with the following HTTP GET request:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl http://archive.example.net/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base?time-range=86400
+</pre></div>
+</div>
+<p>This returns the following list of datapoints where the <em>ts</em> is the time the measurement started and value is the throughput measured in bits per second:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397421672</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7016320000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397442692</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7225480000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397466492</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7095460000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397482700</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7042540000.0</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>The example above glosses over many details and options, but outlines the normal workflow for querying data. See the remainder of this section for further details on more advanced queries and data types.</p>
+</div>
+<div class="section" id="finding-the-right-measurements">
+<h3>Finding the right measurements<a class="headerlink" href="#finding-the-right-measurements" title="Permalink to this headline">¶</a></h3>
+<p>Finding measurements with parameters relevant to the data you are seeking is the first step in querying the measurement archive. All searches of this type go to the top-level URL (usually /esmond/perfsonar/archive) and you can use HTTP GET parameters to filter the results. Almost any parameter in the measurement objects returned can be used as a search filter. If no results match your search you will get back an empty list. If one or more measurements match your search, you will get back a list of objects describing the measurements called <strong>metadata</strong>. This information includes URIs where you can get the measurement results. Fields and filters common to all measurement objects are listed in the table below:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="4%" />
+<col width="2%" />
+<col width="94%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Field name</td>
+<td>Type</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>source</td>
+<td>IP address</td>
+<td>The sender in a point-to-point measurement represented as an IPv4 or IPv6 address. When searching you can provide a DNS name and the server will automatically map it to the correct IP address. See <a class="reference internal" href="#psclient-rest-search"><em>Searching by Endpoint</em></a> for more information.</td>
+</tr>
+<tr class="row-odd"><td>destination</td>
+<td>IP address</td>
+<td>The receiver in a point-to-point measurement represented as an IPv4 or IPv6 address. When searching you can provide a DNS name and the server will automatically map it to the correct IP address. See <a class="reference internal" href="#psclient-rest-search"><em>Searching by Endpoint</em></a> for more information.</td>
+</tr>
+<tr class="row-even"><td>measurement-agent</td>
+<td>IP address</td>
+<td>The host where the measurement was initiated represented as an IPv4 or IPv6 address. This may be the source, destination or a third-party host depending on the tool. When searching you can provide a DNS name and the server will automatically map it to the correct IP address. See <a class="reference internal" href="#psclient-rest-search"><em>Searching by Endpoint</em></a> for more information.</td>
+</tr>
+<tr class="row-odd"><td>input-source</td>
+<td>string</td>
+<td>A string indicating exactly how the source address is passed to the tool. <strong>You SHOULD NOT search on this field, use the source instead.</strong> This field is for informational purposes only to indicate whether the underlying tool running the measurement (e.g. bwctl, owping, ping) is passed a DNS name or IP when it runs. While searching is not strictly prohibited, you should almost never search on this field. The source is better since it will do DNS to IP mappings and will provide more consistent results.</td>
+</tr>
+<tr class="row-even"><td>input-destination</td>
+<td>string</td>
+<td>A string indicating exactly how the destination address is passed to the tool. <strong>You SHOULD NOT search on this field, use the destination instead.</strong>  See <em>input-source</em> above for a complete discussion.</td>
+</tr>
+<tr class="row-odd"><td>tool-name</td>
+<td>string</td>
+<td>A string indicating the name of the tool that produced the measurement. Examples include bwctl/iperf, bwctl/iperf or powstream.</td>
+</tr>
+</tbody>
+</table>
+<p>In addition to the fields above, specific measurement types can have context-specific fields that are searchable. A list of these fields is available in the API <a class="reference external" href="https://docs.google.com/document/d/1DFl4bgFxIQtRqYIZPHAT8xW4TACppKq2UeYK13ZsUDk/pub">specification</a>. Examples and more information on common searches are provided in the remainder of this section.</p>
+<div class="section" id="listing-all-the-measurements">
+<h4>Listing all the measurements<a class="headerlink" href="#listing-all-the-measurements" title="Permalink to this headline">¶</a></h4>
+<p>Perhaps the simplest query one can perform is to list all the measurement metadata for which an archive has data. You can do this by querying the top level URI with no GET filters:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/&quot;
+</pre></div>
+</div>
+</div>
+<div class="section" id="searching-by-endpoint">
+<span id="psclient-rest-search"></span><h4>Searching by Endpoint<a class="headerlink" href="#searching-by-endpoint" title="Permalink to this headline">¶</a></h4>
+<p>It is common to want to search by the endpoints of a point-to-point test. The archive provides two fields for this: <strong>source</strong> and <strong>destination</strong>. These fields are always stored as an IPv4 or IPv6 address depending on the type of address used in the actual measurement. If you provide just the source, all tests that send data from the given host will be returned. Likewise, if you provide just the destination the all hosts receiving data at the particular host will be returned. If both are provided, only tests between the given source and destination will be returned. Examples:</p>
+<p><strong>Match all measurement metadata with source 10.1.1.1</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?source=10.1.1.1&quot;
+</pre></div>
+</div>
+<p><strong>Match all measurement metadata with destination 10.1.1.2</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?destination=10.1.1.2&quot;
+</pre></div>
+</div>
+<p><strong>Match all measurement metadata with source 10.1.1.1 AND destination 10.1.1.2</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?source=10.1.1.1&amp;destination=10.1.1.2&quot;
+</pre></div>
+</div>
+<p>Furthermore, when providing a filter in the GET parameters you may provide a DNS name which the server will automatically convert to an IP address before performing the search. This is an enhancement over previous versions of the measurement archive where it was required to know exactly how an address was stored. The DNS name may be a CNAME or have A and/or AAAA records directly. For example, assume the hostname <em>host1.example.net</em> has an A record of 10.1.1.1. We can match all tests where 10.1.1.1 is the source with the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?source=host1.example.net&quot;
+</pre></div>
+</div>
+<p>There is also a special filter for controlling the behavior of the DNS lookups. By default, it will perform DNS lookups for both A and AAAA records. That means if you have two tests involving the same endpoint where one uses IPv4 addresses, the other uses IPv6 addresses AND you provide a hostname with both A and AAAA record, then you will both tests returned by your search. You can control this one of two ways:
+#. Always search using the IP address in the form you wish to match. i.e. Searching with an IPv6 address will only return IPv6 results, searching with the IPv4 address returns only IPv4 results.
+#. Use the special <strong>dns-match-rule</strong> filter in your GET parameters.
+The <strong>dns-match-rule</strong> parameter controls what DNS lookups the server will perform and accepts the following options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="8%" />
+<col width="92%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Value</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>v4v6</td>
+<td>Default. Looks up both A and AAAA records and returns both the IPv4 and IPv6 tests it finds.</td>
+</tr>
+<tr class="row-odd"><td>only-v4</td>
+<td>Only performs a A record lookup for a given hostname and thus only returns results matching the IPv4 address.</td>
+</tr>
+<tr class="row-even"><td>only-v6</td>
+<td>Only performs a AAAA record lookup for a given hostname and thus only returns results matching the IPv6 address.</td>
+</tr>
+<tr class="row-odd"><td>prefer-v4</td>
+<td>Tries an A lookup first but if that fails, tries a AAAA lookup. If the initial A lookup succeeds, only IPv4 results are returned.</td>
+</tr>
+<tr class="row-even"><td>prefer-v6</td>
+<td>Tries an AAAA lookup first but if that fails, tries a A lookup. If the initial AAAA lookup succeeds, only IPv6 results are returned.</td>
+</tr>
+</tbody>
+</table>
+<p>A quick example that returns only results with a source that matches the AAAA record of host1.example.net is below:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?source=host1.example.net&amp;dns-match-rule=v6-only&quot;
+</pre></div>
+</div>
+</div>
+<div class="section" id="searching-by-event-type">
+<h4>Searching by Event Type<a class="headerlink" href="#searching-by-event-type" title="Permalink to this headline">¶</a></h4>
+<p>Another common desire is to search for only those measurements with a particular type of data. There is a special filter called <strong>event-type</strong> that returns this information. This will return any measurement metadata object that has an item in its <em>event-types</em> list where the <em>event-type</em> field equals the provided value. For example, to return only those measurements containing throughput data one could run:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?event-type=throughput&quot;
+</pre></div>
+</div>
+<p>Event types may also contain summaries. There are multiple types of summaries as described in <a class="reference internal" href="#psclient-rest-basevsumm"><em>Base Data vs Summaries</em></a>. For example, an <em>average</em> summary may take the statistical average of all the measurements over a 24 hour period and post that value to a single data point. This allows for faster retrieval of long ranges of data by reducing the number of datapoints returned. A summary may perform some type of transformation such as a <em>statistics</em> summary that takes a histogram object and returns common statistical measures. There are two relevant fields for a summary: the <strong>summary-type</strong> (which is either <em>aggregation</em>, <em>average</em> or <em>statistics</em>) and <strong>summary-window</strong> which is the time range (in seconds) that is summarized. Summaries are defined when metadata is created so you can&#8217;t expect all data to have summaries nor for a summary to be available for a particular time window unless it is explicitly listed in the metadata. For example, we can search for all one-way delay histogram (event type <em>histogram-owdelay</em>) with 24 hour statistical summaries as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?event-type=histogram-owdelay&amp;summary-type=statistics&amp;summary-window=86400&quot;
+</pre></div>
+</div>
+<p>Summaries are explained in more detail in the section <a class="reference internal" href="#psclient-rest-basevsumm"><em>Base Data vs Summaries</em></a>.</p>
+</div>
+<div class="section" id="searching-by-most-recent-result-time">
+<h4>Searching by most recent result time<a class="headerlink" href="#searching-by-most-recent-result-time" title="Permalink to this headline">¶</a></h4>
+<p>The previous examples will return all measurement metadata regardless of whether they have received any new data recently. In some cases this is fine, but its often useful to filter-out tests that have not been updated in a long time. For example if you have an old test that is no longer run and will not be updated again, but would like to keep the data around for historical purposes. You can filter measurement metadata based on time with the following special time filters:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="2%" />
+<col width="98%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Filter</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>time</td>
+<td>Match a measurement last updated at the exact time given as a UNIX timestamp</td>
+</tr>
+<tr class="row-odd"><td>time-start</td>
+<td>Match only measurements that were updated after the given time (inclusive). If time-end nor time-range is defined, then it will return all results from the start time to the current time. In UNIX timestamp format.</td>
+</tr>
+<tr class="row-even"><td>time-end</td>
+<td>Match only data that was measured before the given time (inclusive). If time-start nor time-range is provided, then will return all data stored in the archive up to and including the end time. In UNIX timestamp format.</td>
+</tr>
+<tr class="row-odd"><td>time-range</td>
+<td>Only return results that have been updated in the given number of seconds in the past. If time-start nor end-time is defined, then it is the number of seconds in the past from the current time. If only time-start is defined then it is the number of seconds after time-start to search. If only time-end is provided it is the number of seconds before end time to search. If both time-start and time-end are defined, this value is ignored.</td>
+</tr>
+</tbody>
+</table>
+<p>Examples of various combinations of the parameters above are provided below:</p>
+<p><strong>Match all measurement metadata updated since April 14, 2014 12:00GMT</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?time-start=1397476800&quot;
+</pre></div>
+</div>
+<p><strong>Match all measurement metadata updated before April 14, 2014 12:00GMT</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?time-end=1397476800&quot;
+</pre></div>
+</div>
+<p><strong>Match all measurement metadata updated at exactly April 14, 2014 12:00GMT</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?time=1397476800&quot;
+</pre></div>
+</div>
+<p><strong>Match all measurement metadata updated between April 14, 2014 12:00GMT and April 15, 2014 12:00GMT</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?time-start=1397476800&amp;time-end=1397563200&quot;
+</pre></div>
+</div>
+<p><strong>Match all throughput metadata with source 10.1.1.1 AND destination 10.1.1.2 updated in the last 24 hours</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?time-range=86400&amp;event-type=throughput&amp;source=10.1.1.1&amp;destination=10.1.1.2&quot;
+</pre></div>
+</div>
+</div>
+<div class="section" id="limiting-results-returned">
+<h4>Limiting results returned<a class="headerlink" href="#limiting-results-returned" title="Permalink to this headline">¶</a></h4>
+<p>The following options are available to limit the results returned and do things like pagination of results:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="9%" />
+<col width="91%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Filter</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>limit</td>
+<td>The maximum number of results to return. If not set then 1000 results are returned.</td>
+</tr>
+<tr class="row-odd"><td>offset</td>
+<td>The number of tests to skip. Useful for pagination.</td>
+</tr>
+</tbody>
+</table>
+<p>Examples of these options are provided below:</p>
+<p><strong>Return the first 10 results</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?limit=10&quot;
+</pre></div>
+</div>
+<p><strong>Return the second 10 results</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?limit=10&amp;offset=10&quot;
+</pre></div>
+</div>
+<p><strong>Ignore the first 10 results and return everything else</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/?offset=10&quot;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="retrieving-measurement-results">
+<h3>Retrieving Measurement Results<a class="headerlink" href="#retrieving-measurement-results" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="base-data-vs-summaries">
+<span id="psclient-rest-basevsumm"></span><h4>Base Data vs Summaries<a class="headerlink" href="#base-data-vs-summaries" title="Permalink to this headline">¶</a></h4>
+<p>Once you find the measurements with the parameters you want, you need to retrieve the actual results those measurements are collecting. The location of the data is provided by the list of objects in the <strong>event-types</strong> field. For reference, the <em>event-types</em> object looks something like the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+    <span class="s">&quot;event-types&quot;</span><span class="p">:[</span>
+        <span class="p">{</span>
+            <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/packet-retransmits/base&quot;</span><span class="p">,</span>
+            <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-retransmits&quot;</span><span class="p">,</span>
+            <span class="s">&quot;summaries&quot;</span><span class="p">:[],</span>
+            <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397482734</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base&quot;</span><span class="p">,</span>
+            <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput&quot;</span><span class="p">,</span>
+            <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+                <span class="p">{</span>
+                    <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;average&quot;</span><span class="p">,</span>
+                    <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span><span class="p">,</span>
+                    <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397482735</span><span class="p">,</span>
+                    <span class="s">&quot;uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/averages/86400&quot;</span>
+                <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397482735</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/failures/base&quot;</span><span class="p">,</span>
+            <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;failures&quot;</span><span class="p">,</span>
+            <span class="s">&quot;summaries&quot;</span><span class="p">:[],</span>
+            <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397315930</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput-subintervals/base&quot;</span><span class="p">,</span>
+            <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput-subintervals&quot;</span><span class="p">,</span>
+            <span class="s">&quot;summaries&quot;</span><span class="p">:[],</span>
+            <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="mi">1397482735</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>You will notice all of the objects have a <strong>base-uri</strong> field and a few have objects have a <em>summaries</em> list that also contain a URI. In the archive there are two types of data: <strong>base data</strong> and <strong>summarized data</strong>. Base data is exactly what is written to the archive when the measurement is performed, the server does not transform it in anyway. In contrast, summarized data is that which was transformed in some way by the server. All summarized data has a <strong>summary type</strong> and <strong>summary window</strong>. The summary window is the timeframe in seconds described by the summary. A summary window of 0 means it is a direct transformation of the base data (i.e. there should be a one-to-one mapping in the number of base data points and summary data points).  The summary type must be one of the following:</p>
+<ul class="simple">
+<li><strong>aggregation</strong> - The data was combined in a context specific way. For example, if the underlying type is numeric it is the sum of all data points in the summary window. If its a histogram it is a union of the two histograms.</li>
+<li><strong>average</strong> - The statistical average of a series of numbers</li>
+<li><strong>statistics</strong> - Currently only applies to the histogram type, but contains common statistical measures of data over the summary window such as minimum, maximum, mean and median.</li>
+</ul>
+<p>Summary data such as aggregation and average over large time windows can be a useful way to grab data over long periods of time as it should result in a smaller data set returned than the base data returned over the same timeframe. The <em>statistics</em> summary can be useful even on base data as it provides additional information about each data point. Querying base or summary data depends on the use case.</p>
+</div>
+<div class="section" id="retrieving-time-series-data">
+<h4>Retrieving time series data<a class="headerlink" href="#retrieving-time-series-data" title="Permalink to this headline">¶</a></h4>
+<p>Once you have decided whether you want base or statistical data, retrieving it is simply a matter of doing an HTTP GET to the provide URI. For example, to get all the base throughput data for a particular test, you can run:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base&quot;
+</pre></div>
+</div>
+<p>In general you will want to filter data based on time and you can do so with the following GET parameters (notice they have the same names and meaing as we used to search the measurement metadata):</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="2%" />
+<col width="98%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Filter</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>time</td>
+<td>Match a result recorded at the exact time given (represented as a UNIX timestamp)</td>
+</tr>
+<tr class="row-odd"><td>time-start</td>
+<td>Match only results recorded after the given time (inclusive). If time-end nor time-range is defined, then it will return all results from the start time to the current time. In UNIX timestamp format.</td>
+</tr>
+<tr class="row-even"><td>time-end</td>
+<td>Match only data that was measured before the given time (inclusive). If time-start nor time-range is provided, then will return all data stored in the archive up to and including the end time. In UNIX timestamp format.</td>
+</tr>
+<tr class="row-odd"><td>time-range</td>
+<td>Only return results that have been recorded in the given number of seconds in the past. If time-start nor end-time is defined, then it is the number of seconds in the past from the current time. If only time-start is defined then it is the number of seconds after time-start to search. If only time-end is provided it is the number of seconds before end time to search. If both time-start and time-end are defined, this value is ignored.</td>
+</tr>
+</tbody>
+</table>
+<p>For example, you can get the last 24 hours of data with the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base?time-range=86400&quot;
+</pre></div>
+</div>
+<p>This will return an array of time series object with two fields: <strong>ts</strong> containing the unix timestamp when the measurement was run and <strong>val</strong> containing the result of the object. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397421672</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7016320000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397442692</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7225480000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397466492</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7095460000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397482700</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7042540000.0</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>The format of <strong>val</strong> depends on the event type (and in some cases the summary-type as well), some are numeric while others are JSON objects. The next section describes common event types and how to retrieve data.</p>
+</div>
+<div class="section" id="querying-throughput">
+<h4>Querying Throughput<a class="headerlink" href="#querying-throughput" title="Permalink to this headline">¶</a></h4>
+<p><strong>Event Type(s):</strong> throughput</p>
+<p>Throughput is a series of integer values always in bits per second. There may be average summaries but in general you will likely query the base data if the throughput tests only run a few times a day. You can do this with a query like the following to get the last 24 hours of throughput data:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base?time-range=86400&quot;
+</pre></div>
+</div>
+<p>Results:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397421672</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7016320000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397442692</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7225480000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397466492</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7095460000.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397482700</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">7042540000.0</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="querying-delay-one-way-delay">
+<h4>Querying Delay/One-way Delay<a class="headerlink" href="#querying-delay-one-way-delay" title="Permalink to this headline">¶</a></h4>
+<p><strong>Event Type(s):</strong> histogram-rtt, histogram-owdelay</p>
+<p>Delay values are stored in a histogram where the histogram bucket is the number of milliseconds measured and the value is the number of packets that were measured to have that value. Delay in terms of the round trip time reported by ping is represented with the event-type <strong>histogram-delay</strong>. One-way delay is represented as &#8220;histogram-owdelay&#8221;. The format of their histograms is exactly the same. Examples of query the 24 hours of base data are below:</p>
+<p><strong>Ping Round Trip Time</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/2355e337a7214611ab1bc5db51e40424/histogram-rtt/base?time-range=86400&quot;
+</pre></div>
+</div>
+<p><strong>Owamp One-way Delay</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/fce0483e51de49aaa7fcf8884d053134/histogram-owdelay/base?time-range=86400&quot;
+</pre></div>
+</div>
+<p>Results will look something like the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397504013</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+            <span class="s">&quot;34.4&quot;</span><span class="p">:</span><span class="mi">506</span><span class="p">,</span>
+            <span class="s">&quot;34.5&quot;</span><span class="p">:</span><span class="mi">85</span><span class="p">,</span>
+            <span class="s">&quot;34.6&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span>
+            <span class="s">&quot;34.7&quot;</span><span class="p">:</span><span class="mi">4</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397504052</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+            <span class="s">&quot;34.4&quot;</span><span class="p">:</span><span class="mi">510</span><span class="p">,</span>
+            <span class="s">&quot;34.5&quot;</span><span class="p">:</span><span class="mi">80</span><span class="p">,</span>
+            <span class="s">&quot;34.6&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span>
+            <span class="s">&quot;34.7&quot;</span><span class="p">:</span><span class="mi">3</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="o">.....</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>You may interpret the results as for the packet sample starting at time 1397504013 there were 506 packets that took 34.4ms, 85 that took 34.5ms, 5 that too 34.6, etc. Delay tests can run rather frequently thus it can be very useful to use summarized data. Aggregation summaries combine all the histograms in a given time window. For example a histogram for 24 hours may look like the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/fce0483e51de49aaa7fcf8884d053134/histogram-owdelay/aggregations/86400&quot;
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1396915200</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+            <span class="s">&quot;34.2&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span>
+            <span class="s">&quot;34.3&quot;</span><span class="p">:</span><span class="mi">38814</span><span class="p">,</span>
+            <span class="s">&quot;34.4&quot;</span><span class="p">:</span><span class="mi">114820</span><span class="p">,</span>
+            <span class="s">&quot;34.5&quot;</span><span class="p">:</span><span class="mi">54190</span><span class="p">,</span>
+            <span class="s">&quot;34.6&quot;</span><span class="p">:</span><span class="mi">7842</span><span class="p">,</span>
+            <span class="s">&quot;34.7&quot;</span><span class="p">:</span><span class="mi">9595</span><span class="p">,</span>
+            <span class="s">&quot;34.8&quot;</span><span class="p">:</span><span class="mi">741</span><span class="p">,</span>
+            <span class="s">&quot;34.9&quot;</span><span class="p">:</span><span class="mi">298</span><span class="p">,</span>
+            <span class="s">&quot;35&quot;</span><span class="p">:</span><span class="mi">185</span><span class="p">,</span>
+            <span class="s">&quot;35.1&quot;</span><span class="p">:</span><span class="mi">158</span><span class="p">,</span>
+            <span class="s">&quot;35.2&quot;</span><span class="p">:</span><span class="mi">112</span><span class="p">,</span>
+            <span class="s">&quot;35.3&quot;</span><span class="p">:</span><span class="mi">61</span><span class="p">,</span>
+            <span class="s">&quot;35.4&quot;</span><span class="p">:</span><span class="mi">40</span><span class="p">,</span>
+            <span class="s">&quot;35.5&quot;</span><span class="p">:</span><span class="mi">19</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="o">...</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>Another useful summary for the delay histograms is <strong>statistics</strong>. This calculates common statistical measures of the data. An example of the statistical summaries for each base data point (i.e. summary-window equals 0) is as follows where the field names correspond to standard statistical measures:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/fce0483e51de49aaa7fcf8884d053134/histogram-owdelay/statistics/0&quot;
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397504795</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+            <span class="s">&quot;maximum&quot;</span><span class="p">:</span><span class="s">&quot;34.4&quot;</span><span class="p">,</span>
+            <span class="s">&quot;mean&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;median&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;minimum&quot;</span><span class="p">:</span><span class="s">&quot;34.4&quot;</span><span class="p">,</span>
+            <span class="s">&quot;mode&quot;</span><span class="p">:[</span>
+            <span class="s">&quot;34.4&quot;</span>
+            <span class="p">],</span>
+            <span class="s">&quot;percentile-25&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;percentile-75&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;percentile-95&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;standard-deviation&quot;</span><span class="p">:</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="s">&quot;variance&quot;</span><span class="p">:</span><span class="mf">0.0</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397504835</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+            <span class="s">&quot;maximum&quot;</span><span class="p">:</span><span class="s">&quot;34.4&quot;</span><span class="p">,</span>
+            <span class="s">&quot;mean&quot;</span><span class="p">:</span><span class="mf">34.38233333333333</span><span class="p">,</span>
+            <span class="s">&quot;median&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;minimum&quot;</span><span class="p">:</span><span class="s">&quot;34.3&quot;</span><span class="p">,</span>
+            <span class="s">&quot;mode&quot;</span><span class="p">:[</span>
+            <span class="s">&quot;34.4&quot;</span>
+            <span class="p">],</span>
+            <span class="s">&quot;percentile-25&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;percentile-75&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;percentile-95&quot;</span><span class="p">:</span><span class="mf">34.4</span><span class="p">,</span>
+            <span class="s">&quot;standard-deviation&quot;</span><span class="p">:</span><span class="mf">0.03813863599495395</span><span class="p">,</span>
+            <span class="s">&quot;variance&quot;</span><span class="p">:</span><span class="mf">0.001454555555555597</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+<span class="o">...</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="querying-packet-loss">
+<h4>Querying Packet Loss<a class="headerlink" href="#querying-packet-loss" title="Permalink to this headline">¶</a></h4>
+<p><strong>Event Type(s):</strong> packet-loss-rate
+Packet loss rate measures the number of packets lost over the number of packets sent. It is represented as a floating point number between 0 and 1 where 0 equals 0% packet loss and 1 equals 100% packet loss. You can query the base packet loss data using the packet-loss-rate event type such as in the request below:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/fce0483e51de49aaa7fcf8884d053134/packet-loss-rate/base&quot;
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397555532</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">0.04666666666666667</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397555538</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">0.06666666666666667</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397555613</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">0.0</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397555619</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mf">0.0</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>Packet-loss can also have an <em>aggregation</em> summary that give the packet loss percentage over the given summary window.</p>
+</div>
+<div class="section" id="querying-packet-traces">
+<h4>Querying Packet Traces<a class="headerlink" href="#querying-packet-traces" title="Permalink to this headline">¶</a></h4>
+<p><strong>Event Type(s):</strong> packet-trace
+The results of a traceroute or tracepath measurement are stored under the packet-trace event type. The result is an array of objects describing the result of each traceroute or tracepath probe. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl http://archive.example.net/esmond/perfsonar/archive/641860b2004c46a7b21fe26e5ffea9af/packet-trace/base?time-range=600
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397566094</span><span class="p">,</span>
+        <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;198.124.238.65&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;0.246&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;198.124.238.65&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;2&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;0.195&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;134.55.38.77&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;22.159&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;2&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;134.55.42.41&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;22.430&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;3&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;134.55.43.82&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;33.548&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;4&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;134.55.49.57&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;44.019&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;5&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;134.55.50.201&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;65.203&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;6&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;134.55.40.6&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;67.694&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;7&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;134.55.49.2&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;68.914&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;8&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;198.129.254.30&quot;</span><span class="p">,</span>
+                <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span><span class="p">,</span>
+                <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;68.887&quot;</span><span class="p">,</span>
+                <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;9&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>The object fields have the following meaning:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="93%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Field Name</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>error-message</td>
+<td>A string indicating if an error occurred for the probe. It is null if <em>success</em> is 1 and should be populated if <em>success</em> is 0.</td>
+</tr>
+<tr class="row-odd"><td>ip</td>
+<td>The IP address returned by the probe</td>
+</tr>
+<tr class="row-even"><td>mtu</td>
+<td>The maximum transmission unit measured by the probe. This is only populated for tracepath tests and will be null if not measured.</td>
+</tr>
+<tr class="row-odd"><td>query</td>
+<td>For a given <em>ttl</em> a tool may send multiple probes. This distinguishes between probes with the same ttl.</td>
+</tr>
+<tr class="row-even"><td>rtt</td>
+<td>The round trip time measured by the probe in milliseconds.</td>
+</tr>
+<tr class="row-odd"><td>success</td>
+<td>A boolean indicating if the probe succeeded. If it did not, then further details can be found in <em>error_message</em>.</td>
+</tr>
+<tr class="row-even"><td>ttl</td>
+<td>The time-to-live set in the IP headers of the probe. Traceroute and tracepath gradually increase this value to measure the path. The list will always be sorted by ttl.</td>
+</tr>
+</tbody>
+</table>
+<p>There are no summaries supported for the packet-trace type currently.</p>
+</div>
+<div class="section" id="querying-subinterval-data">
+<h4>Querying Subinterval Data<a class="headerlink" href="#querying-subinterval-data" title="Permalink to this headline">¶</a></h4>
+<p><strong>Event Type(s):</strong> throughput-subintervals, packet-retransmits-subintervals</p>
+<p>Data such as throughput and packet retransmits is also available for subintervals of an individual test. No summarizations are avilable for this data type.</p>
+<div class="highlight-python"><div class="highlight"><pre>curl &quot;http://archive.example.net/esmond/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/packet-retransmits-subintervals/base?time-range=86400&quot;
+</pre></div>
+</div>
+<p>Results:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span>
+   <span class="p">{</span>
+      <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1419471577</span><span class="p">,</span>
+      <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;0.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;2.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;3.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;4.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;5.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;6.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;7.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;8.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;9.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;10.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;11.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;12.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;13.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;14.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;15.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;16.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;17.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;18.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;19.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">}</span>
+      <span class="p">]</span>
+   <span class="p">},</span>
+   <span class="p">{</span>
+      <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1419493946</span><span class="p">,</span>
+      <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;0.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;2.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;3.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;4.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;5.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;6.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;7.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;8.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;9.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;10.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;11.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;12.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;13.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;14.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;15.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;16.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;17.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;18.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;19.000000&quot;</span><span class="p">,</span>
+            <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+         <span class="p">}</span>
+      <span class="p">]</span>
+   <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="publishing-data">
+<h2>Publishing Data<a class="headerlink" href="#publishing-data" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3>Getting Started<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The measurement archive defines a REST API for publishing data via HTTP POST requests. Much like querying data there are two steps to this process:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Publish the measurement description and get the event-type URIs used for posting measurement results</li>
+<li>Using the URIs from step one, publish the measurement results</li>
+</ol>
+</div></blockquote>
+<p>A quick example demonstrates this process. First we post a description of our measurement, called the measurement <em>metadata</em> with the following request:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl -X POST --dump-header - -H &quot;Content-Type: application/json&quot; -H &quot;Authorization: ApiKey perfsonar:b3ba46b99e2ed8a267a409f3c4379238305ccaf2&quot; --data &#39;{&quot;subject-type&quot;: &quot;point-to-point&quot;, &quot;source&quot;: &quot;10.1.1.1&quot;, &quot;destination&quot;: &quot;10.1.1.2&quot;, &quot;tool-name&quot;: &quot;bwctl/iperf3&quot;, &quot;measurement-agent&quot;: &quot;110.1.1.1&quot;, &quot;input-source&quot;: &quot;host1.example.net&quot;,&quot;input-destination&quot;: &quot;host2.example.net&quot;,&quot;time-duration&quot;: 30,&quot;ip-transport-protocol&quot;: &quot;tcp&quot;,&quot;event-types&quot;: [{&quot;event-type&quot;: &quot;throughput&quot;,&quot;summaries&quot;:[{&quot;summary-type&quot;: &quot;aggregation&quot;,&quot;summary-window&quot;: 3600},{&quot;summary-type&quot;: &quot;aggregation&quot;,&quot;summary-window&quot;: 86400}]},{&quot;event-type&quot;: &quot;packet-retransmits&quot;,&quot;summaries&quot;:[]}]}&#39; http://archive.example.net/esmond/perfsonar/archive/
+</pre></div>
+</div>
+<p>Notice we set the HTTP Authorization header since writing data generally will require some sort of authentication. See <a class="reference internal" href="#psclient-rest-authn"><em>Authentication and Authorization</em></a> for more details. The body is a JSON object describing the metadata. The result back is our metadata object with additional information such as the URIs where we can publish/retrieve information on the measurement and its results:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;destination&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.2&quot;</span><span class="p">,</span>
+   <span class="s">&quot;event-types&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/packet-retransmits/base&quot;</span><span class="p">,</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-retransmits&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+
+         <span class="p">],</span>
+         <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="n">null</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;base-uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/throughput/base&quot;</span><span class="p">,</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;3600&quot;</span><span class="p">,</span>
+               <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+               <span class="s">&quot;uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/throughput/aggregations/3600&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span><span class="p">,</span>
+               <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+               <span class="s">&quot;uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/throughput/aggregations/86400&quot;</span>
+            <span class="p">}</span>
+         <span class="p">],</span>
+         <span class="s">&quot;time-updated&quot;</span><span class="p">:</span><span class="n">null</span>
+      <span class="p">}</span>
+   <span class="p">],</span>
+   <span class="s">&quot;input-destination&quot;</span><span class="p">:</span><span class="s">&quot;host2.example.net&quot;</span><span class="p">,</span>
+   <span class="s">&quot;input-source&quot;</span><span class="p">:</span><span class="s">&quot;host1.example.net&quot;</span><span class="p">,</span>
+   <span class="s">&quot;ip-transport-protocol&quot;</span><span class="p">:</span><span class="s">&quot;tcp&quot;</span><span class="p">,</span>
+   <span class="s">&quot;measurement-agent&quot;</span><span class="p">:</span><span class="s">&quot;110.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;metadata-key&quot;</span><span class="p">:</span><span class="s">&quot;2ba58a26aee64a1e94cd2b5bacbb2cc6&quot;</span><span class="p">,</span>
+   <span class="s">&quot;source&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;subject-type&quot;</span><span class="p">:</span><span class="s">&quot;point-to-point&quot;</span><span class="p">,</span>
+   <span class="s">&quot;time-duration&quot;</span><span class="p">:</span><span class="s">&quot;30&quot;</span><span class="p">,</span>
+   <span class="s">&quot;tool-name&quot;</span><span class="p">:</span><span class="s">&quot;bwctl/iperf3&quot;</span><span class="p">,</span>
+   <span class="s">&quot;uri&quot;</span><span class="p">:</span><span class="s">&quot;/esmond/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>We can now publish a single data point to one of the URIs defined by a <em>base-uri</em> field (<em>NOTE: We can NOT publish to a summary URL as all summaries are performed by the server</em>). We send a simple time-series object with a UNIX timestamp indicating when the measurement was run and the value of the result:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl -X POST --dump-header - -H &quot;Content-Type: application/json&quot; -H &quot;Authorization: ApiKey perfsonar:b3ba46b99e2ed8a267a409f3c4379238305ccaf2&quot; --data &#39;{&quot;ts&quot;: &quot;1392238294&quot;, &quot;val&quot;: &quot;1000000000&quot;}&#39; http://archive.example.net/esmond/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/throughput/base
+</pre></div>
+</div>
+<p>Alternatively, we can publish measurement results from multiple times and with multiple event-types in the following bulk request:</p>
+<div class="highlight-python"><div class="highlight"><pre>curl -X POST --dump-header - -H &quot;Content-Type: application/json&quot; -H &quot;Authorization: ApiKey perfsonar:b3ba46b99e2ed8a267a409f3c4379238305ccaf2&quot; --data &#39;{&quot;data&quot;: [{&quot;ts&quot;: 1392238390, &quot;val&quot;: [{&quot;event-type&quot;: &quot;throughput&quot;,&quot;val&quot;: 1000000000}, {&quot;event-type&quot;: &quot;packet-retransmits&quot;,&quot;val&quot;: 10}]}, {&quot;ts&quot;: 1392238390, &quot;val&quot;: [{&quot;event-type&quot;: &quot;throughput&quot;,&quot;val&quot;: 900000000}, {&quot;event-type&quot;: &quot;packet-retransmits&quot;,&quot;val&quot;: 5}]}]}&#39; http://esmond-dev/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/
+</pre></div>
+</div>
+<p>See the remainder of this section for more details one each of these steps.</p>
+</div>
+<div class="section" id="authentication-and-authorization">
+<span id="psclient-rest-authn"></span><h3>Authentication and Authorization<a class="headerlink" href="#authentication-and-authorization" title="Permalink to this headline">¶</a></h3>
+<p>Writing data generally requires some form of authentication and authorization. Currently the measurement archive supports the use of the HTTP Authorization header with an authorization string the form of <tt class="docutils literal"><span class="pre">ApiKey</span> <span class="pre">&lt;username&gt;:&lt;api-key&gt;</span></tt> where <tt class="docutils literal"><span class="pre">&lt;username&gt;</span></tt> and <tt class="docutils literal"><span class="pre">&lt;api-key&gt;</span></tt> are the authentication credentials. It is also recommended all requests be sent over HTTPS since otherwise these credentials will be sent in plain text.</p>
+</div>
+<div class="section" id="publishing-the-measurement-description">
+<h3>Publishing the Measurement Description<a class="headerlink" href="#publishing-the-measurement-description" title="Permalink to this headline">¶</a></h3>
+<p>The first step to publishing data is to send a <em>metadata</em> object describing the measurement and the types of results it will collect. It looks very similar to the measurement descriptions returned by a query. When you register though, you do not provide the metadata-key nor any of the URIs as these will be generated by the server. All requests are sent as an HTTP POST to the top-level URL (usually ending with /esmond/perfsonar/archive). The metadata object MUST contain a <em>subject-type</em> field and a list of <em>event-types</em>. If the subject-type is <em>point-to-point</em> then the following fields are additionally required:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="6%" />
+<col width="4%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Field name</td>
+<td>Type</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>source</td>
+<td>IP address</td>
+<td>The sender in a point-to-point measurement represented as an IPv4 or IPv6 address. It MUST be in the form of an IP address when registering (unlike querying where you can search by DNS name as well)</td>
+</tr>
+<tr class="row-odd"><td>destination</td>
+<td>IP address</td>
+<td>The receiver in a point-to-point measurement represented as an IPv4 or IPv6 address. It MUST be in the form of an IP address when registering (unlike querying where you can search by DNS name as well)</td>
+</tr>
+<tr class="row-even"><td>measurement-agent</td>
+<td>IP address</td>
+<td>The host where the measurement was initiated represented as an IPv4 or IPv6 address. This may be the source, destination or a third-party host depending on the tool. It MUST be in the form of an IP address when registering (unlike querying where you can search by DNS name as well)</td>
+</tr>
+<tr class="row-odd"><td>input-source</td>
+<td>string</td>
+<td>A string indicating exactly how the source address is passed to the tool.</td>
+</tr>
+<tr class="row-even"><td>input-destination</td>
+<td>string</td>
+<td>A string indicating exactly how the destination address is passed to the tool. .</td>
+</tr>
+<tr class="row-odd"><td>tool-name</td>
+<td>string</td>
+<td>A string indicating the name of the tool that produced the measurement. Examples include bwctl/iperf, bwctl/iperf or powstream.</td>
+</tr>
+</tbody>
+</table>
+<p>The objects in the <em>event-types</em> array provided each have two fields:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="9%" />
+<col width="20%" />
+<col width="71%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Field name</td>
+<td>Type</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>event-type</td>
+<td>String</td>
+<td>String indicating the type of data. See <a class="reference internal" href="#psclient-rest-eventtypes"><em>Full List of Event Types</em></a>.</td>
+</tr>
+<tr class="row-odd"><td>summaries</td>
+<td>Array of Summary objects</td>
+<td>The list of summaries to be performed. if no summaries than this can be an empty list.</td>
+</tr>
+</tbody>
+</table>
+<p>The summary objects have the following fields:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="9%" />
+<col width="76%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Field name</td>
+<td>Type</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>summary-type</td>
+<td>String</td>
+<td>The type of summary to be performed.</td>
+</tr>
+<tr class="row-odd"><td>summary-window</td>
+<td>Integer</td>
+<td>The number of seconds indicating the time period over which data is summarized</td>
+</tr>
+</tbody>
+</table>
+<p>After sending the request, the HTTP status code will indicate the result. If it succeed you will receive an HTTP 200 status code with the created metadata object including the generated <em>metadata-key</em> and URIs for each event-type. One feature of the Measurement Archive that can be useful is that if an existing measurement exactly matches one posted (i.e. same parameters and same even types) than that object is returned. This prevents the need of registration clients to keep local state of the URIs used to publish data. They can simply re-register the metadata each time and get back the existing metadata object if there is one.</p>
+</div>
+<div class="section" id="publishing-a-single-measurement-result">
+<h3>Publishing a Single Measurement Result<a class="headerlink" href="#publishing-a-single-measurement-result" title="Permalink to this headline">¶</a></h3>
+<p>You can publish a single measurement by sending a HTTP POST to one of the values in the event-type <em>base-uri</em> fields of the metadata object we created. This HTTP body contains a JSON object with two fields:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="11%" />
+<col width="23%" />
+<col width="66%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Field name</td>
+<td>Type</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>ts</td>
+<td>UNIX Timestamp</td>
+<td>A UNIX timestamp of when the measurement was performed.</td>
+</tr>
+<tr class="row-odd"><td>val</td>
+<td>Depends on event-type</td>
+<td>The value of the measurement whose type depends on the event-type</td>
+</tr>
+</tbody>
+</table>
+<p>The HTTP status code indicates success or failure. HTTP 200 means the measurement was published and there will be no JSON body. If the request fails for any reason, an non-200 status code is set and the cody will contain a JSON object with a single <em>error</em> field containing a message describing the error.</p>
+</div>
+<div class="section" id="publishing-multiple-measurement-results">
+<h3>Publishing Multiple Measurement Results<a class="headerlink" href="#publishing-multiple-measurement-results" title="Permalink to this headline">¶</a></h3>
+<p>It may be desirable to publish data points for multiple timestamps and/or multiple event types in the same request. This type of bulk request contains an object with a <em>data</em> field contain an array of the data to be published. The array contains a series of time-series objects with a <em>ts</em> and a <em>val</em> just like in the single-measurement case but the val of each object takes the following form:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="14%" />
+<col width="78%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Field name</td>
+<td>Type</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>event-type</td>
+<td>String</td>
+<td>The event-type of the measurement being published</td>
+</tr>
+<tr class="row-odd"><td>val</td>
+<td>Depends on event-type</td>
+<td>The value of the measurement whose type depends on the event-type. See <a class="reference internal" href="#psclient-rest-eventtypes"><em>Full List of Event Types</em></a>.</td>
+</tr>
+</tbody>
+</table>
+<p>A formatted example that registers <em>throughput</em> and <em>packet-retransmits</em> event types for two times is provided below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;data&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1392238390</span><span class="p">,</span>
+         <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">1000000000</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-retransmits&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">10</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1392238390</span><span class="p">,</span>
+         <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">900000000</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-retransmits&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">5</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">}</span>
+   <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In the response, the HTTP status code indicates success or failure. HTTP 200 means the measurement was published and there will be no JSON body. If the request fails for any reason, an non-200 status code is set and the cody will contain a JSON object with a single <em>error</em> field containing a message describing the error.</p>
+</div>
+<div class="section" id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="publishing-throughput-data">
+<h4>Publishing Throughput Data<a class="headerlink" href="#publishing-throughput-data" title="Permalink to this headline">¶</a></h4>
+<p>An example of throughput metadata as published for BWCTL running iperf3 by the perfSONAR Regular Testing component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;tool-name&quot;</span><span class="p">:</span><span class="s">&quot;bwctl/iperf3&quot;</span><span class="p">,</span>
+   <span class="s">&quot;source&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;measurement-agent&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;destination&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.2&quot;</span><span class="p">,</span>
+   <span class="s">&quot;ip-transport-protocol&quot;</span><span class="p">:</span><span class="s">&quot;tcp&quot;</span><span class="p">,</span>
+   <span class="s">&quot;time-duration&quot;</span><span class="p">:</span><span class="s">&quot;20&quot;</span><span class="p">,</span>
+   <span class="s">&quot;event-types&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;failures&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-retransmits&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;average&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput-subintervals&quot;</span>
+      <span class="p">}</span>
+   <span class="p">],</span>
+   <span class="s">&quot;bw-parallel-streams&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;subject-type&quot;</span><span class="p">:</span><span class="s">&quot;point-to-point&quot;</span><span class="p">,</span>
+   <span class="s">&quot;input-destination&quot;</span><span class="p">:</span><span class="s">&quot;host1.example.net&quot;</span><span class="p">,</span>
+   <span class="s">&quot;input-source&quot;</span><span class="p">:</span><span class="s">&quot;host2.example.net&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Example of publishing the measurement results to the bulk interface as done by the perfSONAR regular testing component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;data&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397807404</span><span class="p">,</span>
+         <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-retransmits&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;112&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;8446270000&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;throughput-subintervals&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;47619700&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.034930&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;0.000000&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;584518000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.972302&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;1.034930&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;5186490000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.993889&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;2.007230&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9970380000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999317&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;3.001120&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9441540000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999761&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;4.000440&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9181440000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999988&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;5.000200&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9606770000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000250&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;6.000190&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9770360000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999813&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;7.000440&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9752390000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999935&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;8.000250&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9726870000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000190&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;9.000180&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9824500000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999853&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;10.000400&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9851140000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000130&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;11.000200&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9806560000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999972&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;12.000400&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9754530000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000150&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;13.000300&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9854340000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999805&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;14.000500&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9809550000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000090&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;15.000300&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9813970000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.000070&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;16.000400&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9001800000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999908&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;17.000400&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9043970000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.999884&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;18.000400&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;8886000000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;1.002790&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;19.000200&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9430650000&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;duration&quot;</span><span class="p">:</span><span class="s">&quot;0.067380&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;start&quot;</span><span class="p">:</span><span class="s">&quot;20.003000&quot;</span>
+                  <span class="p">}</span>
+               <span class="p">]</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">}</span>
+   <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="publishing-delay-one-way-delay-data">
+<h4>Publishing Delay/One-way Delay Data<a class="headerlink" href="#publishing-delay-one-way-delay-data" title="Permalink to this headline">¶</a></h4>
+<p>An example of delay metadata as published for BWCTL running ping by the perfSONAR Regular Testing component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;tool-name&quot;</span><span class="p">:</span><span class="s">&quot;bwctl/ping&quot;</span><span class="p">,</span>
+   <span class="s">&quot;source&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;measurement-agent&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;destination&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.2&quot;</span><span class="p">,</span>
+   <span class="s">&quot;ip-transport-protocol&quot;</span><span class="p">:</span><span class="s">&quot;icmp&quot;</span><span class="p">,</span>
+   <span class="s">&quot;time-probe-interval&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+   <span class="s">&quot;ip-packet-size&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span>
+   <span class="s">&quot;event-types&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;failures&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;histogram-ttl-reverse&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;statistics&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-duplicates-bidir&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-loss-rate-bidir&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;3600&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-count-lost-bidir&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-count-sent&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;histogram-rtt&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;statistics&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;statistics&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-reorders-bidir&quot;</span>
+      <span class="p">}</span>
+   <span class="p">],</span>
+   <span class="s">&quot;subject-type&quot;</span><span class="p">:</span><span class="s">&quot;point-to-point&quot;</span><span class="p">,</span>
+   <span class="s">&quot;input-destination&quot;</span><span class="p">:</span><span class="s">&quot;host2.example.net&quot;</span><span class="p">,</span>
+   <span class="s">&quot;sample-size&quot;</span><span class="p">:</span><span class="s">&quot;100&quot;</span><span class="p">,</span>
+   <span class="s">&quot;input-source&quot;</span><span class="p">:</span><span class="s">&quot;host1.example.net&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Similarly, metadata example for powstream as registered by the perfSONAR Regular Testing component (note the slightly different event types from ping since they actually measure different values):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;tool-name&quot;</span><span class="p">:</span><span class="s">&quot;powstream&quot;</span><span class="p">,</span>
+   <span class="s">&quot;source&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;measurement-agent&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;destination&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.2&quot;</span><span class="p">,</span>
+   <span class="s">&quot;ip-transport-protocol&quot;</span><span class="p">:</span><span class="s">&quot;udp&quot;</span><span class="p">,</span>
+   <span class="s">&quot;time-duration&quot;</span><span class="p">:</span><span class="mi">60</span><span class="p">,</span>
+   <span class="s">&quot;time-probe-interval&quot;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span>
+   <span class="s">&quot;sample-bucket-width&quot;</span><span class="p">:</span><span class="s">&quot;0.0001&quot;</span><span class="p">,</span>
+   <span class="s">&quot;event-types&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;failures&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;histogram-ttl&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;statistics&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-duplicates&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-loss-rate&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;3600&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-count-lost&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-count-sent&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;histogram-owdelay&quot;</span><span class="p">,</span>
+         <span class="s">&quot;summaries&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;3600&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;statistics&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;3600&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;aggregation&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;statistics&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;86400&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;summary-type&quot;</span><span class="p">:</span><span class="s">&quot;statistics&quot;</span><span class="p">,</span>
+               <span class="s">&quot;summary-window&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;time-error-estimates&quot;</span>
+      <span class="p">}</span>
+   <span class="p">],</span>
+   <span class="s">&quot;time-interval&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+   <span class="s">&quot;subject-type&quot;</span><span class="p">:</span><span class="s">&quot;point-to-point&quot;</span><span class="p">,</span>
+   <span class="s">&quot;input-destination&quot;</span><span class="p">:</span><span class="s">&quot;host2.example.net&quot;</span><span class="p">,</span>
+   <span class="s">&quot;sample-size&quot;</span><span class="p">:</span><span class="mi">600</span><span class="p">,</span>
+   <span class="s">&quot;input-source&quot;</span><span class="p">:</span><span class="s">&quot;host1.example.net&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Example of publishing the ping measurement results to the bulk interface as done by the perfSONAR regular testing component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;data&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397804761</span><span class="p">,</span>
+         <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;histogram-ttl-reverse&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+                  <span class="s">&quot;59&quot;</span><span class="p">:</span><span class="mi">100</span>
+               <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-duplicates-bidir&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-loss-rate-bidir&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+                  <span class="s">&quot;denominator&quot;</span><span class="p">:</span><span class="s">&quot;100&quot;</span><span class="p">,</span>
+                  <span class="s">&quot;numerator&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+               <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-count-lost-bidir&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-count-sent&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;100&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;histogram-rtt&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+                  <span class="s">&quot;41.00&quot;</span><span class="p">:</span><span class="mi">99</span><span class="p">,</span>
+                  <span class="s">&quot;41.10&quot;</span><span class="p">:</span><span class="mi">1</span>
+               <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-reorders-bidir&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="mi">0</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">}</span>
+   <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Similarly an example of publishing the ping and powstream measurement results to the bulk interface as done by the perfSONAR regular testing component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;data&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397807372</span><span class="p">,</span>
+         <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;histogram-ttl&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+                  <span class="s">&quot;59&quot;</span><span class="p">:</span><span class="s">&quot;600&quot;</span>
+               <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-duplicates&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-loss-rate&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+                  <span class="s">&quot;denominator&quot;</span><span class="p">:</span><span class="s">&quot;600&quot;</span><span class="p">,</span>
+                  <span class="s">&quot;numerator&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+               <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-count-lost&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-count-sent&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;600&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;histogram-owdelay&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+                  <span class="s">&quot;34.5&quot;</span><span class="p">:</span><span class="s">&quot;30&quot;</span><span class="p">,</span>
+                  <span class="s">&quot;34.3&quot;</span><span class="p">:</span><span class="s">&quot;440&quot;</span><span class="p">,</span>
+                  <span class="s">&quot;34.6&quot;</span><span class="p">:</span><span class="s">&quot;7&quot;</span><span class="p">,</span>
+                  <span class="s">&quot;34.4&quot;</span><span class="p">:</span><span class="s">&quot;123&quot;</span>
+               <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;time-error-estimates&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;0.000124&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">}</span>
+   <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="publishing-packet-loss">
+<h4>Publishing Packet Loss<a class="headerlink" href="#publishing-packet-loss" title="Permalink to this headline">¶</a></h4>
+<p>A special note about packet loss: packet loss is currently published for multiple tools such as ping, UDP throughput tests, and owamp(powstream or owping). Packet loss is a percentage type and the MA provides a special format for registering such values to make summarization possible. Instead of registering the float value, you register the <em>numerator</em> and <em>denominator</em>, in this case packets lost and packets sent respectively. Below is the packet-loss portion extracted from one-way delay example above:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="o">...</span>
+<span class="p">{</span>
+    <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-loss-rate&quot;</span><span class="p">,</span>
+    <span class="s">&quot;val&quot;</span><span class="p">:{</span>
+        <span class="s">&quot;denominator&quot;</span><span class="p">:</span><span class="s">&quot;600&quot;</span><span class="p">,</span>
+        <span class="s">&quot;numerator&quot;</span><span class="p">:</span><span class="s">&quot;0&quot;</span>
+    <span class="p">}</span>
+<span class="p">},</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="publishing-packet-traces">
+<h4>Publishing Packet Traces<a class="headerlink" href="#publishing-packet-traces" title="Permalink to this headline">¶</a></h4>
+<p>An example of packet trace metadata as published for BWCTL running tracepath by the perfSONAR Regular Testing component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;tool-name&quot;</span><span class="p">:</span><span class="s">&quot;bwctl/tracepath&quot;</span><span class="p">,</span>
+   <span class="s">&quot;source&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;measurement-agent&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+   <span class="s">&quot;destination&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.2&quot;</span><span class="p">,</span>
+   <span class="s">&quot;ip-transport-protocol&quot;</span><span class="p">:</span><span class="s">&quot;icmp&quot;</span><span class="p">,</span>
+   <span class="s">&quot;event-types&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;failures&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-trace&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+         <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;path-mtu&quot;</span>
+      <span class="p">}</span>
+   <span class="p">],</span>
+   <span class="s">&quot;subject-type&quot;</span><span class="p">:</span><span class="s">&quot;point-to-point&quot;</span><span class="p">,</span>
+   <span class="s">&quot;input-destination&quot;</span><span class="p">:</span><span class="s">&quot;host1.example.net&quot;</span><span class="p">,</span>
+   <span class="s">&quot;input-source&quot;</span><span class="p">:</span><span class="s">&quot;host2.example.net&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Similarly an example of publishing the BWCTL tracepath measurement results to the bulk interface as done by the perfSONAR regular testing component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;data&quot;</span><span class="p">:[</span>
+      <span class="p">{</span>
+         <span class="s">&quot;ts&quot;</span><span class="p">:</span><span class="mi">1397804940</span><span class="p">,</span>
+         <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;packet-trace&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:[</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                     <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.1&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;0.278&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                     <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.10&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;2&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;22.243&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                     <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.12&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;3&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;22.516&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span>
+                  <span class="p">},</span>
+                  <span class="p">{</span>
+                     <span class="s">&quot;success&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="s">&quot;error_message&quot;</span><span class="p">:</span><span class="n">null</span><span class="p">,</span>
+                     <span class="s">&quot;ip&quot;</span><span class="p">:</span><span class="s">&quot;10.1.1.2&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;query&quot;</span><span class="p">:</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;ttl&quot;</span><span class="p">:</span><span class="s">&quot;4&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;rtt&quot;</span><span class="p">:</span><span class="s">&quot;33.562&quot;</span><span class="p">,</span>
+                     <span class="s">&quot;mtu&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span>
+                  <span class="p">}</span>
+               <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+               <span class="s">&quot;event-type&quot;</span><span class="p">:</span><span class="s">&quot;path-mtu&quot;</span><span class="p">,</span>
+               <span class="s">&quot;val&quot;</span><span class="p">:</span><span class="s">&quot;9000&quot;</span>
+            <span class="p">}</span>
+         <span class="p">]</span>
+      <span class="p">}</span>
+   <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="full-list-of-event-types">
+<span id="psclient-rest-eventtypes"></span><h2>Full List of Event Types<a class="headerlink" href="#full-list-of-event-types" title="Permalink to this headline">¶</a></h2>
+<p>A few of the common event types have been covered in previous sections, but a full list is provided below for reference (NOTE: See API <a class="reference external" href="https://docs.google.com/document/d/1DFl4bgFxIQtRqYIZPHAT8xW4TACppKq2UeYK13ZsUDk/pub">specification</a> for more formal definitions of each type):</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Name</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td>failures</td>
+<td>A record of test failures. A failure is any measurement that was scheduled to run but circumstances led to a state where it is unable to record a measurement. For example, being unable to connect to the remote endpoint. This is an object currently with one field named <em>error</em>.</td>
+</tr>
+<tr class="row-odd"><td>histogram-owdelay</td>
+<td>A histogram describing the observed one-way delays over a time period. Buckets always in milliseconds.</td>
+</tr>
+<tr class="row-even"><td>histogram-rtt</td>
+<td>A histogram describing the observed packet round-trip times over a over a time period. Buckets always in milliseconds.</td>
+</tr>
+<tr class="row-odd"><td>histogram-ttl</td>
+<td>A histogram describing the observed number of hops (time-to-live) of packets over a time period from source to destination.</td>
+</tr>
+<tr class="row-even"><td>histogram-ttl-reverse</td>
+<td>A histogram describing the observed number of hops (time-to-live) of packets over a time period from destination to source.</td>
+</tr>
+<tr class="row-odd"><td>ntp-delay</td>
+<td>The round trip delay time to the NTP server in milliseconds.</td>
+</tr>
+<tr class="row-even"><td>ntp-dispersion</td>
+<td>The maximum error of the local clock relative to the NTP reference clock in milliseconds.</td>
+</tr>
+<tr class="row-odd"><td>ntp-jitter</td>
+<td>Short-term variations in the clock frequency. The RMS deviation of the NTP offset in milliseconds.</td>
+</tr>
+<tr class="row-even"><td>ntp-offset</td>
+<td>The time difference between the system clock and the NTP reference clock in milliseconds.</td>
+</tr>
+<tr class="row-odd"><td>ntp-polling-interval</td>
+<td>The NTP polling interval in seconds.</td>
+</tr>
+<tr class="row-even"><td>ntp-reach</td>
+<td>An integer representing the reachability register, which is technically an octal value. If all is well and NTP has been running for a while, this should read 377. It may be lower during startup or if the NTP servers is unreachable on some attempts.</td>
+</tr>
+<tr class="row-odd"><td>ntp-stratum</td>
+<td>An integer indicating the NTP stratum of the local host (number of servers to a reference clock). 1=Primary (has a hardware clock), 2-15=Secondary reference (via NTP), 16=Unsynchronized</td>
+</tr>
+<tr class="row-even"><td>ntp-wander</td>
+<td>Long-term variations in NTP RMS frequency jitter in PPM (parts per million) - a measure of long-term clock stability.</td>
+</tr>
+<tr class="row-odd"><td>packet-duplicates</td>
+<td>The number of duplicate packets observed in a sample for a single direction.</td>
+</tr>
+<tr class="row-even"><td>packet-duplicates-bidir</td>
+<td>The number of duplicate packets observed for a complete packet round trip (from source to destination and then back to source)</td>
+</tr>
+<tr class="row-odd"><td>packet-loss-rate</td>
+<td>The number of packets lost divided by the number of packets sent.</td>
+</tr>
+<tr class="row-even"><td>packet-loss-rate-bidir</td>
+<td>The number of packets lost in both directions divided by the number of packets sent over a given summarization window.</td>
+</tr>
+<tr class="row-odd"><td>packet-trace</td>
+<td>The observed packet trace such as that returned by traceroute or tracepath.</td>
+</tr>
+<tr class="row-even"><td>packet-count-lost</td>
+<td>The number of packets dropped in one direction. This is a raw count of packets and can be combined with packet­count­sent event type data to determine the rate of unidriectional loss.</td>
+</tr>
+<tr class="row-odd"><td>packet-count-lost-bidir</td>
+<td>The number of packets dropped in both directions. This is a raw count of packets and can be combined with packet­count­sent event type data to determine the rate of biidriectional loss.</td>
+</tr>
+<tr class="row-even"><td>packet-count-sent</td>
+<td>The number of packets sent in a sample. This is a raw count of packets and can be combined with packet-count-lost event type data to determine the rate of loss.</td>
+</tr>
+<tr class="row-odd"><td>packet-reorders</td>
+<td>The number of packets received out of order for a unidirectional transfer</td>
+</tr>
+<tr class="row-even"><td>packet-reorders-bidir</td>
+<td>The number of packets received out of order for a bidirectional transfer</td>
+</tr>
+<tr class="row-odd"><td>packet-retransmits</td>
+<td>The number of packets retransmitted for a transfer using reliable transport protocol such as TCP.</td>
+</tr>
+<tr class="row-even"><td>packet-retransmits-subintervals</td>
+<td>The number of packets retransmitted per subinterval of time</td>
+</tr>
+<tr class="row-odd"><td>path-mtu</td>
+<td>The maximum transmission unit of a path.</td>
+</tr>
+<tr class="row-even"><td>streams-packet-retransmits</td>
+<td>For tests running multiple streams, the packet-retransmits for each individual stream. Each stream is represented as a position in an array. If other stream- stats collected, a stream will maintain the same position in each event type.</td>
+</tr>
+<tr class="row-odd"><td>streams-packet-retransmits-subintervals</td>
+<td>For tests running multiple streams, the packet restransmit subintervals for each inividual stream. Each stream is represented as a position in an array. If other stream- stats collected, a stream will maintain the same position in each event type</td>
+</tr>
+<tr class="row-even"><td>streams-throughput</td>
+<td>For tests running multiple streams, the throughput for each individual stream. Each stream is represented as a position in an array. If other stream- stats collected, a stream should maintain the same position in each event type.</td>
+</tr>
+<tr class="row-odd"><td>streams-throughput-subintervals</td>
+<td>For tests running multiple streams, the throughput subintervals for each inividual stream. Each stream is represented as a position in an array. If other stream- stats collected, a stream will maintain the same position in each event type</td>
+</tr>
+<tr class="row-even"><td>throughput</td>
+<td>The observed amount of data sent over a period of time. Throughput must be in bits per second(bps).</td>
+</tr>
+<tr class="row-odd"><td>throughput-subintervals</td>
+<td>The throughput for individual subintervals of a throughput test</td>
+</tr>
+<tr class="row-even"><td>time-error-estimates</td>
+<td>An estimate of the clock error in a sample in milliseconds</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="full-api-specification">
+<h2>Full API Specification<a class="headerlink" href="#full-api-specification" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://docs.google.com/document/d/1DFl4bgFxIQtRqYIZPHAT8xW4TACppKq2UeYK13ZsUDk/pub">Full API Specification</a></li>
+</ul>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/perfsonar_client_rest.txt"
+     rel="nofollow">Source</a>
+</div>
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>

@@ -77,7 +77,9 @@
 <li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">Extending the perfSONAR API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="rpm_build.html">RPM Build Instructions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="perfsonar_client.html">Using perfSONAR data client libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_rest.html">perfSONAR Client REST Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_python.html">perfSONAR Python Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
 </ul>
 </ul>
@@ -285,7 +287,7 @@ average</td>
 <div class="section" id="adding-new-subject-types">
 <h2>Adding New Subject Types<a class="headerlink" href="#adding-new-subject-types" title="Permalink to this headline">¶</a></h2>
 <p><strong>NOTE:</strong> This section assumes some familiarity with <a class="reference external" href="https://www.djangoproject.com">Django</a> and <a class="reference external" href="http://tastypieapi.org">Tastypie</a>. See the provided links for more details</p>
-<p>It may be desirable to add support a new type of subject for which measurements can be collected. For example, the default esmond implementation comes with a <em>point-to-point</em> subject type for describing measurements performed between two IP addresses. Let&#8217;s say instead we want to measure some statistics about a car. Before we can define new event types like speed and miles per gallon, we need to define how we will describe our car. To do so, we perform the following steps:</p>
+<p>It may be desirable to add support a new type of subject for which measurements can be collected. For example, the default esmond implementation comes with a <em>point-to-point</em> and <em>network-element</em> subject type for describing measurements performed between two IP addresses. Let&#8217;s say instead we want to measure some statistics about a car. Before we can define new event types like speed and miles per gallon, we need to define how we will describe our car. To do so, we perform the following steps:</p>
 <ol class="arabic">
 <li><p class="first"><strong>Create a new Django model with required parameters for all subjects of this type.</strong> We do this by opening <em>esmond/api/models.py</em> and defining a new class that extends <tt class="docutils literal"><span class="pre">django.db.models.Model</span></tt>.  There is one required foreign key to the <tt class="docutils literal"><span class="pre">PSMetadata</span></tt> table that must be named <em>metadata</em>. Continuing our car example we might define something like below:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">PSCarSubject</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
@@ -300,8 +302,8 @@ average</td>
 </pre></div>
 </div>
 </li>
-<li><p class="first"><strong>Define a REST resource for your new subject.</strong> Open <em>esmond/api/perfsonar/api.py</em> and add a class that extends <tt class="docutils literal"><span class="pre">tastypie.resources.ModelResorce</span></tt> and maps to the model defined in the previous step. For example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">PSCarSubjectResource</span><span class="p">(</span><span class="n">ModelResource</span><span class="p">):</span>
+<li><p class="first"><strong>Define a REST resource for your new subject.</strong> Open <em>esmond/api/perfsonar/api.py</em> and add a class that extends <tt class="docutils literal"><span class="pre">esmond.api.perfsonar.api.CustomModelResorce</span></tt> and maps to the model defined in the previous step. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">PSCarSubjectResource</span><span class="p">(</span><span class="n">CustomModelResorce</span><span class="p">):</span>
     <span class="n">psmetadata</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">ToOneField</span><span class="p">(</span><span class="s">&#39;esmond.api.perfsonar.api.PSArchiveResource&#39;</span><span class="p">,</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 
     <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
@@ -325,6 +327,9 @@ average</td>
     <span class="k">def</span> <span class="nf">alter_list_data_to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
         <span class="n">formatted_objs</span> <span class="o">=</span> <span class="n">format_list_keys</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">formatted_objs</span>
+
+    <span class="k">def</span> <span class="nf">get_resource_uri</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bundle_or_obj</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">None</span>
 </pre></div>
 </div>
 </li>
@@ -339,37 +344,47 @@ average</td>
 </div>
 </li>
 <li><p class="first"><strong>Update the list of valid subject types</strong> The list of valid subject types lives in <strong>esmond/api/perfsonar/types.py</strong> as the <tt class="docutils literal"><span class="pre">SUBJECT_FIELDS</span></tt> array. Add the <tt class="docutils literal"><span class="pre">resource_name</span></tt> from the <cite>Meta`</cite> class of the <tt class="docutils literal"><span class="pre">tastypie.resources.ModelResorce</span></tt> (e.g. <tt class="docutils literal"><span class="pre">PSCarSubjectResource</span></tt>) previously defined. For example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">SUBJECT_FIELDS</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;p2p_subject&#39;</span><span class="p">,</span> <span class="s">&#39;car_subject&#39;</span><span class="p">]</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SUBJECT_FIELDS</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;p2p_subject&#39;</span><span class="p">,</span> <span class="s">&#39;networkelement_subject&#39;</span><span class="p">,</span> <span class="s">&#39;car_subject&#39;</span><span class="p">]</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first"><strong>Map a subject type string to the REST Resource and Model Resource</strong> In the REST API metadata object there is a <em>subject-type</em> field that indicates the type of subject the metadata describes. You must define this string and add it to the <tt class="docutils literal"><span class="pre">SUBJECT_TYPE_MAP</span></tt> and <tt class="docutils literal"><span class="pre">SUBJECT_MODEL_MAP</span></tt> dictionaries in <strong>esmond/api/perfsonar/types.py</strong>. From a style perspective, the string should contain hyphens and not underscores (e.g. <em>point-to-point</em>). The <tt class="docutils literal"><span class="pre">SUBJECT_TYPE_MAP</span></tt> uses the string as the key and has the <tt class="docutils literal"><span class="pre">resource_name</span></tt> defined in the <tt class="docutils literal"><span class="pre">Meta</span></tt> class of the <tt class="docutils literal"><span class="pre">tastypie.resources.ModelResorce</span></tt> you defined earlier (e.g. <tt class="docutils literal"><span class="pre">PSCarSubjectResource</span></tt>). The <tt class="docutils literal"><span class="pre">SUBJECT_MODEL_MAP</span></tt> also uses the string as the key and the value is the name of our <tt class="docutils literal"><span class="pre">django.db.models.Model</span></tt> in all lowercase (e.g. <em>pscarsubject</em>). Putting it all together, you can add the <em>car</em> subject type as follows:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">SUBJECT_TYPE_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;point-to-point&quot;</span><span class="p">:</span> <span class="s">&quot;p2p_subject&quot;</span><span class="p">,</span>
+    <span class="s">&quot;network-element&quot;</span><span class="p">:</span> <span class="s">&quot;networkelement_subject&quot;</span><span class="p">,</span>
     <span class="s">&quot;car&quot;</span><span class="p">:</span> <span class="s">&quot;car_subject&quot;</span>
 <span class="p">}</span>
 
 <span class="n">SUBJECT_MODEL_MAP</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s">&quot;point-to-point&quot;</span><span class="p">:</span> <span class="s">&quot;pspointtopointsubject&quot;</span><span class="p">,</span>
+    <span class="s">&quot;network-element&quot;</span><span class="p">:</span> <span class="s">&quot;psnetworkelementsubject&quot;</span><span class="p">,</span>
     <span class="s">&quot;car&quot;</span><span class="p">:</span> <span class="s">&quot;pscarsubject&quot;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 </li>
-<li><p class="first"><strong>Define how the subject parameters look in the REST interface</strong> You can map particular filters and fields in the REST interface to columns in your Django model by updating the <tt class="docutils literal"><span class="pre">SUBJECT_FILTER_MAP</span></tt> in <strong>esmond/api/perfsonar/types.py</strong>. The key is the name as it appears in the REST interface and the value is the column name as it would be seen by the <tt class="docutils literal"><span class="pre">PSMetadata</span></tt> model. The name as it appears in the REST Interface must not conflict with any existing subject fields. As a good practice, you may want to prefix your fields with something that indicates the subject to limit future conflicts. For example we will prefix <em>car-</em> in all our fields  Also, as a general style you will also want o use hyphens instead of underscored in your fields.  Continuing our example:</p>
-<div class="highlight-python"><div class="highlight"><pre>SUBJECT_FILTER_MAP = {
-    #point-to-point subject fields
-    &quot;source&quot;: &#39;p2p_subject__source&#39;,
-    &quot;destination&quot;: &#39;p2p_subject__destination&#39;,
-    &quot;tool-name&quot;: &#39;p2p_subject__tool_name&#39;,
-    &quot;measurement-agent&quot;: &#39;p2p_subject__measurement_agent&#39;,
-    &quot;input-source&quot;: &#39;p2p_subject__input_source&#39;,
-    &quot;input-destination&quot;: &#39;p2p_subject__input_destination&#39;
-    #car subject fields
-    &quot;car-vin&quot;: &#39;car_subject__vehicle_id_number&#39;,
-    &quot;car-make&quot;: &#39;car_subject__make&#39;,
-    &quot;car-model&quot;: &#39;car_subject__model&#39;,
-    &quot;car-color&quot;: &#39;car_subject__color&#39;,
-}
+<li><p class="first"><strong>Define how the subject parameters look in the REST interface</strong> You can map particular filters and fields in the REST interface to columns in your Django model by updating the <tt class="docutils literal"><span class="pre">SUBJECT_FILTER_MAP</span></tt> in <strong>esmond/api/perfsonar/types.py</strong>. The key is the name as it appears in the REST interface and the value is the column name as it would be seen by the <tt class="docutils literal"><span class="pre">PSMetadata</span></tt> model. The name as it appears in the REST Interface must not conflict with any existing subject fields. If you want to share the name with another subject field, then add it to the array of the existing entry in the map. As a good practice, you may want to prefix your fields with something that indicates the subject to limit future conflicts. For example we will prefix <em>car-</em> in all our fields  Also, as a general style you will also want o use hyphens instead of underscored in your fields.  Continuing our example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SUBJECT_FILTER_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c">#point-to-point subject fields</span>
+    <span class="s">&quot;source&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;pspointtopointsubject__source&#39;</span><span class="p">,</span> <span class="s">&#39;psnetworkelementsubject__source&#39;</span><span class="p">],</span>
+    <span class="s">&quot;destination&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;pspointtopointsubject__destination&#39;</span><span class="p">],</span>
+    <span class="s">&quot;tool-name&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;pspointtopointsubject__tool_name&#39;</span><span class="p">,</span> <span class="s">&#39;psnetworkelementsubject__tool_name&#39;</span><span class="p">],</span>
+    <span class="s">&quot;measurement-agent&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;pspointtopointsubject__measurement_agent&#39;</span><span class="p">,</span> <span class="s">&#39;psnetworkelementsubject__measurement_agent&#39;</span><span class="p">],</span>
+    <span class="s">&quot;input-source&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;pspointtopointsubject__input_source&#39;</span><span class="p">,</span> <span class="s">&#39;psnetworkelementsubject__input_source&#39;</span><span class="p">],</span>
+    <span class="s">&quot;input-destination&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;pspointtopointsubject__input_destination&#39;</span><span class="p">],</span>
+    <span class="c">#car subject fields</span>
+    <span class="s">&quot;car-vin&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;car_subject__vehicle_id_number&#39;</span><span class="p">],</span>
+    <span class="s">&quot;car-make&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;car_subject__make&#39;</span><span class="p">],</span>
+    <span class="s">&quot;car-model&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;car_subject__model&#39;</span><span class="p">],</span>
+    <span class="s">&quot;car-color&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;car_subject__color&#39;</span><span class="p">],</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Finally we want to be sure a user has permissions to post to the new subject. Open <em>esmond/api/management/commands/add_ps_metadata_post_user.py</em> and add the name of the the <tt class="docutils literal"><span class="pre">django.db.models.Model</span></tt> in all lowercase letters (same as we entered in SUBJECT_MODEL_MAP previously) to the array on line 34:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="s">&#39;Setting metadata POST permissions.&#39;</span>
+<span class="k">for</span> <span class="n">model_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;psmetadata&#39;</span><span class="p">,</span> <span class="s">&#39;pspointtopointsubject&#39;</span><span class="p">,</span> <span class="s">&#39;pseventtypes&#39;</span><span class="p">,</span> <span class="s">&#39;psmetadataparameters&#39;</span><span class="p">,</span> <span class="s">&#39;psnetworkelementsubject&#39;</span><span class="p">,</span> <span class="s">&#39;pscarsubject&#39;</span><span class="p">]:</span>
+       <span class="o">...</span>
 </pre></div>
 </div>
 </li>
