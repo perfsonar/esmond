@@ -108,6 +108,12 @@ class EsmondOutput(object):
     def get_output(self):
         raise NotImplementedError('Implement in subclasses.')
 
+    def add_to_payload(self, d):
+        if not isinstance(d, list):
+            raise EsmondClientException('Arg to add_to_payload must be a list')
+        
+        self._data.extend(d)
+
     def _massage_row_dict(self, d):
         # scan first instance to see if we need to fix anything - 
         # no point in processing each row if not necessary.
@@ -203,7 +209,7 @@ def output_factory(options, data, columns):
 # Generate output for different event types.
 # 
 
-def data_format_factory(options):
+def data_format_factory(options, seed_bulk_output=False):
     """
     Factory function to format the actual data for output.
 
@@ -280,6 +286,8 @@ def data_format_factory(options):
 
         data = list()
 
+        if seed_bulk_output: return header, data
+
         for m in conn.get_metadata():
             et = m.get_event_type(options.type)
 
@@ -303,6 +311,8 @@ def data_format_factory(options):
         header = header_base + ['msg']
 
         data = list()
+
+        if seed_bulk_output: return header, data
 
         for m in conn.get_metadata():
             et = m.get_event_type(options.type)
@@ -331,6 +341,8 @@ def data_format_factory(options):
             header = test_header
 
         data = list()
+
+        if seed_bulk_output: return header, data
 
         for m in conn.get_metadata():
             et = m.get_event_type(options.type)
@@ -381,6 +393,8 @@ def data_format_factory(options):
 
         data = list()
 
+        if seed_bulk_output: return header, data
+
         for m in conn.get_metadata():
             et = m.get_event_type(options.type)
 
@@ -428,6 +442,8 @@ def data_format_factory(options):
 
         data = list()
 
+        if seed_bulk_output: return header, data
+
         for m in conn.get_metadata():
             et = m.get_event_type(options.type)
 
@@ -455,6 +471,8 @@ def data_format_factory(options):
 
         data = list()
 
+        if seed_bulk_output: return header, data
+
         for m in conn.get_metadata():
             et = m.get_event_type(options.type)
             for dp in et.get_data().data:
@@ -479,6 +497,8 @@ def data_format_factory(options):
         header = header_base + ['stream_num', 'start', 'duration', 'value']
 
         data = list()
+
+        if seed_bulk_output: return header, data
 
         for m in conn.get_metadata():
             et = m.get_event_type(options.type)
@@ -599,7 +619,7 @@ def get_start_and_end_times(options):
             sys.exit(-1)
 
     if not options.end:
-        end = datetime.datetime.utcnow()
+        end = datetime.datetime.utcnow().replace(microsecond=0)
     else:
         try:
             end = parse(options.end)
