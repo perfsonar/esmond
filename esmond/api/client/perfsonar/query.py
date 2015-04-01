@@ -606,8 +606,11 @@ class ApiConnect(object):
         if r.status_code == 200 and \
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
-
-            m_total = Metadata(data[0], self.api_url, self.filters).metadata_count_total
+            
+            if data:
+                m_total = Metadata(data[0], self.api_url, self.filters).metadata_count_total
+            else:
+                m_total = 0
 
             # Check to see if we are geting paginated metadata, tastypie 
             # has a limit to how many results it will return even if 
