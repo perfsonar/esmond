@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+
+"""
+esmond-ps-get-bulk - a client program to pull large amounts of perfsonar 
+data from an esmond host.
+"""
+
+import os
+import sys
+
+from esmond_client.perfsonar.query import ApiConnect
+from esmond_client.perfsonar.util import (perfsonar_client_opts, 
+    perfsonar_client_filters, output_factory, data_format_factory)
+
+def main():
+    options, args = perfsonar_client_opts()
+
+    filters = perfsonar_client_filters(options)
+    conn = ApiConnect(options.url, filters)
+
+    pass
+
+if __name__ == '__main__':
+    main()

@@ -641,12 +641,12 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False):
     parser.add_option('-S', '--start-time', metavar='START',
             type='string', dest='start', 
             help='Start time of query (default: 24 hours ago).')
-    parser.add_option('-F', '--filter', metavar='FILTER',
-            type='string', dest='filter', action='append',
-            help='Specify additional query filters - format: -F key:value. Can be used multiple times, invalid filters will be ignored.')
     parser.add_option('-E', '--end-time', metavar='END',
             type='string', dest='end', 
             help='End time of query (default: now).')
+    parser.add_option('-F', '--filter', metavar='FILTER',
+            type='string', dest='filter', action='append',
+            help='Specify additional query filters - format: -F key:value. Can be used multiple times, invalid filters will be ignored.')
     parser.add_option('-L', '--list-events',
             dest='list_event', action='store_true', default=False,
             help='List available event types.')
