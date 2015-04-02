@@ -212,6 +212,23 @@ def output_factory(options, data, columns):
     elif options.format == 'csv':
         return CSVOutput(data, columns)
 
+class HostnameConversion(object):
+    def __init__(self, options):
+        self._options = options
+        self._ns_cache = {}
+
+        self._ip_fields = ['source', 'destination', 'ip', 'measurement_agent']
+
+    def convert(self, d):
+        if not self._options.ip:
+            for i in self._ip_fields:
+                if d.get(i):
+                    ip = d.get(i)
+                    if not self._ns_cache.get(ip):
+                        self._ns_cache[ip] = socket.getfqdn(ip)
+                    d[i] = self._ns_cache.get(ip)
+        return d
+
 #
 # Generate output for different event types.
 # 
@@ -237,7 +254,7 @@ def data_format_factory(options, seed_bulk_output=False):
         'timestamp'
     ]
 
-    ns_cache = dict()
+    ip_convert = HostnameConversion(options)
 
     def get_summary_type():
         if not options.summary_type:
@@ -260,14 +277,8 @@ def data_format_factory(options, seed_bulk_output=False):
     def massage_output(d):
         """any modifications to the data dicts here."""
 
-        # IP -> hostname conversion
-        if not options.ip:
-            for i in ['source', 'destination', 'ip']:
-                if d.get(i):
-                    ip = d.get(i)
-                    if not ns_cache.get(ip):
-                        ns_cache[ip] = socket.getfqdn(ip)
-                    d[i] = ns_cache.get(ip)
+        # ip -> hostname if need be
+        d = ip_convert.convert(d)
 
         return d
 

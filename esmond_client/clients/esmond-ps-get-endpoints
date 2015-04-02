@@ -9,10 +9,12 @@ import sys
 
 from esmond_client.perfsonar.query import ApiConnect
 from esmond_client.perfsonar.util import (perfsonar_client_opts, 
-    perfsonar_client_filters, output_factory)
+    perfsonar_client_filters, output_factory, HostnameConversion)
 
 def main():
     options, args = perfsonar_client_opts()
+
+    ip_convert = HostnameConversion(options)
 
     filters = perfsonar_client_filters(options)
     conn = ApiConnect(options.url, filters)
@@ -27,7 +29,7 @@ def main():
             tool_name=m.tool_name,
             event_type=[ et.event_type for et in m.get_all_event_types() ],
         )
-        data.append(row)
+        data.append(ip_convert.convert(row))
 
     column_ordering = [
         'source', 

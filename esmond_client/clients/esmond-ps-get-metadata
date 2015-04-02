@@ -11,7 +11,7 @@ import sys
 
 from esmond_client.perfsonar.query import ApiConnect
 from esmond_client.perfsonar.util import (perfsonar_client_opts, 
-    perfsonar_client_filters, output_factory, DEFAULT_FIELDS)
+    perfsonar_client_filters, output_factory, DEFAULT_FIELDS, HostnameConversion)
 
 class MetadataDataObject(object):
     def __init__(self, initial=None):
@@ -39,6 +39,8 @@ exclude_fields = ['event-types', 'uri', 'metadata-key']
 def main():
     options, args = perfsonar_client_opts()
 
+    ip_convert = HostnameConversion(options)
+
     filters = perfsonar_client_filters(options)
     conn = ApiConnect(options.url, filters)
 
@@ -55,13 +57,13 @@ def main():
                 input_destination=m.input_destination,
                 tool_name=m.tool_name,
             )
-            data.append(row)
+            data.append(ip_convert.convert(row))
         else:
             # show defaults and extended per-tool fields as well.
             d = copy.copy(m._data)
             for ex in exclude_fields: d.pop(ex, None)
             row = MetadataDataObject(d)
-            data.append(row.to_dict())
+            data.append(ip_convert.convert(row.to_dict()))
     
     o = output_factory(options, data, copy.copy(DEFAULT_FIELDS))
     print o.get_output()
