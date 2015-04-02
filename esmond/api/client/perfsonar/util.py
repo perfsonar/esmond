@@ -12,6 +12,7 @@ import os
 import socket
 import sys
 import urllib
+import urlparse
 
 from optparse import OptionParser
 from collections import OrderedDict
@@ -584,6 +585,15 @@ def check_url(options, parser):
         print '--url is a required arg\n'
         parser.print_help()
         sys.exit(-1)
+
+    # trim URI from --url since people will cut and paste from 
+    # the list of MAs.
+    url = options.url
+    up = urlparse.urlparse(url)
+    if up.path.startswith('/esmond/perfsonar/archive'):
+        options.url = url.replace(up.path, '')
+        print '\n not necessary to add /esmond/perfsonar/archive to --url arg - trimming'
+
     try:
         urllib.urlopen(options.url)
     except Exception, e:
