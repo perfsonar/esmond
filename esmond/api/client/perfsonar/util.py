@@ -8,6 +8,7 @@ import cStringIO
 import csv
 import datetime
 import json
+import os
 import socket
 import sys
 import urllib
@@ -108,10 +109,16 @@ class EsmondOutput(object):
     def get_output(self):
         raise NotImplementedError('Implement in subclasses.')
 
+    def has_data(self):
+        if len(self._data):
+            return True
+        else:
+            return False
+
     def add_to_payload(self, d):
         if not isinstance(d, list):
             raise EsmondClientException('Arg to add_to_payload must be a list')
-        
+
         self._data.extend(d)
 
     def _massage_row_dict(self, d):
@@ -534,6 +541,29 @@ def data_format_factory(options, seed_bulk_output=False):
 
     return format_map.get(event_format(options.type))
 
+# 
+# Generate a filename and file handle for output.
+#
+
+def get_outfile(options, metadata, event_type):
+
+    if not options.ip:
+        source = socket.getfqdn(metadata.source)
+        dest = socket.getfqdn(metadata.destination)
+    else:
+        source = metadata.source
+        dest = metadata.destination
+
+    def utciso(dt):
+        return datetime.datetime.utcfromtimestamp(dt).strftime('%Y-%m-%d')
+
+    s = utciso(metadata.filters.time_start)
+    e = utciso(metadata.filters.time_end)
+
+    outfile =  '{0}.{1}'.format('_'.join([source, dest, event_type, s, e]), options.format)
+
+    return open(outfile, 'wb')
+
 #
 # Command line argument validation functions
 #
@@ -588,6 +618,15 @@ def src_dest_required(options, parser):
         parser.print_help()
         sys.exit(-1)
 
+def valid_output_dir(options, parser):
+    if options.format == 'human':
+        print '--output-format human is not a valid format for writing files.\n'
+        parser.print_help()
+        sys.exit(-1)
+    if not os.path.exists(os.path.abspath(options.output_dir)):
+        print 'output path {0} does not exist.'.format(os.path.abspath(options.output_dir))
+        sys.exit(-1)
+
 #
 # Misc command line --arg functions.
 #
@@ -633,7 +672,8 @@ def get_start_and_end_times(options):
 # Canned option parsers for clients
 #
 
-def perfsonar_client_opts(require_src_dest=False, require_event=False):
+def perfsonar_client_opts(require_src_dest=False, require_event=False,
+    require_output=False):
     """
     Return a standard option parser for the perfsonar clients.
     """
@@ -682,6 +722,10 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False):
     parser.add_option('-o', '--output-format', metavar='O_FORMAT',
             type='string', dest='format', default='human',
             help='Output format [human, json, csv] (default: human).')
+    if require_output:
+        parser.add_option('-D', '--output-directory', metavar='DIR',
+                type='string', dest='output_dir', default=os.getcwd(),
+                help='Directory to output files to (default: %default).')
     parser.add_option('-I', '--ip',
             dest='ip', action='store_true', default=False,
             help='Show source/dest as IP addresses, not hostnames.')
@@ -698,6 +742,9 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False):
 
     if require_src_dest:
         src_dest_required(options, parser)
+
+    if require_output:
+        valid_output_dir(options, parser)
 
     check_valid_hostnames(options, parser, hn_args=['src', 'dest', 'agent'])
 

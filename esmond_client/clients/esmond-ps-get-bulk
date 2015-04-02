@@ -8,15 +8,134 @@ data from an esmond host.
 import os
 import sys
 
-from esmond_client.perfsonar.query import ApiConnect
+from esmond_client.perfsonar.query import ApiConnect, Metadata
 from esmond_client.perfsonar.util import (perfsonar_client_opts, 
-    perfsonar_client_filters, output_factory, data_format_factory)
+    perfsonar_client_filters, get_start_and_end_times, output_factory,
+    data_format_factory, get_outfile)
+
+import calendar
+import copy
+import datetime
+import socket
+
+class IntervalGenerator(object):
+    RESULTS_PER_REQUEST = 10000
+    def __init__(self, metadata, options):
+        # duration + interval is how often a data point is generated
+        self.test_duration = int(metadata.time_interval) + \
+            int(metadata.time_duration if metadata.time_duration != None else 0)
+        self.request_slice = self.test_duration * self.RESULTS_PER_REQUEST
+        # the user-requested start and end times
+        self.start, self.end = get_start_and_end_times(options)
+        # request slice as a time delta object
+        self.r_delta = datetime.timedelta(seconds=self.request_slice)
+        if options.verbose: print 'Requesting time slices of {0}'.format(self.r_delta)
+        # seed this value with start time, increment in while loop
+        self._start_slice = self.start
+
+    def slices(self):
+        """
+        Iterator that returns slices that will return RESULTS_PER_REQUEST
+        number of data points.
+        """
+        while self._start_slice < self.end:
+            slice_end = self._start_slice + self.r_delta
+            slice_range = (self._start_slice, 
+                slice_end if slice_end < self.end else self.end)
+            self._start_slice += self.r_delta
+            yield slice_range
+
+    def _to_seconds(self, dt):
+        return calendar.timegm(dt.utctimetuple())
+
+    def as_timestamp(self, tt):
+        return (self._to_seconds(tt[0]), self._to_seconds(tt[1]))
+
+class ConnectionWrapper(object):
+    """
+    Class to mimic a ApiConnect object to pass a discrete
+    metadata object to the format_factory
+    """
+    def __init__(self, metadata_object):
+        self._data = [ metadata_object ]
+
+    def get_metadata(self):
+        for d in self._data:
+            yield d
+
+class OptionsWrapper(object):
+    """
+    Mimics an options/optparse object to use since we might be 
+    assigning event types
+    """
+    def __init__(self, options_object):
+        self.__dict__['_data'] = copy.copy(options_object.__dict__)
+
+    def __getattr__(self, name):
+        return self._data.get(name, None)
+
+    def __setattr__(self, name, value):
+        self.__dict__['_data'][name] = value
+
+    def to_dict(self):
+        return self._data
+
 
 def main():
-    options, args = perfsonar_client_opts()
+    options, args = perfsonar_client_opts(require_output=True)
 
     filters = perfsonar_client_filters(options)
     conn = ApiConnect(options.url, filters)
+
+    for m in conn.get_metadata():
+        print '\n', m
+        # Use the user supplied event type if supplied, if not
+        # pull all event types for the metadata object.
+        if options.type:
+            event_type = [ options.type ]
+        else:
+            event_type = [ x.event_type for x in m.get_all_event_types() ]
+
+        # Loop through the event types
+        for et in event_type:
+            print '\n  * processing {0}'.format(et)
+
+            # Mimic options object and assign event type to it.
+            options_wrap = OptionsWrapper(options)
+            options_wrap.type = et
+
+            # Initialize the output class with the proper even type
+            # headers and an empty dataset.
+            header, data = data_format_factory(options_wrap, seed_bulk_output=True)(conn)
+            output_klass = output_factory(options_wrap, data, header)
+
+            # Generate a series of time slices to make more limited
+            # requests to the back end.
+            ig = IntervalGenerator(m, options)
+
+            for sl in ig.slices():
+                s,e = ig.as_timestamp(sl)
+                # Make new filter object with different time range.
+                slice_filter = copy.deepcopy(filters)
+                slice_filter.time_start = s
+                slice_filter.time_end = e
+                # Dupe meta object with new time ranges in the filter
+                slice_meta = Metadata(m._data, options.url, slice_filter)
+                # Add to fake connection object, get data for that
+                # time slice and append it to the output class.
+                meta_wrap = ConnectionWrapper(slice_meta)                
+                # Generate the output and append it to the data output object.
+                sub_header, sub_data = data_format_factory(options_wrap)(meta_wrap)
+                output_klass.add_to_payload(sub_data)
+            
+            # write it out of we got data
+            if output_klass.has_data():
+                fh = get_outfile(options, m, et)
+                print '  * writing {0}'.format(fh.name)
+                fh.write(output_klass.get_output())
+                fh.close()
+            else:
+                print '  * no data for that event type, skipping output.'
 
     pass
 
