@@ -337,7 +337,7 @@ class DataPoint(NodeInfo):
         return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
 
 class DataHistogram(NodeInfo):
-    __slots__ = ['ts', 'histogram']
+    __slots__ = ['ts', 'val']
     wrn = DataHistogramWarning
     """Class to encapsulate the data histograms  Represents a single
     ts/value pair where the value is histogram written as a dict."""
