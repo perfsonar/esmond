@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Registering GridFTP Results &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="index.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png _static/logo-esnet-ball-sm.png --><img src="_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_install.html">RPM Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_extension.html">Extending the perfSONAR API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpm_build.html">RPM Build Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_rest.html">perfSONAR Client REST Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_python.html">perfSONAR Python Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href="http://github.com/esnet/esmond"><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">Registering GridFTP Results</a><ul>
+<li><a class="reference internal" href="#preparing-your-environment">Preparing Your Environment</a><ul>
+<li><a class="reference internal" href="#preparing-your-gridftp-server-s">Preparing Your GridFTP Server(s)</a></li>
+<li><a class="reference internal" href="#preparing-your-measurement-archive">Preparing Your Measurement Archive</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installation">Installation</a><ul>
+<li><a class="reference internal" href="#installing-python-2-7-on-centos-6-rhel-6">Installing Python 2.7 on CentOS 6/RHEL 6</a></li>
+<li><a class="reference internal" href="#installing-esmond-client-python-package">Installing esmond-client Python package</a></li>
+<li><a class="reference internal" href="#installing-the-log-parser-script">Installing the Log Parser Script</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-the-log-parser">Running the Log Parser</a><ul>
+<li><a class="reference internal" href="#running-manually">Running Manually</a></li>
+<li><a class="reference internal" href="#running-in-cron">Running in Cron</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-the-registered-data">Using the Registered Data</a><ul>
+<li><a class="reference internal" href="#what-information-is-registered">What Information is Registered?</a></li>
+<li><a class="reference internal" href="#displaying-results-in-a-dashboard">Displaying Results in a Dashboard</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9">
+      
+  <div class="section" id="registering-gridftp-results">
+<h1>Registering GridFTP Results<a class="headerlink" href="#registering-gridftp-results" title="Permalink to this headline">¶</a></h1>
+<p>Esmond includes a script capable of parsing GridFTP server transfer logs and registering data such as throughput and packet-retransmits to a central esmond server. This document describes how to install, configure and run this script.</p>
+<div class="section" id="preparing-your-environment">
+<h2>Preparing Your Environment<a class="headerlink" href="#preparing-your-environment" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="preparing-your-gridftp-server-s">
+<h3>Preparing Your GridFTP Server(s)<a class="headerlink" href="#preparing-your-gridftp-server-s" title="Permalink to this headline">¶</a></h3>
+<p>On the system you wish to install the script you will need the following software:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>GridFTP server 6.0 or newer</dt>
+<dd><ul class="first last simple">
+<li>See the <a class="reference external" href="https://fasterdata.es.net/data-transfer-tools/gridftp/">Fasterdata GridFTP page</a> for install instructions</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Python 2.7</dt>
+<dd><ul class="first last simple">
+<li>Many modern OSes come with this pre-installed. CentOS 6/RHEL 6 users see <a class="reference internal" href="#gridftp-install-centos-python27"><em>Installing Python 2.7 on CentOS 6/RHEL 6</em></a> for special instructions.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>The <em>esmond-client</em> Python package</dt>
+<dd><ul class="first last simple">
+<li>See <a class="reference internal" href="#gridftp-install-esmond-client"><em>Installing esmond-client Python package</em></a></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>The load_gridftp.py script from esmond</dt>
+<dd><ul class="first last simple">
+<li>See <a class="reference internal" href="#gridftp-install-script"><em>Installing the Log Parser Script</em></a></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="preparing-your-measurement-archive">
+<span id="gridftp-prepare-ma"></span><h3>Preparing Your Measurement Archive<a class="headerlink" href="#preparing-your-measurement-archive" title="Permalink to this headline">¶</a></h3>
+<p>In addition you will need an esmond installation <em>on a different host</em> where you can store the results, often referred to as a Measurement Archive (MA). It needs to be on a different host to prevent conflicts with packages installed by GridFTP and esmond. The esmond installation that comes on the <a class="reference external" href="http://www.perfsonar.net">perfSONAR Toolkit</a> can serve this purpose. Likewise you can install a standalone esmond instance by following the instructions at <a class="reference internal" href="rpm_install.html"><em>RPM Installation</em></a>.</p>
+<p>Once you have a measurement archive, you will need to create credentials so that the GridFTP log parser can register data to it. The credentials take the form of a username and API key. If you have multiple GridFTP servers you may allow them to share the same credentials or create them each individual credentials. Sharing is simpler to manage and individual accounts make it easier to revoke access at a later date for an individual host. The decision is up to you and/or the MA administrator, but you may create an account by logging-in to the host running esmond and issuing the following commands (you may replace <em>gridftp</em> with the name of the user you want to add):</p>
+<div class="highlight-python"><div class="highlight"><pre>cd /opt/esmond
+source /opt/rh/python27/enable
+. bin/activate
+python esmond/manage.py add_ps_metadata_post_user gridftp
+python esmond/manage.py add_timeseries_post_user gridftp
+</pre></div>
+</div>
+<p>The last two commands will output an API key that should be noted for later configuration steps.</p>
+</div>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="installing-python-2-7-on-centos-6-rhel-6">
+<span id="gridftp-install-centos-python27"></span><h3>Installing Python 2.7 on CentOS 6/RHEL 6<a class="headerlink" href="#installing-python-2-7-on-centos-6-rhel-6" title="Permalink to this headline">¶</a></h3>
+<p>If you are running CentOS 6 or RHEL 6 then you do not have the required version (2.7) of python installed. Luckily, each provides a special Software Collections repository that makes his available. Below are the commands you can use to install and configure python 2.7:</p>
+<div class="highlight-python"><div class="highlight"><pre>yum install centos-release-SCL
+yum clean all
+yum install python27
+mkdir -p /opt/esmond-gridftp
+cd /opt/esmond-gridftp
+source /opt/rh/python27/enable
+/opt/rh/python27/root/usr/bin/virtualenv --prompt=&quot;(esmond-gridftp)&quot; .
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Make sure you are using the <cite>bash</cite> shell when you run the commands above</p>
+</div>
+</div>
+<div class="section" id="installing-esmond-client-python-package">
+<span id="gridftp-install-esmond-client"></span><h3>Installing esmond-client Python package<a class="headerlink" href="#installing-esmond-client-python-package" title="Permalink to this headline">¶</a></h3>
+<p>If you are running CentOS6/RHEL 6 run the following to get in your Python 2.7 environment:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd /opt/esmond-gridftp
+source /opt/rh/python27/enable
+. bin/activate
+</pre></div>
+</div>
+<p>Run the following to install the package:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install esmond-client
+</pre></div>
+</div>
+</div>
+<div class="section" id="installing-the-log-parser-script">
+<span id="gridftp-install-script"></span><h3>Installing the Log Parser Script<a class="headerlink" href="#installing-the-log-parser-script" title="Permalink to this headline">¶</a></h3>
+<p>Run the following commands:</p>
+<div class="highlight-python"><div class="highlight"><pre>mkdir -p /opt/esmond-gridftp
+cd /opt/esmond-gridftp
+wget --no-check-certificate https://raw.githubusercontent.com/esnet/esmond/develop/util/load_grid_ftp.py
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="running-the-log-parser">
+<h2>Running the Log Parser<a class="headerlink" href="#running-the-log-parser" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="running-manually">
+<h3>Running Manually<a class="headerlink" href="#running-manually" title="Permalink to this headline">¶</a></h3>
+<p>Assuming you followed all the installation steps you should be able to run a set of commands similar to the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd /opt/esmond-gridftp
+source /opt/rh/python27/enable
+. bin/activate
+python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/load_grid_ftp.log -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you are not running CentOS 6 or RHEL 6 then you only need to run the last command</p>
+</div>
+<p>The <cite>load_grid_ftp.py</cite> script has a number of options but the most commonly used ones are in the example above. For a complete listing see the <em>-h</em> option of <cite>load_grid_ftp.py</cite>. A description of the options used in the example are as follows:</p>
+<ul>
+<li><p class="first"><em>-f</em> is the path to the GridFTP log file to be parsed. In general it will be found at /var/log/gridftp-transfer.log but may be different depending on the system. You will know it&#8217;s the correct log file if it has lines like the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>DATE=20150407145945.113944 HOST=lbl-diskpt1.es.net PROG=globus-gridftp-server NL.EVNT=FTP_INFO START=20150407145936.596363 USER=anonymous FILE=/data1/100M.dat BUFFER=87380 BLOCK=262144 NBYTES=100000000 VOLUME=/ STREAMS=5 STRIPES=1 DEST=[192.100.78.81] TYPE=RETR CODE=226 retrans=36,17,27,25,61
+</pre></div>
+</div>
+</li>
+<li><p class="first"><em>-p</em> is the path to a file used by the &#8216;load_grid_ftp.py&#8217; script to keep track of what lines it has already parsed between runs. This file will be created if it doesn&#8217;t already exist. If you delete this file, the script may complain about trying to register data that is already in the measurement archive.</p>
+</li>
+<li><p class="first"><em>-l</em> is the log file where &#8216;load_grid_ftp.py&#8217; logs its own progress and reports parsing errors, etc. This is NOT the GridFTP server log, so don&#8217;t confuse it with <em>-f</em>.</p>
+</li>
+<li><p class="first"><em>-U</em> is the URL of your esmond measurement archive. It should begin with <em>http://</em> or <em>https://</em> and end with /esmond usually. The hostname in between should be the name of the host where you want the data sent.</p>
+</li>
+<li><p class="first"><em>-u</em> is the username used to authenticate to esmond. You should have set this up in <a class="reference internal" href="#gridftp-prepare-ma"><em>Preparing Your Measurement Archive</em></a>.</p>
+</li>
+<li><p class="first"><em>-k</em> is the API key used to authenticate to esmond. You should have set this up in <a class="reference internal" href="#gridftp-prepare-ma"><em>Preparing Your Measurement Archive</em></a>.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="running-in-cron">
+<h3>Running in Cron<a class="headerlink" href="#running-in-cron" title="Permalink to this headline">¶</a></h3>
+<p>Most likely you will not want to run that by hand, rather you&#8217;ll want it to automatically register results over time. Currently the easiest way to do that is to create a new cron entry. If you are Running CentOS 6/RHEL 6 then you&#8217;ll fist want to create a shell script since you&#8217;ll need cron to use the correct python version each time. After that you can create the cron script. You may do this as follows:</p>
+<ol class="arabic">
+<li><p class="first">Open a new file named <em>/opt/esmond-gridftp/load_grid_ftp.sh</em>  with your favorite text editor and add the following (modifying the last line with the correct esmond URL (-U), username(-u) and API key (-k)):</p>
+<div class="highlight-python"><div class="highlight"><pre>#!/bin/bash
+
+cd /opt/esmond-gridftp
+source /opt/rh/python27/enable
+. bin/activate
+python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/load_grid_ftp.log -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
+</pre></div>
+</div>
+</li>
+<li><p class="first">Run the following command to give it execute permissions:</p>
+<div class="highlight-python"><div class="highlight"><pre>chmod 755 /opt/esmond-gridftp/load_grid_ftp.sh
+</pre></div>
+</div>
+</li>
+<li><p class="first">Open a new file at <em>/etc/cron.d/esmond-gridftp.cron</em> and add the following to parse the log every 15 minutes:</p>
+<div class="highlight-python"><div class="highlight"><pre>*/15 * * * * root /opt/esmond-gridftp/load_grid_ftp.sh &amp;&gt; /var/log/load_grid_ftp.out
+</pre></div>
+</div>
+</li>
+</ol>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You may change the cron schedule above if you would like it to run more or less frequently just as you would any other cron job. The main consideration is giving adequate time so multiple runs of the script don&#8217;t overlap and lead to unexpected results.</p>
+</div>
+</div>
+</div>
+<div class="section" id="using-the-registered-data">
+<h2>Using the Registered Data<a class="headerlink" href="#using-the-registered-data" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="what-information-is-registered">
+<h3>What Information is Registered?<a class="headerlink" href="#what-information-is-registered" title="Permalink to this headline">¶</a></h3>
+<p>Esmond breaks information into <em>metadata</em> and <em>data</em> as described in <a class="reference internal" href="perfsonar_client_rest.html"><em>perfSONAR Client REST Interface</em></a>. The metadata describes the parameters of the GridFTP transfer. This includes the following (metadata field names in parentheses):</p>
+<ul class="simple">
+<li>The source IP address (<em>source</em>)</li>
+<li>The destination IP address (<em>destination</em>)</li>
+<li>The fact that the tool used was gridftp (<em>tool-name</em>)</li>
+<li>The number of parallel streams (<em>bw-parallel-streams</em>)</li>
+<li>The TCP window size if set (<em>tcp-window-size</em>)</li>
+<li>If file striping is used, the number of stripes (<em>bw-stripes</em>)</li>
+<li>The GridFTP program used such as globus-gridftp-server(<em>gridftp-program</em>)</li>
+<li>The block size used by GridFTP in the transfer(<em>gridftp-block-size</em>)</li>
+<li>If you give the log scraper the -F option, the name of the file transferred (<em>gridftp-file</em>)</li>
+<li>If you give the log scraper the -N option, the name of the user that made the transfer (<em>gridftp-user</em>)</li>
+<li>If you give the log scraper the -V option, the name of the volume used in the transfer (<em>gridftp-volume</em>)</li>
+</ul>
+<p>Likewise it registers the following types of data (event-type in parentheses):</p>
+<ul class="simple">
+<li>Throughput (<em>throughput</em>)</li>
+<li>Per stream packet retransmits (<em>streams-packet-retransmits</em>)</li>
+<li>Error messages of failed transfers (<em>failures</em>)</li>
+</ul>
+<p>If you want to learn more on how to search these values see <a class="reference internal" href="perfsonar_client_rest.html"><em>perfSONAR Client REST Interface</em></a>.</p>
+</div>
+<div class="section" id="displaying-results-in-a-dashboard">
+<h3>Displaying Results in a Dashboard<a class="headerlink" href="#displaying-results-in-a-dashboard" title="Permalink to this headline">¶</a></h3>
+<p>You may use <a class="reference external" href="http://software.es.net/maddash">MaDDash</a> to display and alert on throughput results reported by GridFTP. The process for doing so is the same a configuring MaDDash for BWCTL/iperf results since the event type is the same. See the MaDDash <a class="reference external" href="http://software.es.net/maddash/config_server.html">configuration guide</a> for more details.</p>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/perfsonar_gridftp.txt"
+     rel="nofollow">Source</a>
+</div>
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>
