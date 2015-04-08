@@ -35,13 +35,27 @@ class IntervalGenerator(object):
 
     def slices(self):
         """
-        Iterator that returns slices that will return RESULTS_PER_REQUEST
-        number of data points.
+        Iterator that returns slices that will return approximately 
+        RESULTS_PER_REQUEST number of data points.
+
+        Adds in a one second offset on the start of a slice to avoid 
+        picking up any dupliate data points because start and end time 
+        are inclusive.
+
+        For example:
+
+        2015-03-15 00:00:00 -> 2015-03-21 22:40:00
+        2015-03-21 22:40:01 -> 2015-03-28 21:20:00
+        2015-03-28 21:20:01 -> 2015-04-04 20:00:00
+        2015-04-04 20:00:01 -> 2015-04-08 17:38:29
         """
+        offset = datetime.timedelta(seconds=0)
+        
         while self._start_slice < self.end:
             slice_end = self._start_slice + self.r_delta
-            slice_range = (self._start_slice, 
+            slice_range = (self._start_slice + offset, 
                 slice_end if slice_end < self.end else self.end)
+            if offset.seconds == 0: offset = datetime.timedelta(seconds=1)
             self._start_slice += self.r_delta
             yield slice_range
 
