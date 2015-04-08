@@ -204,7 +204,7 @@ Select the desired output format from the choices 'human,' 'json' and
 and csv options are not allowed in all circumstances.
 
 --output-directory
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Required by esmond-ps-get-bulk - specifies a directory to write output 
 files to.  Will default to the current working directory.
