@@ -29,9 +29,11 @@ class IntervalGenerator(object):
         self.start, self.end = get_start_and_end_times(options)
         # request slice as a time delta object
         self.r_delta = datetime.timedelta(seconds=self.request_slice)
-        if options.verbose: print 'Requesting time slices of {0}'.format(self.r_delta)
         # seed this value with start time, increment in while loop
         self._start_slice = self.start
+        # Etc.
+        self.options = options
+        if self.options.verbose: print 'Requesting time slices of {0}'.format(self.r_delta)
 
     def slices(self):
         """
@@ -57,6 +59,7 @@ class IntervalGenerator(object):
                 slice_end if slice_end < self.end else self.end)
             if offset.seconds == 0: offset = datetime.timedelta(seconds=1)
             self._start_slice += self.r_delta
+            if self.options.verbose: print 'Requesting {0} -> {1}'.format(slice_range[0], slice_range[1])
             yield slice_range
 
     def _to_seconds(self, dt):
