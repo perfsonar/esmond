@@ -72,7 +72,10 @@ time_probe_interval: 0.1
 esmond-ps-get
 -------------
 
-TBA - we need to figure out what this is.
+Tool to pull smaller, more focused sets of data from a perfSONAR MA. This 
+requires a source/dest pair as well as a specific event type. Intended to 
+be more of a "quick look" at some data.  To gather more/larger amounts 
+of data, esmond-ps-get-bulk is intended for that.
 
 esmond-ps-get-bulk
 ------------------
@@ -212,6 +215,97 @@ files to.  Will default to the current working directory.
 By default in the output, IP addresses (source, dest, agent, etc) will be 
 converted to a human readable fully qualified domain name. Using the -ip 
 flag will stop this conversion and display all hostnames as raw IP addresses.
+
+Example usages
+==============
+
+esmond-ps-get-endpoints
+-----------------------
+
+Get a list of all tests over the last 24 hours available in a given MA, show 
+src/dest as raw ip addresses:
+
+```
+esmond-ps-get-endpoints --url http://nettest.lbl.gov/ --ip
+```
+
+Find all the powstream test data in a given MA since the beginning of the year:
+
+```
+esmond-ps-get-endpoints --url http://nettest.lbl.gov/ --ip --start-time 'January 1' --tool powstream
+```
+
+esmond-ps-get-metadata
+----------------------
+
+Show all test metadata for a given destination over the last 24 hours, 
+displayed in CSV format:
+
+```
+esmond-ps-get-metadata --url http://nettest.lbl.gov/ --dest 198.129.254.62 --output-format csv
+```
+
+Show more detailed metadata information from an MA for all bwctl/iperf3 
+tests involving a particular source since the beginning of the year, 
+showing extended test metadata like test duration, interval, etc 
+as a list of json objects:
+
+```
+esmond-ps-get-metadata --url http://nettest.lbl.gov/ --tool bwctl/iperf3 --src 198.124.238.130 --metadata-extended --output-format json --start-time 'Jan 1'
+```
+
+esmond-ps-get
+-------------
+
+Retrieve the past 24 hours of packet trace data for a src/dest pair:
+
+```
+esmond-ps-get --url http://nettest.lbl.gov/ --src  131.243.24.11 --dest 198.129.254.62 --event-type packet-trace
+```
+
+Get throughput data starting at the beginning of the month (presuming the 
+month is April) for a src/dest pair:
+
+```
+esmond-ps-get --url http://nettest.lbl.gov/ --src  131.243.24.11 --dest 198.129.254.114 --event-type throughput --start-time 'April 1'
+```
+
+esmond-ps-get-bulk
+------------------
+
+Pull all failures event-type information from an MA since the beginning 
+of the year and write out to current working directory as a set of json 
+files:
+
+```
+esmond-ps-get-bulk --url http://anl-owamp.es.net:8085  --event-type failures --start-time 'January 1' --output-format json
+```
+
+Pull all data associated with a given source from the past 24 hours and write 
+to a custom directory in CSV format:
+
+```
+esmond-ps-get-bulk --url http://anl-owamp.es.net:8085  --src 192.73.213.28 --output-format csv -D ~/Desktop/tmp
+```
+
+Pull data for all event types measured by the powstream tool since the start 
+of March and write to a custom directory in json format:
+
+```
+esmond-ps-get-bulk --url http://anl-owamp.es.net:8085  --tool powstream --start-time 'March 1' --output-format json -D ~/Desktop/tmp
+```
+
+Pull all the data in an MA for the past 24 hours and output to current working 
+directory in json format:
+
+```
+esmond-ps-get-bulk --url http://nettest.lbl.gov/ --output-format json
+```
+
+
+
+
+
 
 
 
