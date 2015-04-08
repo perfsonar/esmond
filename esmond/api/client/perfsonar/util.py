@@ -574,7 +574,7 @@ def get_outfile(options, metadata, event_type):
 
     outfile =  '{0}.{1}'.format('_'.join([source, dest, event_type, s, e]), options.format)
 
-    return open(outfile, 'wb')
+    return open(os.path.join(os.path.abspath(options.output_dir), outfile), 'wb')
 
 #
 # Command line argument validation functions
@@ -641,7 +641,7 @@ def src_dest_required(options, parser):
 
 def valid_output_dir(options, parser):
     if options.format == 'human':
-        print '--output-format human is not a valid format for writing files.\n'
+        print 'please specify either json or csv --output-format for bulk output.\n'
         parser.print_help()
         sys.exit(-1)
     if not os.path.exists(os.path.abspath(options.output_dir)):
