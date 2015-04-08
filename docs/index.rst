@@ -62,6 +62,7 @@ Contents:
    perfsonar_client_rest
    perfsonar_client_python
    perfsonar_client_perl
+   perfsonar_gridftp
    
    api
 
