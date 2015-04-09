@@ -31,6 +31,8 @@
     <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="top" title="esmond" href="index.html" />
+    <link rel="next" title="Developer Reference" href="api.html" />
+    <link rel="prev" title="perfSONAR Perl Client Libraries" href="perfsonar_client_perl.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -64,7 +66,7 @@
      href="index.html">Section <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><ul>
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
@@ -78,6 +80,7 @@
 <li class="toctree-l1"><a class="reference internal" href="perfsonar_client_rest.html">perfSONAR Client REST Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="perfsonar_client_python.html">perfSONAR Python Client Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Registering GridFTP Results</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
 </ul>
 </ul>
@@ -87,6 +90,22 @@
             
               
                 
+  <li>
+    <a href="perfsonar_client_perl.html" title="Previous Chapter: perfSONAR Perl Client Libraries">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+      <span class="hidden-sm">
+        perfSONAR Perl C...
+      </span>
+    </a>
+  </li>
+  <li>
+    <a href="api.html" title="Next Chapter: Developer Reference">
+      <span class="hidden-sm">
+        Developer Refere...
+      </span>
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
               
             
             <li class="divider-vertical"></li>
@@ -201,7 +220,11 @@ python esmond/manage.py add_ps_metadata_post_user gridftp
 python esmond/manage.py add_timeseries_post_user gridftp
 </pre></div>
 </div>
-<p>The last two commands will output an API key that should be noted for later configuration steps.</p>
+<p><strong>IMPORTANT: The last two commands will output an API key that should be noted for later configuration steps.</strong></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You may re-run the commands in this section at any time if you forget the API key and they will output the existing key.</p>
+</div>
 </div>
 </div>
 <div class="section" id="installation">
@@ -254,12 +277,16 @@ wget --no-check-certificate https://raw.githubusercontent.com/esnet/esmond/devel
 <div class="highlight-python"><div class="highlight"><pre>cd /opt/esmond-gridftp
 source /opt/rh/python27/enable
 . bin/activate
-python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/load_grid_ftp.log -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
+python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/ -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">If you are not running CentOS 6 or RHEL 6 then you only need to run the last command</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The first time you call load_grid_ftp.py it may take several minutes to complete if you have a large log file.</p>
 </div>
 <p>The <cite>load_grid_ftp.py</cite> script has a number of options but the most commonly used ones are in the example above. For a complete listing see the <em>-h</em> option of <cite>load_grid_ftp.py</cite>. A description of the options used in the example are as follows:</p>
 <ul>
@@ -270,7 +297,7 @@ python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p 
 </li>
 <li><p class="first"><em>-p</em> is the path to a file used by the &#8216;load_grid_ftp.py&#8217; script to keep track of what lines it has already parsed between runs. This file will be created if it doesn&#8217;t already exist. If you delete this file, the script may complain about trying to register data that is already in the measurement archive.</p>
 </li>
-<li><p class="first"><em>-l</em> is the log file where &#8216;load_grid_ftp.py&#8217; logs its own progress and reports parsing errors, etc. This is NOT the GridFTP server log, so don&#8217;t confuse it with <em>-f</em>.</p>
+<li><p class="first"><em>-l</em> is the directory to keep log files generated by &#8216;load_grid_ftp.py&#8217; to track its own progress and report parsing errors, etc. This is NOT the GridFTP server log, so don&#8217;t confuse it with <em>-f</em>.</p>
 </li>
 <li><p class="first"><em>-U</em> is the URL of your esmond measurement archive. It should begin with <em>http://</em> or <em>https://</em> and end with /esmond usually. The hostname in between should be the name of the host where you want the data sent.</p>
 </li>
@@ -290,7 +317,7 @@ python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p 
 cd /opt/esmond-gridftp
 source /opt/rh/python27/enable
 . bin/activate
-python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/load_grid_ftp.log -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
+python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/ -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
 </pre></div>
 </div>
 </li>
