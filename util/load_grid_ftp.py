@@ -292,6 +292,8 @@ def scan_and_load(file_path, last_record, options, _log):
                 scanning = True
             continue
         count += 1
+        if options.progress:
+            if count % 100 == 0: print '{0} records processed'.format(count)
         mp = MetadataPost(options.api_url, username=options.user,
             api_key=options.key, script_alias=options.script_alias, 
             **_generate_metadata_args(o))
@@ -396,6 +398,9 @@ def main():
     parser.add_option('-v', '--verbose',
             dest='verbose', action='count', default=False,
             help='Verbose output - -v, -vv, etc.')
+    parser.add_option('-P', '--no-progress',
+            dest='progress', action='store_false', default=True,
+            help='Suppress processing progress messages to console (default: on).')
     options, args = parser.parse_args()
 
     log_path = None

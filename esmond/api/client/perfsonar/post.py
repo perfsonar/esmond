@@ -4,6 +4,8 @@ import pprint
 import requests
 import warnings
 
+from requests.exceptions import ConnectionError
+
 from ..util import add_apikey_header, AlertMixin
 from .query import Metadata, ApiFilters
 
@@ -202,7 +204,11 @@ class MetadataPost(PostBase):
         esmond.api.perfsonar.query.Metadata object."""
         url = '{0}/{1}/'.format(self.api_url, self._schema_root)
 
-        r = requests.post(url, data=self.json_payload(), headers=self.headers)
+        try:
+            r = requests.post(url, data=self.json_payload(), headers=self.headers)
+        except ConnectionError, e:
+            self.warn('POST connection error: {0}'.format(str(e)))
+            return None
 
         if not r.status_code == 201:
             # Change this to an exception?
@@ -269,7 +275,10 @@ class EventTypePost(PostBase):
         results = []
 
         for dp in self._payload:
-            r = requests.post(url, data=json.dumps(dp), headers=self.headers)
+            try:
+                r = requests.post(url, data=json.dumps(dp), headers=self.headers)
+            except ConnectionError, e:
+                self.warn('POST connection error: {0}'.format(str(e)))
 
             if not r.status_code == 201:
                 self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
@@ -334,7 +343,10 @@ class EventTypeBulkPost(PostBase):
         url = '{0}/{1}/{2}/'.format(self.api_url, self._schema_root,
             self.metadata_key)
         
-        r = requests.post(url, data=self.json_payload(), headers=self.headers)
+        try:
+            r = requests.post(url, data=self.json_payload(), headers=self.headers)
+        except ConnectionError, e:
+            self.warn('POST connection error: {0}'.format(str(e)))
 
         if not r.status_code == 201:
             # Change this to an exception?
