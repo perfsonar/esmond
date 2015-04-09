@@ -294,9 +294,14 @@ def scan_and_load(file_path, last_record, options, _log):
         count += 1
         if options.progress:
             if count % 100 == 0: print '{0} records processed'.format(count)
+        try:
+            mda = _generate_metadata_args(o)
+        except Exception, e:
+            _log('scan_and_load.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
+            continue
         mp = MetadataPost(options.api_url, username=options.user,
             api_key=options.key, script_alias=options.script_alias, 
-            **_generate_metadata_args(o))
+            **mda)
         mp.add_event_type('throughput')
         mp.add_event_type('streams-packet-retransmits')
         mp.add_event_type('failures')
