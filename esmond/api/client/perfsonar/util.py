@@ -158,20 +158,23 @@ class HumanOutput(EsmondOutput):
 
         if not self._output:
             self._output = ''
-            for row in self._data:
-                if isinstance(row, HeaderRow):
-                    for k,v in row.items():
-                        self._output += '{0}: {1}\n'.format(k, v)
-                else:
-                    row = self._massage_row_dict(row)
-                    for c in self._columns:
-                        self._output += '{0}: {1}\n'.format(c, row.get(c))
-                    if self._extended_data:
+            if self.has_data():
+                for row in self._data:
+                    if isinstance(row, HeaderRow):
                         for k,v in row.items():
-                            if k in self._columns: continue
-                            self._output += '{0}: {1}\n'.format(k,v)
-                self._output += entry_delim
-            self._output = self._output[:self._output.rfind(entry_delim)]
+                            self._output += '{0}: {1}\n'.format(k, v)
+                    else:
+                        row = self._massage_row_dict(row)
+                        for c in self._columns:
+                            self._output += '{0}: {1}\n'.format(c, row.get(c))
+                        if self._extended_data:
+                            for k,v in row.items():
+                                if k in self._columns: continue
+                                self._output += '{0}: {1}\n'.format(k,v)
+                    self._output += entry_delim
+                self._output = self._output[:self._output.rfind(entry_delim)]
+            else:
+                self._output = 'No data found.'
 
         return self._output
 
@@ -180,7 +183,10 @@ class JsonOutput(EsmondOutput):
 
     def get_output(self):
         if not self._output:
-            self._output = json.dumps(self._data)
+            if self.has_data():
+                self._output = json.dumps(self._data)
+            else:
+                self._output = json.dumps( [ {'msg': 'No data found.'} ] )
         return self._output
 
 class CSVOutput(EsmondOutput):
@@ -191,8 +197,12 @@ class CSVOutput(EsmondOutput):
 
             writer = csv.DictWriter(cfile, fieldnames=self._columns, extrasaction='ignore')
             writer.writeheader()
-            for row in self._data:
-                writer.writerow(self._massage_row_dict(row))
+            if self.has_data():
+                for row in self._data:
+                    writer.writerow(self._massage_row_dict(row))
+            else:
+                d = dict( [ (x, 'No data') for x in self._columns ] )
+                writer.writerow(d)
 
             self._output = cfile.getvalue()
             cfile.close()
@@ -634,8 +644,8 @@ def check_summary(options, parser):
         sys.exit(-1)
 
 def src_dest_required(options, parser):
-    if not options.src or not (options.dest or options.type.startswith('ntp-')):
-        print '--src and --dest args are required\n'
+    if not options.src or not (options.dest or (options.type is not None and options.type.startswith('ntp-'))):
+        print '--src and --dest args are both required (ntp-* event types only require --src).\n'
         parser.print_help()
         sys.exit(-1)
 

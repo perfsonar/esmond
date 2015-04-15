@@ -22,7 +22,7 @@ class IntervalGenerator(object):
     RESULTS_PER_REQUEST = 10000
     def __init__(self, metadata, options):
         # duration + interval is how often a data point is generated
-        self.test_duration = int(metadata.time_interval) + \
+        self.test_duration = int(metadata.time_interval if metadata.time_interval != None else 1) + \
             int(metadata.time_duration if metadata.time_duration != None else 0)
         self.request_slice = self.test_duration * self.RESULTS_PER_REQUEST
         # the user-requested start and end times

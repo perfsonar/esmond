@@ -114,6 +114,41 @@ from esmond_client.perfsonar.post import MetadataPost, EventTypePost
 import logging
 import time
 
+# snippet courtesy of gist: https://gist.github.com/nonZero/2907502
+import signal
+ 
+class GracefulInterruptHandler(object):    
+    def __init__(self, sig=signal.SIGINT):
+        self.sig = sig
+        
+    def __enter__(self):
+        self.interrupted = False
+        self.released = False
+        
+        self.original_handler = signal.getsignal(self.sig)
+        
+        def handler(signum, frame):
+            self.release()
+            self.interrupted = True
+            
+        signal.signal(self.sig, handler)
+        
+        return self
+        
+    def __exit__(self, type, value, tb):
+        self.release()
+        
+    def release(self):
+        if self.released:
+            return False
+ 
+        signal.signal(self.sig, self.original_handler)
+        
+        self.released = True
+        
+        return True
+
+
 def setup_log(log_path):
     """
     Usage:
@@ -281,77 +316,80 @@ def scan_and_load(file_path, last_record, options, _log):
     o = None
     count = 0
 
-    for row in data:
-        row = row.strip()
-        if not row: continue
-        o = LogEntryDataObject(row.split())
-        if o.type != 'RETR' and o.type != 'STOR':
-            continue
-        if last_record and not scanning:
-            if o.to_dict() == last_record.to_dict():
-                scanning = True
-            continue
-        count += 1
-        if options.progress:
-            if count % 100 == 0: print '{0} records processed'.format(count)
-        try:
-            mda = _generate_metadata_args(o)
-        except Exception, e:
-            _log('scan_and_load.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
-            continue
-        mp = MetadataPost(options.api_url, username=options.user,
-            api_key=options.key, script_alias=options.script_alias, 
-            **mda)
-        mp.add_event_type('throughput')
-        mp.add_event_type('streams-packet-retransmits')
-        mp.add_event_type('failures')
-        # Additional/optional data
-        mp.add_freeform_key_value('bw-parallel-streams', o.streams)
-        mp.add_freeform_key_value('bw-stripes', o.stripes)
-        mp.add_freeform_key_value('gridftp-program', o.prog)
-        mp.add_freeform_key_value('gridftp-block-size', o.block)
-        mp.add_freeform_key_value('tcp-window-size', o.buffer)
-        mp.add_freeform_key_value('gridftp-bytes-transferred', o.nbytes)
-        # Optional vars - these must be enabled via boolean 
-        # command line args since these values might be sensitive.
-        if options.file_attr:
-            mp.add_freeform_key_value('gridftp-file', o.file)
-        if options.name_attr:
-            mp.add_freeform_key_value('gridftp-user', o.user)
-        if options.volume_attr:
-            mp.add_freeform_key_value('gridftp-volume', o.volume)
-        
-        metadata = mp.post_metadata()
-
-        if not metadata:
-            _log('scan_and_load.error', 'MetadataPost failed, abort processing, not updating record state')
-            return None
-
-        if o.code == 226:
-            et = EventTypePost(options.api_url, username=options.user,
+    with GracefulInterruptHandler() as h:
+        for row in data:
+            row = row.strip()
+            if not row: continue
+            o = LogEntryDataObject(row.split())
+            if o.type != 'RETR' and o.type != 'STOR':
+                continue
+            if last_record and not scanning:
+                if o.to_dict() == last_record.to_dict():
+                    scanning = True
+                continue
+            count += 1
+            if options.progress:
+                if count % 100 == 0: _log('scan_and_load.info', '{0} records processed'.format(count))
+            try:
+                mda = _generate_metadata_args(o)
+            except Exception, e:
+                _log('scan_and_load.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
+                continue
+            mp = MetadataPost(options.api_url, username=options.user,
                 api_key=options.key, script_alias=options.script_alias, 
-                metadata_key=metadata.metadata_key,
-                event_type='throughput')
-            throughput = 8 * o.nbytes / (o.date - o.start).total_seconds()
-            et.add_data_point(_epoch(o.start), throughput)
-            et.post_data()
-            et = EventTypePost(options.api_url, username=options.user,
-                api_key=options.key, script_alias=options.script_alias, 
-                metadata_key=metadata.metadata_key,
-                event_type='streams-packet-retransmits')
-            et.add_data_point(_epoch(o.start), o.retrans)
-            et.post_data()
-        else:
-            et = EventTypePost(options.api_url, username=options.user,
-                api_key=options.key, script_alias=options.script_alias, 
-                metadata_key=metadata.metadata_key,
-                event_type='failures')
-            et.add_data_point(_epoch(o.start), 
-                { 'error': '{0} {1}'.format(o.code, FTP_CODES.get(o.code, None)) })
-            et.post_data()
+                **mda)
+            mp.add_event_type('throughput')
+            mp.add_event_type('streams-packet-retransmits')
+            mp.add_event_type('failures')
+            # Additional/optional data
+            mp.add_freeform_key_value('bw-parallel-streams', o.streams)
+            mp.add_freeform_key_value('bw-stripes', o.stripes)
+            mp.add_freeform_key_value('gridftp-program', o.prog)
+            mp.add_freeform_key_value('gridftp-block-size', o.block)
+            mp.add_freeform_key_value('tcp-window-size', o.buffer)
+            mp.add_freeform_key_value('gridftp-bytes-transferred', o.nbytes)
+            # Optional vars - these must be enabled via boolean 
+            # command line args since these values might be sensitive.
+            if options.file_attr:
+                mp.add_freeform_key_value('gridftp-file', o.file)
+            if options.name_attr:
+                mp.add_freeform_key_value('gridftp-user', o.user)
+            if options.volume_attr:
+                mp.add_freeform_key_value('gridftp-volume', o.volume)
+            
+            metadata = mp.post_metadata()
 
-        if options.single:
-            break
+            if not metadata:
+                _log('scan_and_load.error', 'MetadataPost failed, abort processing, not updating record state')
+                return None
+
+            if o.code == 226:
+                et = EventTypePost(options.api_url, username=options.user,
+                    api_key=options.key, script_alias=options.script_alias, 
+                    metadata_key=metadata.metadata_key,
+                    event_type='throughput')
+                throughput = 8 * o.nbytes / (o.date - o.start).total_seconds()
+                et.add_data_point(_epoch(o.start), throughput)
+                et.post_data()
+                et = EventTypePost(options.api_url, username=options.user,
+                    api_key=options.key, script_alias=options.script_alias, 
+                    metadata_key=metadata.metadata_key,
+                    event_type='streams-packet-retransmits')
+                et.add_data_point(_epoch(o.start), o.retrans)
+                et.post_data()
+            else:
+                et = EventTypePost(options.api_url, username=options.user,
+                    api_key=options.key, script_alias=options.script_alias, 
+                    metadata_key=metadata.metadata_key,
+                    event_type='failures')
+                et.add_data_point(_epoch(o.start), 
+                    { 'error': '{0} {1}'.format(o.code, FTP_CODES.get(o.code, None)) })
+                et.post_data()
+
+            if options.single or h.interrupted:
+                if h.interrupted:
+                    _log('scan_and_load.info', 'Got SIGINT - exiting.')
+                break
 
     _log('scan_and_load.end', 'Loaded {0} records'.format(count))
 
