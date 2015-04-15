@@ -23,6 +23,8 @@ ESMOND_SETTINGS = get_config(ESMOND_CONF)
 
 DEBUG = ESMOND_SETTINGS.debug
 TEMPLATE_DEBUG = DEBUG
+# Set to true to make tastypie give a full django debug page.
+TASTYPIE_FULL_DEBUG = False
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
