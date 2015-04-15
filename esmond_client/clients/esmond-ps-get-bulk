@@ -143,6 +143,7 @@ def main():
                 meta_wrap = ConnectionWrapper(slice_meta)                
                 # Generate the output and append it to the data output object.
                 sub_header, sub_data = data_format_factory(options_wrap)(meta_wrap)
+                if len(sub_data): print '   * got {0} results'.format(len(sub_data))
                 output_klass.add_to_payload(sub_data)
             
             # write it out of we got data

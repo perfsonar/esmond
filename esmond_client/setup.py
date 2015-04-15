@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 
+import os
 from setuptools import setup
+
+def read(*paths):
+    """Build a file path from *paths* and return the contents."""
+    with open(os.path.join(*paths), 'r') as f:
+        return f.read()
 
 setup(
     name='esmond_client',
     version='1.3',
     description='esmond API client libraries',
-    long_description='esmond API client libraries.',
+    long_description=(read('README.rst')),
     author='Monte M. Goode',
     author_email='MMGoode@lbl.gov',
     url='http://software.es.net/esmond/',
