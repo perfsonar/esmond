@@ -2,8 +2,8 @@
 Client libraries and programs for esmond: ESnet Monitoring Daemon
 =================================================================
 
-Client programs
-===============
+Client programs for perfSONAR data
+==================================
 
 esmond-ps-get-endpoints
 -----------------------
@@ -312,8 +312,8 @@ directory in json format:
 
     esmond-ps-get-bulk --url http://nettest.lbl.gov/ --output-format json
 
-API Client Libraries
-====================
+API Client Libraries for perfSONAR data
+=======================================
 
 The pS data can be queried, retrieved and posted to the esmond/cassandra backend 
 via a REST interface.  This is streamlined by the following libraries::
