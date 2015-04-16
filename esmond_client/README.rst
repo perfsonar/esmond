@@ -117,8 +117,8 @@ While designed to not murder an MA with massive data queries, this command can
 return a lot of data, so it is recommended to limit the scope of your query 
 by source, dest, event-type, etc.
 
-General esmond-ps client usage
-===============================
+General esmond-ps perfSONAR client usage
+========================================
 
 Core and/or required args
 -------------------------
@@ -223,8 +223,8 @@ By default in the output, IP addresses (source, dest, agent, etc) will be
 converted to a human readable fully qualified domain name. Using the -ip 
 flag will stop this conversion and display all hostnames as raw IP addresses.
 
-Example command line usage
-==========================
+Example perfSONAR command line client usage
+===========================================
 
 esmond-ps-get-endpoints examples
 --------------------------------
