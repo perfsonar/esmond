@@ -6,7 +6,7 @@ import requests
 import time
 import warnings
 
-from .util import add_apikey_header, AlertMixin
+from .util import add_apikey_header, AlertMixin, atencode
 
 """
 Library to fetch data from 'simplified' API /v1/snmp/ namespace.
@@ -137,6 +137,10 @@ class NodeInfo(AlertMixin, object):
         return self._data.get('id', None)
 
     @property
+    def name(self):
+        return self._data.get('name', None)
+
+    @property
     def leaf(self):
         return self._data.get('leaf', None)
 
@@ -161,6 +165,25 @@ class NodeInfo(AlertMixin, object):
         if self.filters.verbose:
             print '[url: {0}]'.format(r.url)
 
+    def get_endpoints(self):
+        """
+        Generate and return a list of endpoints (via a generator) associated
+        with this interface.  Even though this does not 'do work' by issuing
+        a call to the API, it is a get_ method just for consistency.
+        """
+        print "[NodeInfo.get_endpoints]"
+        for i in self._data['children']:
+            print "  Yielding %s"%i
+            yield Endpoint(i, self.api_url, self.filters)
+
+    def get_endpoint(self, name):
+        endpoints = filter(lambda x: x.name == name, self.get_endpoints())
+
+        if len(endpoints) == 0:
+            return EndpointNotFound()
+        elif len(endpoints) > 1:
+            self.warn('Multiple endpoints found')
+        return endpoints[0]
 
 class Device(NodeInfo):
     wrn = DeviceWarning
@@ -389,6 +412,7 @@ class Interface(NodeInfo):
         with this interface.  Even though this does not 'do work' by issuing
         a call to the API, it is a get_ method just for consistency.
         """
+        print "Other get_endpoints"
         for i in self._data['children']:
             yield Endpoint(i, self.api_url, self.filters)
 
@@ -432,6 +456,8 @@ class Endpoint(NodeInfo):
 
     @property
     def uri(self):
+        if not 'uri' in self._data and 'resource_uri' in self._data:
+            return self._data['resource_uri']
         return self._data.get('uri', None)
 
     def get_data(self, **filters):
@@ -717,26 +743,34 @@ class ApiConnect(AlertMixin, object):
             r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             if self.filters.verbose > 1:
-                print "[ApiConnect.gchildren{0}]".format(len(data))
+                print "[ApiConnect.gchildren {0}]".format(len(data))
             return [n['name'] for n in data]
         else:
             self.http_alert(r)
             return []
 
-    def get_gchild(self, args, path=[]):
-        name = args[0]
-        args = args[1:]
+    def get_gchild(self, args, path=[], **filters):
+        p = '/'.join([atencode(a) for a in args])
+        url = '{0}/v1/device/{1}'.format(self.api_url,p)
         if self.filters.verbose > 1:
-            print "[ApiConnect.get_gchild {0} {1} {2}]".format(name, args, path)
-        try:
-            device = self.get_device(name)
-        except DeviceNotFound:
-            return None
-        path=path+[name,]
-        if args:
-            return device.get_child(args, path=path)
+            print "[ApiConnect.get_gchild {0} {1}]".format(args, url)
+        r = requests.get(url,
+            params=self.filters.compose_filters(filters),
+            headers=self.request_headers)
+        self.inspect_request(r)
+        if r.status_code == 200 and \
+            r.headers['content-type'] == 'application/json':
+            data = json.loads(r.text)
+            print "[ApiConnect.get_gchild creating an NodeInfo]"
+            if data.get('leaf',False):
+                print "[ApiConnect_get_gchild leafing {}]".format(data)
+                return Endpoint(data,self.api_url,self.filters)
+            else:
+                return NodeInfo(data,self.api_url,self.filters)
         else:
-            return device
+            print "[ApiConnect.get_gchild requests error]"
+            self.http_alert(r)
+            return None
 
     def get_child(self, args, path=[]):
         name = args[0]
