@@ -7,6 +7,7 @@ from esmond.config import get_config_path, get_config
 from esmond.util import get_logger
 from datetime import datetime
 from django.conf.urls.defaults import url
+from django.db import connection, transaction
 from django.db.models import Q
 from django.utils.text import slugify
 from django.utils.timezone import now, utc
@@ -970,19 +971,11 @@ class PSTimeSeriesResource(Resource):
         # create object
         obj = PSTimeSeriesObject(request_data[DATA_KEY_TIME], request_data[DATA_KEY_VALUE], kwargs["metadata_key"])
         obj.event_type =  kwargs["event_type"] 
-        if "summary_type" in kwargs:
-            obj.summary_type =  kwargs["summary_type"]
-        if "summary_window" in kwargs:
-            obj.summary_window =  kwargs["summary_window"]
-        
-        #check that this event_type is defined
-        event_types = PSEventTypes.objects.filter(
-            metadata__metadata_key=obj.metadata_key,
-            event_type=obj.event_type,
-            summary_type=obj.summary_type,
-            summary_window=obj.summary_window)
-        if(event_types.count() == 0):
-            raise NotFound("Given event type does not exist for metadata key")
+        ## We don't currently allow writing anything except base
+        #if "summary_type" in kwargs:
+        #    obj.summary_type =  kwargs["summary_type"]
+        #if "summary_window" in kwargs:
+        #     obj.summary_window =  kwargs["summary_window"]
         
         #verify object does not already exist
         existing = self._query_database(obj.metadata_key, obj.event_type, 'base', None, int(obj.time), int(obj.time)) 
@@ -991,20 +984,21 @@ class PSTimeSeriesResource(Resource):
         
         #Insert into cassandra
         #NOTE: Ordering in model allows statistics to go last. If this ever changes may need to update code here.
-        et_to_update = PSEventTypes.objects.filter(
-            metadata__metadata_key=obj.metadata_key,
-            event_type=obj.event_type)
-        for et in et_to_update:
+        #check that this event_type is defined
+        rawsql_cursor = connection.cursor()
+        rawsql_cursor.execute("SELECT summary_type, summary_window FROM ps_event_types WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
+        for et in rawsql_cursor.fetchall():
             ts_obj = PSTimeSeriesObject(obj.time,
                                             obj.value,
                                             obj.metadata_key,
                                             event_type=obj.event_type,
-                                            summary_type=et.summary_type,
-                                            summary_window=et.summary_window
+                                            summary_type=et[0],
+                                            summary_window=et[1]
                                             )
             self.database_write(ts_obj)
         #update time. clear out microseconds since timestamp filters are only seconds and we wwant to allow exact matches
-        et_to_update.update(time_updated=now().replace(microsecond=0))
+        rawsql_cursor.execute("UPDATE ps_event_types SET time_updated=now() WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
+        transaction.commit_unless_managed()
         
         return obj
     
