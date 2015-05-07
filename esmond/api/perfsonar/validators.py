@@ -18,10 +18,10 @@ class DataValidator(object):
     def average(self, db, obj):
         raise NotImplementedError()
     
-    def aggregation(self, db, obj):
+    def aggregation(self, db, obj, cache):
         raise NotImplementedError()
     
-    def statistics(self, db, obj):
+    def statistics(self, db, obj, cache):
         raise NotImplementedError()
 
 '''
@@ -43,7 +43,7 @@ class FloatValidator(DataValidator):
     def average(self, db, obj):
         return
     
-    def aggregation(self, db, obj):
+    def aggregation(self, db, obj, cache):
         results = db.query_aggregation_timerange(path=obj.datapath, freq=obj.freq,
                    cf='average', ts_min=obj.time*1000, ts_max=obj.time*1000)
         if len(results) > 0:
@@ -113,7 +113,7 @@ class HistogramValidator(DataValidator):
             return None
         
         return results[0]['val']
-    
+        
     def _aggregation(self, curr_hist, agg_hist):
         for k in curr_hist:
             if k in agg_hist:
@@ -123,24 +123,20 @@ class HistogramValidator(DataValidator):
                 
         return agg_hist
     
-    def aggregation(self, db, obj):
+    def aggregation(self, db, obj, cache):
         #combine and set as value
         agg_hist = self._get_histogram(db, obj)
         if agg_hist is None:
             return None
         obj.value = self._aggregation(obj.value, agg_hist)
-    
-    def statistics(self, db, obj):
+        cache[obj.freq] = obj.value
+        
+    def statistics(self, db, obj, cache):
         #get aggregated histogram
         agg_hist = obj.value
         if obj.summary_window != 0:
-            agg_datapath = obj.datapath
-            agg_datapath[len(agg_datapath) - 1] = 'aggregation'
-            existing_hist = self._get_histogram(db, obj, datapath=agg_datapath)
-            #assume first histogram
-            if existing_hist is not None:
-                #aggregate since db not yet flushed
-                agg_hist = self._aggregation(obj.value, existing_hist)
+            if obj.freq in cache:
+                agg_hist = cache[obj.freq]
         
         #pass one: mode, mean and sample size
         stats = {}
@@ -229,7 +225,7 @@ class IntegerValidator(DataValidator):
             'denominator': 1
         }
     
-    def aggregation(self, db, obj):
+    def aggregation(self, db, obj, cache):
         return
 
 '''
@@ -270,7 +266,7 @@ class PercentageValidator(DataValidator):
         
         return obj.value
     
-    def aggregation(self, db, obj):
+    def aggregation(self, db, obj, cache):
         return
 
 '''

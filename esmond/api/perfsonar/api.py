@@ -978,15 +978,17 @@ class PSTimeSeriesResource(Resource):
         #     obj.summary_window =  kwargs["summary_window"]
         
         #verify object does not already exist
-        existing = self._query_database(obj.metadata_key, obj.event_type, 'base', None, int(obj.time), int(obj.time)) 
-        if(len(existing) > 0):
-            raise ImmediateHttpResponse(HttpConflict("Time series value already exists with event type %s at time %d" % (obj.event_type, int(obj.time))))
+        if EVENT_TYPE_CF_MAP[EVENT_TYPE_CONFIG[obj.event_type]["type"]] != db.raw_cf:
+            existing = self._query_database(obj.metadata_key, obj.event_type, 'base', None, int(obj.time), int(obj.time)) 
+            if(len(existing) > 0):
+                raise ImmediateHttpResponse(HttpConflict("Time series value already exists with event type %s at time %d" % (obj.event_type, int(obj.time))))
         
         #Insert into cassandra
+        local_cache = {}
         #NOTE: Ordering in model allows statistics to go last. If this ever changes may need to update code here.
         #check that this event_type is defined
         rawsql_cursor = connection.cursor()
-        rawsql_cursor.execute("SELECT summary_type, summary_window FROM ps_event_types WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
+        rawsql_cursor.execute("SELECT summary_type, summary_window FROM ps_event_types WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s) ORDER BY summary_type", [obj.event_type, obj.metadata_key])
         for et in rawsql_cursor.fetchall():
             ts_obj = PSTimeSeriesObject(obj.time,
                                             obj.value,
@@ -995,14 +997,14 @@ class PSTimeSeriesResource(Resource):
                                             summary_type=et[0],
                                             summary_window=et[1]
                                             )
-            self.database_write(ts_obj)
+            self.database_write(ts_obj, local_cache)
         #update time. clear out microseconds since timestamp filters are only seconds and we wwant to allow exact matches
         rawsql_cursor.execute("UPDATE ps_event_types SET time_updated=now() WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
         transaction.commit_unless_managed()
         
         return obj
     
-    def database_write(self, ts_obj):
+    def database_write(self, ts_obj, local_cache):
         data_type = EVENT_TYPE_CONFIG[ts_obj.event_type]["type"]
         validator = TYPE_VALIDATOR_MAP[data_type]
         
@@ -1021,11 +1023,11 @@ class PSTimeSeriesResource(Resource):
         
         #perform initial summarization
         if  ts_obj.summary_type== "aggregation":
-            validator.aggregation(db, ts_obj)
+            validator.aggregation(db, ts_obj, local_cache)
         elif ts_obj.summary_type == "average":
             validator.average(db, ts_obj)
         elif ts_obj.summary_type == "statistics":
-            validator.statistics(db, ts_obj)
+            validator.statistics(db, ts_obj, local_cache)
         
         #insert the data in the target column-family
         log.debug("action=create_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s ts=%s val=%s cf=%s datapath=%s freq=%s base_freq=%s" %
