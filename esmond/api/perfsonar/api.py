@@ -35,14 +35,10 @@ log = get_logger(__name__)
 try:
     db = CASSANDRA_DB(get_config(get_config_path()), qname='perfsonar')
 except ConnectionException, e:
-    # Check the stack before raising an error - if test_api is 
-    # the calling code, we won't need a running db instance.
-    mod = inspect.getmodule(inspect.stack()[1][0])
-    if mod and mod.__name__ == 'api.tests.test_api' or 'sphinx.ext.autodoc':
-        print '\nUnable to connect - presuming stand-alone testing mode...'
-        db = None
-    else:
-        raise ConnectionException(str(e))
+    error_msg = "Unable to connect to cassandra. Please verify cassandra is running."
+    log.error(error_msg)
+    log.debug(str(e))
+    raise ConnectionException(error_msg)
 
 #set global constants
 EVENT_TYPE_CF_MAP = {
