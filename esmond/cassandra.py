@@ -582,24 +582,25 @@ class CASSANDRA_DB(object):
         return found
         
     def query_baserate_timerange(self, path=None, freq=None, 
-            ts_min=None, ts_max=None, cf='average'):
+            ts_min=None, ts_max=None, cf='average', column_count=None):
         """
         Query interface method to retrieve the base rates (generally average 
         but could be delta as well).
         """
-        ret_count = self.rates._column_family.multiget_count(
+        cols = column_count
+        if cols is None:
+            ret_count = self.rates._column_family.multiget_count(
                 self._get_row_keys(path,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
-
-        cols = 0
-
-        for i in ret_count.keys():
-            cols += ret_count[i]
+            cols = 0
+            for i in ret_count.keys():
+                cols += ret_count[i]
+            cols += 5
 
         ret = self.rates._column_family.multiget(
                 self._get_row_keys(path,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max,
-                column_count=cols+5)
+                column_count=cols)
         
         if cf not in ['average', 'delta']:
             self.log.error('Not a valid option: %s - defaulting to average' % cf)
@@ -620,7 +621,7 @@ class CASSANDRA_DB(object):
         return results
 
     def query_aggregation_timerange(self, path=None, freq=None, 
-                ts_min=None, ts_max=None, cf=None):
+                ts_min=None, ts_max=None, cf=None, column_count=None):
         """
         Query interface method to retrieve the aggregation rollups - could
         be average/min/max.  Different column families will be queried 
@@ -632,20 +633,21 @@ class CASSANDRA_DB(object):
             cf = 'average'
         
         if cf == 'average' or cf == 'raw':
-            ret_count = self.aggs._column_family.multiget_count(
-                self._get_row_keys(path,freq,ts_min,ts_max), 
-                column_start=ts_min, column_finish=ts_max)
+            cols = column_count
+            if cols is None:
+                ret_count = self.aggs._column_family.multiget_count(
+                        self._get_row_keys(path,freq,ts_min,ts_max),
+                        column_start=ts_min, column_finish=ts_max)
+                cols = 0
+                for i in ret_count.keys():
+                    cols += ret_count[i]
+                cols += 5
 
-            cols = 0
-
-            for i in ret_count.keys():
-                cols += ret_count[i]
             # print cols
-
             ret = self.aggs._column_family.multiget(
                     self._get_row_keys(path,freq,ts_min,ts_max), 
                     column_start=ts_min, column_finish=ts_max,
-                    column_count=cols+5)
+                    column_count=cols)
 
             # Just return the results and format elsewhere.
             results = []
@@ -669,19 +671,20 @@ class CASSANDRA_DB(object):
                         datum = {'ts': ts, 'val': ab.val, 'cf': ab.cf}
                     results.append(datum)
         elif cf == 'min' or cf == 'max':
-            ret_count = self.stat_agg._column_family.multiget_count(
-                self._get_row_keys(path,freq,ts_min,ts_max), 
-                column_start=ts_min, column_finish=ts_max)
-
-            cols = 0
-
-            for i in ret_count.keys():
-                cols += ret_count[i]
+            cols = column_count
+            if cols is None:
+                ret_count = self.stat_agg._column_family.multiget_count(
+                        self._get_row_keys(path,freq,ts_min,ts_max),
+                        column_start=ts_min, column_finish=ts_max)
+                cols = 0
+                for i in ret_count.keys():
+                    cols += ret_count[i]
+                cols += 5
 
             ret = self.stat_agg._column_family.multiget(
                     self._get_row_keys(path,freq,ts_min,ts_max), 
                     column_start=ts_min, column_finish=ts_max,
-                    column_count=cols+5)
+                    column_count=cols)
             
             results = []
 
@@ -698,23 +701,24 @@ class CASSANDRA_DB(object):
         return results
             
     def query_raw_data(self, path=None, freq=None,
-                ts_min=None, ts_max=None):
+                ts_min=None, ts_max=None, column_count=None):
         """
         Query interface to query the raw data.
-        """        
-        ret_count = self.raw_data._column_family.multiget_count(
-                self._get_row_keys(path,freq,ts_min,ts_max), 
-                column_start=ts_min, column_finish=ts_max)
-
-        cols = 0
-
-        for i in ret_count.keys():
-            cols += ret_count[i]
+        """
+        cols = column_count
+        if cols is None:
+            ret_count = self.raw_data._column_family.multiget_count(
+                    self._get_row_keys(path,freq,ts_min,ts_max),
+                    column_start=ts_min, column_finish=ts_max)
+            cols = 0
+            for i in ret_count.keys():
+                cols += ret_count[i]
+            cols += 5
 
         ret = self.raw_data._column_family.multiget(
                 self._get_row_keys(path,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max,
-                column_count=cols+5)
+                column_count=cols)
 
         # Just return the results and format elsewhere.
         results = []

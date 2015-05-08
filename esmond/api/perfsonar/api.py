@@ -858,6 +858,10 @@ class PSTimeSeriesResource(Resource):
         time_result = handle_time_filters(filters)
         begin_time = time_result['begin']
         end_time = time_result['end']
+        #set high limit by default. This is a performance gain so pycassa doesn't have to count
+        max_results = 1000000 
+        if LIMIT_FILTER in filters:
+            max_results = int(filters[LIMIT_FILTER])
         
         #build data path
         if 'event_type' not in kwargs:
@@ -880,9 +884,9 @@ class PSTimeSeriesResource(Resource):
             freq = self.valid_summary_window(kwargs['summary_window'])
 
         #send query
-        return self._query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time)
+        return self._query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results)
     
-    def _query_database(self, metadata_key, event_type, summary_type, freq, begin_time, end_time):
+    def _query_database(self, metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results):
         results = []
         datapath = row_prefix(event_type)
         datapath.append(metadata_key)
@@ -900,13 +904,13 @@ class PSTimeSeriesResource(Resource):
 
         if col_fam == db.agg_cf:
             results = db.query_aggregation_timerange(path=datapath, freq=freq,
-                   cf='average', ts_min=begin_time*1000, ts_max=end_time*1000)
+                   cf='average', ts_min=begin_time*1000, ts_max=end_time*1000, column_count=max_results)
         elif col_fam == db.rate_cf:
             results = db.query_baserate_timerange(path=datapath, freq=freq,
-                    cf='delta', ts_min=begin_time*1000, ts_max=end_time*1000)
+                    cf='delta', ts_min=begin_time*1000, ts_max=end_time*1000, column_count=max_results)
         elif col_fam == db.raw_cf:
             results = db.query_raw_data(path=datapath, freq=freq,
-                   ts_min=begin_time*1000, ts_max=end_time*1000)
+                   ts_min=begin_time*1000, ts_max=end_time*1000, column_count=max_results)
         else:
             log.debug("action=query_timeseries.end status=-1")
             raise BadRequest("Requested data does not map to a known column-family")
@@ -975,7 +979,7 @@ class PSTimeSeriesResource(Resource):
         
         #verify object does not already exist
         if EVENT_TYPE_CF_MAP[EVENT_TYPE_CONFIG[obj.event_type]["type"]] != db.raw_cf:
-            existing = self._query_database(obj.metadata_key, obj.event_type, 'base', None, int(obj.time), int(obj.time)) 
+            existing = self._query_database(obj.metadata_key, obj.event_type, 'base', None, int(obj.time), int(obj.time), 1)
             if(len(existing) > 0):
                 raise ImmediateHttpResponse(HttpConflict("Time series value already exists with event type %s at time %d" % (obj.event_type, int(obj.time))))
         

@@ -107,7 +107,7 @@ class HistogramValidator(DataValidator):
             
         #query current histogram
         results = db.query_raw_data(path=datapath, freq=obj.freq,
-                   ts_min=obj.time*1000, ts_max=obj.time*1000)
+                   ts_min=obj.time*1000, ts_max=obj.time*1000, column_count=1)
         #if no results then this is the first histogram
         if len(results) == 0:
             return None
