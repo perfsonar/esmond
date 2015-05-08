@@ -998,8 +998,12 @@ class PSTimeSeriesResource(Resource):
                                             summary_window=et[1]
                                             )
             self.database_write(ts_obj, local_cache)
-        #update time. clear out microseconds since timestamp filters are only seconds and we wwant to allow exact matches
-        rawsql_cursor.execute("UPDATE ps_event_types SET time_updated=now() WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
+        #make sqlite happy (mainly for unit tests not configured to use postgres)
+        if connection.vendor.startswith('sqlite'):
+            rawsql_cursor.execute("UPDATE ps_event_types SET time_updated='now' WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
+        else:
+            #update time. clear out microseconds since timestamp filters are only seconds and we want to allow exact matches
+            rawsql_cursor.execute("UPDATE ps_event_types SET time_updated=now() WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
         transaction.commit_unless_managed()
         
         return obj
