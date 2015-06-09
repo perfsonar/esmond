@@ -386,6 +386,17 @@ class ApiFilters(object):
     @property
     def metadata_filters(self):
         return self._metadata_filters
+    
+    def metadata_key():
+        doc = "metadata key property."
+        def fget(self):
+            return self._metadata_filters.get('metadata-key', None)
+        def fset(self, value):
+            self._metadata_filters['metadata-key'] = value
+        def fdel(self):
+            del self._metadata_filters['metadata-key']
+        return locals()
+    metadata_key = property(**metadata_key()) 
 
     def destination():
         doc = "The destination property."
