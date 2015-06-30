@@ -35,6 +35,12 @@ EVENT_TYPE_CONFIG = {
     "histogram-ttl-reverse": {
         "type": "histogram",
     },
+    "iostat": {
+        "type": "json",
+    },
+    "mpstat": {
+        "type": "json",
+    },
     "ntp-offset": {
         "type": "float",
     },
@@ -98,16 +104,25 @@ EVENT_TYPE_CONFIG = {
     "path-mtu": {
         "type": "integer",
     },
+    "rusage": {
+        "type": "json",
+    },
     "streams-packet-retransmits": {
         "type": "json",
     },
     "streams-packet-retransmits-subintervals": {
         "type": "json",
     },
+    "streams-tcpinfo": {
+        "type": "json",
+    },
     "streams-throughput": {
         "type": "json",
     },
     "streams-throughput-subintervals": {
+        "type": "json",
+    },
+    "tcpinfo": {
         "type": "json",
     },
     "throughput": {
