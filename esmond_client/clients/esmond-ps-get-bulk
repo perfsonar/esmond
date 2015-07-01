@@ -18,56 +18,6 @@ import copy
 import datetime
 import socket
 
-class IntervalGenerator(object):
-    RESULTS_PER_REQUEST = 10000
-    def __init__(self, metadata, options):
-        # duration + interval is how often a data point is generated
-        self.test_duration = int(metadata.time_interval if metadata.time_interval != None else 1) + \
-            int(metadata.time_duration if metadata.time_duration != None else 0)
-        self.request_slice = self.test_duration * self.RESULTS_PER_REQUEST
-        # the user-requested start and end times
-        self.start, self.end = get_start_and_end_times(options)
-        # request slice as a time delta object
-        self.r_delta = datetime.timedelta(seconds=self.request_slice)
-        # seed this value with start time, increment in while loop
-        self._start_slice = self.start
-        # Etc.
-        self.options = options
-        if self.options.verbose: print 'Requesting time slices of {0}'.format(self.r_delta)
-
-    def slices(self):
-        """
-        Iterator that returns slices that will return approximately 
-        RESULTS_PER_REQUEST number of data points.
-
-        Adds in a one second offset on the start of a slice to avoid 
-        picking up any dupliate data points because start and end time 
-        are inclusive.
-
-        For example:
-
-        2015-03-15 00:00:00 -> 2015-03-21 22:40:00
-        2015-03-21 22:40:01 -> 2015-03-28 21:20:00
-        2015-03-28 21:20:01 -> 2015-04-04 20:00:00
-        2015-04-04 20:00:01 -> 2015-04-08 17:38:29
-        """
-        offset = datetime.timedelta(seconds=0)
-        
-        while self._start_slice < self.end:
-            slice_end = self._start_slice + self.r_delta
-            slice_range = (self._start_slice + offset, 
-                slice_end if slice_end < self.end else self.end)
-            if offset.seconds == 0: offset = datetime.timedelta(seconds=1)
-            self._start_slice += self.r_delta
-            if self.options.verbose: print 'Requesting {0} -> {1}'.format(slice_range[0], slice_range[1])
-            yield slice_range
-
-    def _to_seconds(self, dt):
-        return calendar.timegm(dt.utctimetuple())
-
-    def as_timestamp(self, tt):
-        return (self._to_seconds(tt[0]), self._to_seconds(tt[1]))
-
 class ConnectionWrapper(object):
     """
     Class to mimic a ApiConnect object to pass a discrete
@@ -121,7 +71,7 @@ def main():
             options_wrap = OptionsWrapper(options)
             options_wrap.type = et
 
-            # Initialize the output class with the proper even type
+            # Initialize the output class with the proper event type
             # headers and an empty dataset.
             header, data = data_format_factory(options_wrap, seed_bulk_output=True)(conn)
             output_klass = output_factory(options_wrap, data, header)
@@ -130,21 +80,11 @@ def main():
             # requests to the back end.
             ig = IntervalGenerator(m, options)
 
-            for sl in ig.slices():
-                s,e = ig.as_timestamp(sl)
-                # Make new filter object with different time range.
-                slice_filter = copy.deepcopy(filters)
-                slice_filter.time_start = s
-                slice_filter.time_end = e
-                # Dupe meta object with new time ranges in the filter
-                slice_meta = Metadata(m._data, options.url, slice_filter)
-                # Add to fake connection object, get data for that
-                # time slice and append it to the output class.
-                meta_wrap = ConnectionWrapper(slice_meta)                
-                # Generate the output and append it to the data output object.
-                sub_header, sub_data = data_format_factory(options_wrap)(meta_wrap)
-                if len(sub_data): print '   * got {0} results'.format(len(sub_data))
-                output_klass.add_to_payload(sub_data)
+            meta_wrap = ConnectionWrapper(m)
+
+            sub_header, sub_data = data_format_factory(options_wrap)(meta_wrap)
+            if len(sub_data): print '   * got {0} results'.format(len(sub_data))
+            output_klass.add_to_payload(sub_data)
             
             # write it out of we got data
             if output_klass.has_data():
