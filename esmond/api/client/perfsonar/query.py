@@ -1,4 +1,5 @@
 import calendar
+import copy
 import datetime
 import json
 import pprint
@@ -20,6 +21,14 @@ class DataPointWarning(NodeInfoWarning): pass
 class DataHistogramWarning(NodeInfoWarning): pass
 class ApiFiltersWarning(Warning): pass
 class ApiConnectWarning(Warning): pass
+
+class QueryLimitException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class QueryLimitWarning(Warning): pass
 
 class NodeInfo(object):
     wrn = NodeInfoWarning
@@ -60,6 +69,58 @@ class NodeInfo(object):
     def inspect_request(self, r):
         if self.filters.verbose:
             print '[url: {0}]'.format(r.url)
+
+    def _query_with_limit(self):
+        """Internal method used by the get_data() methods in the EventType 
+        and Summary sub-classes. Make a series of limited queries in a loop 
+        and return the compiled results. 
+
+        Meant to optimize pulls of large amounts of data."""
+
+        if self.filters.verbose: print ' * looping query for: {0}'.format(self.query_uri)
+
+        # XXX(mmg) - revisit this value?
+        LIMIT = 1000
+
+        q_params = copy.copy(self.filters.time_filters)
+        q_params['limit'] = LIMIT
+
+        data_payload = []
+
+        while 1:
+            r = requests.get('{0}{1}'.format(self.api_url, self.query_uri),
+                params=q_params ,
+                headers=self.request_headers)
+
+            self.inspect_request(r)
+
+            if r.status_code == 200 and \
+                r.headers['content-type'] == 'application/json':
+                data = json.loads(r.text)
+
+                data_payload += data
+
+                if self.filters.verbose: print '  ** got {0} results'.format(len(data))
+
+                if len(data) < LIMIT:
+                    # got less than requested - done
+                    break
+                else:
+                    # reset start time to last ts + 1 and loop
+                    q_params['time-start'] = data[-1].get('ts') + 1
+
+                # sanity check - this should not happen other than the unlikely
+                # scenario where the final request results is exactly == LIMIT
+                if q_params['time-start'] >= q_params['time-end']:
+                    self.warn('time start >= time end - exiting query loop')
+                    break
+            else:
+                self.http_alert(r)
+                raise QueryLimitException
+
+        if self.filters.verbose: print '  *** finished with {0} results'.format(len(data_payload))
+
+        return data_payload
 
 class Metadata(NodeInfo):
     wrn = MetadataWarning
@@ -185,6 +246,11 @@ class EventType(NodeInfo):
         return self._data.get('base-uri', None)
 
     @property
+    def query_uri(self):
+        """Abstraction for looping query method"""
+        return self.base_uri
+
+    @property
     def event_type(self):
         return self._data.get('event-type', None)
 
@@ -226,18 +292,10 @@ class EventType(NodeInfo):
     def get_data(self):
         """Void method to pull the data associated with this event-type
         from the API.  Returns a DataPayload object to calling code."""
-        r = requests.get('{0}{1}'.format(self.api_url, self.base_uri),
-            params=self.filters.time_filters,
-            headers=self.request_headers)
 
-        self.inspect_request(r)
-
-        if r.status_code == 200 and \
-            r.headers['content-type'] == 'application/json':
-            data = json.loads(r.text)
-            return DataPayload(data, self.data_type)
-        else:
-            self.http_alert(r)
+        try:
+            return DataPayload(self._query_with_limit(), self.data_type)
+        except QueryLimitException:
             return DataPayload([], self.data_type)
 
 
@@ -270,21 +328,17 @@ class Summary(NodeInfo):
     def uri(self):
         return self._data.get('uri', None)
 
+    @property
+    def query_uri(self):
+        """Abstraction for looping query method"""
+        return self.uri
+
     def get_data(self):
         """Void method to pull the data associated with this event-type
         from the API.  Returns a DataPayload object to calling code."""
-        r = requests.get('{0}{1}'.format(self.api_url, self.uri),
-            params=self.filters.time_filters,
-            headers=self.request_headers)
-
-        self.inspect_request(r)
-
-        if r.status_code == 200 and \
-            r.headers['content-type'] == 'application/json':
-            data = json.loads(r.text)
-            return DataPayload(data, self.data_type)
-        else:
-            self.http_alert(r)
+        try:
+            return DataPayload(self._query_with_limit(), self.data_type)
+        except QueryLimitException:
             return DataPayload([], self.data_type)
 
     def __repr__(self):
