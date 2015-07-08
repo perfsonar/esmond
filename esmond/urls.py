@@ -7,6 +7,14 @@ admin.autodiscover()
 from esmond.api.api import v1_api
 from esmond.api.perfsonar.api import perfsonar_api
 
+from rest_framework import routers
+from esmond.api.drf_api import (
+    OidsetViewset
+)
+
+router = routers.DefaultRouter()
+router.register('oidset', OidsetViewset)
+
 urlpatterns = patterns('',
     # Example:
     # (r'^ed/', include('ed.foo.urls')),
@@ -18,4 +26,5 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
     (r'', include(v1_api.urls + perfsonar_api.urls)),
+    (r'v2/',include(router.urls)),
 )
