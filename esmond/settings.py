@@ -109,6 +109,7 @@ INSTALLED_APPS = (
     'esmond.admin',
     'discover_runner',
     'tastypie',
+    'rest_framework',
 )
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']

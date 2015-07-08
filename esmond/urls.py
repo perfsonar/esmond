@@ -9,11 +9,16 @@ from esmond.api.perfsonar.api import perfsonar_api
 
 from rest_framework import routers
 from esmond.api.drf_api import (
+    DataViewset,
+    DeviceViewset,
+    InterfaceViewset,
     OidsetViewset
 )
 
 router = routers.DefaultRouter()
 router.register('oidset', OidsetViewset)
+router.register('interface', InterfaceViewset,)
+router.register('device', DeviceViewset)
 
 urlpatterns = patterns('',
     # Example:
@@ -27,4 +32,6 @@ urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
     (r'', include(v1_api.urls + perfsonar_api.urls)),
     (r'v2/',include(router.urls)),
+    (r'v2/interface/(?P<lookup>[^/]+)/(?P<type>[^/]+)$', DataViewset.as_view({'get': 'retrieve'})),
+    (r'v2/interface/(?P<lookup>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', DataViewset.as_view({'get': 'retrieve'})),
 )
