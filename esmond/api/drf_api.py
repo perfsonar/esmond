@@ -85,13 +85,18 @@ class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
 
 class InterfaceSerializer(serializers.ModelSerializer):
     serializer_url_field = InterfaceHyperlinkField
-    children = serializers.ListField(
-        child=serializers.DictField()
-        )
+
+
     class Meta:
         model = IfRef
-        fields = ('url', 'ifName', 'children')
+        fields = ('url', 'ifName', 'children', 'device',
+        'end_time', 'id', 'ifAdminStatus', 'ifAlias', 'ifDescr',
+        'ifHighSpeed', 'ifIndex', 'ifMtu', 'ifName', 'ifOperStatus',
+        'ifPhysAddress', 'ifSpeed', 'ifType', 'ipAddr',)
         extra_kwargs={'url': {'lookup_field': 'ifName'}}
+
+    children = serializers.ListField(child=serializers.DictField())
+    device = serializers.SlugRelatedField(queryset=Device.objects.all(), slug_field='name')
 
     def to_representation(self, obj):
         # generate the list of oid endpoints with actual measurements.
