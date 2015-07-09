@@ -51,6 +51,9 @@ class EncodedHyperlinkField(relations.HyperlinkedIdentityField):
 class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
     """
     Generate urls to "fully qualified" interface detail url.
+
+    Also exposes some static methods to generate urls that are called 
+    by other resources.
     """
     @staticmethod
     def _iface_detail_url(ifname, device_name, request, format=None):
@@ -75,6 +78,13 @@ class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
         """
         return InterfaceHyperlinkField._iface_detail_url(ifname, device_name, request) + alias
 
+    @staticmethod
+    def _device_detail_url(device_name, request):
+        """
+        Helper method to generate url to a device.
+        """
+        return reverse('device-detail', kwargs={'name': atencode(device_name)},request=request)
+
     def get_url(self, obj, view_name, request, format):
         if hasattr(obj, 'pk') and obj.pk is None:
             return None
@@ -86,17 +96,18 @@ class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
 class InterfaceSerializer(serializers.ModelSerializer):
     serializer_url_field = InterfaceHyperlinkField
 
-
     class Meta:
         model = IfRef
-        fields = ('url', 'ifName', 'children', 'device',
+        fields = ('url', 'ifName', 'children', 'device', 'device_url',
         'end_time', 'id', 'ifAdminStatus', 'ifAlias', 'ifDescr',
         'ifHighSpeed', 'ifIndex', 'ifMtu', 'ifName', 'ifOperStatus',
-        'ifPhysAddress', 'ifSpeed', 'ifType', 'ipAddr',)
+        'ifPhysAddress', 'ifSpeed', 'ifType', 'ipAddr', 'begin_time',
+        'end_time', )
         extra_kwargs={'url': {'lookup_field': 'ifName'}}
 
     children = serializers.ListField(child=serializers.DictField())
     device = serializers.SlugRelatedField(queryset=Device.objects.all(), slug_field='name')
+    device_url = serializers.URLField()
 
     def to_representation(self, obj):
         # generate the list of oid endpoints with actual measurements.
@@ -110,6 +121,7 @@ class InterfaceSerializer(serializers.ModelSerializer):
                             url=self.serializer_url_field._oid_detail_url(obj.ifName, obj.device.name, self.context.get('request'), ii.endpoint_alias)
                         )
                     )
+        obj.device_url = self.serializer_url_field._device_detail_url(obj.device.name, self.context.get('request'))
         return super(InterfaceSerializer, self).to_representation(obj)
 
 class InterfaceViewset(DecodeMixin, viewsets.ModelViewSet):
