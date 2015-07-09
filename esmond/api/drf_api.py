@@ -136,8 +136,11 @@ class DeviceSerializer(DecodeMixin, serializers.ModelSerializer):
     serializer_url_field = EncodedHyperlinkField
     class Meta:
         model = Device
-        fields = ('url', 'name', 'ifref_set')
+        fields = ('url', 'name', 'active', 'begin_time', 'end_time',
+            'community', 'oidsets', 'ifref_set',)
         extra_kwargs={'url': {'lookup_field': 'name'}}
+
+    oidsets = OidsetSerializer(required=False, many=True)
 
     def to_representation(self, obj):
         self.fields['ifref_set'] = NestedInterfaceSerializer(required=False, many=True)
