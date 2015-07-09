@@ -49,5 +49,5 @@ urlpatterns = patterns('',
     (r'v2/',include(router.urls)),
     (r'v2/',include(extended_router.urls)),
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)$', DataViewset.as_view({'get': 'retrieve'})),
-    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifname>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', DataViewset.as_view({'get': 'retrieve'})),
+    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', DataViewset.as_view({'get': 'retrieve'})),
 )

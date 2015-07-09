@@ -44,39 +44,76 @@ class EncodedHyperlinkField(relations.HyperlinkedIdentityField):
         kwargs = {self.lookup_url_kwarg: atencode(lookup_value)}
         return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 
+# Code to deal with handling interface endpoints in the main REST series.
+# ie: /v2/interface/
+# Also subclassed by the interfaces nested under the device endpoint.
 
 class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
     """
-    Generate urls to "fully qualified" interface detail.
+    Generate urls to "fully qualified" interface detail url.
     """
+    @staticmethod
+    def _iface_detail_url(ifname, device_name, request, format=None):
+        """
+        Generate a URL to a "fully qualified" interface detail. Used by 
+        get_url and also to generate oid-alias endpoint lists.
+        """
+        return reverse(
+            'device-interface-detail',
+            kwargs={
+                'ifName': atencode(ifname),
+                'parent_lookup_device__name': atencode(device_name),
+            },
+            request=request,
+            format=format,
+            )
+
+    @staticmethod
+    def _oid_detail_url(ifname, device_name, request, alias):
+        """
+        Helper method for oid endpoints to call.
+        """
+        return InterfaceHyperlinkField._iface_detail_url(ifname, device_name, request) + alias
+
     def get_url(self, obj, view_name, request, format):
         if hasattr(obj, 'pk') and obj.pk is None:
             return None
 
         lookup_value = getattr(obj, self.lookup_field)
-        kwargs = { 
-            'ifName': atencode(lookup_value),
-            'parent_lookup_device__name': obj.device.name,
-        }
 
-        view_name = 'device-interface-detail'
-
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
-
+        return self._iface_detail_url(lookup_value, obj.device.name, request, format)
 
 class InterfaceSerializer(serializers.ModelSerializer):
     serializer_url_field = InterfaceHyperlinkField
+    children = serializers.ListField(
+        child=serializers.DictField()
+        )
     class Meta:
         model = IfRef
-        fields = ('ifName','url')
+        fields = ('url', 'ifName', 'children')
         extra_kwargs={'url': {'lookup_field': 'ifName'}}
+
+    def to_representation(self, obj):
+        # generate the list of oid endpoints with actual measurements.
+        obj.children = []
+        for i in obj.device.oidsets.all():
+            for ii in i.oids.all():
+                if ii.endpoint_alias:
+                    obj.children.append( 
+                        dict(
+                            name=ii.endpoint_alias, 
+                            url=self.serializer_url_field._oid_detail_url(obj.ifName, obj.device.name, self.context.get('request'), ii.endpoint_alias)
+                        )
+                    )
+        return super(InterfaceSerializer, self).to_representation(obj)
 
 class InterfaceViewset(DecodeMixin, viewsets.ModelViewSet):
     queryset = IfRef.objects.all()
     serializer_class = InterfaceSerializer
     lookup_field = 'ifName'
 
-
+# Classes for devices in the "main" rest URI series, ie:
+# /v2/device/$DEVICE/interface/
 
 class DeviceSerializer(DecodeMixin, serializers.ModelSerializer):
     serializer_url_field = EncodedHyperlinkField
@@ -96,7 +133,8 @@ class DeviceViewset(viewsets.ModelViewSet):
 
 
 # Not sure if we need different resources for the nested interface resources,
-# but slip in these subclasses just in case.
+# but slip in these subclasses just in case. Handles the interface nested 
+# under the devices, ie: /v1/device/$DEVICE/interface/$INTERFACE/
 
 class NestedInterfaceSerializer(InterfaceSerializer):
     pass
@@ -104,20 +142,41 @@ class NestedInterfaceSerializer(InterfaceSerializer):
 class NestedInterfaceViewset(InterfaceViewset):
     serializer_class = NestedInterfaceSerializer
 
-
+# Classes to handle the data fetching on in the "main" REST deal:
+# ie: /v2/device/$DEVICE/interface/$INTERFACE/out
 
 class DataSerializer(serializers.Serializer):
-    data = fields.DictField() 
+    url = fields.URLField()
+    data = fields.DictField()
 
 class DataViewset(viewsets.GenericViewSet):
     queryset = IfRef.objects.all()
     serializer_class = DataSerializer
 
+    def _endpoint_alias(self, **kwargs):
+        if kwargs.get('subtype', None):
+            return '{0}/{1}'.format(kwargs.get('type'), kwargs.get('subtype'))
+        else:
+            return kwargs.get('type')
+
     def retrieve(self, request, **kwargs):
-        print 'retrieve', kwargs
-        m = Device.objects.get(name='rtr_a')
-        print m, dir(m)
-        d = dict(data=dict(ts=3, val='foo'))
+        """
+        Incoming kwargs will look like this:
+
+        {'ifName': u'xe-0@2F0@2F0', 'type': u'in', 'name': u'rtr_a'}
+
+        or this:
+
+        {'subtype': u'in', 'ifName': u'xe-0@2F0@2F0', 'type': u'discard', 'name': u'rtr_a'}
+        """
+        iface = IfRef.objects.get(ifName=atdecode(kwargs.get('ifName')))
+        ifname =  iface.ifName
+        device_name = iface.device.name
+        alias = self._endpoint_alias(**kwargs)
+        d = dict(
+            data=dict(ts=3, val='foo'),
+            url=InterfaceHyperlinkField._oid_detail_url(ifname, device_name, request, alias)
+        )
         serializer = DataSerializer(d, context={'request': request})
         return Response(serializer.data)
 
