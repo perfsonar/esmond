@@ -1,4 +1,5 @@
 import calendar
+import collections
 import copy
 import datetime
 import urlparse
@@ -27,7 +28,7 @@ class BaseMixin(object):
 
         return super(BaseMixin, self).get_object()
 
-    def _add_uris(self, o):
+    def _add_uris(self, o, resource=True):
         """
         Slap a uri and resource_uri on an outgoing object based on 
         the properly DRF generated url attribute.
@@ -35,7 +36,12 @@ class BaseMixin(object):
         if o.get('url', None):
             up = urlparse.urlparse(o.get('url'))
             o['uri'] = up.path
-            o['resource_uri'] = up.path
+            if resource:
+                o['resource_uri'] = up.path
+
+    def _add_device_uri(self, o):
+        if o.get('uri', None):
+            o['device_uri'] = o['uri'].split('interface')[0]
 
 class EncodedHyperlinkField(relations.HyperlinkedIdentityField):
     """
@@ -136,41 +142,73 @@ class OidsetViewset(viewsets.ReadOnlyModelViewSet):
     model = OIDSet
     serializer_class = OidsetSerializer
 
-class InterfaceSerializer(serializers.ModelSerializer):
+class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
     serializer_url_field = InterfaceHyperlinkField
 
     class Meta:
         model = IfRef
-        fields = ('url', 'ifName', 'children', 'device', 'device_url',
+        fields = ('begin_time','children','device', 'device_uri',
         'end_time', 'id', 'ifAdminStatus', 'ifAlias', 'ifDescr',
         'ifHighSpeed', 'ifIndex', 'ifMtu', 'ifName', 'ifOperStatus',
-        'ifPhysAddress', 'ifSpeed', 'ifType', 'ipAddr', 'begin_time',
-        'end_time', )
+        'ifPhysAddress', 'ifSpeed', 'ifType', 'ipAddr', 
+        'end_time', 'leaf','url',)
         extra_kwargs={'url': {'lookup_field': 'ifName'}}
 
     children = serializers.ListField(child=serializers.DictField())
+    leaf = serializers.BooleanField(default=False)
+
+    # XXX(mmg) - will also need to put in Meta "pagination?" element?
+
+
+    # XXX(mmg) - what's up with this? The interface endpoint is returning timestamps.
+    # begin_time = UnixEpochDateField()
+    # end_time = UnixEpochDateField()
+
+    # XXX(mmg) - This and device_uri are duplicitous, so I'm letting this 
+    # be an actual relation until I'm convinced that something is broken.
     device = serializers.SlugRelatedField(queryset=Device.objects.all(), slug_field='name')
-    device_url = serializers.URLField()
+    device_uri = serializers.CharField(allow_blank=True, trim_whitespace=True)
 
     def to_representation(self, obj):
-        # generate the list of oid endpoints with actual measurements.
-        obj.children = []
+        obj.children = list()
+        obj.device_uri = ''
+        obj.leaf = False
+        # list of actual data-bearing OID endpoints.
         for i in obj.device.oidsets.all():
             for ii in i.oids.all():
                 if ii.endpoint_alias:
-                    obj.children.append( 
-                        dict(
+                    d = dict(
                             name=ii.endpoint_alias, 
-                            url=self.serializer_url_field._oid_detail_url(obj.ifName, obj.device.name, self.context.get('request'), ii.endpoint_alias)
+                            url=self.serializer_url_field._oid_detail_url(obj.ifName, obj.device.name, self.context.get('request'), ii.endpoint_alias),
+                            leaf=True,
                         )
-                    )
-        obj.device_url = self.serializer_url_field._device_detail_url(obj.device.name, self.context.get('request'))
-        return super(InterfaceSerializer, self).to_representation(obj)
+                    self._add_uris(d, resource=False)
+                    obj.children.append(d)
+        ret =  super(InterfaceSerializer, self).to_representation(obj)
+        self._add_uris(ret)
+        self._add_device_uri(ret)
+        return ret
 
-class InterfaceViewset(BaseMixin, viewsets.ModelViewSet):
+class InterfaceViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     queryset = IfRef.objects.all()
     serializer_class = InterfaceSerializer
     lookup_field = 'ifName'
+
+    def get_queryset(self):
+        if self.kwargs.get('parent_lookup_device__name', None):
+            return IfRef.objects.filter(device__name=self.kwargs.get('parent_lookup_device__name'))
+        else:
+            return super(InterfaceViewset, self).get_queryset()
+
+    def list(self, request, **kwargs):
+        ret = super(InterfaceViewset, self).list(request, **kwargs)
+        # I have no idea why we decided to stuff a perfectly good list of 
+        # json objects into this dict with a children key, but we did.
+        envelope = collections.OrderedDict()
+        envelope['children'] = copy.copy(ret.data)
+        ret.data = envelope
+        # XXX(mmg) will the meta: {} crap be here too?
+        return ret
 
 # Classes for devices in the "main" rest URI series, ie:
 # /v2/device/$DEVICE/interface/
@@ -184,7 +222,7 @@ class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
         extra_kwargs={'url': {'lookup_field': 'name'}}
 
     oidsets = OidsetSerializer(required=False, many=True)
-    leaf = serializers.BooleanField(default=True)
+    leaf = serializers.BooleanField(default=False)
     children = serializers.ListField(child=serializers.DictField())
     begin_time = UnixEpochDateField()
     end_time = UnixEpochDateField()
