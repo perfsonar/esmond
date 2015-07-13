@@ -11,9 +11,9 @@ from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
 from esmond.api.drf_api import (
-    DataViewset,
     DeviceViewset,
     InterfaceViewset,
+    InterfaceDataViewset,
     NestedInterfaceViewset,
     OidsetViewset
 )
@@ -48,6 +48,6 @@ urlpatterns = patterns('',
     (r'', include(v1_api.urls + perfsonar_api.urls)),
     (r'v2/',include(router.urls)),
     (r'v2/',include(extended_router.urls)),
-    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)$', DataViewset.as_view({'get': 'retrieve'})),
-    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', DataViewset.as_view({'get': 'retrieve'})),
+    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
 )

@@ -2,7 +2,12 @@ import calendar
 import collections
 import copy
 import datetime
+import time
 import urlparse
+
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 from rest_framework import viewsets, serializers, status, fields, relations
 from rest_framework.response import Response
@@ -12,6 +17,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework_extensions.fields import ResourceUriField
 
 from .models import *
+from esmond.api import SNMP_NAMESPACE, ANON_LIMIT, OIDSET_INTERFACE_ENDPOINTS
 from esmond.util import atdecode, atencode
 
 #
@@ -28,14 +34,15 @@ class BaseMixin(object):
 
         return super(BaseMixin, self).get_object()
 
-    def _add_uris(self, o, resource=True):
+    def _add_uris(self, o, uri=True, resource=True):
         """
         Slap a uri and resource_uri on an outgoing object based on 
         the properly DRF generated url attribute.
         """
         if o.get('url', None):
             up = urlparse.urlparse(o.get('url'))
-            o['uri'] = up.path
+            if uri:
+                o['uri'] = up.path
             if resource:
                 o['resource_uri'] = up.path
 
@@ -69,6 +76,19 @@ class UnixEpochDateField(serializers.DateTimeField):
 
     def to_internal_value(self, value):
         return datetime.datetime.utcfromtimestamp(int(value))
+
+class DataObject(object):
+    def __init__(self, initial=None):
+        self.__dict__['_data'] = collections.OrderedDict()
+
+    def __getattr__(self, name):
+        return self._data.get(name, None)
+
+    def __setattr__(self, name, value):
+        self.__dict__['_data'][name] = value
+
+    def to_dict(self):
+        return self._data
 
 # Code to deal with handling interface endpoints in the main REST series.
 # ie: /v2/interface/
@@ -161,8 +181,9 @@ class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
 
 
     # XXX(mmg) - what's up with this? The interface endpoint is returning timestamps.
-    # begin_time = UnixEpochDateField()
-    # end_time = UnixEpochDateField()
+    # presuming that's a bug and do it this way.
+    begin_time = UnixEpochDateField()
+    end_time = UnixEpochDateField()
 
     # XXX(mmg) - This and device_uri are duplicitous, so I'm letting this 
     # be an actual relation until I'm convinced that something is broken.
@@ -177,6 +198,7 @@ class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
         for i in obj.device.oidsets.all():
             for ii in i.oids.all():
                 if ii.endpoint_alias:
+                    print 'XXX', ii.endpoint_alias
                     d = dict(
                             name=ii.endpoint_alias, 
                             url=self.serializer_url_field._oid_detail_url(obj.ifName, obj.device.name, self.context.get('request'), ii.endpoint_alias),
@@ -264,19 +286,51 @@ class NestedInterfaceViewset(InterfaceViewset):
 # Classes to handle the data fetching on in the "main" REST deal:
 # ie: /v2/device/$DEVICE/interface/$INTERFACE/out
 
-class DataSerializer(serializers.Serializer):
-    url = fields.URLField()
-    data = fields.DictField()
+class InterfaceDataObject(DataObject):
+    pass
 
-class DataViewset(viewsets.GenericViewSet):
+class InterfaceDataSerializer(BaseMixin, serializers.Serializer):
+    url = fields.URLField()
+    data = serializers.ListField(child=serializers.DictField())
+    agg = serializers.CharField(trim_whitespace=True)
+    cf = serializers.CharField(trim_whitespace=True)
+    begin_time = serializers.IntegerField()
+    end_time = serializers.IntegerField()
+
+    def to_representation(self, obj):
+        ret = super(InterfaceDataSerializer, self).to_representation(obj)
+        self._add_uris(ret, uri=False)
+        return ret
+
+
+class InterfaceDataViewset(viewsets.GenericViewSet):
     queryset = IfRef.objects.all()
-    serializer_class = DataSerializer
+    serializer_class = InterfaceDataSerializer
 
     def _endpoint_alias(self, **kwargs):
         if kwargs.get('subtype', None):
-            return '{0}/{1}'.format(kwargs.get('type'), kwargs.get('subtype'))
+            return '{0}/{1}'.format(kwargs.get('type'), kwargs.get('subtype').rstrip('/'))
         else:
             return kwargs.get('type')
+
+    def _endpoint_map(self, iface):
+        endpoint_map = {}
+
+        for oidset in iface.device.oidsets.all():
+            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
+                continue
+
+            for endpoint, varname in \
+                    OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].iteritems():
+                endpoint_map[endpoint] = [
+                    SNMP_NAMESPACE,
+                    iface.device.name,
+                    oidset.name,
+                    varname,
+                    iface.ifName
+                ]
+
+        return endpoint_map
 
     def retrieve(self, request, **kwargs):
         """
@@ -288,15 +342,65 @@ class DataViewset(viewsets.GenericViewSet):
 
         {'subtype': u'in', 'ifName': u'xe-0@2F0@2F0', 'type': u'discard', 'name': u'rtr_a'}
         """
-        iface = IfRef.objects.get(ifName=atdecode(kwargs.get('ifName')))
+        print 'retrieve', kwargs
+
+        try:
+            iface = IfRef.objects.get(
+                ifName=atdecode(kwargs.get('ifName')),
+                device__name=atdecode(kwargs.get('name')),
+                )
+        except IfRef.DoesNotExist:
+            return Response(
+                {'error': 'no such device/interface: dev: {0} int: {1}'.format(kwargs['name'], atdecode(kwargs['ifName']))},
+                status.HTTP_400_BAD_REQUEST
+                )
+
         ifname =  iface.ifName
         device_name = iface.device.name
-        alias = self._endpoint_alias(**kwargs)
-        d = dict(
-            data=dict(ts=3, val='foo'),
-            url=InterfaceHyperlinkField._oid_detail_url(ifname, device_name, request, alias)
-        )
-        serializer = DataSerializer(d, context={'request': request})
+        iface_dataset = self._endpoint_alias(**kwargs)
+
+        endpoint_map = self._endpoint_map(iface)
+
+        if iface_dataset not in endpoint_map:
+            return Response(
+                {'error': 'no such dataset: {0}'.format(iface_dataset)}
+                )
+
+        oidset = iface.device.oidsets.get(name=endpoint_map[iface_dataset][2])
+
+        obj = InterfaceDataObject()
+        obj.url = InterfaceHyperlinkField._oid_detail_url(ifname, device_name, request, iface_dataset)
+        obj.datapath = endpoint_map[iface_dataset]
+        obj.datapath[2] = oidset.set_name  # set_name defaults to oidset.name, but can be overidden in poller_args
+        obj.iface_dataset = iface_dataset
+        obj.iface = iface
+
+        filters = getattr(request, 'GET', {})
+
+        # Make sure incoming begin/end timestamps are ints
+        if filters.has_key('begin'):
+            obj.begin_time = int(float(filters['begin']))
+        else:
+            obj.begin_time = int(time.time() - 3600)
+
+        if filters.has_key('end'):
+            obj.end_time = int(float(filters['end']))
+        else:
+            obj.end_time = int(time.time())
+
+        if filters.has_key('cf'):
+            obj.cf = filters['cf']
+        else:
+            obj.cf = 'average'
+
+        if filters.has_key('agg'):
+            obj.agg = int(filters['agg'])
+        else:
+            obj.agg = None
+
+        obj.data = list()
+
+        serializer = InterfaceDataSerializer(obj.to_dict(), context={'request': request})
         return Response(serializer.data)
 
 
