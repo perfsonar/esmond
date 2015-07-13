@@ -1,4 +1,7 @@
+import calendar
 import copy
+import datetime
+import urlparse
 
 from rest_framework import viewsets, serializers, status, fields, relations
 from rest_framework.response import Response
@@ -10,27 +13,11 @@ from rest_framework_extensions.fields import ResourceUriField
 from .models import *
 from esmond.util import atdecode, atencode
 
-class OidsetSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OIDSet
-        fields = ('name',)
+#
+# Superclasses, mixins, helpers,etc.
+#
 
-    def to_representation(self, obj):
-        ret = super(OidsetSerializer, self).to_representation(obj)
-        return ret.get('name')
-
-    # # Read only, so don't need this.
-    # def to_internal_value(self, data):
-    #     return super(OidsetSerializer, self).to_internal_value(data)
-
-
-class OidsetViewset(viewsets.ReadOnlyModelViewSet):
-    queryset = OIDSet.objects.all()
-    model = OIDSet
-    serializer_class = OidsetSerializer
-
-
-class DecodeMixin(object):
+class BaseMixin(object):
     def get_object(self):
         """
         atdecode() the incoming args before the lookup_field lookup happens.
@@ -38,7 +25,17 @@ class DecodeMixin(object):
         for k in self.kwargs.keys():
             self.kwargs[k] = atdecode(self.kwargs[k])
 
-        return super(DecodeMixin, self).get_object()
+        return super(BaseMixin, self).get_object()
+
+    def _add_uris(self, o):
+        """
+        Slap a uri and resource_uri on an outgoing object based on 
+        the properly DRF generated url attribute.
+        """
+        if o.get('url', None):
+            up = urlparse.urlparse(o.get('url'))
+            o['uri'] = up.path
+            o['resource_uri'] = up.path
 
 class EncodedHyperlinkField(relations.HyperlinkedIdentityField):
     """
@@ -52,6 +49,20 @@ class EncodedHyperlinkField(relations.HyperlinkedIdentityField):
         lookup_value = getattr(obj, self.lookup_field)
         kwargs = {self.lookup_url_kwarg: atencode(lookup_value)}
         return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+class UnixEpochDateField(serializers.DateTimeField):
+    """
+    Hat tip to: http://stackoverflow.com/questions/19375753/django-rest-framework-updating-time-using-epoch-time
+    """
+    def to_representation(self, value):
+        """ Return epoch time for a datetime object or ``None``"""
+        try:
+            return int(calendar.timegm(value.timetuple()))
+        except (AttributeError, TypeError):
+            return None
+
+    def to_internal_value(self, value):
+        return datetime.datetime.utcfromtimestamp(int(value))
 
 # Code to deal with handling interface endpoints in the main REST series.
 # ie: /v2/interface/
@@ -102,6 +113,29 @@ class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
 
         return self._iface_detail_url(lookup_value, obj.device.name, request, format)
 
+#
+# Endpoints for main URI series.
+# 
+
+class OidsetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OIDSet
+        fields = ('name',)
+
+    def to_representation(self, obj):
+        ret = super(OidsetSerializer, self).to_representation(obj)
+        return ret.get('name')
+
+    # # Read only, so don't need this.
+    # def to_internal_value(self, data):
+    #     return super(OidsetSerializer, self).to_internal_value(data)
+
+
+class OidsetViewset(viewsets.ReadOnlyModelViewSet):
+    queryset = OIDSet.objects.all()
+    model = OIDSet
+    serializer_class = OidsetSerializer
+
 class InterfaceSerializer(serializers.ModelSerializer):
     serializer_url_field = InterfaceHyperlinkField
 
@@ -133,7 +167,7 @@ class InterfaceSerializer(serializers.ModelSerializer):
         obj.device_url = self.serializer_url_field._device_detail_url(obj.device.name, self.context.get('request'))
         return super(InterfaceSerializer, self).to_representation(obj)
 
-class InterfaceViewset(DecodeMixin, viewsets.ModelViewSet):
+class InterfaceViewset(BaseMixin, viewsets.ModelViewSet):
     queryset = IfRef.objects.all()
     serializer_class = InterfaceSerializer
     lookup_field = 'ifName'
@@ -141,18 +175,37 @@ class InterfaceViewset(DecodeMixin, viewsets.ModelViewSet):
 # Classes for devices in the "main" rest URI series, ie:
 # /v2/device/$DEVICE/interface/
 
-class DeviceSerializer(DecodeMixin, serializers.ModelSerializer):
+class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
     serializer_url_field = EncodedHyperlinkField
     class Meta:
         model = Device
-        fields = ('url', 'name', 'active', 'begin_time', 'end_time',
-            'community', 'oidsets',)
+        fields = ('id', 'url', 'name', 'active', 'begin_time', 'end_time',
+            'oidsets', 'leaf', 'children',)
         extra_kwargs={'url': {'lookup_field': 'name'}}
 
     oidsets = OidsetSerializer(required=False, many=True)
+    leaf = serializers.BooleanField(default=True)
+    children = serializers.ListField(child=serializers.DictField())
+    begin_time = UnixEpochDateField()
+    end_time = UnixEpochDateField()
 
     def to_representation(self, obj):
-        return super(DeviceSerializer, self).to_representation(obj)
+        obj.leaf = False
+        obj.children = list()
+        ret = super(DeviceSerializer, self).to_representation(obj)
+        ## - 'cosmetic' (non database) additions to outgoing payload.
+        # add the URIs after the "proper" url was generated.
+        self._add_uris(ret)
+        # generate children for graphite navigation
+        for e in ['interface', 'system', 'all']:
+            ret['children'].append(
+                dict(
+                    leaf=False, 
+                    name=e, 
+                    uri=ret.get('uri')+e
+                )
+            )
+        return ret
 
 class DeviceViewset(viewsets.ModelViewSet):
     queryset = Device.objects.all()
