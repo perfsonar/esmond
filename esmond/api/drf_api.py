@@ -15,7 +15,16 @@ class OidsetSerializer(serializers.ModelSerializer):
         model = OIDSet
         fields = ('name',)
 
-class OidsetViewset(viewsets.ModelViewSet):
+    def to_representation(self, obj):
+        ret = super(OidsetSerializer, self).to_representation(obj)
+        return ret.get('name')
+
+    # # Read only, so don't need this.
+    # def to_internal_value(self, data):
+    #     return super(OidsetSerializer, self).to_internal_value(data)
+
+
+class OidsetViewset(viewsets.ReadOnlyModelViewSet):
     queryset = OIDSet.objects.all()
     model = OIDSet
     serializer_class = OidsetSerializer
@@ -50,7 +59,7 @@ class EncodedHyperlinkField(relations.HyperlinkedIdentityField):
 
 class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
     """
-    Generate urls to "fully qualified" interface detail url.
+    Generate urls to "fully qualified" nested interface detail url.
 
     Also exposes some static methods to generate urls that are called 
     by other resources.
@@ -137,13 +146,12 @@ class DeviceSerializer(DecodeMixin, serializers.ModelSerializer):
     class Meta:
         model = Device
         fields = ('url', 'name', 'active', 'begin_time', 'end_time',
-            'community', 'oidsets', 'ifref_set',)
+            'community', 'oidsets',)
         extra_kwargs={'url': {'lookup_field': 'name'}}
 
     oidsets = OidsetSerializer(required=False, many=True)
 
     def to_representation(self, obj):
-        self.fields['ifref_set'] = NestedInterfaceSerializer(required=False, many=True)
         return super(DeviceSerializer, self).to_representation(obj)
 
 class DeviceViewset(viewsets.ModelViewSet):
