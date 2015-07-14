@@ -112,6 +112,17 @@ INSTALLED_APPS = (
     'rest_framework',
 )
 
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+
+    'DEFAULT_FILTER_BACKENDS': (
+        'rest_framework_filters.backends.DjangoFilterBackend',
+    ),
+}
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 if ESMOND_SETTINGS.allowed_hosts:
     ALLOWED_HOSTS.extend(ESMOND_SETTINGS.allowed_hosts)

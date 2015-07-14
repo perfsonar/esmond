@@ -13,6 +13,10 @@ import calendar
 import shutil
 import time
 
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
+
 # This MUST be here in any testing modules that use cassandra!
 os.environ['ESMOND_UNIT_TESTS'] = 'True'
 
@@ -903,21 +907,21 @@ class TestCassandraApiQueries(ResourceTestCase):
         p.db.close()
 
     def test_get_device_list(self):
-        url = '/v1/device/'
+        url = '/v2/device/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(data[0]['resource_uri'], '/v1/device/rtr_d/')
+        self.assertEquals(data[0]['resource_uri'], '/v2/device/rtr_d/')
 
     def test_get_device_interface_list(self):
-        url = '/v1/device/rtr_d/interface/'
+        url = '/v2/device/rtr_d/interface/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEquals(data['children'][0]['resource_uri'], 
-            '/v1/device/rtr_d/interface/fxp0.0')
+            '/v2/device/rtr_d/interface/fxp0.0')
 
     def test_get_device_interface_data_detail(self):
         params = {
@@ -925,7 +929,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end
         }
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -952,12 +956,13 @@ class TestCassandraApiQueries(ResourceTestCase):
             'agg': self.ctr.agg_freq
         }
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -971,12 +976,13 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         params['cf'] = 'min'
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -991,12 +997,13 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         params['cf'] = 'max'
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -1249,14 +1256,14 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], payload['begin'])
 
     def test_device_info(self):
-        response = self.api_client.get('/v1/device/')
+        response = self.api_client.get('/v2/device/')
         self.assertEquals(response.status_code, 200)
         payload = json.loads(response.content)
         self.assertEquals(len(payload), 1)
 
         data = payload[0]
 
-        self.assertEquals(data['resource_uri'], '/v1/device/rtr_d/')
+        self.assertEquals(data['resource_uri'], '/v2/device/rtr_d/')
         self.assertEquals(data['id'], 1)
         self.assertEquals(data['name'], 'rtr_d')
 
@@ -1274,14 +1281,18 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         self.assertTrue(len(data['children']))
+        # XXX(mmg): this fails since the meta is not implemented yet.
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_interface_info(self):
-        response = self.api_client.get('/v1/interface/?limit=0&ifName__contains=fxp')
+        response = self.api_client.get('/v2/interface/?limit=0&ifName__contains=fxp')
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertTrue(len(data['children']))
+        self.assertLessEqual(len(data['children']), 1)
         self.assertEquals(data['children'][0]['ifName'], 'fxp0.0')
+        # XXX(mmg): this fails since the meta is not implemented yet.
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_oidset_info(self):

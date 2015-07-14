@@ -18,7 +18,7 @@ uri_map = dict(
     device_root='/{0}/device/',
     interface_root='/{0}/interface/',
     device_detail='/{0}/device/rtr_a/',
-    interface_list='/{0}/device/rtr_a/interface',
+    interface_list='/{0}/device/rtr_a/interface/',
     interface_error='/{0}/device/rtr_a/interface/xe-0@2F0@2F0/discard/in',
     interface_traffic='/{0}/device/rtr_a/interface/xe-0@2F0@2F0/out',
 )

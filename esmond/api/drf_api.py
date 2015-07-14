@@ -17,6 +17,8 @@ from rest_framework.reverse import reverse
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework_extensions.fields import ResourceUriField
 
+import rest_framework_filters as filters
+
 from .models import *
 from esmond.api import SNMP_NAMESPACE, ANON_LIMIT, OIDSET_INTERFACE_ENDPOINTS
 from esmond.util import atdecode, atencode
@@ -128,7 +130,6 @@ class DataObject(object):
         return self._data
 
 
-
 class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
     """
     Generate urls to "fully qualified" nested interface detail url.
@@ -175,6 +176,28 @@ class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
         lookup_value = getattr(obj, self.lookup_field)
 
         return self._iface_detail_url(lookup_value, obj.device.name, request, format)
+
+#
+# Filter classes
+# 
+
+class DeviceFilter(filters.FilterSet):
+    class Meta:
+        model = Device
+        fields = ['name']
+
+    name = filters.AllLookupsFilter(name='name')
+    # XXX(mmg): might need to flesh this out with more options.
+
+class InterfaceFilter(filters.FilterSet):
+    class Meta:
+        model = IfRef
+        fields = ['ifName', 'ifAlias']
+
+    ifName = filters.AllLookupsFilter(name='ifName')
+    ifAlias = filters.AllLookupsFilter(name='ifAlias')
+    device = filters.RelatedFilter(DeviceFilter, name='device')
+
 
 #
 # Endpoints for main URI series.
@@ -255,12 +278,7 @@ class InterfaceViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     queryset = IfRef.objects.all()
     serializer_class = InterfaceSerializer
     lookup_field = 'ifName'
-
-    def get_queryset(self):
-        if self.kwargs.get('parent_lookup_device__name', None):
-            return IfRef.objects.filter(device__name=self.kwargs.get('parent_lookup_device__name'))
-        else:
-            return super(InterfaceViewset, self).get_queryset()
+    filter_class = InterfaceFilter
 
     def list(self, request, **kwargs):
         ret = super(InterfaceViewset, self).list(request, **kwargs)
@@ -302,7 +320,7 @@ class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
                 dict(
                     leaf=False, 
                     name=e, 
-                    uri=ret.get('uri')+e
+                    uri=ret.get('uri')+ e + '/'
                 )
             )
         return ret
@@ -322,6 +340,18 @@ class NestedInterfaceSerializer(InterfaceSerializer):
 
 class NestedInterfaceViewset(InterfaceViewset):
     serializer_class = NestedInterfaceSerializer
+
+    def get_queryset(self):
+        """
+        This is used for the /v2/device/rtr_a/interface/ relation.
+        In the nested subclass since there is no filtering on 
+        this endpoint and don't want this logic interfering with 
+        filtering on the /v2/interface/ endpoint.
+        """
+        if self.kwargs.get('parent_lookup_device__name', None):
+            return IfRef.objects.filter(device__name=self.kwargs.get('parent_lookup_device__name'))
+        else:
+            return super(InterfaceViewset, self).get_queryset()
 
 # Classes to handle the data fetching on in the "main" REST deal:
 # ie: /v2/device/$DEVICE/interface/$INTERFACE/out
@@ -381,7 +411,7 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
 
         {'subtype': u'in', 'ifName': u'xe-0@2F0@2F0', 'type': u'discard', 'name': u'rtr_a'}
         """
-        
+
         try:
             iface = IfRef.objects.get(
                 ifName=atdecode(kwargs.get('ifName')),

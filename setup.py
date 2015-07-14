@@ -11,6 +11,7 @@ setup(name='esmond',
         packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
         install_requires=['Django==1.5.12', 'django-tastypie', 'web.py',
             'djangorestframework==3.1.3', 'drf-extensions==0.2.7',
+            'djangorestframework-filters==0.3.0',
             'python-memcached', 'pycassa', 'psycopg2','python-mimeparse',
             'requests', 'mock', 'nagiosplugin'],
         entry_points = {
