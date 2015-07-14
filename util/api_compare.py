@@ -19,7 +19,8 @@ uri_map = dict(
     interface_root='/{0}/interface/',
     device_detail='/{0}/device/rtr_a/',
     interface_list='/{0}/device/rtr_a/interface',
-    interface_data='/{0}/device/rtr_a/interface/xe-0@2F0@2F0/discard/in',
+    interface_error='/{0}/device/rtr_a/interface/xe-0@2F0@2F0/discard/in',
+    interface_traffic='/{0}/device/rtr_a/interface/xe-0@2F0@2F0/out',
 )
 
 def main():
@@ -34,9 +35,12 @@ def main():
     parser.add_option('-D', '--device-list',
             dest='device_root', action='store_true', default=False,
             help='List of devices.')
-    parser.add_option('-i', '--interface-data',
-            dest='interface_data', action='store_true', default=False,
-            help='Make call to interface endpoint.')
+    parser.add_option('-e', '--interface-error',
+            dest='interface_error', action='store_true', default=False,
+            help='Interface endpoint for error data (discard/in).')
+    parser.add_option('-t', '--interface-traffic',
+            dest='interface_traffic', action='store_true', default=False,
+            help='Interface endpoint for traffic data (out).')
     parser.add_option('-I', '--interface-list',
             dest='interface_list', action='store_true', default=False,
             help='List of interfaces on a router.')
