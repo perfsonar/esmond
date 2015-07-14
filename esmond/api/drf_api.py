@@ -142,22 +142,24 @@ class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
         Generate a URL to a "fully qualified" interface detail. Used by 
         get_url and also to generate oid-alias endpoint lists.
         """
+        # While a legal URI character, the '.' in some interface names
+        # makes the reverse() function unhappy.
         return reverse(
             'device-interface-detail',
             kwargs={
-                'ifName': atencode(ifname),
+                'ifName': atencode(ifname).replace('.', 'PERIOD_TOKEN'),
                 'parent_lookup_device__name': atencode(device_name),
             },
             request=request,
             format=format,
-            )
+            ).replace('PERIOD_TOKEN', '.').rstrip('/')
 
     @staticmethod
     def _oid_detail_url(ifname, device_name, request, alias):
         """
         Helper method for oid endpoints to call.
         """
-        return InterfaceHyperlinkField._iface_detail_url(ifname, device_name, request) + alias
+        return InterfaceHyperlinkField._iface_detail_url(ifname, device_name, request) + '/' + alias
 
     @staticmethod
     def _device_detail_url(device_name, request):
@@ -379,8 +381,7 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
 
         {'subtype': u'in', 'ifName': u'xe-0@2F0@2F0', 'type': u'discard', 'name': u'rtr_a'}
         """
-        print 'retrieve', kwargs
-
+        
         try:
             iface = IfRef.objects.get(
                 ifName=atdecode(kwargs.get('ifName')),
