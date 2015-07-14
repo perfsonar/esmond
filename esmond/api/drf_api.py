@@ -2,6 +2,7 @@ import calendar
 import collections
 import copy
 import datetime
+import inspect
 import time
 import urlparse
 
@@ -19,10 +20,46 @@ from rest_framework_extensions.fields import ResourceUriField
 from .models import *
 from esmond.api import SNMP_NAMESPACE, ANON_LIMIT, OIDSET_INTERFACE_ENDPOINTS
 from esmond.util import atdecode, atencode
+from esmond.api.dataseries import QueryUtil, Fill
+from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
+from esmond.config import get_config_path, get_config
+
+#
+# Cassandra connection
+# 
+
+try:
+    db = CASSANDRA_DB(get_config(get_config_path()))
+except ConnectionException, e:
+    # Check the stack before raising an error - if test_api is 
+    # the calling code, we won't need a running db instance.
+    mod = inspect.getmodule(inspect.stack()[1][0])
+    if mod and mod.__name__ == 'api.tests.test_api' or 'sphinx.ext.autodoc':
+        print '\nUnable to connect - presuming stand-alone testing mode...'
+        db = None
+    else:
+        raise ConnectionException(str(e))
+
+def check_connection():
+    """Called by testing suite to produce consistent errors.  If no 
+    cassandra instance is available, test_api might silently hide that 
+    fact with mock.patch causing unclear errors in other modules 
+    like test_persist."""
+    global db
+    if not db:
+        db = CASSANDRA_DB(get_config(get_config_path()))
 
 #
 # Superclasses, mixins, helpers,etc.
 #
+
+class QueryErrorException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class QueryErrorWarning(Warning): pass
 
 class BaseMixin(object):
     def get_object(self):
@@ -90,9 +127,7 @@ class DataObject(object):
     def to_dict(self):
         return self._data
 
-# Code to deal with handling interface endpoints in the main REST series.
-# ie: /v2/interface/
-# Also subclassed by the interfaces nested under the device endpoint.
+
 
 class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
     """
@@ -162,6 +197,10 @@ class OidsetViewset(viewsets.ReadOnlyModelViewSet):
     model = OIDSet
     serializer_class = OidsetSerializer
 
+# Code to deal with handling interface endpoints in the main REST series.
+# ie: /v2/interface/
+# Also subclassed by the interfaces nested under the device endpoint.
+
 class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
     serializer_url_field = InterfaceHyperlinkField
 
@@ -198,7 +237,6 @@ class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
         for i in obj.device.oidsets.all():
             for ii in i.oids.all():
                 if ii.endpoint_alias:
-                    print 'XXX', ii.endpoint_alias
                     d = dict(
                             name=ii.endpoint_alias, 
                             url=self.serializer_url_field._oid_detail_url(obj.ifName, obj.device.name, self.context.get('request'), ii.endpoint_alias),
@@ -400,7 +438,54 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
 
         obj.data = list()
 
-        serializer = InterfaceDataSerializer(obj.to_dict(), context={'request': request})
-        return Response(serializer.data)
+        try:
+            obj = self._execute_query(oidset, obj)
+            serializer = InterfaceDataSerializer(obj.to_dict(), context={'request': request})
+            return Response(serializer.data)
+        except QueryErrorException, e:
+            return Response({'error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
+    def _execute_query(self, oidset, obj):
+        """
+        Executes a couple of reality checks (making sure that a valid 
+        aggregation was requested and checks/limits the time range), and
+        then make calls to cassandra backend.
+        """
+        
+        raise QueryErrorException('no go')
+        # If no aggregate level defined in request, set to the frequency, 
+        # otherwise, check if the requested aggregate level is valid.
+        if not obj.agg:
+            obj.agg = oidset.frequency
+        elif obj.agg and not oidset.aggregates:
+            raise QueryErrorException('there are no aggregations for oidset {0} - {1} was requested'.format(oidset.name, obj.agg))
+        elif obj.agg not in oidset.aggregates:
+            raise QueryErrorException('no valid aggregation %s in oidset %s' %
+                (obj.agg, oidset.name))
+
+        # Make sure we're not exceeding allowable time range.
+        if not QueryUtil.valid_timerange(obj) and \
+            not obj.user.username:
+            raise QueryErrorException('exceeded valid timerange for agg level: %s' %
+                    obj.agg)
+        
+        # db = CASSANDRA_DB(get_config(get_config_path()))
+
+        if obj.agg == oidset.frequency:
+            # Fetch the base rate data.
+            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg*1000,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
+        else:
+            # Get the aggregation.
+            if obj.cf not in AGG_TYPES:
+                raise QueryErrorException('%s is not a valid consolidation function' %
+                        (obj.cf))
+            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
+
+        obj.data = QueryUtil.format_data_payload(data)
+        obj.data = Fill.verify_fill(obj.begin_time, obj.end_time,
+                obj.agg, obj.data)
+
+        return obj
 
