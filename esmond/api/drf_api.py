@@ -465,7 +465,6 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
             not obj.user.username:
             raise QueryErrorException('exceeded valid timerange for agg level: {0}'.format(obj.agg))
 
-        raise QueryErrorException('no go')
 
         if obj.agg == oidset.frequency:
             # Fetch the base rate data.
