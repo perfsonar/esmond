@@ -340,7 +340,6 @@ class InterfaceDataSerializer(BaseMixin, serializers.Serializer):
         self._add_uris(ret, uri=False)
         return ret
 
-
 class InterfaceDataViewset(viewsets.GenericViewSet):
     queryset = IfRef.objects.all()
     serializer_class = InterfaceDataSerializer
@@ -443,7 +442,7 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
             serializer = InterfaceDataSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
         except QueryErrorException, e:
-            return Response({'error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
+            return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
     def _execute_query(self, oidset, obj):
         """
@@ -451,25 +450,22 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
         aggregation was requested and checks/limits the time range), and
         then make calls to cassandra backend.
         """
-        
-        raise QueryErrorException('no go')
+
         # If no aggregate level defined in request, set to the frequency, 
-        # otherwise, check if the requested aggregate level is valid.
+        # # otherwise, check if the requested aggregate level is valid.
         if not obj.agg:
             obj.agg = oidset.frequency
         elif obj.agg and not oidset.aggregates:
             raise QueryErrorException('there are no aggregations for oidset {0} - {1} was requested'.format(oidset.name, obj.agg))
         elif obj.agg not in oidset.aggregates:
-            raise QueryErrorException('no valid aggregation %s in oidset %s' %
-                (obj.agg, oidset.name))
+            raise QueryErrorException('no valid aggregation {0} in oidset {1}'.format(obj.agg, oidset.name))
 
         # Make sure we're not exceeding allowable time range.
         if not QueryUtil.valid_timerange(obj) and \
             not obj.user.username:
-            raise QueryErrorException('exceeded valid timerange for agg level: %s' %
-                    obj.agg)
-        
-        # db = CASSANDRA_DB(get_config(get_config_path()))
+            raise QueryErrorException('exceeded valid timerange for agg level: {0}'.format(obj.agg))
+
+        raise QueryErrorException('no go')
 
         if obj.agg == oidset.frequency:
             # Fetch the base rate data.
