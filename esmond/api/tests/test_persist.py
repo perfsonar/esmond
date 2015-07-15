@@ -1215,11 +1215,12 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end
         }
 
-        response = self.api_client.post('/v1/bulk/interface/', data=payload,
+        response = self.api_client.post('/v2/bulk/interface/', data=payload,
             format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(len(data['data']), 2)
         self.assertEquals(data['data'][0]['path']['iface'], ifaces[0])
         self.assertEquals(len(data['data'][0]['data']), 21)

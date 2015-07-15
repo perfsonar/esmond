@@ -187,6 +187,7 @@ class BaseDataSerializer(BaseMixin, serializers.Serializer):
 
 class BaseDataViewset(viewsets.GenericViewSet):
     def _endpoint_map(self, device, iface_name):
+
         endpoint_map = {}
 
         for oidset in device.oidsets.all():
@@ -647,10 +648,9 @@ class BulkInterfaceRequestSerializer(BaseDataSerializer):
     iface_dataset = serializers.ListField(child=serializers.CharField())
     device_names = serializers.ListField(child=serializers.CharField())
 
-
 class BulkInterfaceRequestViewset(BaseDataViewset):
     def create(self, request, **kwargs):
-        print pp.pprint(request.data)
+
         if request.content_type != 'application/json':
             raise BadRequest('Must post content-type: application/json header and json-formatted payload.')
 
@@ -661,6 +661,7 @@ class BulkInterfaceRequestViewset(BaseDataViewset):
             request.data.has_key('endpoint'):
             raise BadRequest('Payload must contain keys interfaces and endpoint.')
 
+        # set up basic return envelope
         ret_obj = BulkInterfaceDataObject()
         ret_obj.iface_dataset = request.data['endpoint']
         ret_obj.data = []
@@ -668,6 +669,43 @@ class BulkInterfaceRequestViewset(BaseDataViewset):
         ret_obj.url = reverse('bulk-interface', request=request)
 
         self._parse_data_default_args(request, ret_obj)
+
+        # process request
+        for i in request.data['interfaces']:
+            device_name = i['device'].rstrip('/').split('/')[-1]
+            iface_name = i['iface']
+
+            # XXX(mmg): should we do an "if in" test first to avoid dupes?
+            ret_obj.device_names.append(device_name)
+
+            device = Device.objects.get(name=device_name)
+            endpoint_map = self._endpoint_map(device, iface_name)
+
+            for end_point in request.data['endpoint']:
+
+                if end_point not in endpoint_map:
+                    return Response({'error': 'no such dataset {0}'.format(end_point)}, status.HTTP_400_BAD_REQUEST)
+
+                oidset = device.oidsets.get(name=endpoint_map[end_point][2])
+
+                obj = BulkInterfaceDataObject()
+                obj.datapath = endpoint_map[end_point]
+                obj.iface_dataset = end_point
+                obj.iface = iface_name
+
+                obj.begin_time = ret_obj.begin_time
+                obj.end_time = ret_obj.end_time
+                obj.cf = ret_obj.cf
+                obj.agg = ret_obj.agg
+
+                data = InterfaceDataViewset()._execute_query(oidset, obj)
+
+                row = dict(
+                    data=data.data,
+                    path={'dev': device_name,'iface': iface_name,'endpoint': end_point}
+                )
+
+                ret_obj.data.append(row)
 
         serializer = BulkInterfaceRequestSerializer(ret_obj.to_dict(), context={'request': request})
         return Response(serializer.data, status.HTTP_201_CREATED)
