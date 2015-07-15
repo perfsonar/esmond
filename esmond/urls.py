@@ -1,4 +1,5 @@
 from django.conf.urls.defaults import *
+from django.conf.urls import url
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -11,6 +12,7 @@ from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
 from esmond.api.drf_api import (
+    BulkInterfaceRequestViewset,
     DeviceViewset,
     InterfaceViewset,
     InterfaceDataViewset,
@@ -46,8 +48,13 @@ device_router.register(
 urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
     (r'', include(v1_api.urls + perfsonar_api.urls)),
+    # standard root level urls
     (r'v2/',include(router.urls)),
+    # nested urls for main API
     (r'v2/',include(extended_router.urls)),
+    # "nested" urls that fetch data for main API
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+    # bulk data retrieval endpoints
+    url(r'v2/bulk/interface/', BulkInterfaceRequestViewset.as_view({'post': 'create'}), name='bulk-interface'),
 )

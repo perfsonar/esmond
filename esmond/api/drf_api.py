@@ -10,7 +10,8 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
-from rest_framework import viewsets, serializers, status, fields, relations, pagination
+from rest_framework import (viewsets, serializers, status, 
+        fields, relations, pagination, mixins)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
@@ -176,6 +177,65 @@ class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
 
         return self._iface_detail_url(lookup_value, obj.device.name, request, format)
 
+class BaseDataSerializer(BaseMixin, serializers.Serializer):
+    url = fields.URLField()
+    data = serializers.ListField(child=serializers.DictField())
+    agg = serializers.CharField(trim_whitespace=True)
+    cf = serializers.CharField(trim_whitespace=True)
+    begin_time = serializers.IntegerField()
+    end_time = serializers.IntegerField()
+
+class BaseDataViewset(viewsets.GenericViewSet):
+    def _endpoint_map(self, device, iface_name):
+        endpoint_map = {}
+
+        for oidset in device.oidsets.all():
+            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
+                continue
+
+            for endpoint, varname in \
+                    OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].iteritems():
+                endpoint_map[endpoint] = [
+                    SNMP_NAMESPACE,
+                    device.name,
+                    oidset.name,
+                    varname,
+                    iface_name
+                ]
+
+        return endpoint_map
+
+    def _parse_data_default_args(self, request, obj):
+
+        # depending on http method...
+        filter_map = dict(
+            GET=getattr(request, 'GET', {}),
+            POST=getattr(request, 'data', {}),
+        )
+
+        filters = filter_map.get(request.method, {})
+
+        # Make sure incoming begin/end timestamps are ints
+        if filters.has_key('begin'):
+            obj.begin_time = int(float(filters['begin']))
+        else:
+            obj.begin_time = int(time.time() - 3600)
+
+        if filters.has_key('end'):
+            obj.end_time = int(float(filters['end']))
+        else:
+            obj.end_time = int(time.time())
+
+        if filters.has_key('cf'):
+            obj.cf = filters['cf']
+        else:
+            obj.cf = 'average'
+
+        if filters.has_key('agg'):
+            obj.agg = int(filters['agg'])
+        else:
+            obj.agg = None
+
 #
 # Filter classes
 # 
@@ -200,6 +260,47 @@ class InterfaceFilter(filters.FilterSet):
 #
 # Endpoints for main URI series.
 # 
+
+"""
+REST namespace documentation:
+
+**/v1/device/** - Namespace to retrieve traffic data with a simplfied helper syntax.
+
+/v1/device/
+/v1/device/$DEVICE/
+/v1/device/$DEVICE/interface/
+/v1/device/$DEVICE/interface/$INTERFACE/
+/v1/device/$DEVICE/interface/$INTERFACE/in
+/v1/device/$DEVICE/interface/$INTERFACE/out
+
+Params for GET: begin, end, agg (and cf where appropriate).
+
+If none are supplied, sane defaults will be set by the interface and the 
+last hour of base rates will be returned.  The begin/end params are 
+timestamps in seconds, the agg param is the frequency of the aggregation 
+that the client is requesting, and the cf is one of average/min/max.
+
+This namespace is 'browsable' - /v1/device/ will return a list of devices, 
+/v1/device/$DEVICE/interface/ will return the interfaces on a device, etc. 
+A full 'detail' URI with a defined endpoing data set (as outlined in the 
+OIDSET_INTERFACE_ENDPOINTS just below) will return the data.
+
+**/v1/oidset/** - Namespace to retrive a list of valid oidsets.
+
+This endpoint is not 'browsable' and it takes no GET arguments.  It merely 
+return a list of valid oidsets from the metadata database for user 
+reference.
+
+**/v1/interface/** - Namespace to retrieve information about discrete interfaces 
+without having to "go through" information about a specific device.
+
+This endpoint is not 'browsable.'  It takes common GET arguments that 
+would apply like begin and end to filter active interfaces.  Additionally, 
+standard django filtering arguments can be applied to the ifDesc and 
+ifAlias fields (ex: &ifAlias__contains=intercloud) to get information 
+about specifc subsets of interfaces.
+
+"""
 
 class OidsetSerializer(serializers.ModelSerializer):
     class Meta:
@@ -333,7 +434,8 @@ class InterfaceViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     pagination_class = InterfacePaginator
 
 # Classes for devices in the "main" rest URI series, ie:
-# /v2/device/$DEVICE/interface/
+# /v2/device/
+# /v2/device/$DEVICE/
 
 class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
     serializer_url_field = EncodedHyperlinkField
@@ -372,9 +474,9 @@ class DeviceViewset(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
     lookup_field = 'name'
 
-# Not sure if we need different resources for the nested interface resources,
-# but slip in these subclasses just in case. Handles the interface nested 
-# under the devices, ie: /v1/device/$DEVICE/interface/$INTERFACE/
+# Subclasses that handles the interface resource nested under the devices, ie: 
+# /v1/device/$DEVICE/interface/
+# /v1/device/$DEVICE/interface/$INTERFACE/
 
 class NestedInterfaceSerializer(InterfaceSerializer):
     pass
@@ -401,20 +503,15 @@ class NestedInterfaceViewset(InterfaceViewset):
 class InterfaceDataObject(DataObject):
     pass
 
-class InterfaceDataSerializer(BaseMixin, serializers.Serializer):
-    url = fields.URLField()
-    data = serializers.ListField(child=serializers.DictField())
-    agg = serializers.CharField(trim_whitespace=True)
-    cf = serializers.CharField(trim_whitespace=True)
-    begin_time = serializers.IntegerField()
-    end_time = serializers.IntegerField()
+class InterfaceDataSerializer(BaseDataSerializer):
+    # Fields defined in superclass.
 
     def to_representation(self, obj):
         ret = super(InterfaceDataSerializer, self).to_representation(obj)
         self._add_uris(ret, uri=False)
         return ret
 
-class InterfaceDataViewset(viewsets.GenericViewSet):
+class InterfaceDataViewset(BaseDataViewset):
     queryset = IfRef.objects.all()
     serializer_class = InterfaceDataSerializer
 
@@ -423,25 +520,6 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
             return '{0}/{1}'.format(kwargs.get('type'), kwargs.get('subtype').rstrip('/'))
         else:
             return kwargs.get('type')
-
-    def _endpoint_map(self, iface):
-        endpoint_map = {}
-
-        for oidset in iface.device.oidsets.all():
-            if oidset.name not in OIDSET_INTERFACE_ENDPOINTS.endpoints:
-                continue
-
-            for endpoint, varname in \
-                    OIDSET_INTERFACE_ENDPOINTS.endpoints[oidset.name].iteritems():
-                endpoint_map[endpoint] = [
-                    SNMP_NAMESPACE,
-                    iface.device.name,
-                    oidset.name,
-                    varname,
-                    iface.ifName
-                ]
-
-        return endpoint_map
 
     def retrieve(self, request, **kwargs):
         """
@@ -469,7 +547,7 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
         device_name = iface.device.name
         iface_dataset = self._endpoint_alias(**kwargs)
 
-        endpoint_map = self._endpoint_map(iface)
+        endpoint_map = self._endpoint_map(iface.device, iface.ifName)
 
         if iface_dataset not in endpoint_map:
             return Response(
@@ -485,28 +563,7 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
         obj.iface_dataset = iface_dataset
         obj.iface = iface
 
-        filters = getattr(request, 'GET', {})
-
-        # Make sure incoming begin/end timestamps are ints
-        if filters.has_key('begin'):
-            obj.begin_time = int(float(filters['begin']))
-        else:
-            obj.begin_time = int(time.time() - 3600)
-
-        if filters.has_key('end'):
-            obj.end_time = int(float(filters['end']))
-        else:
-            obj.end_time = int(time.time())
-
-        if filters.has_key('cf'):
-            obj.cf = filters['cf']
-        else:
-            obj.cf = 'average'
-
-        if filters.has_key('agg'):
-            obj.agg = int(filters['agg'])
-        else:
-            obj.agg = None
+        self._parse_data_default_args(request, obj)
 
         obj.data = list()
 
@@ -556,4 +613,67 @@ class InterfaceDataViewset(viewsets.GenericViewSet):
                 obj.agg, obj.data)
 
         return obj
+
+"""
+**/v1/bulk/interface/** - Namespace to retrive bulk traffic data from 
+multiple interfaces without needing to make multiple round trip http 
+requests via the main device/interface/endpoint namespace documented 
+at the top of the module.
+
+This namespace is not 'browsable,' and while it runs counter to typical 
+REST semantics/verbs, it implements the POST verb.  This is to get around 
+potential limitations in how many arguments/length of said that can be 
+sent in a GET request.  The request information is sent as a json blob:
+
+{ 
+    'interfaces': [{'interface': me0.0, 'device': albq-asw1}, ...], 
+    'endpoint': ['in', 'out'],
+    'cf': 'average',
+    'begin': 1382459647,
+    'end': 1382463247,
+}
+
+Interfaces are requestes as a list of dicts containing iface and device 
+information.  Different kinds of endpoints (in, out, error/in, 
+discard/out, etc) are passed in as a list and data for each sort of 
+endpoint will be returned for each interface.
+"""
+
+class BulkInterfaceDataObject(DataObject):
+    pass
+
+class BulkInterfaceRequestSerializer(BaseDataSerializer):
+    # other fields defined in superclass
+    iface_dataset = serializers.ListField(child=serializers.CharField())
+    device_names = serializers.ListField(child=serializers.CharField())
+
+
+class BulkInterfaceRequestViewset(BaseDataViewset):
+    def create(self, request, **kwargs):
+        print pp.pprint(request.data)
+        if request.content_type != 'application/json':
+            raise BadRequest('Must post content-type: application/json header and json-formatted payload.')
+
+        if not request.data:
+            raise BadRequest('No data payload POSTed.')
+
+        if not request.data.has_key('interfaces') or not \
+            request.data.has_key('endpoint'):
+            raise BadRequest('Payload must contain keys interfaces and endpoint.')
+
+        ret_obj = BulkInterfaceDataObject()
+        ret_obj.iface_dataset = request.data['endpoint']
+        ret_obj.data = []
+        ret_obj.device_names = []
+        ret_obj.url = reverse('bulk-interface', request=request)
+
+        self._parse_data_default_args(request, ret_obj)
+
+        serializer = BulkInterfaceRequestSerializer(ret_obj.to_dict(), context={'request': request})
+        return Response(serializer.data, status.HTTP_201_CREATED)
+
+
+
+
+
 
