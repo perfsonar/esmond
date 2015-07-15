@@ -121,6 +121,10 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'rest_framework_filters.backends.DjangoFilterBackend',
     ),
+
+    # Pagination parameters are being handled in custom pagination 
+    # classes since pagination is only being done on a few 
+    # endpoints, not globally.
 }
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']

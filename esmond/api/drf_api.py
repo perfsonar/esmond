@@ -10,7 +10,7 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
-from rest_framework import viewsets, serializers, status, fields, relations
+from rest_framework import viewsets, serializers, status, fields, relations, pagination
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
@@ -129,7 +129,6 @@ class DataObject(object):
     def to_dict(self):
         return self._data
 
-
 class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
     """
     Generate urls to "fully qualified" nested interface detail url.
@@ -198,7 +197,6 @@ class InterfaceFilter(filters.FilterSet):
     ifAlias = filters.AllLookupsFilter(name='ifAlias')
     device = filters.RelatedFilter(DeviceFilter, name='device')
 
-
 #
 # Endpoints for main URI series.
 # 
@@ -216,7 +214,6 @@ class OidsetSerializer(serializers.ModelSerializer):
     # def to_internal_value(self, data):
     #     return super(OidsetSerializer, self).to_internal_value(data)
 
-
 class OidsetViewset(viewsets.ReadOnlyModelViewSet):
     queryset = OIDSet.objects.all()
     model = OIDSet
@@ -225,6 +222,60 @@ class OidsetViewset(viewsets.ReadOnlyModelViewSet):
 # Code to deal with handling interface endpoints in the main REST series.
 # ie: /v2/interface/
 # Also subclassed by the interfaces nested under the device endpoint.
+
+class InterfacePaginator(pagination.LimitOffsetPagination):
+    default_limit = 20
+
+    def _get_count(self, queryset):
+        try:
+            return queryset.count()
+        except (AttributeError, TypeError):
+            return len(queryset)
+
+    def get_next_link(self):
+        if self.limit == 0 and self.offset == 0:
+            return None
+        else:
+            return super(InterfacePaginator, self).get_next_link()
+
+    def paginate_queryset(self, queryset, request, view=None):
+        """
+        Modified to make ?limit=0 return the whole dataset.
+        """
+        self.limit = self.get_limit(request)
+        if self.limit is None:
+            return None
+
+        self.count = self._get_count(queryset)
+        self.request = request
+
+        if self.count > self.limit and self.template is not None:
+                self.display_page_controls = True
+
+        if self.limit == 0:
+            self.offset = 0
+            return list(queryset)
+        else:
+            self.offset = self.get_offset(request)
+            return list(queryset[self.offset:self.offset + self.limit])
+
+    def get_paginated_response(self, data):
+        """
+        Format the return envelope.
+        """
+        return Response(
+            {
+                'meta': {
+                    'next': self.get_next_link(),
+                    'previous': self.get_previous_link(),
+                    'limit': self.limit,
+                    'total_count': self.count,
+                    'offset': self.offset,
+                },
+
+                'children': data,
+            }
+        )
 
 class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
     serializer_url_field = InterfaceHyperlinkField
@@ -279,16 +330,7 @@ class InterfaceViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = InterfaceSerializer
     lookup_field = 'ifName'
     filter_class = InterfaceFilter
-
-    def list(self, request, **kwargs):
-        ret = super(InterfaceViewset, self).list(request, **kwargs)
-        # I have no idea why we decided to stuff a perfectly good list of 
-        # json objects into this dict with a children key, but we did.
-        envelope = collections.OrderedDict()
-        envelope['children'] = copy.copy(ret.data)
-        ret.data = envelope
-        # XXX(mmg) will the meta: {} crap be here too?
-        return ret
+    pagination_class = InterfacePaginator
 
 # Classes for devices in the "main" rest URI series, ie:
 # /v2/device/$DEVICE/interface/
@@ -330,7 +372,6 @@ class DeviceViewset(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
     lookup_field = 'name'
 
-
 # Not sure if we need different resources for the nested interface resources,
 # but slip in these subclasses just in case. Handles the interface nested 
 # under the devices, ie: /v1/device/$DEVICE/interface/$INTERFACE/
@@ -340,13 +381,14 @@ class NestedInterfaceSerializer(InterfaceSerializer):
 
 class NestedInterfaceViewset(InterfaceViewset):
     serializer_class = NestedInterfaceSerializer
+    filter_class = None # don't inherit filtering from superclass
 
     def get_queryset(self):
         """
         This is used for the /v2/device/rtr_a/interface/ relation.
         In the nested subclass since there is no filtering on 
-        this endpoint and don't want this logic interfering with 
-        filtering on the /v2/interface/ endpoint.
+        this endpoint and don't want this logic to potentailly 
+        interfere with filtering on the /v2/interface/ endpoint.
         """
         if self.kwargs.get('parent_lookup_device__name', None):
             return IfRef.objects.filter(device__name=self.kwargs.get('parent_lookup_device__name'))

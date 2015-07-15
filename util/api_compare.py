@@ -41,12 +41,12 @@ def main():
     parser.add_option('-t', '--interface-traffic',
             dest='interface_traffic', action='store_true', default=False,
             help='Interface endpoint for traffic data (out).')
-    parser.add_option('-I', '--interface-list',
+    parser.add_option('-I', '--interface-list', # meta
             dest='interface_list', action='store_true', default=False,
-            help='List of interfaces on a router.')
-    parser.add_option('-R', '--interface-root',
+            help='List of interfaces on a router (paginated).')
+    parser.add_option('-R', '--interface-root', # meta
             dest='interface_root', action='store_true', default=False,
-            help='Root level list of interfaces.')
+            help='Root level list of interfaces (paginated).')
     parser.add_option('-u', '--url', metavar='URL',
             type='string', dest='url', default='http://localhost:8000',
             help='Url where API is running (default: %default).')

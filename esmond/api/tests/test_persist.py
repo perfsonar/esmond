@@ -1280,8 +1280,8 @@ class TestCassandraApiQueries(ResourceTestCase):
         response = self.api_client.get(ifaces)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertTrue(len(data['children']))
-        # XXX(mmg): this fails since the meta is not implemented yet.
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_interface_info(self):
@@ -1292,11 +1292,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertTrue(len(data['children']))
         self.assertLessEqual(len(data['children']), 1)
         self.assertEquals(data['children'][0]['ifName'], 'fxp0.0')
-        # XXX(mmg): this fails since the meta is not implemented yet.
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_oidset_info(self):
-        response = self.api_client.get('/v1/oidset/')
+        response = self.api_client.get('/v2/oidset/')
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         
