@@ -3,6 +3,7 @@ import collections
 import copy
 import datetime
 import inspect
+import json
 import time
 import urlparse
 
@@ -782,7 +783,7 @@ class TimeseriesRequestViewset(BaseDataViewset):
                 'ts_device': kwargs.get('ts_device'),
                 'ts_oidset': kwargs.get('ts_oidset'),
                 'ts_oid': kwargs.get('ts_oid'),
-                'ts_iface': atencode(kwargs.get('ts_iface')),
+                'ts_iface': kwargs.get('ts_iface'),
                 # /datapath
                 'ts_frequency': kwargs.get('ts_frequency'),
             },
@@ -870,9 +871,99 @@ class TimeseriesRequestViewset(BaseDataViewset):
         return obj
 
     def create(self, request, **kwargs):
-        print kwargs
-        return Response({'create': True}, status.HTTP_201_CREATED)
 
+        # validate the incoming json and data contained therein.
+        if request.content_type != 'application/json':
+            return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
+                status.HTTP_400_BAD_REQUEST)
+
+        if not request.body:
+            return Response({'error': 'No data payload POSTed.'}, status.HTTP_400_BAD_REQUEST)
+
+        try:
+            input_payload = json.loads(request.body)
+        except ValueError:
+            return Response({'error': 'POST data payload could not be decoded to a JSON object - given: {0}'.format(bundle.body)},
+                status.HTTP_400_BAD_REQUEST)
+
+        if not isinstance(input_payload, list):
+            return Response({'error': 'Successfully decoded JSON, but expecting a list - got: {0} from input: {1}'.format(type(input_payload), input_payload)},
+                status.HTTP_400_BAD_REQUEST)
+
+        for i in input_payload:
+            if not isinstance(i, dict):
+                return Response({'error': 'Expecting a JSON formtted list of dicts - contained {0} as an array element.'.format(type(i))},
+                    status.HTTP_400_BAD_REQUEST)
+            if not i.has_key('ts') or not i.has_key('val'):
+                return Response({'error': 'Expecting list of dicts with keys \'val\' and \'ts\' - got: {0}'.format(i)},
+                    status.HTTP_400_BAD_REQUEST)
+            try:
+                int(float(i.get('ts')))
+                float(i.get('val'))
+            except ValueError:
+                return Response({'error': 'Must supply valid numeric args for ts and val dict attributes - got: {0}'.format(i)},
+                    status.HTTP_400_BAD_REQUEST)
+
+        objs = list()
+
+        for i in input_payload:
+
+            obj = TimeseriesDataObject()
+
+            obj.r_type = kwargs.get('ts_type')
+            obj.datapath = self._get_datapath(**kwargs)
+            obj.ts = i.get('ts')
+            obj.val = i.get('val')
+
+            try:
+                obj.agg = int(kwargs.get('ts_frequency', None))
+            except ValueError:
+                return Response({'error': 'Last segment of URI must be frequency integer'}, status.HTTP_400_BAD_REQUEST)
+
+            if obj.r_type not in QueryUtil.timeseries_request_types:
+                return Response({'error': 'Request type must be one of {0} - {1} was given.'.format(QueryUtil.timeseries_request_types, obj.r_type)},
+                    status.HTTP_400_BAD_REQUEST)
+
+            # Currently only doing raw and base.
+            if obj.r_type not in [ 'RawData', 'BaseRate' ]:
+                return Response({'error': 'Only POSTing RawData or BaseRate currently supported.'},
+                    status.HTTP_400_BAD_REQUEST)
+
+            objs.append(obj)
+
+        try:
+            self._execute_inserts(objs)
+            return Response('', status.HTTP_201_CREATED)
+        except QueryErrorException, e:
+            return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
+
+
+    def _execute_inserts(self, objs):
+        """
+        Iterate through a list of TimeseriesDataObject, execute the 
+        appropriate inserts, and then explicitly flush the db so the 
+        inserts don't sit in the batch wating for more data to auto-flush.
+
+        snmp:rtr_test:FastPollHC:ifHCInOctets:30000:2015
+        """
+        for obj in objs:
+            if obj.r_type == 'BaseRate':
+                rate_bin = BaseRateBin(path=obj.datapath, ts=obj.ts, 
+                    val=obj.val, freq=obj.agg)
+                db.update_rate_bin(rate_bin)
+            elif obj.r_type == 'Aggs':
+                pass
+            elif obj.r_type == 'RawData':
+                raw_data = RawRateData(path=obj.datapath, ts=obj.ts, 
+                    val=obj.val, freq=obj.agg)
+                db.set_raw_data(raw_data)
+            else:
+                # Input has been checked already
+                pass
+        
+        db.flush()
+
+        return True
 
 
 
