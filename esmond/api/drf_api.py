@@ -777,27 +777,38 @@ class TimeseriesRequestViewset(BaseDataViewset):
             'timeseries',
             kwargs={
                 'ts_type': kwargs.get('ts_type'),
+                # datapath keys
                 'ts_ns': kwargs.get('ts_ns'),
                 'ts_device': kwargs.get('ts_device'),
                 'ts_oidset': kwargs.get('ts_oidset'),
                 'ts_oid': kwargs.get('ts_oid'),
                 'ts_iface': atencode(kwargs.get('ts_iface')),
+                # /datapath
                 'ts_frequency': kwargs.get('ts_frequency'),
             },
             request=request,
         )
 
-    def retrieve(self, request, **kwargs):
-        print kwargs
+    def _get_datapath(self, **kwargs):
+        return QueryUtil.decode_datapath([
+                kwargs.get('ts_ns'),
+                kwargs.get('ts_device'),
+                kwargs.get('ts_oidset'),
+                kwargs.get('ts_oid'),
+                kwargs.get('ts_iface'),
+            ])
 
+    def retrieve(self, request, **kwargs):
         obj = TimeseriesDataObject()
         obj.url = self._ts_url(request, **kwargs)
         obj.r_type = kwargs.get('ts_type')
+        obj.datapath = self._get_datapath(**kwargs)
+        obj.user = request.user
 
         obj.data = list()
 
         try:
-            obj.agg = kwargs.get('ts_frequency', None)
+            obj.agg = int(kwargs.get('ts_frequency', None))
         except ValueError:
             return Response({'error': 'Last segment of URI must be frequency integer'}, status.HTTP_400_BAD_REQUEST)
 
@@ -809,8 +820,54 @@ class TimeseriesRequestViewset(BaseDataViewset):
 
         self._parse_data_default_args(request, obj, in_ms=True)
 
-        serializer = TimeseriesRequestSerializer(obj.to_dict(), context={'request': request})
-        return Response(serializer.data)
+        try:
+            obj = self._execute_query(obj)
+            serializer = TimeseriesRequestSerializer(obj.to_dict(), context={'request': request})
+            return Response(serializer.data)
+        except QueryErrorException, e:
+            return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
+
+    def _execute_query(self, obj):
+        """
+        Sanity check the requested timerange, and then make the appropriate
+        method call to the cassandra backend.
+        """
+        # Make sure we're not exceeding allowable time range.
+        if not QueryUtil.valid_timerange(obj, in_ms=True) and \
+            not obj.user.username:
+            raise QueryErrorException('exceeded valid timerange for agg level: {0}'.format(obj.agg))
+        
+        data = []
+
+        if obj.r_type == 'BaseRate':
+            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time, ts_max=obj.end_time)
+        elif obj.r_type == 'Aggs':
+            if obj.cf not in AGG_TYPES:
+                raise QueryErrorException('{0} is not a valid consolidation function'.format(obj.cf))
+            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time, ts_max=obj.end_time, cf=obj.cf)
+        elif obj.r_type == 'RawData':
+            data = db.query_raw_data(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time, ts_max=obj.end_time)
+        else:
+            # Input has been checked already
+            pass
+
+        obj.data = QueryUtil.format_data_payload(data, in_ms=True)
+        if not len(obj.data):
+            # If no data is returned, sanity check that there is a 
+            # corresponding key in the database.
+            v = db.check_for_valid_keys(path=obj.datapath, freq=obj.agg, 
+                ts_min=obj.begin_time, ts_max=obj.end_time)
+            if not v:
+                raise QueryErrorException('The request path {0} has no corresponding keys.'.format([obj.r_type] + obj.datapath + [obj.agg]))
+
+        if obj.r_type != 'RawData':
+            obj.data = Fill.verify_fill(obj.begin_time, obj.end_time,
+                    obj.agg, obj.data)
+
+        return obj
 
     def create(self, request, **kwargs):
         print kwargs

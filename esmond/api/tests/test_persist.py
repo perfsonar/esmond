@@ -1029,14 +1029,14 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000
         }
 
-        url = '/v1/timeseries/BaseRate/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
+        url = '/v2/timeseries/BaseRate/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
 
-        # print json.dumps(data, indent=4)
+        print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -1057,7 +1057,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000,
         }
 
-        url = '/v1/timeseries/Aggs/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/{1}'.format(SNMP_NAMESPACE, self.ctr.agg_freq*1000)
+        url = '/v2/timeseries/Aggs/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/{1}'.format(SNMP_NAMESPACE, self.ctr.agg_freq*1000)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -1120,7 +1120,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000
         }
 
-        url = '/v1/timeseries/RawData/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
+        url = '/v2/timeseries/RawData/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
