@@ -262,7 +262,7 @@ class InterfaceFilter(filters.FilterSet):
 # Endpoints for main URI series.
 # 
 
-"""
+snmp_ns_doc = """
 REST namespace documentation:
 
 **/v1/device/** - Namespace to retrieve traffic data with a simplfied helper syntax.
@@ -615,7 +615,7 @@ class InterfaceDataViewset(BaseDataViewset):
 
         return obj
 
-"""
+bulk_interface_ns_doc = """
 **/v1/bulk/interface/** - Namespace to retrive bulk traffic data from 
 multiple interfaces without needing to make multiple round trip http 
 requests via the main device/interface/endpoint namespace documented 
@@ -710,7 +710,59 @@ class BulkInterfaceRequestViewset(BaseDataViewset):
         serializer = BulkInterfaceRequestSerializer(ret_obj.to_dict(), context={'request': request})
         return Response(serializer.data, status.HTTP_201_CREATED)
 
+ts_ns_doc = """
+**/v1/timeseries/** - Namespace to retrive data with explicit Cassandra 
+schema-like syntax.
 
+/v1/timeseries/
+/v1/timeseries/$TYPE/
+/v1/timeseries/$TYPE/$NS/
+/v1/timeseries/$TYPE/$NS/$DEVICE/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/
+/v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/$FREQUENCY
+
+$TYPE: is RawData, BaseRate or Aggs
+$NS: is just a prefix/key construct
+
+Params for get: begin, end, and cf where appropriate.
+Params for put: JSON list of dicts with keys 'val' and 'ts' sent as POST 
+data payload.
+
+GET: The begin/end params are timestamps in milliseconds, and the cf is 
+one of average/min/max.  If none are given, begin/end will default to the 
+last hour.
+
+In short: everything after the /v1/timeseries/$TYPE/ segment of the URI is 
+joined together to create a cassandra row key.  The path must end with a 
+valid numeric frequency.  The URIs could potentailly be longer or shorter 
+depending on the composition of the row keys of the data being retrieved 
+or written - this is just based on the composition of the snmp data keys.
+
+The $NS element is just a construct of how we are storing the data.  It is 
+just a prefix - the esmond data is being stored with the previx snmp for 
+example.  Ultimately it is still just part of the generated path.
+
+This namespace is not 'browsable' - GET and POST requests expect expect a 
+full 'detail' URI.  Entering an incomplete URI (ex: /v1/timeseries/, etc) 
+will result in a 400 error being returned.
+"""
+
+class TimeseriesDataObject(DataObject):
+    pass
+
+class TimeseriesRequestSerializer(BaseDataSerializer):
+    pass
+
+class TimeseriesRequestViewset(BaseDataViewset):
+    def retrieve(self, request, **kwargs):
+        print kwargs
+        return Response({'retrieve': True})
+
+    def create(self, request, **kwargs):
+        print kwargs
+        return Response({'create': True}, status.HTTP_201_CREATED)
 
 
 
