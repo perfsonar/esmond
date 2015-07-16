@@ -994,12 +994,42 @@ class BulkTimeseriesDataObject(DataObject):
     pass
 
 class BulkTimeseriesSerializer(BaseDataSerializer):
-    pass
+    def to_representation(self, obj):
+        ret = super(BulkTimeseriesSerializer, self).to_representation(obj)
+        self._add_uris(ret, uri=False)
+        return ret
 
 class BulkTimeseriesViewset(BaseDataViewset):
     def create(self, request, **kwargs):
         print kwargs
-        return Response({'create': True}, status.HTTP_201_CREATED)
+        # validate the incoming json and data contained therein.
+        if request.content_type != 'application/json':
+            return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
+                status.HTTP_400_BAD_REQUEST)
+
+        if not request.data:
+            return Response({'error': 'No data payload POSTed.'}, status.HTTP_400_BAD_REQUEST)
+
+        if not request.data.has_key('paths') or not \
+            request.data.has_key('type'):
+            return Response({'error': 'Payload must contain keys paths and type.'},
+                status.HTTP_400_BAD_REQUEST)
+
+        if not isinstance(request.data['paths'], list):
+            return Response({'error': 'Payload paths element must be a list - got: {0}'.format(bundle.data['lists'])},
+                status.HTTP_400_BAD_REQUEST)
+
+        ret_obj = BulkTimeseriesDataObject()
+        ret_obj.url = reverse('bulk-timeseries', request=request)
+        ret_obj.agg = None
+        ret_obj.r_type = request.data.get('type')
+
+        ret_obj.data = []
+
+        self._parse_data_default_args(request, ret_obj, in_ms=True)
+
+        serializer = BulkTimeseriesSerializer(ret_obj.to_dict(), context={'request': request})
+        return Response(serializer.data, status.HTTP_201_CREATED)
 
 
 
