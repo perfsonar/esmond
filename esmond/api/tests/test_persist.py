@@ -1146,7 +1146,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             self.td.user_admin_apikey.key)
 
         # raw data writes
-        url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
+        url = '/v1/timeseries/RawData/{0}/rtr_test/FastPollHC/ifHCInOctets/{1}/30000'.format(SNMP_NAMESPACE, atencode(interface_name))
 
         params = { 
             'ts': int(time.time()) * 1000, 
@@ -1158,6 +1158,7 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         response = self.api_client.post(url, data=payload, format='json',
             authentication=authn)
+        # print response.content
         self.assertEquals(response.status_code, 201) # not 200!
 
         response = self.client.get(url, authentication=authn)
@@ -1174,7 +1175,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['cf'], 'raw')
 
         # base rate write
-        url = '/v1/timeseries/BaseRate/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
+        url = '/v1/timeseries/BaseRate/{0}/rtr_test/FastPollHC/ifHCInOctets/{1}/30000'.format(SNMP_NAMESPACE, atencode(interface_name))
 
         payload[0]['ts'] = (payload[0]['ts']/30000)*30000
 
