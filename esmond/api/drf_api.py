@@ -206,7 +206,7 @@ class BaseDataViewset(viewsets.GenericViewSet):
 
         return endpoint_map
 
-    def _parse_data_default_args(self, request, obj):
+    def _parse_data_default_args(self, request, obj, in_ms=False):
 
         # depending on http method...
         filter_map = dict(
@@ -216,21 +216,34 @@ class BaseDataViewset(viewsets.GenericViewSet):
 
         filters = filter_map.get(request.method, {})
 
+        # defaults for values in ms vs. seconds.
+        ms_map = {False: 1, True: 1000}
+
         # Make sure incoming begin/end timestamps are ints
         if filters.has_key('begin'):
             obj.begin_time = int(float(filters['begin']))
         else:
-            obj.begin_time = int(time.time() - 3600)
+            obj.begin_time = int(time.time() - 3600) * ms_map.get(in_ms)
 
         if filters.has_key('end'):
             obj.end_time = int(float(filters['end']))
         else:
-            obj.end_time = int(time.time())
+            obj.end_time = int(time.time()) * ms_map.get(in_ms)
 
         if filters.has_key('cf'):
             obj.cf = filters['cf']
+        elif getattr(obj, 'r_type'):
+            # logic used by the /v2/timeseries endpoint
+            if obj.r_type == 'RawData':
+                obj.cf = 'raw'
+            else:
+                obj.cf = 'average'
         else:
             obj.cf = 'average'
+
+        if getattr(obj, 'r_type'):
+            # agg is explicitly set by timeseries logic so quit
+            return
 
         if filters.has_key('agg'):
             obj.agg = int(filters['agg'])
@@ -753,12 +766,51 @@ class TimeseriesDataObject(DataObject):
     pass
 
 class TimeseriesRequestSerializer(BaseDataSerializer):
-    pass
+    def to_representation(self, obj):
+        ret = super(TimeseriesRequestSerializer, self).to_representation(obj)
+        self._add_uris(ret, uri=False)
+        return ret
 
 class TimeseriesRequestViewset(BaseDataViewset):
+    def _ts_url(self, request, **kwargs):
+        return reverse(
+            'timeseries',
+            kwargs={
+                'ts_type': kwargs.get('ts_type'),
+                'ts_ns': kwargs.get('ts_ns'),
+                'ts_device': kwargs.get('ts_device'),
+                'ts_oidset': kwargs.get('ts_oidset'),
+                'ts_oid': kwargs.get('ts_oid'),
+                'ts_iface': atencode(kwargs.get('ts_iface')),
+                'ts_frequency': kwargs.get('ts_frequency'),
+            },
+            request=request,
+        )
+
     def retrieve(self, request, **kwargs):
         print kwargs
-        return Response({'retrieve': True})
+
+        obj = TimeseriesDataObject()
+        obj.url = self._ts_url(request, **kwargs)
+        obj.r_type = kwargs.get('ts_type')
+
+        obj.data = list()
+
+        try:
+            obj.agg = kwargs.get('ts_frequency', None)
+        except ValueError:
+            return Response({'error': 'Last segment of URI must be frequency integer'}, status.HTTP_400_BAD_REQUEST)
+
+        if obj.r_type not in QueryUtil.timeseries_request_types:
+            return Response(
+                {'error': 'Request type must be one of {0} - {1} was given.'.format(QueryUtil.timeseries_request_types, obj.r_type)},
+                status.HTTP_400_BAD_REQUEST
+                )
+
+        self._parse_data_default_args(request, obj, in_ms=True)
+
+        serializer = TimeseriesRequestSerializer(obj.to_dict(), context={'request': request})
+        return Response(serializer.data)
 
     def create(self, request, **kwargs):
         print kwargs
