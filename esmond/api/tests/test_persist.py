@@ -1244,11 +1244,12 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end*1000
         }
 
-        response = self.api_client.post('/v1/bulk/timeseries/', data=payload,
+        response = self.api_client.post('/v2/bulk/timeseries/', data=payload,
             format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(len(data['data']), 2)
         self.assertEquals(data['data'][0]['path'], paths[0])
         self.assertEquals(data['data'][1]['path'], paths[1])
@@ -1510,7 +1511,7 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
             'end': self.ctr.end
         }
 
-        url = '/v1/device/rtr_alu/interface/1@2F1@2F1/in'
+        url = '/v2/device/rtr_alu/interface/1@2F1@2F1/in'
 
         authn = self.create_apikey(self.td.user_admin.username,
                                   self.td.user_admin_apikey.key)

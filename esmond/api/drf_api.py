@@ -1028,6 +1028,24 @@ class BulkTimeseriesViewset(BaseDataViewset):
 
         self._parse_data_default_args(request, ret_obj, in_ms=True)
 
+        for p in request.data['paths']:
+            obj = BulkTimeseriesDataObject()
+            obj.r_type = request.data['type']
+            obj.cf = ret_obj.cf
+            obj.begin_time = ret_obj.begin_time
+            obj.end_time = ret_obj.end_time
+            obj.datapath = p
+            obj.agg = int(obj.datapath.pop())
+
+            obj = TimeseriesRequestViewset()._execute_query(obj)
+
+            row = {
+                'data': obj.data,
+                'path': obj.datapath + [obj.agg]
+            }
+
+            ret_obj.data.append(row)
+
         serializer = BulkTimeseriesSerializer(ret_obj.to_dict(), context={'request': request})
         return Response(serializer.data, status.HTTP_201_CREATED)
 
