@@ -125,6 +125,15 @@ REST_FRAMEWORK = {
     # Pagination parameters are being handled in custom pagination 
     # classes since pagination is only being done on a few 
     # endpoints, not globally.
+
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        # 'rest_framework.throttling.UserRateThrottle'
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '150/hour',
+        # 'user': '1000/day'
+    }
 }
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']

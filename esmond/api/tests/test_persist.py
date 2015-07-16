@@ -1404,7 +1404,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         # Make a request the bulk endpoint will throttle for too many 
         # queries w/out auth.
 
-        response = self.api_client.post('/v1/bulk/interface/', data=payload,
+        response = self.api_client.post('/v2/bulk/interface/', data=payload,
             format='json')
         self.assertEquals(response.status_code, 401)
 
@@ -1412,7 +1412,7 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         authn = self.create_apikey(self.td.user_admin.username, 
             self.td.user_admin_apikey.key)
-        response = self.api_client.post('/v1/bulk/interface/', data=payload,
+        response = self.api_client.post('/v2/bulk/interface/', data=payload,
             format='json', authentication=authn)
         self.assertEquals(response.status_code, 201) # not 200!
 
@@ -1425,7 +1425,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'agg': self.ctr.agg_freq
         }
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
 
