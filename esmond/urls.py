@@ -13,6 +13,7 @@ from rest_framework_extensions.routers import ExtendedSimpleRouter
 
 from esmond.api.drf_api import (
     BulkInterfaceRequestViewset,
+    BulkTimeseriesViewset,
     DeviceViewset,
     InterfaceViewset,
     InterfaceDataViewset,
@@ -58,6 +59,7 @@ urlpatterns = patterns('',
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
     # bulk data retrieval endpoints
     url(r'v2/bulk/interface/', BulkInterfaceRequestViewset.as_view({'post': 'create'}), name='bulk-interface'),
+    url(r'v2/bulk/timeseries/', BulkTimeseriesViewset.as_view({'post': 'create'}), name='bulk-timeseries'),
     # timeseries endpoint
     # /v1/timeseries/$TYPE/$NS/$DEVICE/$OIDSET/$OID/$INTERFACE/$FREQUENCY
     url(r'v2/timeseries/(?P<ts_type>[^/]+)/(?P<ts_ns>[^/]+)/(?P<ts_device>[^/]+)/(?P<ts_oidset>[^/]+)/(?P<ts_oid>[^/]+)/(?P<ts_iface>[^/]+)/(?P<ts_frequency>[^/]+)$', 

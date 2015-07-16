@@ -965,5 +965,50 @@ class TimeseriesRequestViewset(BaseDataViewset):
 
         return True
 
+bulk_namespace_ns_doc = """
+**/v1/bulk/timeseries/** - Namespace to retrive bulk traffic data from 
+multiple paths without needing to make multiple round trip http 
+requests via the /timeseries/ namespace.
+
+This namespace is not 'browsable,' and while it runs counter to typical 
+REST semantics/verbs, it implements the POST verb.  This is to get around 
+potential limitations in how many arguments/length of said that can be 
+sent in a GET request.  The request information is sent as a json blob:
+
+{
+    'paths': [
+        ['snmp', 'lbl-mr2', 'FastPollHC', 'ifHCInOctets', 'xe-9/3/0.202', '30000'], 
+        ['snmp', 'anl-mr2', 'FastPollHC', 'ifHCOutOctets', 'xe-7/0/0.1808', '30000']
+    ], 
+    'begin': 1384976511773, 
+    'end': 1384980111773, 
+    'type': 'RawData'
+}
+
+Data are requested as a list of paths per the /timeseries namespace with
+the addition of a frequency (in ms) at the end of the path dict mimicing
+the cassandra row keys.
+"""
+
+class BulkTimeseriesDataObject(DataObject):
+    pass
+
+class BulkTimeseriesSerializer(BaseDataSerializer):
+    pass
+
+class BulkTimeseriesViewset(BaseDataViewset):
+    def create(self, request, **kwargs):
+        print kwargs
+        return Response({'create': True}, status.HTTP_201_CREATED)
+
+
+
+
+
+
+
+
+
+
 
 
