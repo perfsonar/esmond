@@ -17,6 +17,7 @@ from rest_framework import (viewsets, serializers, status,
         fields, relations, pagination, mixins, throttling)
 from rest_framework.exceptions import (ParseError, NotAuthenticated,
         AuthenticationFailed, APIException)
+from rest_framework.authentication import (TokenAuthentication)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
@@ -445,12 +446,26 @@ class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
         self._add_device_uri(ret)
         return ret
 
+class BaseAuth(TokenAuthentication):
+    def authenticate(self, request):
+        print 'base auth'
+        return super(BaseAuth, self).authenticate(request)
+
+class AnonGetElseAuth(BaseAuth):
+    def authenticate(self, request):
+        print 'anon auth'
+        if request.method == 'GET':
+            print '  GET request'
+            return None
+        return super(AnonGetElseAuth, self).authenticate(request)
+
 class InterfaceViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     queryset = IfRef.objects.all()
     serializer_class = InterfaceSerializer
     lookup_field = 'ifName'
     filter_class = InterfaceFilter
     pagination_class = InterfacePaginator
+    authentication_classes = (AnonGetElseAuth,)
 
 # Classes for devices in the "main" rest URI series, ie:
 # /v2/device/
@@ -492,6 +507,7 @@ class DeviceViewset(viewsets.ModelViewSet):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'name'
+    authentication_classes = (AnonGetElseAuth,)
 
 # Subclasses that handles the interface resource nested under the devices, ie: 
 # /v1/device/$DEVICE/interface/
@@ -674,16 +690,13 @@ class BaseBulkThrottle(throttling.BaseThrottle):
 
     def allow_request(self, request, view):
 
-        # XXX(mmg) just allow all for the time being
-        return True
-
         print request.user, request.user.username
         if request.user.is_authenticated():
             # Authenticated users can as for however much data
             print 'is_authenticated'
             return True
 
-        if request.body and request.content_type == 'application/json':
+        if request.body and request.content_type.startswith('application/json'):
             post_payload = json.loads(request.body)
         else:
             # status 400
@@ -711,6 +724,14 @@ class BulkInterfaceThrottle(BaseBulkThrottle):
 
         return len(post_payload.get('interfaces', []))
 
+class BulkThrottleAuth(BaseAuth):
+    def authenticate(self, request):
+        print 'throttle auth',
+        print request.META
+        ret = super(BulkThrottleAuth, self).authenticate(request)
+        print 'xxx RET', ret
+        return ret
+
 
 class BulkInterfaceDataObject(DataObject):
     pass
@@ -721,11 +742,13 @@ class BulkInterfaceRequestSerializer(BaseDataSerializer):
     device_names = serializers.ListField(child=serializers.CharField())
 
 class BulkInterfaceRequestViewset(BaseDataViewset):
-    throttle_classes = (BulkInterfaceThrottle,)
+    authentication_classes = (BulkThrottleAuth,)
 
     def create(self, request, **kwargs):
 
-        if request.content_type != 'application/json':
+        print request.content_type
+
+        if not request.content_type.startswith('application/json'):
             return Response({'error', 'Must post content-type: application/json header and json-formatted payload.'}, status.HTTP_400_BAD_REQUEST)
 
         if not request.data:
