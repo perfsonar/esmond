@@ -110,6 +110,7 @@ INSTALLED_APPS = (
     'discover_runner',
     'tastypie',
     'rest_framework',
+    'rest_framework.authtoken',
 )
 
 REST_FRAMEWORK = {
