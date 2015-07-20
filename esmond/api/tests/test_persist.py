@@ -891,7 +891,6 @@ class BaseTestCase(TestCase):
         print r.content, r.status_code
         """
         super(BaseTestCase, self).setUp()
-        print 'base setUp'
 
         self.client = APIClient()
 
