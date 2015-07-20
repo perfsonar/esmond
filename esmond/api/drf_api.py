@@ -11,8 +11,12 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
+from django.utils.translation import ugettext_lazy as _
+
 from rest_framework import (viewsets, serializers, status, 
-        fields, relations, pagination, mixins)
+        fields, relations, pagination, mixins, throttling)
+from rest_framework.exceptions import (ParseError, NotAuthenticated,
+        AuthenticationFailed, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
@@ -654,6 +658,60 @@ discard/out, etc) are passed in as a list and data for each sort of
 endpoint will be returned for each interface.
 """
 
+class CustomThrottleAuth(APIException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    default_detail = _('Auth-based bulk throttling.')
+
+class BaseBulkThrottle(throttling.BaseThrottle):
+
+    def _check_payload_and_request(self, post_payload):
+        """
+        Override in subclasses. Raise ParseError if the payload is flawed, 
+        otherwise extract and return the number of "things" the request is 
+        asking for.
+        """
+        raise NotImplementedError
+
+    def allow_request(self, request, view):
+
+        # XXX(mmg) just allow all for the time being
+        return True
+
+        print request.user, request.user.username
+        if request.user.is_authenticated():
+            # Authenticated users can as for however much data
+            print 'is_authenticated'
+            return True
+
+        if request.body and request.content_type == 'application/json':
+            post_payload = json.loads(request.body)
+        else:
+            # status 400
+            raise ParseError('Did not receive json payload for bulk POST request.')
+
+        num_request = self._check_payload_and_request(post_payload)
+
+        if num_request <= ANON_LIMIT:
+            return True
+        else:
+            raise CustomThrottleAuth('Request for {0} endpoints exceeds the unauthenticated limit of {1}'.format(num_request, ANON_LIMIT))
+
+        return request.user.is_authenticated()
+
+class BulkInterfaceThrottle(BaseBulkThrottle):
+    def _check_payload_and_request(self, post_payload):
+
+        if not post_payload.has_key('interfaces') or \
+            not post_payload.has_key('endpoint'):
+            raise ParseError('JSON payload must have endpoint and interfaces keys.')  
+
+        if not isinstance(post_payload['interfaces'], list) or \
+            not isinstance(post_payload['endpoint'], list):
+            raise ParseError('Both endpoint and interfaces keys must be a list')
+
+        return len(post_payload.get('interfaces', []))
+
+
 class BulkInterfaceDataObject(DataObject):
     pass
 
@@ -663,17 +721,19 @@ class BulkInterfaceRequestSerializer(BaseDataSerializer):
     device_names = serializers.ListField(child=serializers.CharField())
 
 class BulkInterfaceRequestViewset(BaseDataViewset):
+    throttle_classes = (BulkInterfaceThrottle,)
+
     def create(self, request, **kwargs):
 
         if request.content_type != 'application/json':
-            raise BadRequest('Must post content-type: application/json header and json-formatted payload.')
+            return Response({'error', 'Must post content-type: application/json header and json-formatted payload.'}, status.HTTP_400_BAD_REQUEST)
 
         if not request.data:
-            raise BadRequest('No data payload POSTed.')
+            return Response({'error', 'No data payload POSTed.'}, status.HTTP_400_BAD_REQUEST)
 
         if not request.data.has_key('interfaces') or not \
             request.data.has_key('endpoint'):
-            raise BadRequest('Payload must contain keys interfaces and endpoint.')
+            return Response({'error', 'Payload must contain keys interfaces and endpoint.'}, status.HTTP_400_BAD_REQUEST)
 
         # set up basic return envelope
         ret_obj = BulkInterfaceDataObject()
