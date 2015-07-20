@@ -27,6 +27,8 @@ from django.conf import settings
 
 from tastypie.test import ResourceTestCase
 
+from rest_framework.test import APIClient
+
 from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
 
 from esmond.persist import IfRefPollPersister, ALUSAPRefPersister, \
@@ -877,7 +879,39 @@ class TestCassandraPollPersister(TestCase):
         p.db.close()
 
 
-class TestCassandraApiQueries(ResourceTestCase):
+class BaseTestCase(TestCase):
+    def setUp(self):
+        """
+        Bridge code while getting rid of the tasty pie test code.
+
+
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=authn)
+        r = client.get(url)
+        print r.content, r.status_code
+        """
+        super(BaseTestCase, self).setUp()
+        print 'base setUp'
+
+        self.client = APIClient()
+
+        self.ctr = CassandraTestResults()
+
+        # Check connection in case the test_api module was unable
+        # to connect but we've not seen an error yet.  This way
+        # we'll see an explicit error that makes sense.
+        check_connection()
+
+    def get_api_client(self, admin_auth=False):
+        client = APIClient()
+
+        if admin_auth:
+            client.credentials(HTTP_AUTHORIZATION='Token {0}'.format(self.td.user_admin_apikey.key))
+
+        return client
+
+
+class TestCassandraApiQueries(BaseTestCase):
     fixtures = ['oidsets.json']
 
     def setUp(self):
@@ -887,13 +921,7 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         build_metadata_from_test_data(test_data)
-
-        self.ctr = CassandraTestResults()
-
-        # Check connection in case the test_api module was unable
-        # to connect but we've not seen an error yet.  This way
-        # we'll see an explicit error that makes sense.
-        check_connection()
+        
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
@@ -1036,7 +1064,7 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         data = json.loads(response.content)
 
-        print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -1142,9 +1170,6 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         interface_name = 'interface_test/0/0.0'
 
-        authn = self.create_apikey(self.td.user_admin.username, 
-            self.td.user_admin_apikey.key)
-
         # raw data writes
         url = '/v2/timeseries/RawData/{0}/rtr_test/FastPollHC/ifHCInOctets/{1}/30000'.format(SNMP_NAMESPACE, atencode(interface_name))
 
@@ -1156,11 +1181,10 @@ class TestCassandraApiQueries(ResourceTestCase):
         # Params sent as json list and not post vars now.
         payload = [ params ]
 
-        response = self.api_client.post(url, data=payload, format='json',
-            authentication=authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload, format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
-        response = self.client.get(url, authentication=authn)
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
@@ -1178,11 +1202,10 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         payload[0]['ts'] = (payload[0]['ts']/30000)*30000
 
-        response = self.api_client.post(url, data=payload, format='json',
-            authentication=authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload, format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
-        response = self.client.get(url, authentication=authn)
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
@@ -1215,7 +1238,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end
         }
 
-        response = self.api_client.post('/v2/bulk/interface/', data=payload,
+        response = self.get_api_client().post('/v2/bulk/interface/', data=payload,
             format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
@@ -1244,7 +1267,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end*1000
         }
 
-        response = self.api_client.post('/v2/bulk/timeseries/', data=payload,
+        response = self.get_api_client().post('/v2/bulk/timeseries/', data=payload,
             format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
@@ -1258,7 +1281,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], payload['begin'])
 
     def test_device_info(self):
-        response = self.api_client.get('/v2/device/')
+        response = self.get_api_client().get('/v2/device/')
         self.assertEquals(response.status_code, 200)
         payload = json.loads(response.content)
         self.assertEquals(len(payload), 1)
@@ -1279,7 +1302,7 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         ifaces += '?limit=0'
 
-        response = self.api_client.get(ifaces)
+        response = self.get_api_client().get(ifaces)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         # print json.dumps(data, indent=4)
@@ -1287,7 +1310,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_interface_info(self):
-        response = self.api_client.get('/v2/interface/?limit=0&ifName__contains=fxp')
+        response = self.get_api_client().get('/v2/interface/?limit=0&ifName__contains=fxp')
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         # print json.dumps(data, indent=4)
@@ -1297,7 +1320,7 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_oidset_info(self):
-        response = self.api_client.get('/v2/oidset/')
+        response = self.get_api_client().get('/v2/oidset/')
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         
@@ -1404,16 +1427,18 @@ class TestCassandraApiQueries(ResourceTestCase):
         # Make a request the bulk endpoint will throttle for too many 
         # queries w/out auth.
 
-        response = self.api_client.post('/v2/bulk/interface/', data=payload,
+        response = self.get_api_client().post('/v2/bulk/interface/', data=payload,
             format='json')
+        # print response.status_code
+        # print response.content
         self.assertEquals(response.status_code, 401)
 
         # Make the same request with authentication.
 
-        authn = self.create_apikey(self.td.user_admin.username, 
-            self.td.user_admin_apikey.key)
-        response = self.api_client.post('/v2/bulk/interface/', data=payload,
-            format='json', authentication=authn)
+        # authn = self.create_apikey(self.td.user_admin.username, 
+        #     self.td.user_admin_apikey.key)
+        response = self.get_api_client(admin_auth=True).post('/v2/bulk/interface/', data=payload,
+            format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
         # Make a bunch of requests to make sure that the throttling
@@ -1475,7 +1500,7 @@ class TestFitToBins(TestCase):
         self.assertEqual({1386369690000: 249747233}, r)
         self.assertLess(time.time()-t0, 0.5)
 
-class TestCassandraApiQueriesALU(ResourceTestCase):
+class TestCassandraApiQueriesALU(BaseTestCase):
     fixtures = ['oidsets.json']
 
     def setUp(self):
@@ -1485,13 +1510,6 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
 
         test_data = load_test_data("rtr_alu_ifhcin_long.json")
         build_metadata_from_test_data(test_data)
-
-        self.ctr = CassandraTestResults()
-
-        # Check connection in case the test_api module was unable
-        # to connect but we've not seen an error yet.  This way
-        # we'll see an explicit error that makes sense.
-        check_connection()
 
 
     def test_a_load_data(self):
