@@ -1531,10 +1531,7 @@ class TestCassandraApiQueriesALU(BaseTestCase):
 
         url = '/v2/device/rtr_alu/interface/1@2F1@2F1/in'
 
-        authn = self.create_apikey(self.td.user_admin.username,
-                                  self.td.user_admin_apikey.key)
-
-        response = self.api_client.get(url, data=params, authentication=authn)
+        response = self.get_api_client(admin_auth=True).get(url, data=params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
