@@ -5,6 +5,7 @@ when you run "manage.py test".
 Replace this with more appropriate tests for your application.
 """
 
+import copy
 import os
 import os.path
 import json
@@ -1307,6 +1308,84 @@ class TestCassandraApiQueries(BaseTestCase):
         # print json.dumps(data, indent=4)
         self.assertTrue(len(data['children']))
         self.assertEquals(len(data['children']), data['meta']['total_count'])
+
+    def test_device_endpoint_verbs(self):
+        # GET list
+        response = self.get_api_client().get('/v2/device/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+
+        # GET detail
+        response = self.get_api_client().get('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        # print json.dumps(payload, indent=4)
+
+        # POST - no post allowed
+        # no auth
+        tmp = copy.copy(payload)
+        tmp['name'] = 'rtr_z'
+        response = self.get_api_client().post('/v2/device/', tmp, format='json' )
+        self.assertEquals(response.status_code, 401)
+        # with auth, should return bad request
+        response = self.get_api_client(admin_auth=True).post('/v2/device/', tmp, format='json' )
+        self.assertEquals(response.status_code, 400)
+
+        # DELETE - no delete allowed
+        # no auth
+        response = self.get_api_client().delete('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 401)
+        # with auth, should return bad request
+        response = self.get_api_client(admin_auth=True).delete('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 400)
+
+        # PATCH - no patch allowed
+        # no auth
+        tmp = copy.copy(payload)
+        tmp.pop('id')
+        tmp.pop('end_time')
+        response = self.get_api_client().patch('/v2/device/rtr_d/', tmp, format='json' )
+        self.assertEquals(response.status_code, 401)
+        # with auth, should return bad request
+        response = self.get_api_client(admin_auth=True).patch('/v2/device/rtr_d/', tmp, format='json' )
+        self.assertEquals(response.status_code, 400)
+
+        # PUT -- SentryPoll
+        # no auth
+        response = self.get_api_client().put('/v2/device/rtr_d/', payload, format='json')
+        self.assertEquals(response.status_code, 401)
+        # with auth, change some data
+
+        payload['active'] = False
+        payload['oidsets'].append('SentryPoll')
+        response = self.get_api_client(admin_auth=True).put('/v2/device/rtr_d/', payload, format='json')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        # Check changes
+        self.assertFalse(payload.get('active'))
+        self.assertEqual(len(payload.get('oidsets')), 2)
+
+        # Verify changes with a GET
+        response = self.get_api_client().get('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertFalse(payload.get('active'))
+        self.assertEqual(len(payload.get('oidsets')), 2)
+
+        # Change values back, make sure m2m handling is working right.
+        payload['active'] = True
+        payload['oidsets'].pop()
+        response = self.get_api_client(admin_auth=True).put('/v2/device/rtr_d/', payload, format='json')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        # Check changes
+        self.assertTrue(payload.get('active'))
+        self.assertEqual(len(payload.get('oidsets')), 1)
+
+        # Try an update with a bogus oidset
+        payload['oidsets'].append('BogusOIDSet')
+        response = self.get_api_client(admin_auth=True).put('/v2/device/rtr_d/', payload, format='json')
+        self.assertEquals(response.status_code, 400)
 
     def test_interface_info(self):
         response = self.get_api_client().get('/v2/interface/?limit=0&ifName__contains=fxp')

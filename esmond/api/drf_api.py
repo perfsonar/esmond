@@ -18,7 +18,7 @@ from rest_framework import (viewsets, serializers, status,
 from rest_framework.exceptions import (ParseError, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import (AllowAny, DjangoModelPermissions)
 
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework_extensions.fields import ResourceUriField
@@ -313,6 +313,12 @@ class BaseBulkThrottle(throttling.BaseThrottle):
         else:
             raise CustomThrottleAuth('Request for {0} endpoints exceeds the unauthenticated limit of {1}'.format(num_request, ANON_LIMIT))
 
+class DjangoModelPerm(DjangoModelPermissions):
+    """
+    Just changing the basic perm mapping of the base class.
+    """
+    pass
+
 #
 # Endpoints for main URI series.
 # 
@@ -501,7 +507,8 @@ class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
             'oidsets', 'leaf', 'children',)
         extra_kwargs={'url': {'lookup_field': 'name'}}
 
-    oidsets = OidsetSerializer(required=False, many=True)
+    # oidsets attr set read_only=True since that's handled differently
+    oidsets = OidsetSerializer(required=False, many=True, read_only=True)
     leaf = serializers.BooleanField(default=False)
     children = serializers.ListField(child=serializers.DictField())
     begin_time = UnixEpochDateField()
@@ -529,6 +536,50 @@ class DeviceViewset(viewsets.ModelViewSet):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'name'
+
+    def _no_verb(self):
+        return Response({'error': 'Endpoint only supports GET and PUT'}, status.HTTP_400_BAD_REQUEST)
+
+    def create(self, request, **kwargs):
+        """No POST"""
+        return self._no_verb()
+
+    def update(self, request, pk=None, **kwargs):
+        """Process PUT"""
+
+        instance = self.get_object()
+        payload = copy.copy(request.data)
+
+        # pull out oidsets and handle the m2m thing first.
+        incoming_oidsets = payload.get('oidsets', [])
+        oidsets = list()
+
+        for os in incoming_oidsets:
+            try:
+                o = OIDSet.objects.get(name=os)
+                oidsets.append(o)
+            except OIDSet.DoesNotExist:
+                return Response({'error': 'Invalid OIDSet: {0}'.format(os)}, status.HTTP_400_BAD_REQUEST)
+
+        instance.oidsets.clear()
+        for o in oidsets:
+            omap = DeviceOIDSetMap(device=instance, oid_set=o)
+            omap.save()
+
+        # deal with the rest
+        serializer = self.get_serializer(instance, data=payload, partial=False)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    def partial_update(self, request, pk=None, **kwargs):
+        """No PATCH"""
+        return self._no_verb()
+
+    def destroy(self, request, pk=None, **kwargs):
+        """No DESTROY"""
+        return self._no_verb()
 
 # Subclasses that handles the interface resource nested under the devices, ie: 
 # /v1/device/$DEVICE/interface/
