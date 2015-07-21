@@ -211,6 +211,12 @@ def users_testdata(td):
                     codename="esmond_api.{0}_{1}".format(perm_name, resource))
             td.user_admin.user_permissions.add(perm)
 
+    for resource in ['device']:
+        for perm_name in ['add', 'change', 'delete']:
+            perm = Permission.objects.get(
+                    codename="{0}_{1}".format(perm_name, resource))
+            td.user_admin.user_permissions.add(perm)
+
     td.user_admin.save()
 
     # td.user_admin_apikey = ApiKey(user=td.user_admin)

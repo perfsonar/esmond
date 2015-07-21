@@ -12,6 +12,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 from django.utils.translation import ugettext_lazy as _
+from django.utils.timezone import make_aware, utc
 
 from rest_framework import (viewsets, serializers, status, 
         fields, relations, pagination, mixins, throttling)
@@ -120,7 +121,7 @@ class UnixEpochDateField(serializers.DateTimeField):
             return None
 
     def to_internal_value(self, value):
-        return datetime.datetime.utcfromtimestamp(int(value))
+        return make_aware(datetime.datetime.utcfromtimestamp(int(value)), utc)
 
 class DataObject(object):
     def __init__(self, initial=None):
@@ -315,10 +316,9 @@ class BaseBulkThrottle(throttling.BaseThrottle):
 
 class DjangoModelPerm(DjangoModelPermissions):
     """
-    Just changing the basic perm mapping of the base class.
+    Just allowing unauth for read ops
     """
-    pass
-
+    authenticated_users_only = False
 #
 # Endpoints for main URI series.
 # 
@@ -535,6 +535,7 @@ class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
 class DeviceViewset(viewsets.ModelViewSet):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
+    permission_classes = (DjangoModelPerm,)
     lookup_field = 'name'
 
     def _no_verb(self):

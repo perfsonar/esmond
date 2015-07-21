@@ -1319,6 +1319,10 @@ class TestCassandraApiQueries(BaseTestCase):
         response = self.get_api_client().get('/v2/device/rtr_d/')
         self.assertEquals(response.status_code, 200)
         payload = json.loads(response.content)
+
+        original_begin_time = payload.get('begin_time')
+        original_end_time = payload.get('end_time')
+
         # print json.dumps(payload, indent=4)
 
         # POST - no post allowed
@@ -1386,6 +1390,14 @@ class TestCassandraApiQueries(BaseTestCase):
         payload['oidsets'].append('BogusOIDSet')
         response = self.get_api_client(admin_auth=True).put('/v2/device/rtr_d/', payload, format='json')
         self.assertEquals(response.status_code, 400)
+
+        # One last get to make sure the times have been going in an out 
+        # correctly RE: the custom serializer.
+        response = self.get_api_client().get('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertEquals(payload.get('begin_time'), original_begin_time)
+        self.assertEquals(payload.get('end_time'), original_end_time)
 
     def test_interface_info(self):
         response = self.get_api_client().get('/v2/interface/?limit=0&ifName__contains=fxp')
