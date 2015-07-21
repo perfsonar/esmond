@@ -278,6 +278,43 @@ class InterfaceFilter(filters.FilterSet):
     device = filters.RelatedFilter(DeviceFilter, name='device')
 
 #
+# Throttle, auth classes
+#
+
+class CustomThrottleAuth(APIException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    default_detail = _('Auth-based bulk throttling.')
+
+class BaseBulkThrottle(throttling.BaseThrottle):
+
+    def _check_payload_and_request(self, post_payload):
+        """
+        Override in subclasses. Raise ParseError if the payload is flawed, 
+        otherwise extract and return the number of "things" the request is 
+        asking for.
+        """
+        raise NotImplementedError
+
+    def allow_request(self, request, view):
+
+        if request.user.is_authenticated():
+            # Authenticated users can as for however much data
+            return True
+
+        if request.body and request.content_type.startswith('application/json'):
+            post_payload = json.loads(request.body)
+        else:
+            # status 400
+            raise ParseError('Did not receive json payload for bulk POST request.')
+
+        num_request = self._check_payload_and_request(post_payload)
+
+        if num_request <= ANON_LIMIT:
+            return True
+        else:
+            raise CustomThrottleAuth('Request for {0} endpoints exceeds the unauthenticated limit of {1}'.format(num_request, ANON_LIMIT))
+
+#
 # Endpoints for main URI series.
 # 
 
@@ -659,38 +696,8 @@ discard/out, etc) are passed in as a list and data for each sort of
 endpoint will be returned for each interface.
 """
 
-class CustomThrottleAuth(APIException):
-    status_code = status.HTTP_401_UNAUTHORIZED
-    default_detail = _('Auth-based bulk throttling.')
-
-class BaseBulkThrottle(throttling.BaseThrottle):
-
-    def _check_payload_and_request(self, post_payload):
-        """
-        Override in subclasses. Raise ParseError if the payload is flawed, 
-        otherwise extract and return the number of "things" the request is 
-        asking for.
-        """
-        raise NotImplementedError
-
-    def allow_request(self, request, view):
-
-        if request.user.is_authenticated():
-            # Authenticated users can as for however much data
-            return True
-
-        if request.body and request.content_type.startswith('application/json'):
-            post_payload = json.loads(request.body)
-        else:
-            # status 400
-            raise ParseError('Did not receive json payload for bulk POST request.')
-
-        num_request = self._check_payload_and_request(post_payload)
-
-        if num_request <= ANON_LIMIT:
-            return True
-        else:
-            raise CustomThrottleAuth('Request for {0} endpoints exceeds the unauthenticated limit of {1}'.format(num_request, ANON_LIMIT))
+class BulkInterfaceDataObject(DataObject):
+    pass
 
 class BulkInterfaceThrottle(BaseBulkThrottle):
     def _check_payload_and_request(self, post_payload):
@@ -704,9 +711,6 @@ class BulkInterfaceThrottle(BaseBulkThrottle):
             raise ParseError('Both endpoint and interfaces keys must be a list')
 
         return len(post_payload.get('interfaces', []))
-
-class BulkInterfaceDataObject(DataObject):
-    pass
 
 class BulkInterfaceRequestSerializer(BaseDataSerializer):
     # other fields defined in superclass
@@ -767,7 +771,10 @@ class BulkInterfaceRequestViewset(BaseDataViewset):
                 obj.cf = ret_obj.cf
                 obj.agg = ret_obj.agg
 
-                data = InterfaceDataViewset()._execute_query(oidset, obj)
+                try:
+                    data = InterfaceDataViewset()._execute_query(oidset, obj)
+                except QueryErrorException, e:
+                    return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
                 row = dict(
                     data=data.data,
@@ -1048,6 +1055,15 @@ the cassandra row keys.
 class BulkTimeseriesDataObject(DataObject):
     pass
 
+class BulkTimeseriesThrottle(BaseBulkThrottle):
+    def _check_payload_and_request(self, post_payload):
+
+        if not post_payload.has_key('paths') or \
+            not isinstance(post_payload['paths'], list):
+            raise ParseError('Payload must contain the element paths and that element must be a list.')
+
+        return len(post_payload.get('paths', []))
+
 class BulkTimeseriesSerializer(BaseDataSerializer):
     def to_representation(self, obj):
         ret = super(BulkTimeseriesSerializer, self).to_representation(obj)
@@ -1055,6 +1071,8 @@ class BulkTimeseriesSerializer(BaseDataSerializer):
         return ret
 
 class BulkTimeseriesViewset(BaseDataViewset):
+    throttle_classes = (BulkTimeseriesThrottle,)
+
     def create(self, request, **kwargs):
         print kwargs
         # validate the incoming json and data contained therein.
@@ -1092,7 +1110,10 @@ class BulkTimeseriesViewset(BaseDataViewset):
             obj.datapath = p
             obj.agg = int(obj.datapath.pop())
 
-            obj = TimeseriesRequestViewset()._execute_query(obj)
+            try:
+                obj = TimeseriesRequestViewset()._execute_query(obj)
+            except QueryErrorException, e:
+                return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
             row = {
                 'data': obj.data,

@@ -1434,14 +1434,40 @@ class TestCassandraApiQueries(BaseTestCase):
 
         # Make the same request with authentication.
 
-        # authn = self.create_apikey(self.td.user_admin.username, 
-        #     self.td.user_admin_apikey.key)
         response = self.get_api_client(admin_auth=True).post('/v2/bulk/interface/', data=payload,
             format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
-        # Make a bunch of requests to make sure that the throttling
-        # code kicks in.
+        # Make sure the timeseries endpoint will throttle too.
+
+        paths = list()
+
+        # These paths won't be valid, just generating a lot to make the custom
+        # throttle code kick in.
+        for i in ifaces:
+            paths.append(['snmp', 'rtr_d', 'FastPollHC', 'ifHCInOctets', i, '30000'])
+
+        payload = {
+            'paths': paths, 
+            'begin': self.ctr.begin,
+            'end': self.ctr.end,
+            'type': 'RawData',
+        }
+
+        response = self.get_api_client().post('/v2/bulk/timeseries/', data=payload,
+            format='json')
+        self.assertEquals(response.status_code, 401)
+
+        # This query will "fail" (400 Bad Request) since the paths are 
+        # bogus but that doen't matter, the throttle let it through.
+        response = self.get_api_client(admin_auth=True).post('/v2/bulk/timeseries/', data=payload,
+            format='json')
+        self.assertEquals(response.status_code, 400)
+        d = json.loads(response.content)
+        self.assertTrue(d.get('query error', None))
+
+        # Make a bunch of requests to make sure that the general 
+        # AnonRateThrottle kicks in.
 
         params = {
             'begin': self.ctr.begin-3600, # back an hour to get agg bin.
