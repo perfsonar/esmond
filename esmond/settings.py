@@ -128,13 +128,29 @@ REST_FRAMEWORK = {
     # endpoints, not globally.
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        # This places token based auth (analogous to old API key),
+        # on ALL endpoints, but does not enforce ANY access 
+        # control. That will need to be handled by a permissions
+        # (or custom throttle) class.
         'rest_framework.authentication.TokenAuthentication',
     ),
 
+    'DEFAULT_PERMISSION_CLASSES': (
+        # This puts "anonymous read only" perms on all endpoints. 
+        # Anything can GET, HEAD or OPTIONS. Is overridded with 
+        # AllowAny in the bulk endpoints with custom auth-based
+        # throttling.
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ),
+
+    # These stanzas put general anonymous client throttling on all 
+    # endpoints. The bulk retrieval classes have their own custom 
+    # throttling classes.
     'DEFAULT_THROTTLE_CLASSES': (
         'rest_framework.throttling.AnonRateThrottle',
         # 'rest_framework.throttling.UserRateThrottle'
     ),
+
     'DEFAULT_THROTTLE_RATES': {
         'anon': '150/hour',
         # 'user': '1000/day'

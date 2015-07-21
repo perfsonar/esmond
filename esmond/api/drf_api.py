@@ -15,11 +15,10 @@ from django.utils.translation import ugettext_lazy as _
 
 from rest_framework import (viewsets, serializers, status, 
         fields, relations, pagination, mixins, throttling)
-from rest_framework.exceptions import (ParseError, NotAuthenticated,
-        AuthenticationFailed, APIException)
-from rest_framework.authentication import (TokenAuthentication)
+from rest_framework.exceptions import (ParseError, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.permissions import AllowAny
 
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework_extensions.fields import ResourceUriField
@@ -719,10 +718,11 @@ class BulkInterfaceRequestSerializer(BaseDataSerializer):
 
 class BulkInterfaceRequestViewset(BaseDataViewset):
     throttle_classes = (BulkInterfaceThrottle,)
+    # This overrides the global "auth or read only" because this uses 
+    # post and the throttle class will perform auth-based gating.
+    permission_classes = (AllowAny,)
 
     def create(self, request, **kwargs):
-
-        print request.content_type
 
         if not request.content_type.startswith('application/json'):
             return Response({'error', 'Must post content-type: application/json header and json-formatted payload.'}, status.HTTP_400_BAD_REQUEST)
@@ -1072,9 +1072,12 @@ class BulkTimeseriesSerializer(BaseDataSerializer):
 
 class BulkTimeseriesViewset(BaseDataViewset):
     throttle_classes = (BulkTimeseriesThrottle,)
+    # This overrides the global "auth or read only" because this uses 
+    # post and the throttle class will perform auth-based gating.
+    permission_classes = (AllowAny,)
 
     def create(self, request, **kwargs):
-        print kwargs
+        
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
             return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
