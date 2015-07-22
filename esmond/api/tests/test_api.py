@@ -418,7 +418,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         # This form will patch a class when it is instantiated by the executed code:
         # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
         # This form will patch a module-level class instance:
-        self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
+        self.patcher = mock.patch("esmond.api.drf_api.db", MockCASSANDRA_DB(None))
         self.patcher.start()
 
     def tearDown(self):
@@ -452,7 +452,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
 
     def test_get_device_interface_data_detail(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -467,7 +467,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][1]['ts'], data['data'][0]['ts']+30)
         self.assertEquals(data['data'][1]['val'], 20)
 
-        url = '/v1/device/rtr_inf/interface/xe-3@2F0@2F0/out'
+        url = '/v2/device/rtr_inf/interface/xe-3@2F0@2F0/out'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -483,7 +483,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2]['val'], 40)
 
         # make sure it works with a trailing slash too
-        url = '/v1/device/rtr_inf/interface/xe-3@2F0@2F0/out/'
+        url = '/v2/device/rtr_inf/interface/xe-3@2F0@2F0/out/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -497,7 +497,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2]['val'], 40)
 
         # test for interfaces with multiple IfRefs
-        url = '/v1/device/rtr_b/interface/xe-2@2F0@2F0/in'
+        url = '/v2/device/rtr_b/interface/xe-2@2F0@2F0/in'
 
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         end = datetime_to_timestamp(self.td.rtr_b.end_time)
@@ -517,14 +517,11 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
 
     def test_get_device_interface_data_detail_hidden(self):
-        url = '/v1/device/rtr_a/interface/xe-1@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-1@2F0@2F0/in'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 400)
 
-        # authn = self.create_apikey(self.td.user_seeall.username,
-        #         self.td.user_seeall_apikey.key)
-
-        response = self.api_client.get(url, authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).get(url)
 
         self.assertEqual(response.status_code, 200)
 
@@ -532,7 +529,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertTrue(len(data['data']) > 0)
 
     def test_bad_aggregations(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         params = {'agg': '3601'} # this agg does not exist
 
@@ -546,7 +543,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
 
     def test_get_device_interface_data_aggs(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         ts = time.time()
 
@@ -594,7 +591,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2]['val'], 300)
 
     def test_get_device_errors(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/error/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/error/in'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -606,7 +603,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         # print json.dumps(data, indent=4)
 
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/discard/out'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/discard/out'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -617,7 +614,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['resource_uri'], url)
 
     def test_timerange_limiter(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         params = { 
             'begin': int(time.time() - datetime.timedelta(days=31).total_seconds())
@@ -626,7 +623,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/out'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/out'
 
         params = {
             'agg': '3600',
@@ -636,7 +633,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         params = {
             'agg': '86400',
@@ -647,7 +644,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 400)
 
     def test_float_timestamp_input(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         # pass in floats
         params = { 

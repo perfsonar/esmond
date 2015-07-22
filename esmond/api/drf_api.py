@@ -258,7 +258,7 @@ class BaseDataViewset(viewsets.GenericViewSet):
             obj.agg = None
 
 #
-# Filter classes
+# Filter classes and functions
 # 
 
 class DeviceFilter(filters.FilterSet):
@@ -319,6 +319,43 @@ def build_time_filters(request):
 
     # print orm_filters
     return orm_filters 
+
+def get_single_iface(ifname, device_name, request):
+    """
+    The standard time range filtering is applied to get_object since there may
+    actually be more than one underlying IfRef for this interface. If there
+    is more than one IfRef during the selected time period the IfRef with
+    the greatest end_time is returned.
+
+    This also massages the incoming URL fragment to restore characters in 
+    ifName which were encoded to avoid URL metacharacters back to
+    their original state.
+
+    This is abstracted out since it is used in more than one place.
+    """
+
+    kw = dict(
+        ifName=ifname,
+        device__name=device_name,
+    )
+
+    # sanitize input, set up device__name
+    kw['ifName'] = atdecode(kw.get('ifName'))
+
+    # add in the time filters
+    kw = dict(kw, **build_time_filters(request))
+
+    # make the query and prune hidden if need be
+    qs = IfRef.objects.filter(**kw)
+    if not request.user.has_perm("api.can_see_hidden_ifref"):
+        qs = qs.exclude(ifAlias__contains=":hide:")
+
+    if len(qs) == 0:
+        # Let the recieving code decide how to handle this.
+        return None
+    else:
+        # there might be more than one, so sort and return.
+        return qs.order_by('-end_time')[0]
 
 #
 # Throttle, auth classes
@@ -664,6 +701,7 @@ class DeviceViewset(viewsets.ModelViewSet):
 # /v1/device/$DEVICE/interface/
 # /v1/device/$DEVICE/interface/$INTERFACE/
 
+
 class NestedInterfaceSerializer(InterfaceSerializer):
     pass
 
@@ -692,33 +730,15 @@ class NestedInterfaceViewset(InterfaceViewset):
 
     def get_object(self):
         """
-        The standard time range filtering is applied to obj_get since there may
-        actually be more than one underlying IfRef for this interface. If there
-        is more than one IfRef during the selected time period the IfRef with
-        the greatest end_time is returned.
-
-        This also massages the incoming URL fragment to restore characters in 
-        ifName which were encoded to avoid URL metacharacters back to
-        their original state.
+        Get a single filtered interface.
         """
-        kw = copy.copy(self.kwargs)
-        # sanitize input, set up device__name
-        kw['ifName'] = atdecode(kw.get('ifName'))
-        kw['device__name'] = kw.pop('parent_lookup_device__name')
+        instance = get_single_iface(self.kwargs.get('ifName'),
+            self.kwargs.get('parent_lookup_device__name'), self.request)
 
-        # add in the time filters
-        kw = dict(kw, **build_time_filters(self.request))
-
-        # make the query and prune hidden if need be
-        qs = IfRef.objects.filter(**kw)
-        if not self.request.user.has_perm("api.can_see_hidden_ifref"):
-            qs = qs.exclude(ifAlias__contains=":hide:")
-
-        if len(qs) == 0:
+        if instance is None:
             raise NotFound
 
-        # there might be more than one, so sort and return.
-        return qs.order_by('-end_time')[0]
+        return instance
 
 # Classes to handle the data fetching on in the "main" REST deal:
 # ie: /v2/device/$DEVICE/interface/$INTERFACE/out
@@ -755,18 +775,16 @@ class InterfaceDataViewset(BaseDataViewset):
         {'subtype': u'in', 'ifName': u'xe-0@2F0@2F0', 'type': u'discard', 'name': u'rtr_a'}
         """
 
-        try:
-            iface = IfRef.objects.get(
-                ifName=atdecode(kwargs.get('ifName')),
-                device__name=atdecode(kwargs.get('name')),
-                )
-        except IfRef.DoesNotExist:
+        iface = get_single_iface(self.kwargs.get('ifName'),
+            self.kwargs.get('name'), self.request)
+
+        if iface is None:
             return Response(
                 {'error': 'no such device/interface: dev: {0} int: {1}'.format(kwargs['name'], atdecode(kwargs['ifName']))},
                 status.HTTP_400_BAD_REQUEST
                 )
 
-        ifname =  iface.ifName
+        ifname = iface.ifName
         device_name = iface.device.name
         iface_dataset = self._endpoint_alias(**kwargs)
 

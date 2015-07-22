@@ -57,6 +57,8 @@ urlpatterns = patterns('',
     # "nested" urls that fetch data for main API
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)/$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
     # bulk data retrieval endpoints
     url(r'v2/bulk/interface/', BulkInterfaceRequestViewset.as_view({'post': 'create'}), name='bulk-interface'),
     url(r'v2/bulk/timeseries/', BulkTimeseriesViewset.as_view({'post': 'create'}), name='bulk-timeseries'),
