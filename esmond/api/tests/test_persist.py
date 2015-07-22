@@ -1181,6 +1181,11 @@ class TestCassandraApiQueries(BaseTestCase):
         # Params sent as json list and not post vars now.
         payload = [ params ]
 
+        # try POSTing w/out auth first
+        response = self.get_api_client().post(url, data=payload, format='json')
+        self.assertEquals(response.status_code, 401)
+
+        # now again with auth.
         response = self.get_api_client(admin_auth=True).post(url, data=payload, format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 

@@ -319,6 +319,26 @@ class DjangoModelPerm(DjangoModelPermissions):
     Just allowing unauth for read ops
     """
     authenticated_users_only = False
+
+def _get_ersatz_esmond_api_queryset(ersatz_device):
+    """
+    We have a custom set of django.contrib.auth permissions (see 
+    models.APIPermission) for non-model API resources. This function 
+    generates a fake queryset that can be put on these non-model resources 
+    so that they can use the (above) standard DjangoModelPermissions as 
+    a permissions class instead of needing to roll a new custom 
+    permission class up to deal with these resources.
+    """
+    class ErsatzValues(object):
+        model_name = ersatz_device
+        app_label = 'auth.esmond_api'
+    class ErsatzModel(object):
+        _meta = ErsatzValues
+    class ErsatzQueryset(object):
+        model = ErsatzModel
+
+    return ErsatzQueryset
+
 #
 # Endpoints for main URI series.
 # 
@@ -887,6 +907,15 @@ class TimeseriesRequestSerializer(BaseDataSerializer):
         return ret
 
 class TimeseriesRequestViewset(BaseDataViewset):
+    """
+    The queryset attribute on this non-model resource is fake.
+    It's there so we can use our custom resource permissions 
+    (see models.APIPermission) with the standard DjangoModelPermissions
+    classes.
+    """
+    queryset = _get_ersatz_esmond_api_queryset('timeseries')
+    permission_classes = (DjangoModelPerm,)
+
     def _ts_url(self, request, **kwargs):
         return reverse(
             'timeseries',
