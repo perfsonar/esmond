@@ -884,12 +884,6 @@ class BaseTestCase(TestCase):
     def setUp(self):
         """
         Bridge code while getting rid of the tasty pie test code.
-
-
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=authn)
-        r = client.get(url)
-        print r.content, r.status_code
         """
         super(BaseTestCase, self).setUp()
 

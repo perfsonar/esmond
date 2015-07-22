@@ -4,13 +4,21 @@ import calendar
 import datetime
 import os
 
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
+
 import mock 
 
 # This MUST be here in any testing modules that use cassandra!
 os.environ['ESMOND_UNIT_TESTS'] = 'True'
 
 from django.core.urlresolvers import reverse
+from django.test import TestCase
+
 from tastypie.test import ResourceTestCase
+
+from rest_framework.test import APIClient
 
 from esmond.api.models import *
 from esmond.api.tests.example_data import build_default_metadata, build_pdu_metadata
@@ -23,29 +31,65 @@ def datetime_to_timestamp(dt):
 
 from django.test import TestCase
 
-class DeviceAPITestsBase(ResourceTestCase):
+"""
+class BaseTestCase(TestCase):
+    def setUp(self):
+
+        super(BaseTestCase, self).setUp()
+
+        self.client = APIClient()
+
+        self.ctr = CassandraTestResults()
+
+        # Check connection in case the test_api module was unable
+        # to connect but we've not seen an error yet.  This way
+        # we'll see an explicit error that makes sense.
+        check_connection()
+
+    def get_api_client(self, admin_auth=False):
+        client = APIClient()
+
+        if admin_auth:
+            client.credentials(HTTP_AUTHORIZATION='Token {0}'.format(self.td.user_admin_apikey.key))
+
+        return client
+"""
+
+class DeviceAPITestsBase(TestCase):
     fixtures = ["oidsets.json"]
     def setUp(self):
         super(DeviceAPITestsBase, self).setUp()
 
+        self.client = APIClient()
+
         self.td = build_default_metadata()
+
+    def get_api_client(self, admin_auth=False):
+        client = APIClient()
+
+        if admin_auth:
+            client.credentials(HTTP_AUTHORIZATION='Token {0}'.format(self.td.user_admin_apikey.key))
+
+        return client
 
 
 class DeviceAPITests(DeviceAPITestsBase):
     def test_get_device_list(self):
-        url = '/v1/device/'
+        url = '/v2/device/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
-        # by default only currently active devices are returned
+        # by default only currently active devices are returned _a, _alu, _inf
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 3)
 
         # get all three devices, with date filters
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         response = self.client.get(url, dict(begin=begin))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 4)
 
         # exclude rtr_b by date
@@ -53,6 +97,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         begin = datetime_to_timestamp(self.td.rtr_a.begin_time)
         response = self.client.get(url, dict(begin=begin))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 3)
         for d in data:
             self.assertNotEqual(d['name'], 'rtr_b')
@@ -60,18 +105,21 @@ class DeviceAPITests(DeviceAPITestsBase):
         # exclude all routers with very old end date
         response = self.client.get(url, dict(end=0))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 0)
 
         # test for equal (gte/lte)
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         response = self.client.get(url, dict(begin=0, end=begin))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 1)
         self.assertEquals(data[0]['name'], 'rtr_b')
 
         end = datetime_to_timestamp(self.td.rtr_b.end_time)
         response = self.client.get(url, dict(begin=0, end=end))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 1)
         self.assertEquals(data[0]['name'], 'rtr_b')
 

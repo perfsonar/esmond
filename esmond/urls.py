@@ -27,7 +27,7 @@ router.register('oidset', OidsetViewset)
 router.register('interface', InterfaceViewset)
 # /device/ is registered as a nested resource below. need this
 # to make it show up in the DRF browsable API.
-router.register('device', DeviceViewset)
+router.register('device', DeviceViewset, base_name='device')
 
 extended_router = ExtendedSimpleRouter()
 

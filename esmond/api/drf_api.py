@@ -13,6 +13,7 @@ pp = pprint.PrettyPrinter(indent=4)
 
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import make_aware, utc
+from django.utils.timezone import now as django_now
 
 from rest_framework import (viewsets, serializers, status, 
         fields, relations, pagination, mixins, throttling)
@@ -276,6 +277,47 @@ class InterfaceFilter(filters.FilterSet):
     ifName = filters.AllLookupsFilter(name='ifName')
     ifAlias = filters.AllLookupsFilter(name='ifAlias')
     device = filters.RelatedFilter(DeviceFilter, name='device')
+
+def build_time_filters(request):
+    """Build default time filters.
+
+    By default we want only currently active items.  This will inspect
+    orm_filters and fill in defaults if they are missing.
+
+    Logic pulled from old API. Will generate a dict of model 
+    query args one can pass to Model.objects.filter() in an 
+    overridden get_queryset() method.
+    """
+
+    # depending on http method...
+    filter_map = dict(
+        GET=getattr(request, 'GET', {}),
+        POST=getattr(request, 'data', {}),
+    )
+
+    filters = filter_map.get(request.method, {})
+    print filters
+
+    orm_filters = dict()
+
+    if 'begin' in filters:
+        orm_filters['end_time__gte'] = make_aware(datetime.datetime.utcfromtimestamp(
+                float(filters['begin'])), utc)
+
+    if 'end' in filters:
+        orm_filters['begin_time__lte'] = make_aware(datetime.datetime.utcfromtimestamp(
+                float(filters['end'])), utc)
+
+    filter_keys = map(lambda x: x.split("__")[0], orm_filters.keys())
+    now = django_now()
+
+    if 'begin_time' not in filter_keys:
+        orm_filters['begin_time__lte'] = now
+
+    if 'end_time' not in filter_keys:
+        orm_filters['end_time__gte'] = now
+
+    return orm_filters 
 
 #
 # Throttle, auth classes
@@ -553,10 +595,16 @@ class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
         return ret
 
 class DeviceViewset(viewsets.ModelViewSet):
-    queryset = Device.objects.all()
+    # queryset returned by overridden get_queryset()
     serializer_class = DeviceSerializer
     permission_classes = (DjangoModelPerm,)
     lookup_field = 'name'
+
+    def get_queryset(self):
+
+        filters = build_time_filters(self.request)
+
+        return Device.objects.filter(**filters)
 
     def _no_verb(self):
         return Response({'error': 'Endpoint only supports GET and PUT'}, status.HTTP_400_BAD_REQUEST)
