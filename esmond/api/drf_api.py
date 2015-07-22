@@ -296,7 +296,7 @@ def build_time_filters(request):
     )
 
     filters = filter_map.get(request.method, {})
-    print filters
+    # print filters
 
     orm_filters = dict()
 
@@ -317,6 +317,7 @@ def build_time_filters(request):
     if 'end_time' not in filter_keys:
         orm_filters['end_time__gte'] = now
 
+    # print orm_filters
     return orm_filters 
 
 #
