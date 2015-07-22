@@ -690,6 +690,33 @@ class NestedInterfaceViewset(InterfaceViewset):
 
         return ret
 
+    def get_object(self):
+        """
+        The standard time range filtering is applied to obj_get since there may
+        actually be more than one underlying IfRef for this interface. If there
+        is more than one IfRef during the selected time period the IfRef with
+        the greatest end_time is returned.
+
+        This also massages the incoming URL fragment to restore characters in 
+        ifName which were encoded to avoid URL metacharacters back to
+        their original state.
+        """
+        kw = copy.copy(self.kwargs)
+        # sanitize input, set up device__name
+        kw['ifName'] = atdecode(kw.get('ifName'))
+        kw['device__name'] = kw.pop('parent_lookup_device__name')
+
+        # add in the time filters
+        kw = dict(kw, **build_time_filters(self.request))
+
+        # make the query and prune hidden if need be
+        qs = IfRef.objects.filter(**kw)
+        if not self.request.user.has_perm("api.can_see_hidden_ifref"):
+            qs = qs.exclude(ifAlias__contains=":hide:")
+
+        # there might be more than one, so sort and return.
+        return qs.order_by('-end_time')[0]
+
 # Classes to handle the data fetching on in the "main" REST deal:
 # ie: /v2/device/$DEVICE/interface/$INTERFACE/out
 

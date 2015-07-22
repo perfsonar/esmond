@@ -217,13 +217,14 @@ class DeviceAPITests(DeviceAPITestsBase):
                 ('rtr_inf', 'xe-3/0/0'),
             ):
 
-            url = '/v1/device/{0}/interface/{1}/'.format(device,
+            url = '/v2/device/{0}/interface/{1}/'.format(device,
                     atencode(iface))
 
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
 
             data = json.loads(response.content)
+            # print json.dumps(data, indent=4)
             self.assertEquals(data['ifName'], iface.replace("_", "/"))
 
             for field in [
@@ -262,7 +263,7 @@ class DeviceAPITests(DeviceAPITestsBase):
 
     def test_get_device_interface_detail_with_multiple_ifrefs(self):
         iface = "xe-2/0/0"
-        url = '/v1/device/rtr_b/interface/{0}'.format(atencode(iface))
+        url = '/v2/device/rtr_b/interface/{0}/'.format(atencode(iface))
 
         # get the first xe-2/0/0 ifref
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
