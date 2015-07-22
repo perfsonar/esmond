@@ -774,7 +774,8 @@ class InterfaceDataViewset(BaseDataViewset):
 
         if iface_dataset not in endpoint_map:
             return Response(
-                {'error': 'no such dataset: {0}'.format(iface_dataset)}
+                {'error': 'no such dataset: {0}'.format(iface_dataset)},
+                status.HTTP_400_BAD_REQUEST
                 )
 
         oidset = iface.device.oidsets.get(name=endpoint_map[iface_dataset][2])

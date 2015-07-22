@@ -421,36 +421,33 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
         self.patcher.start()
 
-        self.authn = self.create_apikey(self.td.user_admin.username,
-                self.td.user_admin_apikey.key)
-
     def tearDown(self):
         self.patcher.stop()
 
     def test_bad_endpoints(self):
         # there is no router called nonexistent
-        url = '/v1/device/nonexistent/interface/xe-0@2F0@2F0/in'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/nonexistent/interface/xe-0@2F0@2F0/in'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # rtr_a does not have an nonexistent interface
-        url = '/v1/device/rtr_a/interface/nonexistent/in'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/rtr_a/interface/nonexistent/in'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # there is no nonexistent sub collection in traffic
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # there is no nonexistent collection 
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent/in'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent/in'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # rtr_b has no traffic oidsets defined
-        url = '/v1/device/rtr_b/interface/xe-0@2F0@2F0/nonexistent/in'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/rtr_b/interface/xe-0@2F0@2F0/nonexistent/in'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
 
