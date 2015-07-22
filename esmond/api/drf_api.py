@@ -17,7 +17,7 @@ from django.utils.timezone import now as django_now
 
 from rest_framework import (viewsets, serializers, status, 
         fields, relations, pagination, mixins, throttling)
-from rest_framework.exceptions import (ParseError, APIException)
+from rest_framework.exceptions import (ParseError, NotFound, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.permissions import (AllowAny, DjangoModelPermissions)
@@ -713,6 +713,9 @@ class NestedInterfaceViewset(InterfaceViewset):
         qs = IfRef.objects.filter(**kw)
         if not self.request.user.has_perm("api.can_see_hidden_ifref"):
             qs = qs.exclude(ifAlias__contains=":hide:")
+
+        if len(qs) == 0:
+            raise NotFound
 
         # there might be more than one, so sort and return.
         return qs.order_by('-end_time')[0]

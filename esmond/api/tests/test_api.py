@@ -301,7 +301,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(data['ipAddr'], "10.0.1.2")
 
     def test_get_device_interface_list_hidden(self):
-        url = '/v1/device/rtr_a/interface/'
+        url = '/v2/device/rtr_a/interface/'
 
         response = self.client.get(url)
         data = json.loads(response.content)
@@ -311,24 +311,20 @@ class DeviceAPITests(DeviceAPITestsBase):
         for child in data['children']:
             self.assertTrue(":hide:" not in child['ifAlias'])
 
-        authn = self.create_apikey(self.td.user_seeall.username,
-                self.td.user_seeall_apikey.key)
-
-        response = self.api_client.get(url, authentication=authn)
+        response = self.get_api_client(admin_auth=True).get(url)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(len(data['children']), 2)
 
     def test_get_device_interface_detail_hidden(self):
-        url = '/v1/device/rtr_a/interface/xe-1@2F0@2F0/'
+        url = '/v2/device/rtr_a/interface/xe-1@2F0@2F0/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 404)
 
-        authn = self.create_apikey(self.td.user_seeall.username,
-                self.td.user_seeall_apikey.key)
-
-        response = self.api_client.get(url, authentication=authn)
+        response = self.get_api_client(admin_auth=True).get(url)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(response.status_code, 200)
         self.assertTrue(":hide:" in data['ifAlias'])
 
