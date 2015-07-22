@@ -3,11 +3,9 @@ import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import User, Group, Permission
+from django.contrib.auth.models import User
 
-from tastypie.models import ApiKey
-
-from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
+from rest_framework.authtoken.models import Token
 
 class Command(BaseCommand):
     args = 'username'
@@ -33,17 +31,12 @@ class Command(BaseCommand):
             u.save()
             
         try:
-            key = ApiKey.objects.get(user=u)
+            tok = Token.objects.get(user=u)
             print 'User {0} already has api key, skipping creation'.format(user)
-        except ApiKey.DoesNotExist:
+        except Token.DoesNotExist:
             print 'User {0} does not have an api key - creating'.format(user)
-            u_apikey = ApiKey(user=u)
-            u_apikey.key = u_apikey.generate_key()
-            u_apikey.save()
-            u.save()
+            tok = Token.objects.create(user=u)
 
-        key = ApiKey.objects.get(user=u)
-
-        print 'Key: {0}'.format(key)
+        print 'Key: {0}'.format(tok.key)
 
         
