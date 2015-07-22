@@ -124,13 +124,13 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(data[0]['name'], 'rtr_b')
 
     def test_get_device_detail(self):
-        url = '/v1/device/rtr_a/'
+        url = '/v2/device/rtr_a/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
-        #print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
         for field in [
             'active',
             'begin_time',
@@ -152,7 +152,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         for child_name in ['all', 'interface', 'system']:
             self.assertIn(child_name, children)
             child = children[child_name]
-            self.assertEqual(child['uri'], url + child_name)
+            self.assertEqual(child['uri'], url + child_name + '/')
 
     def test_post_device_list_unauthenticated(self):
         # We don't allow POSTs at this time.  Once that capability is added
