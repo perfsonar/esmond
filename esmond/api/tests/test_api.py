@@ -158,17 +158,18 @@ class DeviceAPITests(DeviceAPITestsBase):
         # We don't allow POSTs at this time.  Once that capability is added
         # these tests will need to be expanded.
 
-        self.assertHttpMethodNotAllowed(
-                self.client.post('/v1/device/entries/', format='json',
-                    data=self.td.rtr_z_post_data))
+        r = self.client.post('/v2/device/entries/', format='json',
+                    data=self.td.rtr_z_post_data)
+        self.assertEqual(r.status_code, 401)
 
     def test_get_device_interface_list(self):
-        url = '/v1/device/rtr_a/interface/'
+        url = '/v2/device/rtr_a/interface/'
 
         # single interface at current time
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(len(data['children']), 1)
 
         # no interfaces if we are looking in the distant past
@@ -177,7 +178,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         data = json.loads(response.content)
         self.assertEquals(len(data['children']), 0)
 
-        url = '/v1/device/rtr_b/interface/'
+        url = '/v2/device/rtr_b/interface/'
 
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         end = datetime_to_timestamp(self.td.rtr_b.end_time)
@@ -197,7 +198,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(len(data['children']), 1)
         self.assertEquals(data['children'][0]['ifName'], 'xe-1/0/0')
 
-        url = '/v1/device/rtr_alu/interface/'
+        url = '/v2/device/rtr_alu/interface/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)

@@ -552,11 +552,22 @@ class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
         return ret
 
 class InterfaceViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = IfRef.objects.all()
+    # queryset returned by overridden get_queryset()
     serializer_class = InterfaceSerializer
     lookup_field = 'ifName'
     filter_class = InterfaceFilter
     pagination_class = InterfacePaginator
+
+    def get_queryset(self):
+        filters = build_time_filters(self.request)
+
+        ret = IfRef.objects.filter(**filters)
+
+        # filter out hidden ifrefs based on perms
+        if not self.request.user.has_perm('api.can_see_hidden_ifref'):
+            ret = ret.exclude(ifAlias__contains=":hide:")
+
+        return ret      
 
 # Classes for devices in the "main" rest URI series, ie:
 # /v2/device/
@@ -602,9 +613,7 @@ class DeviceViewset(viewsets.ModelViewSet):
     lookup_field = 'name'
 
     def get_queryset(self):
-
         filters = build_time_filters(self.request)
-
         return Device.objects.filter(**filters)
 
     def _no_verb(self):
@@ -664,15 +673,22 @@ class NestedInterfaceViewset(InterfaceViewset):
 
     def get_queryset(self):
         """
-        This is used for the /v2/device/rtr_a/interface/ relation.
-        In the nested subclass since there is no filtering on 
-        this endpoint and don't want this logic to potentailly 
-        interfere with filtering on the /v2/interface/ endpoint.
-        """
+        This is used for the /v2/device/rtr_a/interface/ relation
+        in the nested subclass."""
+        # base time filters
+        filters = build_time_filters(self.request)
+
+        # make sure that it's only the iface paired with the parent router
         if self.kwargs.get('parent_lookup_device__name', None):
-            return IfRef.objects.filter(device__name=self.kwargs.get('parent_lookup_device__name'))
-        else:
-            return super(InterfaceViewset, self).get_queryset()
+            filters['device__name'] = self.kwargs.get('parent_lookup_device__name')
+
+        ret = IfRef.objects.filter(**filters)
+
+        # filter out hidden ifrefs based on perms
+        if not self.request.user.has_perm('api.can_see_hidden_ifref'):
+            ret = ret.exclude(ifAlias__contains=":hide:")
+
+        return ret
 
 # Classes to handle the data fetching on in the "main" REST deal:
 # ie: /v2/device/$DEVICE/interface/$INTERFACE/out
