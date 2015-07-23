@@ -761,7 +761,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         params = APIDataTestResults.get_agg_range(agg, in_ms=True)
 
-        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+        url = '/v2/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
         response = self.client.get(url, params)
         data = json.loads(response.content)
@@ -809,7 +809,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2]['val'], 300)
 
     def test_timeseries_bad_aggregations(self):
-        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
+        url = '/v2/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
 
         params = {'cf': 'bad'} # this cf does not exist
 
@@ -817,7 +817,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_timerange_limiter(self):
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
         params = { 
             'begin': int(time.time() - datetime.timedelta(days=31).total_seconds())
         }
@@ -825,7 +825,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
-        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
+        url = '/v2/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
 
         params = {
             'begin': int(time.time() - datetime.timedelta(days=366).total_seconds())
@@ -838,13 +838,13 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
             'begin': int(time.time() - datetime.timedelta(days=366*10).total_seconds())
         }
 
-        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/86400000'
+        url = '/v2/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/86400000'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
         # This is an invalid aggregation/frequency
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/31000'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/31000'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)

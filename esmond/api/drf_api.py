@@ -30,7 +30,7 @@ import rest_framework_filters as filters
 from .models import *
 from esmond.api import SNMP_NAMESPACE, ANON_LIMIT, OIDSET_INTERFACE_ENDPOINTS
 from esmond.util import atdecode, atencode
-from esmond.api.dataseries import QueryUtil, Fill
+from esmond.api.dataseries import QueryUtil, Fill, TimerangeException
 from esmond.cassandra import CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin
 from esmond.config import get_config_path, get_config
 
@@ -814,7 +814,7 @@ class InterfaceDataViewset(BaseDataViewset):
             obj = self._execute_query(oidset, obj)
             serializer = InterfaceDataSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
-        except QueryErrorException, e:
+        except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
     def _execute_query(self, oidset, obj):
@@ -1083,7 +1083,7 @@ class TimeseriesRequestViewset(BaseDataViewset):
             obj = self._execute_query(obj)
             serializer = TimeseriesRequestSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
-        except QueryErrorException, e:
+        except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
     def _execute_query(self, obj):
