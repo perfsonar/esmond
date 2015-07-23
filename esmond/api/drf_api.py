@@ -804,6 +804,7 @@ class InterfaceDataViewset(BaseDataViewset):
         obj.datapath[2] = oidset.set_name  # set_name defaults to oidset.name, but can be overidden in poller_args
         obj.iface_dataset = iface_dataset
         obj.iface = iface
+        obj.user = request.user
 
         self._parse_data_default_args(request, obj)
 

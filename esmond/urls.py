@@ -54,9 +54,10 @@ urlpatterns = patterns('',
     (r'v2/',include(router.urls)),
     # nested urls for main API
     (r'v2/',include(extended_router.urls)),
-    # "nested" urls that fetch data for main API
+    # "nested" urls that fetch interface data for main API
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+    # duplicates of previous two, just with a trailing slash since a test wanted that.
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
     (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)/$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
     # bulk data retrieval endpoints
