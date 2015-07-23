@@ -625,6 +625,10 @@ class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
     begin_time = UnixEpochDateField()
     end_time = UnixEpochDateField()
 
+    # These get used by to_representation() to generate 
+    # the children/leaf list.
+    _child_endpoints = ['interface', 'system', 'all']
+
     def to_representation(self, obj):
         obj.leaf = False
         obj.children = list()
@@ -633,7 +637,7 @@ class DeviceSerializer(BaseMixin, serializers.ModelSerializer):
         # add the URIs after the "proper" url was generated.
         self._add_uris(ret)
         # generate children for graphite navigation
-        for e in ['interface', 'system', 'all']:
+        for e in self._child_endpoints:
             ret['children'].append(
                 dict(
                     leaf=False, 
@@ -1324,11 +1328,48 @@ class BulkTimeseriesViewset(BaseDataViewset):
         serializer = BulkTimeseriesSerializer(ret_obj.to_dict(), context={'request': request})
         return Response(serializer.data, status.HTTP_201_CREATED)
 
+"""
+**/v2/pdu/**
 
+/v2/pdu/
+/v2/pdu/$NAME/
+/v2/pdu/$NAME/outlet/
+"""
 
+class PDUSerializer(DeviceSerializer):
+    class Meta(DeviceSerializer.Meta):
+        # Inherit most of the stuff from superclass, but override this bit.
+        extra_kwargs={'url': {'lookup_field': 'name', 'view_name': 'pdu-detail'}}
 
+    _child_endpoints = ['outlet']
 
+class PDUViewset(DeviceViewset):
+    # queryset returned by overridden get_queryset()
+    serializer_class = PDUSerializer
+    lookup_field = 'name'
 
+    def get_queryset(self):
+        """
+        queryset = Device.objects.filter(pk__in=OutletRef.objects.values_list("device__pk")).distinct()
+        """
+        filters = build_time_filters(self.request)
+        filters['pk__in'] = OutletRef.objects.values_list("device__pk")
+
+        return Device.objects.filter(**filters).distinct()
+
+    def _no_verb(self):
+        """Change superclass message."""
+        return Response({'error': 'Endpoint only supports GET.'}, status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None, **kwargs):
+        """No PUT - overriding superclass PUT verb."""
+        return self._no_verb()
+
+"""
+**/v2/outlet/**
+
+/v2/outlet/
+"""
 
 
 

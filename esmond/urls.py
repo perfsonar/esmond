@@ -19,6 +19,7 @@ from esmond.api.drf_api import (
     InterfaceDataViewset,
     NestedInterfaceViewset,
     OidsetViewset,
+    PDUViewset,
     TimeseriesRequestViewset,
 )
 
@@ -28,6 +29,9 @@ router.register('interface', InterfaceViewset, base_name='interface')
 # /device/ is registered as a nested resource below. need this
 # to make it show up in the DRF browsable API.
 router.register('device', DeviceViewset, base_name='device')
+# /pdu/ is registered as a nested resource below. need this
+# to make it show up in the DRF browsable API.
+router.register('pdu', PDUViewset, base_name='pdu')
 
 extended_router = ExtendedSimpleRouter()
 
@@ -41,6 +45,12 @@ device_router.register(
     NestedInterfaceViewset,
     base_name='device-interface',
     parents_query_lookups=['device__name']
+)
+
+pdu_router = extended_router.register(
+    r'pdu',
+    PDUViewset,
+    base_name='pdu'
 )
 
 # This object attribute has all of the patterns - helpful
