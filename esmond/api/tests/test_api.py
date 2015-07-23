@@ -669,30 +669,33 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_bad_timeseries_endpoints(self):
         # url = '/v1/timeseries/BaseRate/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
-        # all of these endpoints are incomplete
-        url = '/v1/timeseries/'
+        # all of these endpoints are incomplete and just 
+        # return 404 Not Found (changed from 404 Bad Request
+        # because re-writing a bunch of url patterns to parse 
+        # incomplete paths is silly).
+        url = '/v2/timeseries/'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
-        url = '/v1/timeseries/BaseRate/'
+        url = '/v2/timeseries/BaseRate/'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
-        url = '/v1/timeseries/BaseRate/snmp/'
+        url = '/v2/timeseries/BaseRate/snmp/'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
         # This does not end in a parsable frequency
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
-        # This type does not exist
-        url = '/v1/timeseries/BadType/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        # This type does not exist and is therefore 400 Bad Request.
+        url = '/v2/timeseries/BadType/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
@@ -701,7 +704,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         agg = 30000
         params = APIDataTestResults.get_agg_range(agg, in_ms=True)
 
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
         response = self.client.get(url, params)
         data = json.loads(response.content)
@@ -717,7 +720,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         
         # make sure it works with a trailing slash too and check the 
         # padding/fill as well.
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}/'.format(agg)
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}/'.format(agg)
 
         params['begin'] -= agg*2
 
@@ -739,7 +742,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][-3]['val'], None)
 
         # Raw data as well.
-        url = '/v1/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+        url = '/v2/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
         response = self.client.get(url, params)
         data = json.loads(response.content)
