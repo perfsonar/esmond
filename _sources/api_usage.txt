@@ -1,0 +1,17 @@
+******************
+Using the REST API
+******************
+
+This document describes the structure of the REST API.
+
+
+atencoding
+==========
+
+Since some characters have special meanings in URLs it is necessary to 
+have an encoding that will allow these characters to pass through unchanged.
+This encoding is analgous to the `percent encoding`_ as used in URIs and 
+defined in `RFC 3986`_.
+
+.. _`percent ecoding`: http://en.wikipedia.org/wiki/Percent-encoding
+.. _`RFC 3986`: http://tools.ietf.org/html/rfc3986

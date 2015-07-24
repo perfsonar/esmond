@@ -24,7 +24,10 @@ Initial installation
 * Install postgres and related development packages (libpq-dev, etc) if using that as the DB backend.
 * Install python development packages if your system does not already have them (python-dev, etc).
 * Install memcached
-* Get esmond source: hg clone https://code.google.com/p/esmond/ and checkout/install source where you want it.
+* Get esmond source: (Checkout/install source where you want it.)
+  
+    git clone https://github.com/esnet/esmond.git
+
 * Chdir to where source code is pulled to.  This will now be referred to as the ESMOND_ROOT
 * Copy the example conf file to where you want - cp devel/esmond-devel.conf esmond.conf (for example)
 * Set the following environment variables (modify paths as appropriate)::

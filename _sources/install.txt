@@ -2,6 +2,12 @@
 Installation
 ************
 
+.. warning:: This page is out of date and is kept as a placeholder only. The
+             best resource for information on installing esmond is the
+             deployment cookbook :doc:`deployment_cookbook`.
+
+
+
 Prerequisites
 =============
 
@@ -29,8 +35,7 @@ In addition, it uses the following Python libraries:
 .. _psycopg2: http://www.initd.org/pub/software/psycopg/PSYCOPG-2-0/
 .. _Django: http://www.djangoproject.com/
 .. _web.py: http://webpy.org/
-.. _TSDB: http://code.google.com/p/tsdb/
-.. _memcached: http://www.memcached.org/
+.. _TSDB: https://github.com/esnet/esxsnmp-tsdb
 
 Installation
 ============

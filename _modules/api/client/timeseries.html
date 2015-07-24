@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>api.client.timeseries &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png ../../../_static/logo-esnet-ball-sm.png --><img src="../../../_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rpm_install.html">RPM Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_extension.html">Extending the perfSONAR API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rpm_build.html">RPM Build Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_client_rest.html">perfSONAR Client REST Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_client_python.html">perfSONAR Python Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_gridftp.html">Registering GridFTP Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="../../../genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href="http://github.com/esnet/esmond"><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-1"></div>
+    <div class="col-md-9">
+      
+  <h1>Source code for api.client.timeseries</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">.snmp</span> <span class="kn">import</span> <span class="n">DataPayload</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">add_apikey_header</span><span class="p">,</span> <span class="n">atencode</span><span class="p">,</span> <span class="n">AlertMixin</span>
+
+<div class="viewcode-block" id="TimeseriesBase"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeseriesBase">[docs]</a><span class="k">class</span> <span class="nc">TimeseriesBase</span><span class="p">(</span><span class="n">AlertMixin</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for the GET and POST timeseries interaction objects.&quot;&quot;&quot;</span>
+    <span class="n">_schema_root</span> <span class="o">=</span> <span class="s">&#39;v1/timeseries&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_url</span><span class="o">=</span><span class="s">&#39;http://localhost/&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="p">[],</span> <span class="n">freq</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">username</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor - the path list arg is an ordered list of elements</span>
+<span class="sd">        that will be used (along with the freq arg) to construct the </span>
+<span class="sd">        cassandra row key.  See example above.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TimeseriesBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span> <span class="o">=</span> <span class="n">api_url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="p">[:]</span> <span class="c"># copy in case the path ref is reused</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="n">freq</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="o">=</span> <span class="n">username</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span>
+
+        <span class="c"># Error from base classes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errno</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errms</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># Make sure we&#39;re not using the base class</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_p_type&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Do not instantiate TimeseriesBase base class, use appropriate subclass.&#39;</span><span class="p">)</span>
+
+        <span class="c"># Validate args</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;The args api_url, path and freq must be set.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Path argument must be a list.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Path is not of sufficient length.&#39;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Arg freq must be an integer.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="p">[</span> <span class="n">atencode</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="s">&#39;{0}/{1}/{2}/{3}/{4}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">_schema_root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_type</span><span class="p">,</span>
+            <span class="s">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TimeseriesBase.set_error_state"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeseriesBase.set_error_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_error_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">errno</span><span class="p">,</span> <span class="n">errms</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errno</span> <span class="o">=</span> <span class="n">errno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errms</span> <span class="o">=</span> <span class="n">errms</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeseriesBase.get_error"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeseriesBase.get_error">[docs]</a>    <span class="k">def</span> <span class="nf">get_error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">errno</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">errms</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;{0}: {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errno</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">errms</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+
+</div></div>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Classes to handle posting data to esmond rest interface.</span>
+
+<span class="sd">Example use:</span>
+
+<span class="sd">    ts = int(time.time()) * 1000</span>
+
+<span class="sd">    payload = [</span>
+<span class="sd">        { &#39;ts&#39;: ts-90000, &#39;val&#39;: 1000 },</span>
+<span class="sd">        { &#39;ts&#39;: ts-60000, &#39;val&#39;: 2000 },</span>
+<span class="sd">        { &#39;ts&#39;: ts-30000, &#39;val&#39;: 3000 },</span>
+<span class="sd">        { &#39;ts&#39;: ts, &#39;val&#39;: 4000 },</span>
+<span class="sd">    ]</span>
+
+<span class="sd">    path = [&#39;rtr_test_post&#39;, &#39;FastPollHC&#39;, &#39;ifHCInOctets&#39;, &#39;interface_test&#39;]</span>
+
+<span class="sd">    p = PostRawData(port=8000, path=path, freq=30000)</span>
+<span class="sd">    p.set_payload(payload)</span>
+<span class="sd">    p.add_to_payload({&#39;ts&#39;: ts+1000, &#39;val&#39;: 5000})</span>
+<span class="sd">    p.send_data()</span>
+
+<span class="sd">The internal payload is initialized to an empty list.  The client can either</span>
+<span class="sd">compltely overwrite the internal payload with the set_payload() method, or </span>
+<span class="sd">one can add indivdual dicts to it with add_to_payload().  </span>
+
+<span class="sd">In either case, the payload will be internally validated and an exception</span>
+<span class="sd">will be raised if bad data is found.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PostWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostWarning">[docs]</a><span class="k">class</span> <span class="nc">PostWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="PostRawDataWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostRawDataWarning">[docs]</a><span class="k">class</span> <span class="nc">PostRawDataWarning</span><span class="p">(</span><span class="n">PostWarning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="PostBaseRateWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostBaseRateWarning">[docs]</a><span class="k">class</span> <span class="nc">PostBaseRateWarning</span><span class="p">(</span><span class="n">PostWarning</span><span class="p">):</span> <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="PostException"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostException">[docs]</a><span class="k">class</span> <span class="nc">PostException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="PostData"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostData">[docs]</a><span class="k">class</span> <span class="nc">PostData</span><span class="p">(</span><span class="n">TimeseriesBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for API write objects - writes data to the POST </span>
+<span class="sd">    facility in the /timeseries/ REST interface namespace.&quot;&quot;&quot;</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">PostWarning</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_url</span><span class="o">=</span><span class="s">&#39;http://localhost/&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="p">[],</span> <span class="n">freq</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">username</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor - the path list arg is an ordered list of elements</span>
+<span class="sd">        that will be used (along with the freq arg) to construct the </span>
+<span class="sd">        cassandra row key.  See example above.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PostData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">api_url</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+
+        <span class="c"># Make sure we&#39;re not using an intermediate base class.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_p_type&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Do not instantiate PostData base class, use appropriate subclass.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;PostData requires username and api_key for rest interface.&#39;</span><span class="p">)</span>
+
+        <span class="c"># Set up playload and headers.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">payload</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;content-type&#39;</span><span class="p">:</span> <span class="s">&#39;application/json&#39;</span> <span class="p">}</span>
+        <span class="n">add_apikey_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PostData.set_payload"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostData.set_payload">[docs]</a>    <span class="k">def</span> <span class="nf">set_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets object payload to a complete list of dicts passed in. </span>
+<span class="sd">        This will overwrite the internal payload if any elements had </span>
+<span class="sd">        been previously defined (and issue a warning).&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Arg payload to set_payload must be a list instance.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">payload</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Internal payload was not empty, so this is a warning that you are overwriting an existing payload.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">payload</span> <span class="o">=</span> <span class="n">payload</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_payload</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="PostData.add_to_payload"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostData.add_to_payload">[docs]</a>    <span class="k">def</span> <span class="nf">add_to_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a new dict element to the object payload.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Arg item to add_to_payload must be a dict instance.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">payload</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_payload</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">_validate_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Internal method to check the integrity of the payload whenever </span>
+<span class="sd">        it is set or appended to.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">payload</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;All elements of payload must be dicts - got: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;ts&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">i</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;val&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Expecting list of dicts with keys </span><span class="se">\&#39;</span><span class="s">val</span><span class="se">\&#39;</span><span class="s"> and </span><span class="se">\&#39;</span><span class="s">ts</span><span class="se">\&#39;</span><span class="s"> - got: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">int</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ts&#39;</span><span class="p">)))</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;val&#39;</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Must supply valid numeric args for ts and val dict attributes - got: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+
+<div class="viewcode-block" id="PostData.send_data"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostData.send_data">[docs]</a>    <span class="k">def</span> <span class="nf">send_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Format current payload, send to REST api and clear the payload.</span>
+<span class="sd">        Payload is cleared after a write so as not to send duplicate data, </span>
+<span class="sd">        and so the same instance can be used to send multiple times.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">payload</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Payload empty, no data sent.&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">payload</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">201</span><span class="p">:</span>
+            <span class="c"># Change this to an exception?</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_error_state</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;POST error: status_code: {0}, message: {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
+
+        <span class="c"># reset payload</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">payload</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+</div></div>
+<div class="viewcode-block" id="PostRawData"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostRawData">[docs]</a><span class="k">class</span> <span class="nc">PostRawData</span><span class="p">(</span><span class="n">PostData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to post raw data to rest api.&quot;&quot;&quot;</span>
+    <span class="n">_p_type</span> <span class="o">=</span> <span class="s">&#39;RawData&#39;</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">PostRawDataWarning</span>
+</div>
+<div class="viewcode-block" id="PostBaseRate"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.PostBaseRate">[docs]</a><span class="k">class</span> <span class="nc">PostBaseRate</span><span class="p">(</span><span class="n">PostData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to post base rate deltas to rest api.&quot;&quot;&quot;</span>
+    <span class="n">_p_type</span> <span class="o">=</span> <span class="s">&#39;BaseRate&#39;</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">PostBaseRateWarning</span>
+</div>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Classes to execute get requests to timeseries namespace.</span>
+
+<span class="sd">These classes are initialized much like the post data class, but with </span>
+<span class="sd">and additional params dict arg that will be passed to the GET request.</span>
+<span class="sd">Setting begin or end time would be the most common args set.  Params dict </span>
+<span class="sd">is optional.</span>
+
+<span class="sd">Get data will return a payload encapsulation object which will return </span>
+<span class="sd">data point objects.  Since this namespace is supposed to just return </span>
+<span class="sd">that which is in the backend - the timestamps are all in milliseconds </span>
+<span class="sd">and there is no coersion to a python datetime object.</span>
+
+<span class="sd">Example usage:</span>
+
+<span class="sd">    path = [&#39;rtr_test_post&#39;, &#39;FastPollHC&#39;, &#39;ifHCInOctets&#39;, &#39;interface_test/0/0.0&#39;]</span>
+
+<span class="sd">    params = {</span>
+<span class="sd">        &#39;begin&#39;: ts-90000, &#39;end&#39;: ts+1000</span>
+<span class="sd">    }</span>
+
+<span class="sd">    get = None</span>
+
+<span class="sd">    args = {</span>
+<span class="sd">        &#39;api_url&#39;: &#39;http://localhost:8000/&#39;, </span>
+<span class="sd">        &#39;path&#39;: path, </span>
+<span class="sd">        &#39;freq&#39;: 30000,</span>
+<span class="sd">        &#39;params&#39;: params,</span>
+<span class="sd">    }</span>
+
+<span class="sd">    if p_type == &#39;RawData&#39;:</span>
+<span class="sd">        get = GetRawData(**args)</span>
+<span class="sd">    elif p_type == &#39;BaseRate&#39;:</span>
+<span class="sd">        get = GetBaseRate(**args)</span>
+
+<span class="sd">    payload = get.get_data()</span>
+
+<span class="sd">    print payload</span>
+<span class="sd">    for d in payload.data:</span>
+<span class="sd">        print &#39;  *&#39;, d</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="GetWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetWarning">[docs]</a><span class="k">class</span> <span class="nc">GetWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="GetRawDataWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetRawDataWarning">[docs]</a><span class="k">class</span> <span class="nc">GetRawDataWarning</span><span class="p">(</span><span class="n">GetWarning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="GetBaseRateWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBaseRateWarning">[docs]</a><span class="k">class</span> <span class="nc">GetBaseRateWarning</span><span class="p">(</span><span class="n">GetWarning</span><span class="p">):</span> <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="GetException"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetException">[docs]</a><span class="k">class</span> <span class="nc">GetException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GetData"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetData">[docs]</a><span class="k">class</span> <span class="nc">GetData</span><span class="p">(</span><span class="n">TimeseriesBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for API write objects - writes data to the Get </span>
+<span class="sd">    facility in the /timeseries/ REST interface namespace.&quot;&quot;&quot;</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">GetWarning</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_url</span><span class="o">=</span><span class="s">&#39;http://localhost/&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="p">[],</span> <span class="n">freq</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+        <span class="n">username</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor - the path list arg is an ordered list of elements</span>
+<span class="sd">        that will be used (along with the freq arg) to construct the </span>
+<span class="sd">        cassandra row key.  See example above.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GetData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">api_url</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="n">params</span>
+
+        <span class="c"># Make sure we&#39;re not using an intermediate base class.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_p_type&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PostException</span><span class="p">(</span><span class="s">&#39;Do not instantiate GetData base class, use appropriate subclass.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">:</span>
+            <span class="n">add_apikey_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GetData.get_data"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetData.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span> <span class="ow">and</span> \
+            <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;application/json&#39;</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">TimeSeriesDataPayload</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_error_state</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;GET error: status_code: {0}, message: {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">TimeSeriesDataPayload</span><span class="p">()</span>
+</div></div>
+<div class="viewcode-block" id="GetRawData"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetRawData">[docs]</a><span class="k">class</span> <span class="nc">GetRawData</span><span class="p">(</span><span class="n">GetData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to Get raw data to rest api.&quot;&quot;&quot;</span>
+    <span class="n">_p_type</span> <span class="o">=</span> <span class="s">&#39;RawData&#39;</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">GetRawDataWarning</span>
+</div>
+<div class="viewcode-block" id="GetBaseRate"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBaseRate">[docs]</a><span class="k">class</span> <span class="nc">GetBaseRate</span><span class="p">(</span><span class="n">GetData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to Get base rate deltas to rest api.&quot;&quot;&quot;</span>
+    <span class="n">_p_type</span> <span class="o">=</span> <span class="s">&#39;BaseRate&#39;</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">GetBaseRateWarning</span>
+</div>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Classes to make bulk data requests.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="GetBulkWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBulkWarning">[docs]</a><span class="k">class</span> <span class="nc">GetBulkWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="GetBulkRawDataWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBulkRawDataWarning">[docs]</a><span class="k">class</span> <span class="nc">GetBulkRawDataWarning</span><span class="p">(</span><span class="n">GetWarning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="GetBulkBaseRateWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBulkBaseRateWarning">[docs]</a><span class="k">class</span> <span class="nc">GetBulkBaseRateWarning</span><span class="p">(</span><span class="n">GetWarning</span><span class="p">):</span> <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="BulkException"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.BulkException">[docs]</a><span class="k">class</span> <span class="nc">BulkException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GetBulkData"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBulkData">[docs]</a><span class="k">class</span> <span class="nc">GetBulkData</span><span class="p">(</span><span class="n">AlertMixin</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">GetBulkWarning</span>
+    <span class="n">_schema_root</span> <span class="o">=</span> <span class="s">&#39;v1/bulk/timeseries&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_url</span><span class="o">=</span><span class="s">&#39;http://localhost&#39;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GetBulkData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span> <span class="o">=</span> <span class="n">api_url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="o">=</span> <span class="n">username</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span>
+
+        <span class="c"># Make sure we&#39;re not using the base class</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_p_type&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BulkException</span><span class="p">(</span><span class="s">&#39;Do not instantiate GetBulkData base class, use appropriate subclass.&#39;</span><span class="p">)</span>
+
+        <span class="c"># Validate args</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BulkException</span><span class="p">(</span><span class="s">&#39;The arg api_url must be set.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;content-type&#39;</span><span class="p">:</span> <span class="s">&#39;application/json&#39;</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">:</span>
+            <span class="n">add_apikey_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="s">&#39;{0}/{1}/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schema_root</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GetBulkData.get_data"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBulkData.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">,</span> <span class="n">begin</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_paths</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_args</span><span class="p">(</span><span class="n">begin</span><span class="o">=</span><span class="n">begin</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)</span>
+
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_type</span><span class="p">,</span>
+            <span class="s">&#39;paths&#39;</span><span class="p">:</span> <span class="n">paths</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">begin</span><span class="p">:</span> <span class="n">payload</span><span class="p">[</span><span class="s">&#39;begin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">begin</span>
+        <span class="k">if</span> <span class="n">end</span><span class="p">:</span> <span class="n">payload</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">end</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">201</span> <span class="ow">and</span> \
+            <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;application/json&#39;</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">TimeSeriesBulkDataPayload</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;GET error: status_code: {0}, message: {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">TimeSeriesBulkDataPayload</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">_validate_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">BulkException</span><span class="p">(</span><span class="s">&#39;Paths argument must be a list.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">paths</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">BulkException</span><span class="p">(</span><span class="s">&#39;Paths list contains no elements.&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">BulkException</span><span class="p">(</span><span class="s">&#39;Path elements must contain data.&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">BulkException</span><span class="p">(</span><span class="s">&#39;Final element of path lists must be a valid integer/frequency, got {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="k">def</span> <span class="nf">_validate_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">BulkException</span><span class="p">(</span><span class="s">&#39;The args begin and end must be valid timestamp/numeric values - got: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">({</span><span class="n">k</span><span class="p">:</span><span class="n">v</span><span class="p">}))</span>
+
+
+
+</div>
+<div class="viewcode-block" id="GetBulkRawData"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBulkRawData">[docs]</a><span class="k">class</span> <span class="nc">GetBulkRawData</span><span class="p">(</span><span class="n">GetBulkData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to Get raw data to rest api.&quot;&quot;&quot;</span>
+    <span class="n">_p_type</span> <span class="o">=</span> <span class="s">&#39;RawData&#39;</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">GetRawDataWarning</span>
+</div>
+<div class="viewcode-block" id="GetBulkBaseRate"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.GetBulkBaseRate">[docs]</a><span class="k">class</span> <span class="nc">GetBulkBaseRate</span><span class="p">(</span><span class="n">GetBulkData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to Get base rate deltas to rest api.&quot;&quot;&quot;</span>
+    <span class="n">_p_type</span> <span class="o">=</span> <span class="s">&#39;BaseRate&#39;</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">GetBaseRateWarning</span>
+</div>
+<span class="sd">&quot;&quot;&quot;Encapsulation objects for the returned data.  Subclasses the sibling</span>
+<span class="sd">classes in the api.client.snmp module and overrides to get rid of the </span>
+<span class="sd">utc timestamp coersion since this is all in ms.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TimeSeriesDataPayload"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesDataPayload">[docs]</a><span class="k">class</span> <span class="nc">TimeSeriesDataPayload</span><span class="p">(</span><span class="n">DataPayload</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;data&#39;</span><span class="p">:[]}):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TimeSeriesDataPayload</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesDataPayload.begin_time"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesDataPayload.begin_time">[docs]</a>    <span class="k">def</span> <span class="nf">begin_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;begin_time&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesDataPayload.end_time"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesDataPayload.end_time">[docs]</a>    <span class="k">def</span> <span class="nf">end_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;end_time&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesDataPayload.data"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesDataPayload.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return internal data from payload as list of DataPoint.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">TimeSeriesDataPoint</span><span class="p">(</span><span class="o">**</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])]</span>
+</div></div>
+<div class="viewcode-block" id="TimeSeriesDataPoint"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesDataPoint">[docs]</a><span class="k">class</span> <span class="nc">TimeSeriesDataPoint</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to encapsulate the returned data points.&quot;&quot;&quot;</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ts&#39;</span><span class="p">,</span> <span class="s">&#39;val&#39;</span><span class="p">]</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TimeSeriesDataPoint</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts</span> <span class="o">=</span> <span class="n">ts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;DataPoint: ts:{0} val:{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">val</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="TimeSeriesBulkDataPayload"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesBulkDataPayload">[docs]</a><span class="k">class</span> <span class="nc">TimeSeriesBulkDataPayload</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;data&#39;</span><span class="p">:[]}):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TimeSeriesBulkDataPayload</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesBulkDataPayload.begin_time"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesBulkDataPayload.begin_time">[docs]</a>    <span class="k">def</span> <span class="nf">begin_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;begin_time&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesBulkDataPayload.end_time"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesBulkDataPayload.end_time">[docs]</a>    <span class="k">def</span> <span class="nf">end_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;end_time&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesBulkDataPayload.cf"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesBulkDataPayload.cf">[docs]</a>    <span class="k">def</span> <span class="nf">cf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;cf&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesBulkDataPayload.data"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesBulkDataPayload.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">TimeSeriesBulkDataRow</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])]</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;TimeSeriesBulkDataPayload paths:{0} b:{1} e:{2}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])),</span> <span class="bp">self</span><span class="o">.</span><span class="n">begin_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="TimeSeriesBulkDataRow"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesBulkDataRow">[docs]</a><span class="k">class</span> <span class="nc">TimeSeriesBulkDataRow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;docstring for TimeSeriesBulkDataRow&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TimeSeriesBulkDataRow</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;path&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesBulkDataRow.path"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesBulkDataRow.path">[docs]</a>    <span class="k">def</span> <span class="nf">path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="TimeSeriesBulkDataRow.data"><a class="viewcode-back" href="../../../api.client.html#api.client.timeseries.TimeSeriesBulkDataRow.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">TimeSeriesDataPoint</span><span class="p">(</span><span class="o">**</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;TimeSeriesBulkDataRow: path:{0} len:{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">))</span>
+        
+</pre></div></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>

@@ -47,8 +47,6 @@ Contents:
    :maxdepth: 2
 
    intro
-   install
-   config
    deployment_cookbook
    rpm_install
    

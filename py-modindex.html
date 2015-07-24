@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Introduction &mdash; esmond</title>
+    <title>Python Module Index &mdash; esmond</title>
     
     <link rel="stylesheet" href="_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -31,12 +31,13 @@
     <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="top" title="esmond" href="index.html" />
-    <link rel="next" title="Deployment Cookbook" href="deployment_cookbook.html" />
-    <link rel="prev" title="esmond: ESnet Monitoring Daemon" href="index.html" />
+
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
+
+
 
   </head>
   <body>
@@ -66,19 +67,19 @@
      href="index.html">Section <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="">Introduction</a></li>
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="deployment_cookbook.html">Deployment Cookbook</a></li>
 <li class="toctree-l1"><a class="reference internal" href="rpm_install.html">RPM Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_usage.html">Using the REST API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.client.html">REST API Client Libary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hacking.html">Hacking on esmond</a></li>
 <li class="toctree-l1"><a class="reference internal" href="perfsonar_extension.html">Extending the perfSONAR API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="rpm_build.html">RPM Build Instructions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_rest.html">perfSONAR Client REST Interface</a></li>
-<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_python.html">perfSONAR Python Client Libraries</a></li>
-<li class="toctree-l1"><a class="reference internal" href="perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
-<li class="toctree-l1"><a class="reference internal" href="perfsonar_gridftp.html">Registering GridFTP Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perfsonar_client.html">Using perfSONAR data client libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">Developer Reference</a></li>
 </ul>
 </ul>
@@ -88,22 +89,6 @@
             
               
                 
-  <li>
-    <a href="index.html" title="Previous Chapter: esmond: ESnet Monitoring Daemon">
-      <span class="glyphicon glyphicon-chevron-left"></span>
-      <span class="hidden-sm">
-        esmond: ESnet Mo...
-      </span>
-    </a>
-  </li>
-  <li>
-    <a href="deployment_cookbook.html" title="Next Chapter: Deployment Cookbook">
-      <span class="hidden-sm">
-        Deployment Cookb...
-      </span>
-      <span class="glyphicon glyphicon-chevron-right"></span>
-    </a>
-  </li>
               
             
             <li class="divider-vertical"></li>
@@ -133,55 +118,54 @@
 <div class="container">
   <div class="row">
       <div class="col-md-3">
-        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
-<li><a class="reference internal" href="#">Introduction</a><ul>
-<li><a class="reference internal" href="#summary">Summary</a></li>
-<li><a class="reference internal" href="#design-goals">Design Goals</a></li>
-</ul>
-</li>
-</ul>
-
+        <div id="sidebar" class="bs-sidenav" role="complementary">
         </div>
       </div>
     <div class="col-md-9">
       
-  <div class="section" id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
-<p>esmond is a system for collecting, storing, visualizing and analyzing large
-sets of timeseries data. It was driven by the needs of the ESnet engineering team
-but is likely useful to a much wider audience. esmond has a RESTful API which
-allows easy access to the data which is collected. The original focus was on
-collecting SNMP timeseries data which is still the system&#8217;s forte, but there
-is support for generalized timeseries data. The <a class="reference external" href="http://www.perfsonar.net/">perfSONAR</a> project has begun
-using esmond to store timeseries of network measurements.</p>
-<p>esmond uses a hybrid model for storing data. Timeseries data such as interface
-counters is stored using <a class="reference external" href="http://cassandra.apache.org/">Cassandra</a>. esmond will save the raw data, and create
-summarizations similar to <a class="reference external" href="http://oss.oetiker.ch/rrdtool/">RRD</a>.  However, the system never discards data
-through summarization, which distinguishes it from <a class="reference external" href="http://oss.oetiker.ch/rrdtool/">RRD</a> (and <a class="reference external" href="https://github.com/graphite-project/whisper">whisper</a>/<a class="reference external" href="https://github.com/graphite-project/ceres">ceres</a>).
-Metadata (such as interface description and interface types from SNMP) are
-stored in an SQL database. Storing this data in an SQL database allows us to
-use the full expressiveness of SQL to query this data. Since this data changes
-relatively infrequently the demands placed on the SQL server are fairly
-modest.  Our production server uses <a class="reference external" href="http://www.postgresql.org/">PostgreSQL</a>, but it&#8217;s likely that <a class="reference external" href="https://sqlite.org/">SQLite</a>
-would work just fine. Data can be visualized using <a class="reference external" href="https://github.com/graphite-project/graphite-web">Graphite</a> or through custom
-visualizations which can query the RESTful API.</p>
-</div>
-<div class="section" id="design-goals">
-<h2>Design Goals<a class="headerlink" href="#design-goals" title="Permalink to this headline">¶</a></h2>
-<p>esmond was designed to meet the needs of the Network Engineering group at
-<a class="reference external" href="http://www.es.net/">ESnet</a>.  The key design goals were:</p>
-<ul class="simple">
-<li>data collection should be very reliable</li>
-<li>data visualization should be very reliable but not at the expense of data collection</li>
-<li>raw data should never be discarded</li>
-<li>new interfaces should be detected automatically</li>
-<li>automate as much as possible</li>
-<li>provide a clean interface for programatic control</li>
-</ul>
-</div>
-</div>
+
+   <h1>Python Module Index</h1>
+
+   <div class="modindex-jumpbox">
+   <a href="#cap-a"><strong>a</strong></a>
+   </div>
+
+   <table class="indextable modindextable" cellspacing="0" cellpadding="2">
+     <tr class="pcap"><td></td><td>&nbsp;</td><td></td></tr>
+     <tr class="cap" id="cap-a"><td></td><td>
+       <strong>a</strong></td><td></td></tr>
+     <tr>
+       <td><img src="_static/minus.png" class="toggler"
+              id="toggle-1" style="display: none" alt="-" /></td>
+       <td>
+       <tt class="xref">api</tt></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&nbsp;&nbsp;&nbsp;
+       <a href="api.html#module-api.api"><tt class="xref">api.api</tt></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&nbsp;&nbsp;&nbsp;
+       <a href="api.client.html#module-api.client.snmp"><tt class="xref">api.client.snmp</tt></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&nbsp;&nbsp;&nbsp;
+       <a href="api.client.html#module-api.client.timeseries"><tt class="xref">api.client.timeseries</tt></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&nbsp;&nbsp;&nbsp;
+       <a href="api.html#module-api.models"><tt class="xref">api.models</tt></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&nbsp;&nbsp;&nbsp;
+       <a href="api.html#module-api.views"><tt class="xref">api.views</tt></a></td><td>
+       <em></em></td></tr>
+   </table>
 
 
     </div>
@@ -200,10 +184,6 @@ visualizations which can query the RESTful API.</p>
         
         <br/>
         
-<div id="sourcelink">
-  <a href="_sources/intro.txt"
-     rel="nofollow">Source</a>
-</div>
         
         </p>
         <p>

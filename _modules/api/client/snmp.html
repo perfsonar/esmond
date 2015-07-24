@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>api.client.snmp &mdash; esmond</title>
+    
+    <link rel="stylesheet" href="../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/bootstrap-3.1.0/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/esnet/esnet.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.9.1a1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="esmond" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          <!-- LOGO: logo-esnet-ball-sm.png ../../../_static/logo-esnet-ball-sm.png --><img src="../../../_static/logo-esnet-ball-sm.png">
+          esmond</a>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Section <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deployment_cookbook.html">Deployment Cookbook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rpm_install.html">RPM Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">esmond subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.client.html">REST API Client Libary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hacking.html">Hacking on esmond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_extension.html">Extending the perfSONAR API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rpm_build.html">RPM Build Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_client_rest.html">perfSONAR Client REST Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_client_python.html">perfSONAR Python Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_client_perl.html">perfSONAR Perl Client Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../perfsonar_gridftp.html">Registering GridFTP Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Developer Reference</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            <li class="divider-vertical"></li>
+            
+                <li><a href="../../../genindex.html">Index</a></li>
+                <li><a href="https://www.es.net">ESnet</a></li>
+            
+            <li><a href="http://github.com/esnet/esmond"><img src="_static/esnet/icon-github.png" height="20" width="20"></a></li>
+            
+            
+            
+          </ul>
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-1"></div>
+    <div class="col-md-9">
+      
+  <h1>Source code for api.client.snmp</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">calendar</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">add_apikey_header</span><span class="p">,</span> <span class="n">AlertMixin</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Library to fetch data from &#39;simplified&#39; API /v1/snmp/ namespace.</span>
+
+<span class="sd">The class ApiConnect is the &#39;entry point&#39; that the client uses, and </span>
+<span class="sd">the ApiFilters class is used to set time/device/etc filters, and is </span>
+<span class="sd">passed to the ApiConnect class as an argument.</span>
+
+<span class="sd">Example:</span>
+
+<span class="sd">    filters = ApiFilters()</span>
+
+<span class="sd">    if options.last:</span>
+<span class="sd">        filters.begin_time = int(time.time() - (options.last*60))</span>
+
+<span class="sd">    if options.devices:</span>
+<span class="sd">        filters.devices = options.devices</span>
+
+<span class="sd">    conn = ApiConnect(options.api_url, filters)</span>
+
+<span class="sd">After the entry point is set up, it returns device objects, which in </span>
+<span class="sd">turn return associated interface objects, endpoint objects and data </span>
+<span class="sd">point objects.  </span>
+
+<span class="sd">Traversing down through hierarchy of objects:</span>
+
+<span class="sd">    for d in conn.get_devices():</span>
+<span class="sd">        for i in d.get_interfaces():</span>
+<span class="sd">            for e in i.get_endpoints():</span>
+<span class="sd">                payload_object = e.get_data()</span>
+<span class="sd">                    list_of_data_point_objects = payload_object.data</span>
+<span class="sd">                        for i in list_of_data_point_objects:</span>
+<span class="sd">                            print i.ts, i.val</span>
+
+<span class="sd">Where timestamp values are returned, they are python datetime objects.</span>
+
+<span class="sd">NOTE: actually executing that example w/out filtering/limiting the </span>
+<span class="sd">devices being polled will grab a lot of data from the API so proceed </span>
+<span class="sd">with caution!</span>
+
+<span class="sd">The objects that encapsulate the device/interface/etc data that are</span>
+<span class="sd">returned from the api follow the general pattern where information in </span>
+<span class="sd">a given object are accessed by properties, and when acutal &#39;work&#39; is </span>
+<span class="sd">being done (hitting the api), that is done by a method prefixed with</span>
+<span class="sd">get_ (ex: get_interfaces()).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">MAX_DATETIME</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">max</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">MAX_EPOCH</span> <span class="o">=</span> <span class="n">calendar</span><span class="o">.</span><span class="n">timegm</span><span class="p">(</span><span class="n">MAX_DATETIME</span><span class="o">.</span><span class="n">utctimetuple</span><span class="p">())</span>
+
+<div class="viewcode-block" id="NodeInfoWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfoWarning">[docs]</a><span class="k">class</span> <span class="nc">NodeInfoWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="DeviceWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DeviceWarning">[docs]</a><span class="k">class</span> <span class="nc">DeviceWarning</span><span class="p">(</span><span class="n">NodeInfoWarning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="InterfaceWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.InterfaceWarning">[docs]</a><span class="k">class</span> <span class="nc">InterfaceWarning</span><span class="p">(</span><span class="n">NodeInfoWarning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="EndpointWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.EndpointWarning">[docs]</a><span class="k">class</span> <span class="nc">EndpointWarning</span><span class="p">(</span><span class="n">NodeInfoWarning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="DataPayloadWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPayloadWarning">[docs]</a><span class="k">class</span> <span class="nc">DataPayloadWarning</span><span class="p">(</span><span class="n">NodeInfoWarning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="BulkDataPayloadWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataPayloadWarning">[docs]</a><span class="k">class</span> <span class="nc">BulkDataPayloadWarning</span><span class="p">(</span><span class="n">NodeInfoWarning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="ApiFiltersWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFiltersWarning">[docs]</a><span class="k">class</span> <span class="nc">ApiFiltersWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="ApiConnectWarning"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnectWarning">[docs]</a><span class="k">class</span> <span class="nc">ApiConnectWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="ApiNotFound"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiNotFound">[docs]</a><span class="k">class</span> <span class="nc">ApiNotFound</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="DeviceNotFound"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DeviceNotFound">[docs]</a><span class="k">class</span> <span class="nc">DeviceNotFound</span><span class="p">(</span><span class="n">ApiNotFound</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="DeviceCollectionNotFound"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DeviceCollectionNotFound">[docs]</a><span class="k">class</span> <span class="nc">DeviceCollectionNotFound</span><span class="p">(</span><span class="n">ApiNotFound</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="InterfaceNotFound"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.InterfaceNotFound">[docs]</a><span class="k">class</span> <span class="nc">InterfaceNotFound</span><span class="p">(</span><span class="n">ApiNotFound</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="EndpointNotFound"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.EndpointNotFound">[docs]</a><span class="k">class</span> <span class="nc">EndpointNotFound</span><span class="p">(</span><span class="n">ApiNotFound</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="c"># - Encapsulation classes for nodes (device, interface, etc).</span>
+</div>
+<div class="viewcode-block" id="NodeInfo"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo">[docs]</a><span class="k">class</span> <span class="nc">NodeInfo</span><span class="p">(</span><span class="n">AlertMixin</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">NodeInfoWarning</span>
+    <span class="sd">&quot;&quot;&quot;Base class for encapsulation objects&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">api_url</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NodeInfo</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span> <span class="o">=</span> <span class="n">api_url</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span> <span class="o">=</span> <span class="n">api_url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filters</span> <span class="o">=</span> <span class="n">filters</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c"># Default rest parameters for all objects</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_default_filters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">default_filters</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_username</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_apikey</span><span class="p">:</span>
+                <span class="n">add_apikey_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_username</span><span class="p">,</span> 
+                    <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_apikey</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pp</span> <span class="o">=</span> <span class="n">pprint</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_convert_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;API returns both unix timestamps and ISO time so</span>
+<span class="sd">        normalize to datetime objects transparently&quot;&quot;&quot;</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">MAX_EPOCH</span><span class="p">:</span>
+                <span class="c"># bullet proof against out of range datetime errors</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">max_datetime</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c"># Not an epoch timestamp</span>
+            <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">t</span><span class="p">:</span>
+            <span class="c"># Presume this is ISO time</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="s">&quot;%Y-%m-</span><span class="si">%d</span><span class="s">T%H:%M:%S.</span><span class="si">%f</span><span class="s">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="c"># Properties for most subclasses</span>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="NodeInfo.begin_time"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo.begin_time">[docs]</a>    <span class="k">def</span> <span class="nf">begin_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;begin_time&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;begin_time&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="NodeInfo.end_time"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo.end_time">[docs]</a>    <span class="k">def</span> <span class="nf">end_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;end_time&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;end_time&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="NodeInfo.id"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo.id">[docs]</a>    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;id&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="NodeInfo.leaf"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo.leaf">[docs]</a>    <span class="k">def</span> <span class="nf">leaf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;leaf&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="NodeInfo.resource_uri"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo.resource_uri">[docs]</a>    <span class="k">def</span> <span class="nf">resource_uri</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;resource_uri&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="NodeInfo.children"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;children&#39;</span><span class="p">):</span>
+            <span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">),</span> <span class="n">leaf</span><span class="o">=</span><span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;leaf&#39;</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">children</span>
+
+    <span class="c"># Utility properties</span></div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="NodeInfo.dump"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo.dump">[docs]</a>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">pformat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="NodeInfo.inspect_request"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.NodeInfo.inspect_request">[docs]</a>    <span class="k">def</span> <span class="nf">inspect_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;[url: {0}]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="Device"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device">[docs]</a><span class="k">class</span> <span class="nc">Device</span><span class="p">(</span><span class="n">NodeInfo</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">DeviceWarning</span>
+    <span class="sd">&quot;&quot;&quot;Class to encapsulate device information&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">api_url</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Device</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">api_url</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+
+    <span class="c"># Property attrs unique to devices</span>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Device.active"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.active">[docs]</a>    <span class="k">def</span> <span class="nf">active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Device.name"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.name">[docs]</a>    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Device.oidsets"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.oidsets">[docs]</a>    <span class="k">def</span> <span class="nf">oidsets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># Return a copy of the internal list so we don&#39;t have unintended</span>
+        <span class="c"># changes to the internal payload by reference.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;oidsets&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)[:]</span>
+</div>
+<div class="viewcode-block" id="Device.get_interfaces"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.get_interfaces">[docs]</a>    <span class="k">def</span> <span class="nf">get_interfaces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Issue a call to the API to get a list of interfaces (via a </span>
+<span class="sd">        generator) associated with the device this object refers to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">uri</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s">&#39;children&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;interface&#39;</span><span class="p">:</span>
+                <span class="n">uri</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s">&#39;uri&#39;</span><span class="p">]</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">uri</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;{0}{1}/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> <span class="n">uri</span><span class="p">),</span>
+                <span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">compose_filters</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span>
+                <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">inspect_request</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span> <span class="ow">and</span> \
+                <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;application/json&#39;</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;children&#39;</span><span class="p">]:</span>
+                    <span class="k">yield</span> <span class="n">Interface</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">http_alert</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+                <span class="k">return</span>
+                <span class="k">yield</span>
+</div>
+<div class="viewcode-block" id="Device.get_interface"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.get_interface">[docs]</a>    <span class="k">def</span> <span class="nf">get_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ifName</span><span class="p">):</span>
+        <span class="n">ifaces</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_interfaces</span><span class="p">(</span><span class="n">ifName</span><span class="o">=</span><span class="n">ifName</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ifaces</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;[bad interface: {0}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifName</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">InterfaceNotFound</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">ifaces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Device.get_device_collection"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.get_device_collection">[docs]</a>    <span class="k">def</span> <span class="nf">get_device_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;children&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">child</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">DeviceCollection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">)</span>
+
+        <span class="k">raise</span> <span class="n">DeviceCollectionNotFound</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Device.children"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;interface&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;interface&#39;</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="bp">False</span><span class="p">)]</span>
+</div>
+<div class="viewcode-block" id="Device.get_child"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.get_child">[docs]</a>    <span class="k">def</span> <span class="nf">get_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;[Device.get_child {0} {1} {2}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">collection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_device_collection</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">DeviceCollectionNotFound</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">collection</span><span class="o">.</span><span class="n">get_child</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">collection</span>
+</div>
+<div class="viewcode-block" id="Device.set_oidsets"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Device.set_oidsets">[docs]</a>    <span class="k">def</span> <span class="nf">set_oidsets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">oidsets</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">oidsets</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">oidsets</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;oidsets arg must be a non-empty list&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_username</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_apikey</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Must supply username and api key args to alter oidsets for a device - aborting set_oidsets().&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;{0}/v1/oidset/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Could not get a list of valid oidsets from {0}/v1/oidset/ - aborting&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">)</span> <span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">valid_oidsets</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">oidsets</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">o</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid_oidsets</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;{0} is not a valid oidset - aborting oidset update.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s">&#39;oidsets&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">oidsets</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;application/json&#39;</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s">&#39;{0}{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_uri</span><span class="p">),</span> 
+            <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span> <span class="mi">204</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Did not successfully change oidsets - might be an auth problem.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">http_alert</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Device/{0}: uri:{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_uri</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DeviceCollection"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DeviceCollection">[docs]</a><span class="k">class</span> <span class="nc">DeviceCollection</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filters</span> <span class="o">=</span> <span class="n">filters</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DeviceCollection.leaf"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DeviceCollection.leaf">[docs]</a>    <span class="k">def</span> <span class="nf">leaf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DeviceCollection.children"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DeviceCollection.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&quot;interface&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span> <span class="nb">dict</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">i</span><span class="o">.</span><span class="n">ifName</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">ifName</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">ifAlias</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">get_interfaces</span><span class="p">()</span> <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+</div>
+<div class="viewcode-block" id="DeviceCollection.get_child"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DeviceCollection.get_child">[docs]</a>    <span class="k">def</span> <span class="nf">get_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;[DeviceCollection.get_child {0} {1} {2}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">interface</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">get_interface</span><span class="p">(</span><span class="n">ifName</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">InterfaceNotFound</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">interface</span><span class="o">.</span><span class="n">get_child</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">interface</span>
+</div></div>
+<div class="viewcode-block" id="Interface"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface">[docs]</a><span class="k">class</span> <span class="nc">Interface</span><span class="p">(</span><span class="n">NodeInfo</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">InterfaceWarning</span>
+    <span class="sd">&quot;&quot;&quot;Class to encapsulate interface information&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">api_url</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Interface</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">api_url</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+
+    <span class="c"># Property attrs unique to interfaces</span>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.device"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.device">[docs]</a>    <span class="k">def</span> <span class="nf">device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;device&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifAdminStatus"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifAdminStatus">[docs]</a>    <span class="k">def</span> <span class="nf">ifAdminStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifAdminStatus&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifAlias"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifAlias">[docs]</a>    <span class="k">def</span> <span class="nf">ifAlias</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifAlias&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifDescr"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifDescr">[docs]</a>    <span class="k">def</span> <span class="nf">ifDescr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifDescr&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifName"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifName">[docs]</a>    <span class="k">def</span> <span class="nf">ifName</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifName&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifHighSpeed"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifHighSpeed">[docs]</a>    <span class="k">def</span> <span class="nf">ifHighSpeed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifHighSpeed&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifIndex"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifIndex">[docs]</a>    <span class="k">def</span> <span class="nf">ifIndex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifIndex&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifMtu"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifMtu">[docs]</a>    <span class="k">def</span> <span class="nf">ifMtu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifMtu&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifOperStatus"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifOperStatus">[docs]</a>    <span class="k">def</span> <span class="nf">ifOperStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifOperStatus&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifPhysAddress"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifPhysAddress">[docs]</a>    <span class="k">def</span> <span class="nf">ifPhysAddress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifPhysAddress&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifSpeed"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifSpeed">[docs]</a>    <span class="k">def</span> <span class="nf">ifSpeed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifSpeed&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ifType"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ifType">[docs]</a>    <span class="k">def</span> <span class="nf">ifType</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ifType&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.ipAddr"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.ipAddr">[docs]</a>    <span class="k">def</span> <span class="nf">ipAddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ipAddr&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Interface.uri"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.uri">[docs]</a>    <span class="k">def</span> <span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;uri&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Interface.get_endpoints"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.get_endpoints">[docs]</a>    <span class="k">def</span> <span class="nf">get_endpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate and return a list of endpoints (via a generator) associated</span>
+<span class="sd">        with this interface.  Even though this does not &#39;do work&#39; by issuing</span>
+<span class="sd">        a call to the API, it is a get_ method just for consistency.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s">&#39;children&#39;</span><span class="p">]:</span>
+            <span class="k">yield</span> <span class="n">Endpoint</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Interface.get_endpoint"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.get_endpoint">[docs]</a>    <span class="k">def</span> <span class="nf">get_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">endpoints</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_endpoints</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">EndpointNotFound</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Multiple endpoints found&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">endpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Interface.get_child"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Interface.get_child">[docs]</a>    <span class="k">def</span> <span class="nf">get_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;[Interface.get_child {0} {1} {2}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">endpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_endpoint</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">EndpointNotFound</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">endpoint</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s">&#39;leaf&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">endpoint</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Interface/{0}: uri:{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ifName</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_uri</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Endpoint"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Endpoint">[docs]</a><span class="k">class</span> <span class="nc">Endpoint</span><span class="p">(</span><span class="n">NodeInfo</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">EndpointWarning</span>
+    <span class="sd">&quot;&quot;&quot;Class to encapsulate endpoint information&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">api_url</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Endpoint</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">api_url</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Endpoint.name"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Endpoint.name">[docs]</a>    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Endpoint.uri"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Endpoint.uri">[docs]</a>    <span class="k">def</span> <span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;uri&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Endpoint.get_data"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.Endpoint.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the traffic data and return the json response in </span>
+<span class="sd">        a DataPayload object.  If there is something wrong with the </span>
+<span class="sd">        response (status/content) then issue a warning and return an </span>
+<span class="sd">        empty object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;{0}{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">),</span>
+            <span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">compose_filters</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inspect_request</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span> <span class="ow">and</span> \
+            <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;application/json&#39;</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">DataPayload</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">http_alert</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">DataPayload</span><span class="p">()</span>
+        </div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Endpoint/{0}: uri:{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DataPayload"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPayload">[docs]</a><span class="k">class</span> <span class="nc">DataPayload</span><span class="p">(</span><span class="n">NodeInfo</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">DataPayloadWarning</span>
+    <span class="sd">&quot;&quot;&quot;Class to encapsulate data payload&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;data&#39;</span><span class="p">:[]}):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DataPayload</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DataPayload.agg"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPayload.agg">[docs]</a>    <span class="k">def</span> <span class="nf">agg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;agg&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DataPayload.cf"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPayload.cf">[docs]</a>    <span class="k">def</span> <span class="nf">cf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;cf&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DataPayload.data"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPayload.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return internal data from payload as list of DataPoint.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">DataPoint</span><span class="p">(</span><span class="o">**</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])]</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DataPayload.dump"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPayload.dump">[docs]</a>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">pformat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;DataPayload: len:{0} b:{1} e:{2}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">begin_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DataPoint"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPoint">[docs]</a><span class="k">class</span> <span class="nc">DataPoint</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ts&#39;</span><span class="p">,</span> <span class="s">&#39;val&#39;</span><span class="p">,</span> <span class="s">&#39;m_ts&#39;</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;Class to encapsulate the returned data points.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">m_ts</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DataPoint</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m_ts</span> <span class="o">=</span> <span class="n">m_ts</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DataPoint.ts_epoch"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.DataPoint.ts_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">ts_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">calendar</span><span class="o">.</span><span class="n">timegm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">utctimetuple</span><span class="p">())</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;DataPoint: ts:{0} val:{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">val</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="BulkDataPayload"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataPayload">[docs]</a><span class="k">class</span> <span class="nc">BulkDataPayload</span><span class="p">(</span><span class="n">DataPayload</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">BulkDataPayloadWarning</span>
+    <span class="sd">&quot;&quot;&quot;Class to encapsulate bulk data payload&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;data&#39;</span><span class="p">:[]}):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BulkDataPayload</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BulkDataPayload.data"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataPayload.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">BulkDataRow</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])]</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BulkDataPayload.device_names"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataPayload.device_names">[docs]</a>    <span class="k">def</span> <span class="nf">device_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;device_names&#39;</span><span class="p">,</span> <span class="p">[])</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;BulkDataPayload: len:{0} devs:{1} b:{2} e:{3}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_names</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">begin_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="BulkDataRow"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataRow">[docs]</a><span class="k">class</span> <span class="nc">BulkDataRow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to encapsulate and differentiate data from different devices,</span>
+<span class="sd">    interfaces and direction/traffic endpoints when getting data back from </span>
+<span class="sd">    a bulk request for interface data.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BulkDataRow</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_info</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;path&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BulkDataRow.device"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataRow.device">[docs]</a>    <span class="k">def</span> <span class="nf">device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;dev&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BulkDataRow.interface"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataRow.interface">[docs]</a>    <span class="k">def</span> <span class="nf">interface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;iface&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BulkDataRow.endpoint"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataRow.endpoint">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;endpoint&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="BulkDataRow.data"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.BulkDataRow.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">DataPoint</span><span class="p">(</span><span class="o">**</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;BulkDataRow: dev:{0} iface:{1} endpoint:{2} len:{3}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">))</span>
+
+<span class="c"># - Query entry point and filtering.</span>
+</div>
+<div class="viewcode-block" id="ApiFilters"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFilters">[docs]</a><span class="k">class</span> <span class="nc">ApiFilters</span><span class="p">(</span><span class="n">AlertMixin</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">ApiFiltersWarning</span>
+    <span class="sd">&quot;&quot;&quot;Class to hold filtering/query options.  This will be used by </span>
+<span class="sd">    ApiConnect and also passed to all the encapsulation objects.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ApiFilters</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_begin_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="mi">3600</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+
+        <span class="c"># Values to use in GET requests - they are combined with a </span>
+        <span class="c"># user defined dict of filtering args (agg, cf) and django</span>
+        <span class="c"># filtering options and passed as args to the GET query.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_filters</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;limit&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c"># Values to use in POST requests, verbose flag, etc.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cf</span> <span class="o">=</span> <span class="s">&#39;average&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agg</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># This needs to be checked via property.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_endpoint</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;in&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">auth_username</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">auth_apikey</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+<div class="viewcode-block" id="ApiFilters.ts_epoch"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFilters.ts_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">ts_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_prop</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert named property back to epoch.  Generally just for </span>
+<span class="sd">        sending cgi params to the api.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">calendar</span><span class="o">.</span><span class="n">timegm</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_prop</span><span class="p">)</span><span class="o">.</span><span class="n">utctimetuple</span><span class="p">()))</span>
+</div>
+    <span class="k">def</span> <span class="nf">_convert_ts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Massage the timestamp to datetime if need be.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_begin_time</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">ts</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">ts</span><span class="p">))</span>
+
+<div class="viewcode-block" id="ApiFilters.begin_time"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFilters.begin_time">[docs]</a>    <span class="k">def</span> <span class="nf">begin_time</span><span class="p">():</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="s">&quot;The begin_time property.&quot;</span>
+        <span class="k">def</span> <span class="nf">fget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_begin_time</span>
+        <span class="k">def</span> <span class="nf">fset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_begin_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_ts</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_default_filters</span><span class="p">[</span><span class="s">&#39;begin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_epoch</span><span class="p">(</span><span class="s">&#39;begin_time&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">fdel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="nb">locals</span><span class="p">()</span></div>
+    <span class="n">begin_time</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="o">**</span><span class="n">begin_time</span><span class="p">())</span>
+
+<div class="viewcode-block" id="ApiFilters.end_time"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFilters.end_time">[docs]</a>    <span class="k">def</span> <span class="nf">end_time</span><span class="p">():</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="s">&quot;The end_time property.&quot;</span>
+        <span class="k">def</span> <span class="nf">fget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_end_time</span>
+        <span class="k">def</span> <span class="nf">fset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_end_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_ts</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_default_filters</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_epoch</span><span class="p">(</span><span class="s">&#39;end_time&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">fdel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="nb">locals</span><span class="p">()</span></div>
+    <span class="n">end_time</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="o">**</span><span class="n">end_time</span><span class="p">())</span>
+
+<div class="viewcode-block" id="ApiFilters.limit"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFilters.limit">[docs]</a>    <span class="k">def</span> <span class="nf">limit</span><span class="p">():</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="s">&quot;The limit property.&quot;</span>
+        <span class="k">def</span> <span class="nf">fget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+        <span class="k">def</span> <span class="nf">fset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_default_filters</span><span class="p">[</span><span class="s">&#39;limit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+        <span class="k">def</span> <span class="nf">fdel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+        <span class="k">return</span> <span class="nb">locals</span><span class="p">()</span></div>
+    <span class="n">limit</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="o">**</span><span class="n">limit</span><span class="p">())</span>
+
+<div class="viewcode-block" id="ApiFilters.default_filters"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFilters.default_filters">[docs]</a>    <span class="k">def</span> <span class="nf">default_filters</span><span class="p">():</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="s">&quot;The default_filters property.&quot;</span>
+        <span class="k">def</span> <span class="nf">fget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_filters</span>
+        <span class="k">def</span> <span class="nf">fset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_default_filters</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">def</span> <span class="nf">fdel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_filters</span>
+        <span class="k">return</span> <span class="nb">locals</span><span class="p">()</span></div>
+    <span class="n">default_filters</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="o">**</span><span class="n">default_filters</span><span class="p">())</span>
+
+<div class="viewcode-block" id="ApiFilters.endpoint"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFilters.endpoint">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint</span><span class="p">():</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="s">&quot;The endpoint property.&quot;</span>
+        <span class="k">def</span> <span class="nf">fget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_endpoint</span>
+        <span class="k">def</span> <span class="nf">fset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;The endpoint filter must be set to a non-empty list (&quot;{0}&quot; given), retaining current values {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">))</span>
+                <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_endpoint</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">def</span> <span class="nf">fdel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_endpoint</span>
+        <span class="k">return</span> <span class="nb">locals</span><span class="p">()</span></div>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="o">**</span><span class="n">endpoint</span><span class="p">())</span>
+
+<div class="viewcode-block" id="ApiFilters.compose_filters"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiFilters.compose_filters">[docs]</a>    <span class="k">def</span> <span class="nf">compose_filters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compose filters using the defaults combined with local filters.</span>
+
+<span class="sd">        The defaults will be overwritten by filters with the same name in the</span>
+<span class="sd">        local filters.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_filters</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="ApiConnect"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect">[docs]</a><span class="k">class</span> <span class="nc">ApiConnect</span><span class="p">(</span><span class="n">AlertMixin</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="n">wrn</span> <span class="o">=</span> <span class="n">ApiConnectWarning</span>
+    <span class="sd">&quot;&quot;&quot;Core class to pull data from the rest api.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_url</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">ApiFilters</span><span class="p">(),</span> <span class="n">username</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ApiConnect</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span> <span class="o">=</span> <span class="n">api_url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filters</span> <span class="o">=</span> <span class="n">filters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_username</span> <span class="o">=</span> <span class="n">username</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_apikey</span> <span class="o">=</span> <span class="n">api_key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_valid_endpoints</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_username</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_apikey</span><span class="p">:</span>
+            <span class="n">add_apikey_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_username</span><span class="p">,</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">auth_apikey</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ApiConnect.get_devices"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.get_devices">[docs]</a>    <span class="k">def</span> <span class="nf">get_devices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">):</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;{0}/v1/device/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">),</span>
+            <span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">compose_filters</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inspect_request</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span> <span class="ow">and</span> \
+            <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;application/json&#39;</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">Device</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">http_alert</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="k">return</span>
+            <span class="k">yield</span>
+</div>
+<div class="viewcode-block" id="ApiConnect.get_device"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.get_device">[docs]</a>    <span class="k">def</span> <span class="nf">get_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">devices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_devices</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DeviceNotFound</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">devices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        </div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="ApiConnect.children"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="n">device</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_devices</span><span class="p">()</span> <span class="p">]</span>
+</div>
+<div class="viewcode-block" id="ApiConnect.get_child"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.get_child">[docs]</a>    <span class="k">def</span> <span class="nf">get_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;[ApiConnect.get_child {0} {1} {2}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">device</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_device</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">DeviceNotFound</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">device</span><span class="o">.</span><span class="n">get_child</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">device</span>
+</div>
+<div class="viewcode-block" id="ApiConnect.get_interfaces"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.get_interfaces">[docs]</a>    <span class="k">def</span> <span class="nf">get_interfaces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">):</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;{0}/v1/interface/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">),</span>
+                <span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">compose_filters</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span>
+                <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inspect_request</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span> <span class="ow">and</span> \
+            <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;application/json&#39;</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;children&#39;</span><span class="p">]:</span>
+                <span class="k">yield</span> <span class="n">Interface</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">http_alert</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="k">return</span>
+            <span class="k">yield</span>
+</div>
+<div class="viewcode-block" id="ApiConnect.get_interface_bulk_data"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.get_interface_bulk_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_interface_bulk_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">):</span>
+        <span class="n">interfaces</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_interfaces</span><span class="p">(</span><span class="o">**</span><span class="n">filters</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="k">print</span> <span class="n">i</span>
+            <span class="n">interfaces</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;device&#39;</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="s">&#39;iface&#39;</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">ifName</span><span class="p">})</span>
+            <span class="c"># if self.filters.verbose &gt; 1: print i.dump</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_get_interface_bulk_data</span><span class="p">(</span><span class="n">interfaces</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_execute_get_interface_bulk_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interfaces</span><span class="o">=</span><span class="p">[]):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_endpoints</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">BulkDataPayload</span><span class="p">()</span>
+
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span> 
+            <span class="s">&#39;interfaces&#39;</span><span class="p">:</span> <span class="n">interfaces</span><span class="p">,</span> 
+            <span class="s">&#39;endpoint&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span>
+            <span class="s">&#39;cf&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">cf</span><span class="p">,</span>
+            <span class="s">&#39;begin&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">ts_epoch</span><span class="p">(</span><span class="s">&#39;begin_time&#39;</span><span class="p">),</span>
+            <span class="s">&#39;end&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">ts_epoch</span><span class="p">(</span><span class="s">&#39;end_time&#39;</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">agg</span><span class="p">:</span> <span class="n">payload</span><span class="p">[</span><span class="s">&#39;agg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">agg</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;application/json&#39;</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s">&#39;{0}/v1/bulk/interface/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">),</span> 
+            <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inspect_request</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inspect_payload</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">201</span> <span class="ow">and</span> \
+            <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;application/json&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">BulkDataPayload</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">text</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">http_alert</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">BulkDataPayload</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_check_endpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_endpoints</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;{0}/v1/oidsetmap/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_url</span><span class="p">),</span>
+                <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_headers</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Could not retrieve oid set map from REST api.&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">ii</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_endpoints</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_valid_endpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">endpoint</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_endpoints</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;{0} is not a valid endpoint type - must be of the form {1} - cancelling query&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_endpoints</span><span class="p">))</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="ApiConnect.inspect_request"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.inspect_request">[docs]</a>    <span class="k">def</span> <span class="nf">inspect_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;[url: {0}]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ApiConnect.inspect_payload"><a class="viewcode-back" href="../../../api.client.html#api.client.snmp.ApiConnect.inspect_payload">[docs]</a>    <span class="k">def</span> <span class="nf">inspect_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;[POST payload: {0}]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+</pre></div></div></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-1">
+        <a href="http://www.es.net/"><img src="_static/esnet/logo-esnet.png" alt="[ESnet]"></a>
+      </div>
+      <div class="col-md-11">
+        <p class="pull-right">
+        <a href="#">Back to top</a>
+        
+        <br/>
+        
+        
+        </p>
+        <p>
+            &copy; Copyright 2012-2013, The Regents of the University of California.<br/>
+          Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.2.<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </body>
+</html>
