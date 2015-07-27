@@ -81,13 +81,19 @@ class TestClientLibs(LiveServerTestCase):
 
         endpoints = list(interface.get_endpoints())
         self.assertEquals(len(endpoints), 2)
-        self.assertEquals(endpoints[0].name, 'out')
-        self.assertEquals(endpoints[1].name, 'in')
+        # sort into dict since banking on array ordering is madness.
+        e_map = dict()
+        for e in endpoints:
+            e_map[e.name] = e
+        # make sure we have the right ones
+        self.assertEqual(set(e_map.keys()), set(['in', 'out']))
 
-        ep = interface.get_endpoint(endpoints[0].name)
+        # test fetching a single endpoint
+        ep = interface.get_endpoint('out')
         self.assertEquals(ep.name, 'out')
 
-        payload = endpoints[1].get_data()
+        # check the data
+        payload = e_map.get('in').get_data()
         self.assertTrue(payload.agg)
         self.assertTrue(payload.cf)
 
