@@ -2,12 +2,12 @@ import json
 import requests
 import warnings
 
-from .snmp import DataPayload
+from .snmp import DataPayload, API_VERSION_PREFIX
 from .util import add_apikey_header, atencode, AlertMixin
 
 class TimeseriesBase(AlertMixin, object):
     """Base class for the GET and POST timeseries interaction objects."""
-    _schema_root = 'v1/timeseries'
+    _schema_root = '{0}/timeseries'.format(API_VERSION_PREFIX)
     def __init__(self, api_url='http://localhost/', path=[], freq=None,
         username='', api_key=''):
         """Constructor - the path list arg is an ordered list of elements
@@ -309,7 +309,7 @@ class BulkException(Exception):
 
 class GetBulkData(AlertMixin, object):
     wrn = GetBulkWarning
-    _schema_root = 'v1/bulk/timeseries'
+    _schema_root = '{0}/bulk/timeseries'.format(API_VERSION_PREFIX)
     def __init__(self, api_url='http://localhost', username='', api_key=''):
         super(GetBulkData, self).__init__()
         self.api_url = api_url.rstrip("/")
