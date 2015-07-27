@@ -481,10 +481,18 @@ class OidsetViewset(viewsets.ReadOnlyModelViewSet):
     serializer_class = OidsetSerializer
 
 class OidsetMapViewset(viewsets.GenericViewSet):
+    """
+    Read-only endpoint that returns an "oidset map".
+    """
     def list(self, request):
-        print 'xxx called'
-
         payload = dict()
+
+        for os in OIDSet.objects.all():
+            for oid in os.oids.all():
+                if oid.endpoint_alias:
+                    if not payload.has_key(os.name):
+                        payload[os.name] = dict()
+                    payload[os.name][oid.endpoint_alias] = oid.name
 
         return Response(payload)
 
