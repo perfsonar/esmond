@@ -555,9 +555,6 @@ class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
     children = serializers.ListField(child=serializers.DictField())
     leaf = serializers.BooleanField(default=False)
 
-    # XXX(mmg) - will also need to put in Meta "pagination?" element?
-
-
     # XXX(mmg) - what's up with this? The interface endpoint is returning timestamps.
     # presuming that's a bug and do it this way.
     begin_time = UnixEpochDateField()
@@ -1338,7 +1335,8 @@ class BulkTimeseriesViewset(BaseDataViewset):
 
 class PDUSerializer(DeviceSerializer):
     class Meta(DeviceSerializer.Meta):
-        # Inherit most of the stuff from superclass, but override this bit.
+        # Inherit most of the stuff from superclass, but override this bit 
+        # with the view name so the URLs get generated correctly.
         extra_kwargs={'url': {'lookup_field': 'name', 'view_name': 'pdu-detail'}}
 
     _child_endpoints = ['outlet']

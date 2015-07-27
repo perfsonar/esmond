@@ -71,6 +71,8 @@ class DeviceCollectionNotFound(ApiNotFound): pass
 class InterfaceNotFound(ApiNotFound): pass
 class EndpointNotFound(ApiNotFound): pass
 
+API_VERSION_PREFIX = 'v1'
+
 # - Encapsulation classes for nodes (device, interface, etc).
 
 class NodeInfo(AlertMixin, object):
@@ -258,10 +260,10 @@ class Device(NodeInfo):
             self.warn('Must supply username and api key args to alter oidsets for a device - aborting set_oidsets().')
             return
 
-        r = requests.get('{0}/v1/oidset/'.format(self.api_url),
+        r = requests.get('{0}/{1}/oidset/'.format(self.api_url, API_VERSION_PREFIX),
             headers=self.request_headers)
         if r.status_code != 200:
-            self.warn('Could not get a list of valid oidsets from {0}/v1/oidset/ - aborting'.format(self.api_url) )
+            self.warn('Could not get a list of valid oidsets from {0}/{1}/oidset/ - aborting'.format(self.api_url, API_VERSION_PREFIX) )
             return
         valid_oidsets = json.loads(r.content)
 
@@ -679,7 +681,7 @@ class ApiConnect(AlertMixin, object):
                 self.filters.auth_apikey, self.request_headers)
 
     def get_devices(self, **filters):
-        r = requests.get('{0}/v1/device/'.format(self.api_url),
+        r = requests.get('{0}/{1}/device/'.format(self.api_url, API_VERSION_PREFIX),
             params=self.filters.compose_filters(filters),
             headers=self.request_headers)
 
@@ -726,7 +728,7 @@ class ApiConnect(AlertMixin, object):
             return device
 
     def get_interfaces(self, **filters):
-        r = requests.get('{0}/v1/interface/'.format(self.api_url),
+        r = requests.get('{0}/{1}/interface/'.format(self.api_url, API_VERSION_PREFIX),
                 params=self.filters.compose_filters(filters),
                 headers=self.request_headers)
 
@@ -769,7 +771,7 @@ class ApiConnect(AlertMixin, object):
 
         self.request_headers['content-type'] = 'application/json'
 
-        r = requests.post('{0}/v1/bulk/interface/'.format(self.api_url), 
+        r = requests.post('{0}/{1}/bulk/interface/'.format(self.api_url, API_VERSION_PREFIX), 
             headers=self.request_headers, data=json.dumps(payload))
 
         self.inspect_request(r)
@@ -784,7 +786,7 @@ class ApiConnect(AlertMixin, object):
 
     def _check_endpoints(self):
         if not self._valid_endpoints:
-            r = requests.get('{0}/v1/oidsetmap/'.format(self.api_url),
+            r = requests.get('{0}/{1}/oidsetmap/'.format(self.api_url, API_VERSION_PREFIX),
                 headers=self.request_headers)
             if not r.status_code == 200:
                 self.warn('Could not retrieve oid set map from REST api.')
