@@ -119,7 +119,8 @@ class TestClientLibs(LiveServerTestCase):
 
         interface = i[0]
 
-        self.assertEquals(interface.device, '/v1/device/rtr_d/')
+        self.assertEquals(interface.device_uri, '/{0}/device/rtr_d/'.format(API_VERSION_PREFIX))
+        self.assertEquals(interface.device, 'rtr_d')
         self.assertEquals(interface.ifName, 'fxp0.0')
 
         self.assertTrue(interface.device)
@@ -131,7 +132,7 @@ class TestClientLibs(LiveServerTestCase):
         self.assertTrue(interface.ifMtu)
         self.assertTrue(interface.ifOperStatus)
         self.assertTrue(interface.ifPhysAddress)
-        self.assertTrue(interface.ifSpeed)
+        self.assertTrue(isinstance(interface.ifSpeed, int))
         self.assertFalse(interface.ifType)
         self.assertTrue(interface.ipAddr)
         self.assertTrue(interface.uri)
