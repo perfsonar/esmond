@@ -464,6 +464,8 @@ about specifc subsets of interfaces.
 
 """
 
+# Classes for /v2/oidset/ and /v2/oidsetmap/
+
 class OidsetSerializer(serializers.ModelSerializer):
     class Meta:
         model = OIDSet
@@ -473,14 +475,18 @@ class OidsetSerializer(serializers.ModelSerializer):
         ret = super(OidsetSerializer, self).to_representation(obj)
         return ret.get('name')
 
-    # # Read only, so don't need this.
-    # def to_internal_value(self, data):
-    #     return super(OidsetSerializer, self).to_internal_value(data)
-
 class OidsetViewset(viewsets.ReadOnlyModelViewSet):
     queryset = OIDSet.objects.all()
     model = OIDSet
     serializer_class = OidsetSerializer
+
+class OidsetMapViewset(viewsets.GenericViewSet):
+    def list(self, request):
+        print 'xxx called'
+
+        payload = dict()
+
+        return Response(payload)
 
 # Code to deal with handling interface endpoints in the main REST series.
 # ie: /v2/interface/

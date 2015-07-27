@@ -26,6 +26,7 @@ uri_map = dict(
     pdu_outlet_list='/{0}/pdu/sentry_pdu/outlet/',
     outlet_list='/{0}/outlet/',
     outlet_list_search='/{0}/outlet/?outletName__contains=rtr_a',
+    oid_set_map='/{0}/oidsetmap/',
 )
 
 def main():
@@ -67,6 +68,9 @@ def main():
     parser.add_option('-s', '--outlet-list-search',
             dest='outlet_list_search', action='store_true', default=False,
             help='Outlet list search.')
+    parser.add_option('-M', '--oid-set-map',
+            dest='oid_set_map', action='store_true', default=False,
+            help='Oidset map.')
     parser.add_option('-u', '--url', metavar='URL',
             type='string', dest='url', default='http://localhost:8000',
             help='Url where API is running (default: %default).')
