@@ -71,7 +71,7 @@ class DeviceCollectionNotFound(ApiNotFound): pass
 class InterfaceNotFound(ApiNotFound): pass
 class EndpointNotFound(ApiNotFound): pass
 
-API_VERSION_PREFIX = 'v1'
+API_VERSION_PREFIX = 'v2'
 
 # - Encapsulation classes for nodes (device, interface, etc).
 
@@ -197,7 +197,7 @@ class Device(NodeInfo):
                 break
 
         if uri:
-            r = requests.get('{0}{1}/'.format(self.api_url, uri),
+            r = requests.get('{0}{1}'.format(self.api_url, uri),
                 params=self.filters.compose_filters(filters),
                 headers=self.request_headers)
 
@@ -332,6 +332,10 @@ class Interface(NodeInfo):
     @property
     def device(self):
         return self._data.get('device', None)
+
+    @property
+    def device_uri(self):
+        return self._data.get('device_uri', None)
 
     @property
     def ifAdminStatus(self):

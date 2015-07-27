@@ -17,7 +17,7 @@ from esmond.config import get_config, get_config_path
 from esmond.persist import CassandraPollPersister
 from esmond.api import SNMP_NAMESPACE
 
-from esmond_client.snmp import ApiConnect, ApiFilters
+from esmond_client.snmp import ApiConnect, ApiFilters, API_VERSION_PREFIX 
 from esmond_client.timeseries import GetRawData, GetBaseRate, \
     GetBulkRawData, GetBulkBaseRate
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
@@ -75,7 +75,8 @@ class TestClientLibs(LiveServerTestCase):
 
         interface = ifaces[0]
 
-        self.assertEquals(interface.device, '/v1/device/rtr_d/')
+        self.assertEquals(interface.device_uri, '/{0}/device/rtr_d/'.format(API_VERSION_PREFIX))
+        self.assertEquals(interface.device, 'rtr_d')
         self.assertEquals(interface.ifName, 'fxp0.0')
 
         endpoints = list(interface.get_endpoints())
