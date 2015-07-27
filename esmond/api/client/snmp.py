@@ -71,6 +71,7 @@ class DeviceCollectionNotFound(ApiNotFound): pass
 class InterfaceNotFound(ApiNotFound): pass
 class EndpointNotFound(ApiNotFound): pass
 
+# The other moodules inherit from this "define".
 API_VERSION_PREFIX = 'v2'
 
 # - Encapsulation classes for nodes (device, interface, etc).
