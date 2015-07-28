@@ -1369,6 +1369,82 @@ class BulkTimeseriesViewset(BaseDataViewset):
         return Response(serializer.data, status.HTTP_201_CREATED)
 
 """
+**/v2/outlet/**
+
+/v2/outlet/
+"""
+
+OUTLET_DATASETS = ['load']
+
+class NestedOutletHyperlinkField(relations.HyperlinkedIdentityField):
+    """
+    URLS for nested PDU resources/etc.
+    """
+
+    @staticmethod
+    def _get_outlet_detail(outlet_id, device_name, request, format=None):
+        return reverse(
+            'pdu-outlet-detail',
+            kwargs={
+                'outletID': outlet_id,
+                'parent_lookup_device__name': device_name,
+            },
+            request=request,
+            format=format,
+            ).rstrip('/')
+
+    @staticmethod
+    def _get_dataset_detail(outlet_id, device_id, request, dataset):
+        return NestedOutletHyperlinkField._get_outlet_detail(outlet_id, device_id, request) + '/' + dataset
+
+    def get_url(self, obj, view_name, request, format):
+        if hasattr(obj, 'pk') and obj.pk is None:
+            return None
+
+        return self._get_outlet_detail(obj.outletID, obj.device.name, request, format)
+
+class OutletSerializer(BaseMixin, serializers.ModelSerializer):
+    serializer_url_field = NestedOutletHyperlinkField
+
+    class Meta:
+        model = OutletRef
+        fields = ('begin_time',
+            'children',
+            'end_time', 
+            'id', 
+            'leaf',
+            'outletControlState',
+            'outletID',
+            'outletName',
+            'outletStatus',
+            'url',)
+        extra_kwargs={'url': {'lookup_field': 'outletID',}}
+
+    children = serializers.ListField(child=serializers.DictField())
+    leaf = serializers.BooleanField(default=False)
+
+    begin_time = UnixEpochDateField()
+    end_time = UnixEpochDateField()
+
+    def to_representation(self, obj):
+        obj.children = list()
+        obj.leaf = False
+        # add in dataset details
+        for ds in OUTLET_DATASETS:
+            d = dict(
+                leaf=False,
+                name=ds,
+                url=NestedOutletHyperlinkField._get_dataset_detail(obj.outletID, obj.device.name, self.context.get('request'), ds)
+            )
+            self._add_uris(d, resource=False)
+            obj.children.append(d)
+        ret =  super(OutletSerializer, self).to_representation(obj)
+        self._add_uris(ret)
+        self._add_pdu_uri(ret)
+        return ret
+
+
+"""
 **/v2/pdu/**
 
 /v2/pdu/
@@ -1408,74 +1484,9 @@ class PDUViewset(DeviceViewset):
         """No PUT - overriding superclass PUT verb."""
         return self._no_verb()
 
-class NestedOutletHyperlinkField(relations.HyperlinkedIdentityField):
-    """
-    URLS for nested PDU resources/etc.
-    """
 
-    @staticmethod
-    def _get_outlet_detail(outlet_id, device_name, request, format=None):
-        return reverse(
-            'pdu-outlet-detail',
-            kwargs={
-                'outletID': outlet_id,
-                'parent_lookup_device__name': device_name,
-            },
-            request=request,
-            format=format,
-            ).rstrip('/')
-
-    @staticmethod
-    def _get_dataset_detail(outlet_id, device_id, request, dataset):
-        return NestedOutletHyperlinkField._get_outlet_detail(outlet_id, device_id, request) + '/' + dataset
-
-    def get_url(self, obj, view_name, request, format):
-        if hasattr(obj, 'pk') and obj.pk is None:
-            return None
-
-        return self._get_outlet_detail(obj.outletID, obj.device.name, request, format)
-
-OUTLET_DATASETS = ['load']
-
-class NestedOutletSerializer(BaseMixin, serializers.ModelSerializer):
-    serializer_url_field = NestedOutletHyperlinkField
-
-    class Meta:
-        model = OutletRef
-        fields = ('begin_time',
-            'children',
-            'end_time', 
-            'id', 
-            'leaf',
-            'outletControlState',
-            'outletID',
-            'outletName',
-            'outletStatus',
-            'url',)
-        extra_kwargs={'url': {'lookup_field': 'outletID',}}
-
-    children = serializers.ListField(child=serializers.DictField())
-    leaf = serializers.BooleanField(default=False)
-
-    begin_time = UnixEpochDateField()
-    end_time = UnixEpochDateField()
-
-    def to_representation(self, obj):
-        obj.children = list()
-        obj.leaf = False
-        # add in dataset details
-        for ds in OUTLET_DATASETS:
-            d = dict(
-                leaf=False,
-                name=ds,
-                url=NestedOutletHyperlinkField._get_dataset_detail(obj.outletID, obj.device.name, self.context.get('request'), ds)
-            )
-            self._add_uris(d, resource=False)
-            obj.children.append(d)
-        ret =  super(NestedOutletSerializer, self).to_representation(obj)
-        self._add_uris(ret)
-        self._add_pdu_uri(ret)
-        return ret
+class NestedOutletSerializer(OutletSerializer):
+    pass
 
 class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = NestedOutletSerializer
@@ -1497,7 +1508,7 @@ class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
 
     def get_object(self):
 
-        instance = get_single_outlet(self.kwargs('outletID'), self.kwargs.get('parent_lookup_device__name'), self.request)
+        instance = get_single_outlet(self.kwargs.get('outletID'), self.kwargs.get('parent_lookup_device__name'), self.request)
 
         if instance is None:
             raise NotFound
@@ -1568,11 +1579,7 @@ class OutletDataViewset(BaseDataViewset):
 
         return obj
 
-"""
-**/v2/outlet/**
 
-/v2/outlet/
-"""
 
 
 
