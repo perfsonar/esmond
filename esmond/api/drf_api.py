@@ -1377,23 +1377,50 @@ class PDUViewset(DeviceViewset):
         """No PUT - overriding superclass PUT verb."""
         return self._no_verb()
 
+
+class NestedOutletHyperlinkField(relations.HyperlinkedIdentityField):
+    """
+    URLS for nested PDU resources/etc.
+    """
+
+    def get_url(self, obj, view_name, request, format):
+        if hasattr(obj, 'pk') and obj.pk is None:
+            return None
+        return reverse(
+            'pdu-outlet-detail',
+            kwargs={
+                'outletID': obj.outletID,
+                'parent_lookup_device__name': obj.device.name,
+            },
+            request=request,
+            format=format,
+            )
+
 class NestedOutletSerializer(BaseMixin, serializers.ModelSerializer):
-    serializer_url_field = InterfaceHyperlinkField
+    serializer_url_field = NestedOutletHyperlinkField
 
     class Meta:
         model = OutletRef
         fields = ('begin_time',
-            # 'children',
+            'children',
             'end_time', 'id', 
-            # 'leaf',
+            'leaf',
             'url',)
-        extra_kwargs={'url': {'lookup_field': 'outletID'}}
+        extra_kwargs={'url': {'lookup_field': 'outletID',}}
 
-    # children = serializers.ListField(child=serializers.DictField())
-    # leaf = serializers.BooleanField(default=False)
+    children = serializers.ListField(child=serializers.DictField())
+    leaf = serializers.BooleanField(default=False)
 
     begin_time = UnixEpochDateField()
     end_time = UnixEpochDateField()
+
+    def to_representation(self, obj):
+        obj.children = list()
+        obj.leaf = False
+        # list of actual data-bearing OID endpoints.
+        ret =  super(NestedOutletSerializer, self).to_representation(obj)
+        self._add_uris(ret)
+        return ret
 
 class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = NestedOutletSerializer
@@ -1412,15 +1439,38 @@ class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
 
         ret = OutletRef.objects.filter(**filters)
 
-        # filter out hidden ifrefs based on perms
-        # if not self.request.user.has_perm('api.can_see_hidden_ifref'):
-        #     ret = ret.exclude(ifAlias__contains=":hide:")
-
         return ret
 
+    def _get_single_outlet(self):
+        """
+        Filter out the potential for duplicates in much the same 
+        way as the nested interfaces.
+        """
+        kw = dict(
+            outletID=self.kwargs.get('outletID'),
+            device__name=self.kwargs.get('parent_lookup_device__name'),
+        )
+        # just in case
+        kw['outletID'] = atdecode(kw.get('outletID'))
+        # add time filters
+        kw = dict(kw, **build_time_filters(self.request))
+
+        qs = OutletRef.objects.filter(**kw)
+        print qs
+
+        if len(qs) == 0:
+            return None
+        else:
+            return qs.order_by('-end_time')[0]
+
     def get_object(self):
-        print 'go'
-        return super(NestedOutletViewset, self).get_object()
+
+        instance = self._get_single_outlet()
+
+        if instance is None:
+            raise NotFound
+
+        return instance
 
 """
 **/v2/outlet/**
