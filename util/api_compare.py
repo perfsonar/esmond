@@ -25,7 +25,7 @@ uri_map = dict(
     pdu_detail='/{0}/pdu/sentry_pdu/',
     pdu_outlet_list='/{0}/pdu/sentry_pdu/outlet/',
     pdu_outlet='/{0}/pdu/sentry_pdu/outlet/AA/',
-    pdu_outlet_data='/v1/pdu/sentry_pdu/outlet/AA/load',
+    pdu_outlet_data='/{0}/pdu/sentry_pdu/outlet/AA/load',
     outlet_list='/{0}/outlet/',
     outlet_list_search='/{0}/outlet/?outletName__contains=rtr_a',
     oid_set_map='/{0}/oidsetmap/',

@@ -1413,6 +1413,8 @@ class NestedOutletHyperlinkField(relations.HyperlinkedIdentityField):
 
         return self._get_outlet_detail(obj.outletID, obj.device.name, request, format)
 
+OUTLET_DATASETS = ['load']
+
 class NestedOutletSerializer(BaseMixin, serializers.ModelSerializer):
     serializer_url_field = NestedOutletHyperlinkField
 
@@ -1440,7 +1442,7 @@ class NestedOutletSerializer(BaseMixin, serializers.ModelSerializer):
         obj.children = list()
         obj.leaf = False
         # add in dataset details
-        for ds in ['load']:
+        for ds in OUTLET_DATASETS:
             d = dict(
                 leaf=False,
                 name=ds,
@@ -1502,6 +1504,12 @@ class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
             raise NotFound
 
         return instance
+
+class OutletDataViewset(BaseDataViewset):
+    def retrieve(self, request, **kwargs):
+
+        
+        return Response({})
 
 """
 **/v2/outlet/**
