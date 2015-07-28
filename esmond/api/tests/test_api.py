@@ -16,8 +16,6 @@ os.environ['ESMOND_UNIT_TESTS'] = 'True'
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
-from tastypie.test import ResourceTestCase
-
 from rest_framework.test import APIClient
 
 from esmond.api.models import *
@@ -30,30 +28,6 @@ def datetime_to_timestamp(dt):
     return calendar.timegm(dt.timetuple())
 
 from django.test import TestCase
-
-"""
-class BaseTestCase(TestCase):
-    def setUp(self):
-
-        super(BaseTestCase, self).setUp()
-
-        self.client = APIClient()
-
-        self.ctr = CassandraTestResults()
-
-        # Check connection in case the test_api module was unable
-        # to connect but we've not seen an error yet.  This way
-        # we'll see an explicit error that makes sense.
-        check_connection()
-
-    def get_api_client(self, admin_auth=False):
-        client = APIClient()
-
-        if admin_auth:
-            client.credentials(HTTP_AUTHORIZATION='Token {0}'.format(self.td.user_admin_apikey.key))
-
-        return client
-"""
 
 class DeviceAPITestsBase(TestCase):
     fixtures = ["oidsets.json"]
@@ -940,13 +914,13 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 201) # not 200!
 
 
-class PDUAPITests(ResourceTestCase):
+class PDUAPITests(DeviceAPITestsBase):
     fixtures = ["oidsets.json"]
 
     def setUp(self):
         super(PDUAPITests, self).setUp()
 
-        self.td = build_pdu_metadata()
+        self.pdutd = build_pdu_metadata()
 
     def test_get_pdu_list(self):
         url = '/v2/pdu/'
@@ -1052,6 +1026,12 @@ class PDUAPIDataTests(DeviceAPITestsBase):
 
         self.assertEquals(data['resource_uri'], url)
         self.assertEquals(len(data['data']), 60)
+
+    def test_bogus_dataset(self):
+        url = '/v2/pdu/sentry_pdu/outlet/AA/bogus_dataset'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 400)
 
 class QueryUtilTests(TestCase):
     def test_coerce_to_bins(self):
