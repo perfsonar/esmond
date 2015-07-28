@@ -24,6 +24,8 @@ uri_map = dict(
     pdu_list='/{0}/pdu/',
     pdu_detail='/{0}/pdu/sentry_pdu/',
     pdu_outlet_list='/{0}/pdu/sentry_pdu/outlet/',
+    pdu_outlet='/{0}/pdu/sentry_pdu/outlet/AA/',
+    pdu_outlet_data='/v1/pdu/sentry_pdu/outlet/AA/load',
     outlet_list='/{0}/outlet/',
     outlet_list_search='/{0}/outlet/?outletName__contains=rtr_a',
     oid_set_map='/{0}/oidsetmap/',
@@ -62,6 +64,12 @@ def main():
     parser.add_option('-U', '--pdu-outlet-list',
             dest='pdu_outlet_list', action='store_true', default=False,
             help='PDU Outlet list.')
+    parser.add_option('-O', '--pdu-outlet',
+            dest='pdu_outlet', action='store_true', default=False,
+            help='PDU outlet view.')
+    parser.add_option('-r', '--pdu-outlet-data',
+            dest='pdu_outlet_data', action='store_true', default=False,
+            help='PDU outlet data.')
     parser.add_option('-o', '--outlet-list',
             dest='outlet_list', action='store_true', default=False,
             help='Outlet List.')
@@ -77,6 +85,9 @@ def main():
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
+    parser.add_option('-l', '--legacy',
+            dest='legacy', action='store_true', default=False,
+            help='Only call v1 endpoint.')
     options, args = parser.parse_args()
 
     selected = 0
@@ -102,7 +113,7 @@ def main():
     print pp.pprint(json.loads(r.content))
 
     print '=+=+=+='
-    # return
+    if options.legacy: return
 
     r = requests.get(options.url + uri_map.get(selection).format('v2'))
     if options.verbose or r.status_code != 200:

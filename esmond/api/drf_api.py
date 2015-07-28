@@ -500,7 +500,7 @@ class OidsetMapViewset(viewsets.GenericViewSet):
 # ie: /v2/interface/
 # Also subclassed by the interfaces nested under the device endpoint.
 
-class InterfacePaginator(pagination.LimitOffsetPagination):
+class EsmondPaginator(pagination.LimitOffsetPagination):
     default_limit = 20
 
     def _get_count(self, queryset):
@@ -513,7 +513,7 @@ class InterfacePaginator(pagination.LimitOffsetPagination):
         if self.limit == 0 and self.offset == 0:
             return None
         else:
-            return super(InterfacePaginator, self).get_next_link()
+            return super(EsmondPaginator, self).get_next_link()
 
     def paginate_queryset(self, queryset, request, view=None):
         """
@@ -604,7 +604,7 @@ class InterfaceViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = InterfaceSerializer
     lookup_field = 'ifName'
     filter_class = InterfaceFilter
-    pagination_class = InterfacePaginator
+    pagination_class = EsmondPaginator
 
     def get_queryset(self):
         filters = build_time_filters(self.request)
@@ -1376,6 +1376,51 @@ class PDUViewset(DeviceViewset):
     def update(self, request, pk=None, **kwargs):
         """No PUT - overriding superclass PUT verb."""
         return self._no_verb()
+
+class NestedOutletSerializer(BaseMixin, serializers.ModelSerializer):
+    serializer_url_field = InterfaceHyperlinkField
+
+    class Meta:
+        model = OutletRef
+        fields = ('begin_time',
+            # 'children',
+            'end_time', 'id', 
+            # 'leaf',
+            'url',)
+        extra_kwargs={'url': {'lookup_field': 'outletID'}}
+
+    # children = serializers.ListField(child=serializers.DictField())
+    # leaf = serializers.BooleanField(default=False)
+
+    begin_time = UnixEpochDateField()
+    end_time = UnixEpochDateField()
+
+class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
+    serializer_class = NestedOutletSerializer
+    lookup_field = 'outletID'
+    # filter_class = InterfaceFilter
+    pagination_class = EsmondPaginator
+
+    def get_queryset(self):
+        print 'qs'
+        # base time filters
+        filters = build_time_filters(self.request)
+
+        # make sure that it's only the iface paired with the parent router
+        if self.kwargs.get('parent_lookup_device__name', None):
+            filters['device__name'] = self.kwargs.get('parent_lookup_device__name')
+
+        ret = OutletRef.objects.filter(**filters)
+
+        # filter out hidden ifrefs based on perms
+        # if not self.request.user.has_perm('api.can_see_hidden_ifref'):
+        #     ret = ret.exclude(ifAlias__contains=":hide:")
+
+        return ret
+
+    def get_object(self):
+        print 'go'
+        return super(NestedOutletViewset, self).get_object()
 
 """
 **/v2/outlet/**

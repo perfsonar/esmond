@@ -18,6 +18,7 @@ from esmond.api.drf_api import (
     InterfaceViewset,
     InterfaceDataViewset,
     NestedInterfaceViewset,
+    NestedOutletViewset,
     OidsetMapViewset,
     OidsetViewset,
     PDUViewset,
@@ -53,6 +54,12 @@ pdu_router = extended_router.register(
     r'pdu',
     PDUViewset,
     base_name='pdu'
+)
+pdu_router.register(
+    r'outlet',
+    NestedOutletViewset,
+    base_name='pdu-outlet',
+    parents_query_lookups=['device__name']
 )
 
 # This object attribute has all of the patterns - helpful
