@@ -1382,7 +1382,7 @@ Endpoint to query and look at a list of outlets. These also get
 
 OUTLET_DATASETS = ['load']
 
-class NestedOutletHyperlinkField(relations.HyperlinkedIdentityField):
+class OutletHyperlinkField(relations.HyperlinkedIdentityField):
     """
     URLS for nested PDU resources/etc.
     """
@@ -1401,7 +1401,7 @@ class NestedOutletHyperlinkField(relations.HyperlinkedIdentityField):
 
     @staticmethod
     def _get_dataset_detail(outlet_id, device_id, request, dataset):
-        return NestedOutletHyperlinkField._get_outlet_detail(outlet_id, device_id, request) + '/' + dataset
+        return OutletHyperlinkField._get_outlet_detail(outlet_id, device_id, request) + '/' + dataset
 
     def get_url(self, obj, view_name, request, format):
         if hasattr(obj, 'pk') and obj.pk is None:
@@ -1410,7 +1410,7 @@ class NestedOutletHyperlinkField(relations.HyperlinkedIdentityField):
         return self._get_outlet_detail(obj.outletID, obj.device.name, request, format)
 
 class OutletSerializer(BaseMixin, serializers.ModelSerializer):
-    serializer_url_field = NestedOutletHyperlinkField
+    serializer_url_field = OutletHyperlinkField
 
     class Meta:
         model = OutletRef
@@ -1440,7 +1440,7 @@ class OutletSerializer(BaseMixin, serializers.ModelSerializer):
             d = dict(
                 leaf=True,
                 name=ds,
-                url=NestedOutletHyperlinkField._get_dataset_detail(obj.outletID, obj.device.name, self.context.get('request'), ds)
+                url=OutletHyperlinkField._get_dataset_detail(obj.outletID, obj.device.name, self.context.get('request'), ds)
             )
             self._add_uris(d, resource=False)
             obj.children.append(d)
@@ -1567,7 +1567,7 @@ class OutletDataViewset(BaseDataViewset):
         datapath = [SNMP_NAMESPACE, outlet.device.name, oidset_name, 'outletLoadValue', outlet_id]
 
         obj = OutletDataObject()
-        obj.url = NestedOutletHyperlinkField._get_dataset_detail(outlet_id, kwargs.get('name'), request, kwargs.get('outlet_dataset'))
+        obj.url = OutletHyperlinkField._get_dataset_detail(outlet_id, kwargs.get('name'), request, kwargs.get('outlet_dataset'))
         obj.outlet = outlet
         obj.datapath = datapath
         obj.outlet_dataset = kwargs.get('outlet_dataset')
