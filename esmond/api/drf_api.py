@@ -951,7 +951,7 @@ class BulkInterfaceThrottle(BaseBulkThrottle):
 
         return len(post_payload.get('interfaces', []))
 
-class BulkInterfaceRequestSerializer(BaseDataSerializer):
+class BulkInterfaceRequestSerializer(InterfaceDataSerializer):
     # other fields defined in superclass
     iface_dataset = serializers.ListField(child=serializers.CharField())
     device_names = serializers.ListField(child=serializers.CharField())
@@ -1068,11 +1068,8 @@ will result in a 400 error being returned.
 class TimeseriesDataObject(DataObject):
     pass
 
-class TimeseriesRequestSerializer(BaseDataSerializer):
-    def to_representation(self, obj):
-        ret = super(TimeseriesRequestSerializer, self).to_representation(obj)
-        self._add_uris(ret, uri=False)
-        return ret
+class TimeseriesRequestSerializer(InterfaceDataSerializer):
+    pass
 
 class TimeseriesRequestViewset(BaseDataViewset):
     """
@@ -1313,11 +1310,8 @@ class BulkTimeseriesThrottle(BaseBulkThrottle):
 
         return len(post_payload.get('paths', []))
 
-class BulkTimeseriesSerializer(BaseDataSerializer):
-    def to_representation(self, obj):
-        ret = super(BulkTimeseriesSerializer, self).to_representation(obj)
-        self._add_uris(ret, uri=False)
-        return ret
+class BulkTimeseriesSerializer(InterfaceDataSerializer):
+    pass
 
 class BulkTimeseriesViewset(BaseDataViewset):
     throttle_classes = (BulkTimeseriesThrottle,)

@@ -850,7 +850,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_float_timestamp_input(self):
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
         # pass in floats
         params = { 
@@ -1012,7 +1012,7 @@ class PDUAPITests(ResourceTestCase):
         self.assertEqual(children[0]['outletID'], 'AA')
         self.assertEqual(children[0]['outletName'], 'rtr_a:PEM1:50A')
 
-        url = '/v1/outlet/?outletName__contains=not_valid_query_string'
+        url = '/v2/outlet/?outletName__contains=not_valid_query_string'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -1031,7 +1031,7 @@ class PDUAPIDataTests(DeviceAPITestsBase):
         # This form will patch a class when it is instantiated by the executed code:
         # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
         # This form will patch a module-level class instance:
-        self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
+        self.patcher = mock.patch("esmond.api.drf_api.db", MockCASSANDRA_DB(None))
         self.patcher.start()
         self.td = build_pdu_metadata()
 
@@ -1039,7 +1039,7 @@ class PDUAPIDataTests(DeviceAPITestsBase):
         self.patcher.stop()
 
     def test_get_load(self):
-        url = '/v1/pdu/sentry_pdu/outlet/AA/load/'
+        url = '/v2/pdu/sentry_pdu/outlet/AA/load'
 
         params = { }
 
