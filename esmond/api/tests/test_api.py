@@ -998,7 +998,7 @@ class PDUAPITests(ResourceTestCase):
         self.assertEqual(children[0]['children'][0]['name'], 'load')
 
     def test_search_outlet_names(self):
-        url = '/v1/outlet/?outletName__contains=rtr_a'
+        url = '/v2/outlet/?outletName__contains=rtr_a'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -1019,7 +1019,7 @@ class PDUAPITests(ResourceTestCase):
 
         # by default only currently active devices are returned
         data = json.loads(response.content)
-        #print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
         children = data['children']
         self.assertEqual(len(children), 0)

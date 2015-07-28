@@ -22,6 +22,7 @@ from esmond.api.drf_api import (
     OidsetMapViewset,
     OidsetViewset,
     OutletDataViewset,
+    OutletViewset,
     PDUViewset,
     TimeseriesRequestViewset,
 )
@@ -30,6 +31,7 @@ router = routers.DefaultRouter()
 router.register('oidset', OidsetViewset)
 router.register('oidsetmap', OidsetMapViewset, base_name='oidsetmap')
 router.register('interface', InterfaceViewset, base_name='interface')
+router.register('outlet', OutletViewset, base_name='outlet')
 # /device/ is registered as a nested resource below. need this
 # to make it show up in the DRF browsable API.
 router.register('device', DeviceViewset, base_name='device')

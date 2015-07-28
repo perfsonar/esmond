@@ -284,6 +284,15 @@ class InterfaceFilter(filters.FilterSet):
     ifAlias = filters.AllLookupsFilter(name='ifAlias')
     device = filters.RelatedFilter(DeviceFilter, name='device')
 
+class OutletFilter(filters.FilterSet):
+    class Meta:
+        model = OutletRef
+        fields = ['outletID', 'outletName']
+
+    outletID = filters.AllLookupsFilter(name='outletID')
+    outletName = filters.AllLookupsFilter(name='outletName')
+    device = filters.RelatedFilter(DeviceFilter, name='device')
+
 def build_time_filters(request):
     """Build default time filters.
 
@@ -1372,6 +1381,9 @@ class BulkTimeseriesViewset(BaseDataViewset):
 **/v2/outlet/**
 
 /v2/outlet/
+
+Endpoint to query and look at a list of outlets. These also get 
+'nested' under the PDU resource as well.
 """
 
 OUTLET_DATASETS = ['load']
@@ -1432,7 +1444,7 @@ class OutletSerializer(BaseMixin, serializers.ModelSerializer):
         # add in dataset details
         for ds in OUTLET_DATASETS:
             d = dict(
-                leaf=False,
+                leaf=True,
                 name=ds,
                 url=NestedOutletHyperlinkField._get_dataset_detail(obj.outletID, obj.device.name, self.context.get('request'), ds)
             )
@@ -1446,8 +1458,15 @@ class OutletSerializer(BaseMixin, serializers.ModelSerializer):
 class OutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = OutletSerializer
     lookup_field = 'outletID'
-    # filter_class = InterfaceFilter
+    filter_class = OutletFilter
     pagination_class = EsmondPaginator
+
+    def get_queryset(self):
+        filters = build_time_filters(self.request)
+
+        ret = OutletRef.objects.filter(**filters)
+
+        return ret   
 
 """
 **/v2/pdu/**
@@ -1471,6 +1490,7 @@ class PDUViewset(DeviceViewset):
     # queryset returned by overridden get_queryset()
     serializer_class = PDUSerializer
     lookup_field = 'name'
+    filter_class = DeviceFilter
 
     def get_queryset(self):
         """
@@ -1488,7 +1508,6 @@ class PDUViewset(DeviceViewset):
     def update(self, request, pk=None, **kwargs):
         """No PUT - overriding superclass PUT verb."""
         return self._no_verb()
-
 
 class NestedOutletSerializer(OutletSerializer):
     pass
