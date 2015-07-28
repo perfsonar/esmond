@@ -1401,11 +1401,11 @@ class NestedOutletHyperlinkField(relations.HyperlinkedIdentityField):
             },
             request=request,
             format=format,
-            )
+            ).rstrip('/')
 
     @staticmethod
     def _get_dataset_detail(outlet_id, device_id, request, dataset):
-        return NestedOutletHyperlinkField._get_outlet_detail(outlet_id, device_id, request) + dataset
+        return NestedOutletHyperlinkField._get_outlet_detail(outlet_id, device_id, request) + '/' + dataset
 
     def get_url(self, obj, view_name, request, format):
         if hasattr(obj, 'pk') and obj.pk is None:
