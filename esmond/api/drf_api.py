@@ -191,8 +191,7 @@ class InterfaceHyperlinkField(relations.HyperlinkedIdentityField):
 class BaseDataSerializer(BaseMixin, serializers.Serializer):
     url = fields.URLField()
     data = serializers.ListField(child=serializers.DictField())
-    agg = serializers.CharField(trim_whitespace=True)
-    cf = serializers.CharField(trim_whitespace=True)
+    
     begin_time = serializers.IntegerField()
     end_time = serializers.IntegerField()
 
@@ -362,6 +361,27 @@ def get_single_iface(ifname, device_name, request):
         return None
     else:
         # there might be more than one, so sort and return.
+        return qs.order_by('-end_time')[0]
+
+def get_single_outlet(outlet_id, device_name, request):
+    """
+    Filter out the potential for duplicates in much the same 
+    way as the nested interfaces.
+    """
+    kw = dict(
+        outletID=outlet_id,
+        device__name=device_name,
+    )
+    # just in case
+    kw['outletID'] = atdecode(kw.get('outletID'))
+    # add time filters
+    kw = dict(kw, **build_time_filters(request))
+
+    qs = OutletRef.objects.filter(**kw)
+
+    if len(qs) == 0:
+        return None
+    else:
         return qs.order_by('-end_time')[0]
 
 #
@@ -769,7 +789,9 @@ class InterfaceDataObject(DataObject):
     pass
 
 class InterfaceDataSerializer(BaseDataSerializer):
-    # Fields defined in superclass.
+    # Other fields defined in superclass.
+    agg = serializers.CharField(trim_whitespace=True)
+    cf = serializers.CharField(trim_whitespace=True)
 
     def to_representation(self, obj):
         ret = super(InterfaceDataSerializer, self).to_representation(obj)
@@ -1462,7 +1484,6 @@ class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
     pagination_class = EsmondPaginator
 
     def get_queryset(self):
-        print 'qs'
         # base time filters
         filters = build_time_filters(self.request)
 
@@ -1474,42 +1495,73 @@ class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
 
         return ret
 
-    def _get_single_outlet(self):
-        """
-        Filter out the potential for duplicates in much the same 
-        way as the nested interfaces.
-        """
-        kw = dict(
-            outletID=self.kwargs.get('outletID'),
-            device__name=self.kwargs.get('parent_lookup_device__name'),
-        )
-        # just in case
-        kw['outletID'] = atdecode(kw.get('outletID'))
-        # add time filters
-        kw = dict(kw, **build_time_filters(self.request))
-
-        qs = OutletRef.objects.filter(**kw)
-        print qs
-
-        if len(qs) == 0:
-            return None
-        else:
-            return qs.order_by('-end_time')[0]
-
     def get_object(self):
 
-        instance = self._get_single_outlet()
+        instance = get_single_outlet(self.kwargs('outletID'), self.kwargs.get('parent_lookup_device__name'), self.request)
 
         if instance is None:
             raise NotFound
 
         return instance
 
-class OutletDataViewset(BaseDataViewset):
-    def retrieve(self, request, **kwargs):
+class OutletDataObject(DataObject):
+    pass
 
-        
-        return Response({})
+class OutletDataSerializer(BaseDataSerializer):
+    def to_representation(self, obj):
+        ret = super(OutletDataSerializer, self).to_representation(obj)
+        self._add_uris(ret, uri=False)
+        return ret
+
+class OutletDataViewset(BaseDataViewset):
+    queryset = OutletRef.objects.all()
+    serializer_class = OutletDataSerializer
+    def retrieve(self, request, **kwargs):
+        """
+        kwargs look like this:
+
+        {'outlet_dataset': u'load', 'outletID': u'AA', 'name': u'sentry_pdu'}
+        """
+
+        print kwargs
+
+        outlet = get_single_outlet(kwargs.get('outletID'), kwargs.get('name'), request)
+
+        outlet_id = atdecode(kwargs.get('outletID'))
+
+        if not outlet:
+            # this should probably be a 404 but the original code did it like this.
+            return Response({'error': 'no such device/oulet: dev: {0} outlet: {1}'.format(kwargs.get('name'), outlet_id)},
+                status.HTTP_400_BAD_REQUEST
+                )
+
+        if not kwargs.get('outlet_dataset') in OUTLET_DATASETS:
+            return Response({'error': 'no such dataset: {0}'.format(kwargs.get('outlet_dataset'))},
+                status.HTTP_400_BAD_REQUEST)
+
+        oidset_name = 'SentryPoll'
+        datapath = [SNMP_NAMESPACE, outlet.device.name, oidset_name, 'outletLoadValue', outlet_id]
+
+        obj = OutletDataObject()
+        obj.url = NestedOutletHyperlinkField._get_dataset_detail(outlet_id, kwargs.get('name'), request, kwargs.get('outlet_dataset'))
+        obj.outlet = outlet
+        obj.datapath = datapath
+        obj.outlet_dataset = kwargs.get('outlet_dataset')
+
+        oidset = outlet.device.oidsets.get(name=oidset_name)
+
+        self._parse_data_default_args(request, obj, time_only=True)
+
+        obj.data = list()
+
+        try:
+        #     obj = self._execute_query(oidset, obj)
+            serializer = OutletDataSerializer(obj.to_dict(), context={'request': request})
+            return Response(serializer.data)
+        except (QueryErrorException, TimerangeException) as e:
+            return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
+
+        # return Response({})
 
 """
 **/v2/outlet/**
