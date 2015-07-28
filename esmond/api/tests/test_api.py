@@ -949,7 +949,7 @@ class PDUAPITests(ResourceTestCase):
         self.td = build_pdu_metadata()
 
     def test_get_pdu_list(self):
-        url = '/v1/pdu/'
+        url = '/v2/pdu/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -960,14 +960,14 @@ class PDUAPITests(ResourceTestCase):
         self.assertEquals(data[0]["name"], "sentry_pdu")
 
     def test_get_pdu(self):
-        url = '/v1/pdu/sentry_pdu/'
+        url = '/v2/pdu/sentry_pdu/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         # by default only currently active devices are returned
         data = json.loads(response.content)
-        #print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
         children = {}
         for child in data['children']:
@@ -978,17 +978,17 @@ class PDUAPITests(ResourceTestCase):
         for child_name in ['outlet']:
             self.assertIn(child_name, children)
             child = children[child_name]
-            self.assertEqual(child['uri'], url + child_name)
+            self.assertEqual(child['uri'], url + child_name + '/')
 
     def test_get_pdu_outlet_list(self):
-        url = '/v1/pdu/sentry_pdu/outlet/'
+        url = '/v2/pdu/sentry_pdu/outlet/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         # by default only currently active devices are returned
         data = json.loads(response.content)
-        #print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
         children = data['children']
         self.assertEqual(len(children), 1)
