@@ -1443,6 +1443,11 @@ class OutletSerializer(BaseMixin, serializers.ModelSerializer):
         self._add_pdu_uri(ret)
         return ret
 
+class OutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
+    serializer_class = OutletSerializer
+    lookup_field = 'outletID'
+    # filter_class = InterfaceFilter
+    pagination_class = EsmondPaginator
 
 """
 **/v2/pdu/**
@@ -1488,11 +1493,9 @@ class PDUViewset(DeviceViewset):
 class NestedOutletSerializer(OutletSerializer):
     pass
 
-class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
+class NestedOutletViewset(OutletViewset):
     serializer_class = NestedOutletSerializer
-    lookup_field = 'outletID'
-    # filter_class = InterfaceFilter
-    pagination_class = EsmondPaginator
+    # filter_class = InterfaceFilter XXX(mmg) - set to None in subclass?
 
     def get_queryset(self):
         # base time filters
