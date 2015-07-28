@@ -1523,14 +1523,11 @@ class OutletDataViewset(BaseDataViewset):
         {'outlet_dataset': u'load', 'outletID': u'AA', 'name': u'sentry_pdu'}
         """
 
-        print kwargs
-
         outlet = get_single_outlet(kwargs.get('outletID'), kwargs.get('name'), request)
 
         outlet_id = atdecode(kwargs.get('outletID'))
 
         if not outlet:
-            # this should probably be a 404 but the original code did it like this.
             return Response({'error': 'no such device/oulet: dev: {0} outlet: {1}'.format(kwargs.get('name'), outlet_id)},
                 status.HTTP_400_BAD_REQUEST
                 )
@@ -1555,13 +1552,21 @@ class OutletDataViewset(BaseDataViewset):
         obj.data = list()
 
         try:
-        #     obj = self._execute_query(oidset, obj)
+            obj = self._execute_query(oidset, obj)
             serializer = OutletDataSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
         except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
-        # return Response({})
+    def _execute_query(self, oidset, obj):
+        data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
+                                 obj.begin_time*1000, obj.end_time*1000)
+
+        obj.data = QueryUtil.format_data_payload(data, coerce_to_bins=oidset.frequency*1000)
+        obj.data = Fill.verify_fill(obj.begin_time, obj.end_time, oidset.frequency,
+                                    obj.data)
+
+        return obj
 
 """
 **/v2/outlet/**
