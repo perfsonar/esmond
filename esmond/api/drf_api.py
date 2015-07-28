@@ -97,6 +97,10 @@ class BaseMixin(object):
         if o.get('uri', None):
             o['device_uri'] = o['uri'].split('interface')[0]
 
+    def _add_pdu_uri(self, o):
+        if o.get('uri', None):
+            o['pdu'] = o['uri'].split('outlet')[0]
+
 class EncodedHyperlinkField(relations.HyperlinkedIdentityField):
     """
     General url generator that handles atencoding the lookup_field.
@@ -1403,8 +1407,13 @@ class NestedOutletSerializer(BaseMixin, serializers.ModelSerializer):
         model = OutletRef
         fields = ('begin_time',
             'children',
-            'end_time', 'id', 
+            'end_time', 
+            'id', 
             'leaf',
+            'outletControlState',
+            'outletID',
+            'outletName',
+            'outletStatus',
             'url',)
         extra_kwargs={'url': {'lookup_field': 'outletID',}}
 
@@ -1417,9 +1426,10 @@ class NestedOutletSerializer(BaseMixin, serializers.ModelSerializer):
     def to_representation(self, obj):
         obj.children = list()
         obj.leaf = False
-        # list of actual data-bearing OID endpoints.
+
         ret =  super(NestedOutletSerializer, self).to_representation(obj)
         self._add_uris(ret)
+        self._add_pdu_uri(ret)
         return ret
 
 class NestedOutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
