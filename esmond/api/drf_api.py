@@ -1468,7 +1468,7 @@ class OutletViewset(BaseMixin, viewsets.ReadOnlyModelViewSet):
 /v2/pdu/
 /v2/pdu/$NAME/
 /v2/pdu/$NAME/outlet/
-/v2/pdu/$NAME/outlet/$NAME/
+/v2/pdu/$NAME/outlet/$NAME/ 
 /v2/pdu/$NAME/outlet/$NAME/$DATASET
 """
 
@@ -1579,20 +1579,23 @@ class OutletDataViewset(BaseDataViewset):
         obj.data = list()
 
         try:
-            obj = self._execute_query(oidset, obj)
+            obj = self._execute_outlet_query(oidset, obj)
+            obj = self._format_payload(oidset, obj)
             serializer = OutletDataSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
         except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
-    def _execute_query(self, oidset, obj):
-        data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
+    def _execute_outlet_query(self, oidset, obj):
+        obj.data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
                                  obj.begin_time*1000, obj.end_time*1000)
 
-        obj.data = QueryUtil.format_data_payload(data, coerce_to_bins=oidset.frequency*1000)
+        return obj
+
+    def _format_payload(self, oidset, obj):
+        obj.data = QueryUtil.format_data_payload(obj.data, coerce_to_bins=oidset.frequency*1000)
         obj.data = Fill.verify_fill(obj.begin_time, obj.end_time, oidset.frequency,
                                     obj.data)
-
         return obj
 
 
