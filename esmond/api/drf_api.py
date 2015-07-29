@@ -473,6 +473,10 @@ class QueryBase(object):
     Any "back-end agnostic" post-processing (like timeseries gap 
     filling), will be taken care of by the viewset code using a 
     _format_payload() method.
+
+    Any fatal query errors should raise QueryErrorException which 
+    will be handled by the calling that mix in the backend specific 
+    query class.
     """
 
     def _execute_interface_data_query(self, oidset, obj):
@@ -494,6 +498,129 @@ class QueryBase(object):
         """Logic to retrieve interface data for OutletDataViewset."""
         raise NotImplementedError('override in subclass')
 
+class CassandraQueryLogic(QueryBase):
+    def _execute_interface_data_query(self, oidset, obj):
+        """
+        Query to get interface data tied to specific oid/set datasets 
+        (as opposed to the free-form timeseries endpoint).
+
+        Executes a couple of reality checks (making sure that a valid 
+        aggregation was requested and checks/limits the time range), and
+        then make calls to cassandra backend.
+        """
+        # If no aggregate level defined in request, set to the frequency, 
+        # otherwise, check if the requested aggregate level is valid.
+        if not obj.agg:
+            obj.agg = oidset.frequency
+        elif obj.agg and not oidset.aggregates:
+            raise QueryErrorException('there are no aggregations for oidset {0} - {1} was requested'.format(oidset.name, obj.agg))
+        elif obj.agg not in oidset.aggregates:
+            raise QueryErrorException('no valid aggregation {0} in oidset {1}'.format(obj.agg, oidset.name))
+
+        # Make sure we're not exceeding allowable time range.
+        if not QueryUtil.valid_timerange(obj) and \
+            not obj.user.username:
+            raise QueryErrorException('exceeded valid timerange for agg level: {0}'.format(obj.agg))
+
+
+        if obj.agg == oidset.frequency:
+            # Fetch the base rate data.
+            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg*1000,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
+        else:
+            # Get the aggregation.
+            if obj.cf not in AGG_TYPES:
+                raise QueryErrorException('%s is not a valid consolidation function' %
+                        (obj.cf))
+            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
+                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
+
+        obj.data = QueryUtil.format_cassandra_data_payload(data)
+
+        return obj
+
+    def _execute_timeseries_query(self, obj):
+        """
+        Query for "timeseries" retrieval endpoint.
+
+        Sanity check the requested timerange, and then make the appropriate
+        method call to the cassandra backend.
+        """
+        # Make sure we're not exceeding allowable time range.
+        if not QueryUtil.valid_timerange(obj, in_ms=True) and \
+            not obj.user.username:
+            raise QueryErrorException('exceeded valid timerange for agg level: {0}'.format(obj.agg))
+        
+        data = []
+
+        if obj.r_type == 'BaseRate':
+            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time, ts_max=obj.end_time)
+        elif obj.r_type == 'Aggs':
+            if obj.cf not in AGG_TYPES:
+                raise QueryErrorException('{0} is not a valid consolidation function'.format(obj.cf))
+            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time, ts_max=obj.end_time, cf=obj.cf)
+        elif obj.r_type == 'RawData':
+            data = db.query_raw_data(path=obj.datapath, freq=obj.agg,
+                    ts_min=obj.begin_time, ts_max=obj.end_time)
+        else:
+            # Input has been checked already
+            pass
+
+        obj.data = QueryUtil.format_cassandra_data_payload(data, in_ms=True)
+        if not len(obj.data):
+            # If no data is returned, sanity check that there is a 
+            # corresponding key in the database.
+            v = db.check_for_valid_keys(path=obj.datapath, freq=obj.agg, 
+                ts_min=obj.begin_time, ts_max=obj.end_time)
+            if not v:
+                raise QueryErrorException('The request path {0} has no corresponding keys.'.format([obj.r_type] + obj.datapath + [obj.agg]))
+
+        return obj
+
+    def _execute_timeseries_inserts(self, objs):
+        """
+        Iterate through a list of TimeseriesDataObject, execute the 
+        appropriate inserts, and then explicitly flush the db so the 
+        inserts don't sit in the batch wating for more data to auto-flush.
+
+        snmp:rtr_test:FastPollHC:ifHCInOctets:30000:2015
+        """
+        for obj in objs:
+            if obj.r_type == 'BaseRate':
+                rate_bin = BaseRateBin(path=obj.datapath, ts=obj.ts, 
+                    val=obj.val, freq=obj.agg)
+                db.update_rate_bin(rate_bin)
+            elif obj.r_type == 'Aggs':
+                pass
+            elif obj.r_type == 'RawData':
+                raw_data = RawRateData(path=obj.datapath, ts=obj.ts, 
+                    val=obj.val, freq=obj.agg)
+                db.set_raw_data(raw_data)
+            else:
+                # Input has been checked already
+                pass
+        
+        db.flush()
+
+        return True
+
+    def _execute_outlet_query(self, oidset, obj):
+        """
+        Query to get outlet data.
+        """
+        obj.data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
+                                 obj.begin_time*1000, obj.end_time*1000)
+
+        obj.data = QueryUtil.format_cassandra_data_payload(obj.data, coerce_to_bins=oidset.frequency*1000)
+        
+        return obj
+
+# Point this variable at the class of backend-specific logic.
+# Makes it easier to deploy new logic, change this pointer, 
+# not the viewset class declarations.
+QueryBackend = CassandraQueryLogic
 
 #
 # Endpoints for main URI series.
@@ -847,7 +974,7 @@ class InterfaceDataSerializer(BaseDataSerializer):
         self._add_uris(ret, uri=False)
         return ret
 
-class InterfaceDataViewset(BaseDataViewset):
+class InterfaceDataViewset(BaseDataViewset, QueryBackend):
     queryset = IfRef.objects.all()
     serializer_class = InterfaceDataSerializer
 
@@ -904,50 +1031,13 @@ class InterfaceDataViewset(BaseDataViewset):
         obj.data = list()
 
         try:
+            # defined in QueryBackend mixin
             obj = self._execute_interface_data_query(oidset, obj)
             obj = self._format_payload(obj)
             serializer = InterfaceDataSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
         except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
-
-    def _execute_interface_data_query(self, oidset, obj):
-        """
-        Executes a couple of reality checks (making sure that a valid 
-        aggregation was requested and checks/limits the time range), and
-        then make calls to cassandra backend.
-        """
-
-        # If no aggregate level defined in request, set to the frequency, 
-        # # otherwise, check if the requested aggregate level is valid.
-        if not obj.agg:
-            obj.agg = oidset.frequency
-        elif obj.agg and not oidset.aggregates:
-            raise QueryErrorException('there are no aggregations for oidset {0} - {1} was requested'.format(oidset.name, obj.agg))
-        elif obj.agg not in oidset.aggregates:
-            raise QueryErrorException('no valid aggregation {0} in oidset {1}'.format(obj.agg, oidset.name))
-
-        # Make sure we're not exceeding allowable time range.
-        if not QueryUtil.valid_timerange(obj) and \
-            not obj.user.username:
-            raise QueryErrorException('exceeded valid timerange for agg level: {0}'.format(obj.agg))
-
-
-        if obj.agg == oidset.frequency:
-            # Fetch the base rate data.
-            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg*1000,
-                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000)
-        else:
-            # Get the aggregation.
-            if obj.cf not in AGG_TYPES:
-                raise QueryErrorException('%s is not a valid consolidation function' %
-                        (obj.cf))
-            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
-                    ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
-
-        obj.data = QueryUtil.format_cassandra_data_payload(data)
-
-        return obj
 
     def _format_payload(self, obj):
         """
@@ -1123,7 +1213,7 @@ class TimeseriesDataObject(DataObject):
 class TimeseriesRequestSerializer(InterfaceDataSerializer):
     pass
 
-class TimeseriesRequestViewset(BaseDataViewset):
+class TimeseriesRequestViewset(BaseDataViewset, QueryBackend):
     """
     The queryset attribute on this non-model resource is fake.
     It's there so we can use our custom resource permissions 
@@ -1182,50 +1272,13 @@ class TimeseriesRequestViewset(BaseDataViewset):
         self._parse_data_default_args(request, obj, in_ms=True)
 
         try:
+            # defined in QueryBackend mixin
             obj = self._execute_timeseries_query(obj)
             obj = self._format_payload(obj)
             serializer = TimeseriesRequestSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
         except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
-
-    def _execute_timeseries_query(self, obj):
-        """
-        Sanity check the requested timerange, and then make the appropriate
-        method call to the cassandra backend.
-        """
-        # Make sure we're not exceeding allowable time range.
-        if not QueryUtil.valid_timerange(obj, in_ms=True) and \
-            not obj.user.username:
-            raise QueryErrorException('exceeded valid timerange for agg level: {0}'.format(obj.agg))
-        
-        data = []
-
-        if obj.r_type == 'BaseRate':
-            data = db.query_baserate_timerange(path=obj.datapath, freq=obj.agg,
-                    ts_min=obj.begin_time, ts_max=obj.end_time)
-        elif obj.r_type == 'Aggs':
-            if obj.cf not in AGG_TYPES:
-                raise QueryErrorException('{0} is not a valid consolidation function'.format(obj.cf))
-            data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg,
-                    ts_min=obj.begin_time, ts_max=obj.end_time, cf=obj.cf)
-        elif obj.r_type == 'RawData':
-            data = db.query_raw_data(path=obj.datapath, freq=obj.agg,
-                    ts_min=obj.begin_time, ts_max=obj.end_time)
-        else:
-            # Input has been checked already
-            pass
-
-        obj.data = QueryUtil.format_cassandra_data_payload(data, in_ms=True)
-        if not len(obj.data):
-            # If no data is returned, sanity check that there is a 
-            # corresponding key in the database.
-            v = db.check_for_valid_keys(path=obj.datapath, freq=obj.agg, 
-                ts_min=obj.begin_time, ts_max=obj.end_time)
-            if not v:
-                raise QueryErrorException('The request path {0} has no corresponding keys.'.format([obj.r_type] + obj.datapath + [obj.agg]))
-
-        return obj
 
     def _format_payload(self, obj):
         """
@@ -1301,38 +1354,11 @@ class TimeseriesRequestViewset(BaseDataViewset):
             objs.append(obj)
 
         try:
+            # defined in QueryBackend mixin
             self._execute_timeseries_inserts(objs)
             return Response('', status.HTTP_201_CREATED)
         except QueryErrorException, e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
-
-
-    def _execute_timeseries_inserts(self, objs):
-        """
-        Iterate through a list of TimeseriesDataObject, execute the 
-        appropriate inserts, and then explicitly flush the db so the 
-        inserts don't sit in the batch wating for more data to auto-flush.
-
-        snmp:rtr_test:FastPollHC:ifHCInOctets:30000:2015
-        """
-        for obj in objs:
-            if obj.r_type == 'BaseRate':
-                rate_bin = BaseRateBin(path=obj.datapath, ts=obj.ts, 
-                    val=obj.val, freq=obj.agg)
-                db.update_rate_bin(rate_bin)
-            elif obj.r_type == 'Aggs':
-                pass
-            elif obj.r_type == 'RawData':
-                raw_data = RawRateData(path=obj.datapath, ts=obj.ts, 
-                    val=obj.val, freq=obj.agg)
-                db.set_raw_data(raw_data)
-            else:
-                # Input has been checked already
-                pass
-        
-        db.flush()
-
-        return True
 
 bulk_namespace_ns_doc = """
 **/v1/bulk/timeseries/** - Namespace to retrive bulk traffic data from 
@@ -1602,7 +1628,7 @@ class OutletDataSerializer(BaseDataSerializer):
         self._add_uris(ret, uri=False)
         return ret
 
-class OutletDataViewset(BaseDataViewset):
+class OutletDataViewset(BaseDataViewset, QueryBackend):
     queryset = OutletRef.objects.all()
     serializer_class = OutletDataSerializer
     def retrieve(self, request, **kwargs):
@@ -1641,20 +1667,13 @@ class OutletDataViewset(BaseDataViewset):
         obj.data = list()
 
         try:
+            # defined by query logic mixin
             obj = self._execute_outlet_query(oidset, obj)
             obj = self._format_payload(oidset, obj)
             serializer = OutletDataSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
         except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
-
-    def _execute_outlet_query(self, oidset, obj):
-        obj.data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
-                                 obj.begin_time*1000, obj.end_time*1000)
-
-        obj.data = QueryUtil.format_cassandra_data_payload(obj.data, coerce_to_bins=oidset.frequency*1000)
-        
-        return obj
 
     def _format_payload(self, oidset, obj):
         """
