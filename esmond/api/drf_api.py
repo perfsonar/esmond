@@ -864,13 +864,14 @@ class InterfaceDataViewset(BaseDataViewset):
         obj.data = list()
 
         try:
-            obj = self._execute_query(oidset, obj)
+            obj = self._execute_interface_data_query(oidset, obj)
+            obj = self._format_payload(obj)
             serializer = InterfaceDataSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
         except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
-    def _execute_query(self, oidset, obj):
+    def _execute_interface_data_query(self, oidset, obj):
         """
         Executes a couple of reality checks (making sure that a valid 
         aggregation was requested and checks/limits the time range), and
@@ -905,10 +906,20 @@ class InterfaceDataViewset(BaseDataViewset):
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
 
         obj.data = QueryUtil.format_cassandra_data_payload(data)
+
+        return obj
+
+    def _format_payload(self, obj):
+        """
+        Post process data returned by query. Expects that the obj.data list 
+        contains dicts with 'ts' and 'val' keys. This contains "generic" 
+        formatting logic (fill, etc) that is not tied to the query logic itself.
+        """
         obj.data = Fill.verify_fill(obj.begin_time, obj.end_time,
                 obj.agg, obj.data)
 
         return obj
+
 
 bulk_interface_ns_doc = """
 **/v1/bulk/interface/** - Namespace to retrive bulk traffic data from 
@@ -1012,7 +1023,7 @@ class BulkInterfaceRequestViewset(BaseDataViewset):
                 obj.agg = ret_obj.agg
 
                 try:
-                    data = InterfaceDataViewset()._execute_query(oidset, obj)
+                    data = InterfaceDataViewset()._execute_interface_data_query(oidset, obj)
                 except QueryErrorException, e:
                     return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
