@@ -1130,13 +1130,14 @@ class TimeseriesRequestViewset(BaseDataViewset):
         self._parse_data_default_args(request, obj, in_ms=True)
 
         try:
-            obj = self._execute_query(obj)
+            obj = self._execute_timeseries_query(obj)
+            obj = self._format_payload(obj)
             serializer = TimeseriesRequestSerializer(obj.to_dict(), context={'request': request})
             return Response(serializer.data)
         except (QueryErrorException, TimerangeException) as e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
-    def _execute_query(self, obj):
+    def _execute_timeseries_query(self, obj):
         """
         Sanity check the requested timerange, and then make the appropriate
         method call to the cassandra backend.
@@ -1172,6 +1173,14 @@ class TimeseriesRequestViewset(BaseDataViewset):
             if not v:
                 raise QueryErrorException('The request path {0} has no corresponding keys.'.format([obj.r_type] + obj.datapath + [obj.agg]))
 
+        return obj
+
+    def _format_payload(self, obj):
+        """
+        Post process data returned by query. Expects that the obj.data list 
+        contains dicts with 'ts' and 'val' keys. This contains "generic" 
+        formatting logic (fill, etc) that is not tied to the query logic itself.
+        """
         if obj.r_type != 'RawData':
             obj.data = Fill.verify_fill(obj.begin_time, obj.end_time,
                     obj.agg, obj.data)
@@ -1240,13 +1249,13 @@ class TimeseriesRequestViewset(BaseDataViewset):
             objs.append(obj)
 
         try:
-            self._execute_inserts(objs)
+            self._execute_timeseries_inserts(objs)
             return Response('', status.HTTP_201_CREATED)
         except QueryErrorException, e:
             return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
 
-    def _execute_inserts(self, objs):
+    def _execute_timeseries_inserts(self, objs):
         """
         Iterate through a list of TimeseriesDataObject, execute the 
         appropriate inserts, and then explicitly flush the db so the 
@@ -1357,7 +1366,7 @@ class BulkTimeseriesViewset(BaseDataViewset):
             obj.agg = int(obj.datapath.pop())
 
             try:
-                obj = TimeseriesRequestViewset()._execute_query(obj)
+                obj = TimeseriesRequestViewset()._execute_timeseries_query(obj)
             except QueryErrorException, e:
                 return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
@@ -1598,7 +1607,7 @@ class OutletDataViewset(BaseDataViewset):
         """
         Post process data returned by query. Expects that the obj.data list 
         contains dicts with 'ts' and 'val' keys. This contains "generic" 
-        logic that is not tied to the query logic itself.
+        formatting logic (fill, etc) that is not tied to the query logic itself.
         """
         obj.data = Fill.verify_fill(obj.begin_time, obj.end_time, oidset.frequency,
                                     obj.data)
