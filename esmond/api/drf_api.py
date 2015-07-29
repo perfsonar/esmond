@@ -1590,10 +1590,16 @@ class OutletDataViewset(BaseDataViewset):
         obj.data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
                                  obj.begin_time*1000, obj.end_time*1000)
 
+        obj.data = QueryUtil.format_cassandra_data_payload(obj.data, coerce_to_bins=oidset.frequency*1000)
+        
         return obj
 
     def _format_payload(self, oidset, obj):
-        obj.data = QueryUtil.format_cassandra_data_payload(obj.data, coerce_to_bins=oidset.frequency*1000)
+        """
+        Post process data returned by query. Expects that the obj.data list 
+        contains dicts with 'ts' and 'val' keys. This contains "generic" 
+        logic that is not tied to the query logic itself.
+        """
         obj.data = Fill.verify_fill(obj.begin_time, obj.end_time, oidset.frequency,
                                     obj.data)
         return obj
