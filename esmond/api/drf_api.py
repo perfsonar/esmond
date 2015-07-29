@@ -475,8 +475,8 @@ class QueryBase(object):
     _format_payload() method.
 
     Any fatal query errors should raise QueryErrorException which 
-    will be handled by the calling that mix in the backend specific 
-    query class.
+    will be handled by the calling code that mixes in the backend 
+    specific query class.
     """
 
     def _execute_interface_data_query(self, oidset, obj):
