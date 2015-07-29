@@ -456,6 +456,46 @@ def _get_ersatz_esmond_api_queryset(ersatz_device):
     return ErsatzQueryset
 
 #
+# Query logic classes
+#
+
+class QueryBase(object):
+    """
+    Base class for query logic. They query classes will be passed 
+    a (subclass of) DataObject which will have all the information 
+    needed to execute the query, and an a "data" attribute that 
+    is an empty list. The query method is to fill that list with 
+    dicts that look like: dict(ts=23984023894, val=3) - and do 
+    whatever any back-end specific massaging (like rounding timestamps 
+    to "bins", pulling unneded key/value pairs out of data returned 
+    by the back-end, etc) before returning the obj.
+
+    Any "back-end agnostic" post-processing (like timeseries gap 
+    filling), will be taken care of by the viewset code using a 
+    _format_payload() method.
+    """
+
+    def _execute_interface_data_query(self, oidset, obj):
+        """Logic to retrieve interface data for InterfaceDataViewset
+        and (by extension) BulkInterfaceRequestViewset classes."""
+        raise NotImplementedError('override in subclass')
+
+    def _execute_timeseries_query(self, obj):
+        """Logic to retrieve more free-form timeseries data for 
+        TimeseriesRequestViewset and (by extension)  the 
+        BulkTimeseriesViewset classes."""
+        raise NotImplementedError('override in subclass')
+
+    def _execute_timeseries_inserts(self, objs):
+        """Logic to insert timeseries data for TimeseriesRequestViewset."""
+        raise NotImplementedError('override in subclass')
+
+    def _execute_outlet_query(self, oidset, obj):
+        """Logic to retrieve interface data for OutletDataViewset."""
+        raise NotImplementedError('override in subclass')
+
+
+#
 # Endpoints for main URI series.
 # 
 
@@ -1024,6 +1064,7 @@ class BulkInterfaceRequestViewset(BaseDataViewset):
 
                 try:
                     data = InterfaceDataViewset()._execute_interface_data_query(oidset, obj)
+                    data = InterfaceDataViewset()._format_payload(obj)
                 except QueryErrorException, e:
                     return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
@@ -1378,6 +1419,7 @@ class BulkTimeseriesViewset(BaseDataViewset):
 
             try:
                 obj = TimeseriesRequestViewset()._execute_timeseries_query(obj)
+                obj = TimeseriesRequestViewset()._format_payload(obj)
             except QueryErrorException, e:
                 return Response({'query error': '{0}'.format(str(e))}, status.HTTP_400_BAD_REQUEST)
 
