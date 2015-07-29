@@ -67,7 +67,7 @@ class QueryUtil(object):
         return True
 
     @staticmethod
-    def format_data_payload(data, in_ms=False, coerce_to_bins=None):
+    def format_cassandra_data_payload(data, in_ms=False, coerce_to_bins=None):
         """Massage results from cassandra for json return payload.
 
         The in_ms flag is set to true if a given resource (like the 

@@ -622,7 +622,7 @@ class InterfaceDataResource(Resource):
             data = db.query_aggregation_timerange(path=obj.datapath, freq=obj.agg*1000,
                     ts_min=obj.begin_time*1000, ts_max=obj.end_time*1000, cf=obj.cf)
 
-        obj.data = QueryUtil.format_data_payload(data)
+        obj.data = QueryUtil.format_cassandra_data_payload(data)
         obj.data = Fill.verify_fill(obj.begin_time, obj.end_time,
                 obj.agg, obj.data)
 
@@ -1109,7 +1109,7 @@ class TimeseriesResource(Resource):
             # Input has been checked already
             pass
 
-        obj.data = QueryUtil.format_data_payload(data, in_ms=True)
+        obj.data = QueryUtil.format_cassandra_data_payload(data, in_ms=True)
         if not len(obj.data):
             # If no data is returned, sanity check that there is a 
             # corresponding key in the database.
@@ -1496,7 +1496,7 @@ class OutletDataResource(Resource):
         data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
                                  obj.begin_time*1000, obj.end_time*1000)
 
-        obj.data = QueryUtil.format_data_payload(data, coerce_to_bins=oidset.frequency*1000)
+        obj.data = QueryUtil.format_cassandra_data_payload(data, coerce_to_bins=oidset.frequency*1000)
         obj.data = Fill.verify_fill(obj.begin_time, obj.end_time, oidset.frequency,
                                     obj.data)
 

@@ -1051,9 +1051,9 @@ class QueryUtilTests(TestCase):
         ]
 
         data_out = [{ 'ts': 1391216160, 'val': 1100}, { 'ts': 1391216220, 'val': 1100}, { 'ts': 1391216280, 'val': 1100}]
-        data_check = QueryUtil.format_data_payload(data_in, coerce_to_bins=60000)
+        data_check = QueryUtil.format_cassandra_data_payload(data_in, coerce_to_bins=60000)
         self.assertEquals(data_check, data_out)
 
         data_out_nocoerce = [{ 'ts': 1391216201, 'val': 1100}, { 'ts': 1391216262, 'val': 1100}, { 'ts': 1391216323, 'val': 1100}]
-        data_check = QueryUtil.format_data_payload(data_in)
+        data_check = QueryUtil.format_cassandra_data_payload(data_in)
         self.assertEquals(data_check, data_out_nocoerce)
