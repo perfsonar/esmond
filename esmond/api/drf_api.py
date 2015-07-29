@@ -99,7 +99,7 @@ class BaseMixin(object):
 
     def _add_pdu_uri(self, o):
         if o.get('uri', None):
-            o['pdu'] = o['uri'].split('outlet')[0]
+            o['pdu_uri'] = o['uri'].split('outlet')[0]
 
 class EncodedHyperlinkField(relations.HyperlinkedIdentityField):
     """
@@ -1511,6 +1511,7 @@ class OutletSerializer(BaseMixin, serializers.ModelSerializer):
             'outletID',
             'outletName',
             'outletStatus',
+            'pdu',
             'url',)
         extra_kwargs={'url': {'lookup_field': 'outletID',}}
 
@@ -1519,6 +1520,8 @@ class OutletSerializer(BaseMixin, serializers.ModelSerializer):
 
     begin_time = UnixEpochDateField()
     end_time = UnixEpochDateField()
+
+    pdu = serializers.SlugRelatedField(queryset=Device.objects.all(), slug_field='name', source='device')
 
     def to_representation(self, obj):
         obj.children = list()
