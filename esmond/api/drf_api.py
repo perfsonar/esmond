@@ -293,6 +293,13 @@ class OutletFilter(filters.FilterSet):
     outletName = filters.AllLookupsFilter(name='outletName')
     device = filters.RelatedFilter(DeviceFilter, name='device')
 
+class InventoryFilter(filters.FilterSet):
+    class Meta:
+        model = Inventory
+        fields = ['row_key']
+
+    row_key = filters.AllLookupsFilter(name='row_key')
+
 def build_time_filters(request):
     """Build default time filters.
 
@@ -1688,8 +1695,24 @@ class OutletDataViewset(BaseDataViewset, QueryBackend):
                                     obj.data)
         return obj
 
+"""
+**/v2/inventory**
+"""
 
+class InventorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Inventory
+        fields = ('row_key',)
 
+    def to_representation(self, obj):
+        ret = super(InventorySerializer, self).to_representation(obj)
+        return ret.get('row_key')
+
+class InventoryViewset(viewsets.ReadOnlyModelViewSet):
+    queryset = Inventory.objects.all()
+    model = Inventory
+    serializer_class = InventorySerializer
+    filter_class = InventoryFilter
 
 
 

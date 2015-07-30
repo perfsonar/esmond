@@ -341,3 +341,32 @@ def build_pdu_metadata():
     )
 
     return td
+
+def build_sample_inventory_from_metadata():
+    """
+    make sample inventory out of loaded metadata mostly for testing 
+    API endpoints
+    """
+
+    keys = list()
+
+    for d in Device.objects.all():
+        ifaces = [ i.ifName for i in d.ifref_set.all() ]
+        oid_set = list()
+        for os in d.oidsets.all():
+            for o in os.oids.all():
+                oid_set.append((os.name, o.name,))
+
+        for os in oid_set:
+            for i in ifaces:
+                keys.append('snmp:{0}:{1}:{2}:{3}:30000'.format(d.name, os[0], os[1], i))
+
+    for k in keys:
+        i = Inventory(
+            row_key=k,
+            frequency=30000,
+            end_time=make_aware(datetime.datetime.now(), utc),
+            start_time=make_aware(datetime.datetime.now() - datetime.timedelta(days=30), utc),
+        )
+        i.save()
+

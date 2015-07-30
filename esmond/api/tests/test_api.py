@@ -15,11 +15,13 @@ os.environ['ESMOND_UNIT_TESTS'] = 'True'
 
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.utils.timezone import make_aware, utc
 
 from rest_framework.test import APIClient
 
 from esmond.api.models import *
-from esmond.api.tests.example_data import build_default_metadata, build_pdu_metadata
+from esmond.api.tests.example_data import (build_default_metadata, 
+    build_pdu_metadata, build_sample_inventory_from_metadata)
 from esmond.cassandra import AGG_TYPES
 from esmond.api import SNMP_NAMESPACE, OIDSET_INTERFACE_ENDPOINTS
 from esmond.api.dataseries import QueryUtil
@@ -302,6 +304,23 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 200)
         self.assertTrue(":hide:" in data['ifAlias'])
 
+    def test_inventory_endpoint(self):
+
+        build_sample_inventory_from_metadata()
+
+        url = '/v2/inventory/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(len(data), 53)
+
+        url += '?row_key__contains=Errors'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(len(data), 12)
 
 class MockCASSANDRA_DB(object):
     def __init__(self, config):

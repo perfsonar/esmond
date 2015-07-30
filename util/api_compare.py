@@ -29,6 +29,8 @@ uri_map = dict(
     outlet_list='/{0}/outlet/',
     outlet_list_search='/{0}/outlet/?outletName__contains=rtr_a',
     oid_set_map='/{0}/oidsetmap/',
+    inventory='/{0}/inventory/',
+    inventory_filter='/{0}/inventory/?row_key__contains=Errors',
 )
 
 def main():
@@ -79,6 +81,12 @@ def main():
     parser.add_option('-M', '--oid-set-map',
             dest='oid_set_map', action='store_true', default=False,
             help='Oidset map.')
+    parser.add_option('-V', '--inventory',
+            dest='inventory', action='store_true', default=False,
+            help='Inventory endpoint.')
+    parser.add_option('-F', '--inventory-filter',
+            dest='inventory_filter', action='store_true', default=False,
+            help='Test inventory with filter.')
     parser.add_option('-u', '--url', metavar='URL',
             type='string', dest='url', default='http://localhost:8000',
             help='Url where API is running (default: %default).')
