@@ -411,7 +411,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         # This form will patch a class when it is instantiated by the executed code:
         # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
         # This form will patch a module-level class instance:
-        self.patcher = mock.patch("esmond.api.drf_api.db", MockCASSANDRA_DB(None))
+        self.patcher = mock.patch("esmond.api.api_v2.db", MockCASSANDRA_DB(None))
         self.patcher.start()
 
     def tearDown(self):
@@ -1024,7 +1024,7 @@ class PDUAPIDataTests(DeviceAPITestsBase):
         # This form will patch a class when it is instantiated by the executed code:
         # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
         # This form will patch a module-level class instance:
-        self.patcher = mock.patch("esmond.api.drf_api.db", MockCASSANDRA_DB(None))
+        self.patcher = mock.patch("esmond.api.api_v2.db", MockCASSANDRA_DB(None))
         self.patcher.start()
         self.td = build_pdu_metadata()
 

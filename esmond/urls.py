@@ -11,7 +11,7 @@ from esmond.api.perfsonar.api import perfsonar_api
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
-from esmond.api.drf_api import (
+from esmond.api.api_v2 import (
     BulkInterfaceRequestViewset,
     BulkTimeseriesViewset,
     DeviceViewset,
