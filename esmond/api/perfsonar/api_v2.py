@@ -37,6 +37,20 @@ class BaseMixin(object):
         for i in d.keys():
             d[i.replace('_', '-')] = d.pop(i)
 
+    def _add_uris(self, o):
+        if o.get('url', None):
+            up = urlparse.urlparse(o.get('url'))
+            o['uri'] = up.path
+            if o.get('event_types', None):
+                # contents of event types list have already been 'dashed'
+                for et in o.get('event_types'):
+                    et['base-uri'] = o.get('uri') + et.get('base-uri')
+                    for s in et.get('summaries'):
+                        s['uri'] = o.get('uri') + s.get('uri')
+        else:
+            # no url, can't do anything
+            return
+
 #
 # Base /archive/ endpoint
 #
@@ -85,12 +99,37 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
 
         # generate event type list for outgoing payload
         obj.event_types = list()
+
+        et_map = dict()
+
         for et in obj.pseventtypes.all():
+            if not et_map.has_key(et.event_type):
+                et_map[et.event_type] = dict(time_updated=None, summaries=list())
+            if et.summary_type == 'base':
+                et_map[et.event_type]['time_updated'] = et.time_updated
+            else:
+                et_map[et.event_type]['summaries'].append((et.summary_type, et.summary_window, et.time_updated))
+
+        for k,v in et_map.items():
             d = dict(
-                    base_uri='MAKE URI HERE',
-                    event_type=et.event_type,
-                    time_updated=et.time_updated, # CONVERT TIME
+                base_uri='/base',
+                event_type=k,
+                time_updated=v.get('time_updated'),
+                summaries=[],
                 )
+            
+            if v.get('summaries'):
+                for a in v.get('summaries'):
+                    s = dict(   
+                        uri='/aggregations/{0}'.format(a[1]),
+                        summary_type=a[0],
+                        summary_window=a[1],
+                        time_updated=a[2],
+                    )   
+                    print s
+                    self.to_dash_dict(s)
+                    d['summaries'].append(s)
+
             self.to_dash_dict(d)
             obj.event_types.append(d)
 
@@ -102,8 +141,11 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
         for p in obj.psmetadataparameters.all():
             ret[p.parameter_key] = p.parameter_value
 
+        # add uris to various payload elements based on serialized URL field.
+        self._add_uris(ret)
         # convert underscores to dashes in attr names
         self.to_dash_dict(ret)
+        
         return ret
 
     def to_internal_value(self, data):
