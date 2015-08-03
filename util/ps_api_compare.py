@@ -79,10 +79,12 @@ def main():
         got = json.loads(r.content)
         if isinstance(got, list):
             send = got[0]
+            method = 'post'
         elif isinstance(got, dict):
             send = got
+            method = 'put'
 
-        p = requests.post(options.url + uri_map.get(selection).format('perfsonar2'),
+        p = getattr(requests, method)(options.url + uri_map.get(selection).format('perfsonar2'),
             data=json.dumps(send), headers={ 'content-type': 'application/json' })
         print p.content
 

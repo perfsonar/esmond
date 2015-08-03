@@ -106,5 +106,4 @@ urlpatterns = patterns('',
     (r'v2/pdu/(?P<name>[^/]+)/outlet/(?P<outletID>[^/]+)/(?P<outlet_dataset>[^/]+)/?$', OutletDataViewset.as_view({'get': 'retrieve'})),
     ## URL definitions for V2 Perfsonar API
     (r'{0}/'.format(PS_ROOT), include(ps_router.urls)),
-    # (r'{0}/archive/(?P<metadata_key>[^/]+)/?$'.format(PS_ROOT), ArchiveViewset.as_view({'get': 'retrieve', 'post': 'bulk_post'})),
 )

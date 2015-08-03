@@ -91,6 +91,8 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
 
         # serialize it now
         ret = super(ArchiveSerializer, self).to_representation(obj)
+        # now add the "arbitrary" metadata values from the 
+
         # convert underscores to dashes in attr names
         self.to_dash_dict(ret)
         return ret
@@ -110,9 +112,10 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
 class ArchiveViewset(mixins.CreateModelMixin,
                     mixins.ListModelMixin,
                     mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
                     viewsets.GenericViewSet):
 
-    """Implements GET and POST model operations w/specific mixins rather 
+    """Implements GET, PUT and POST model operations w/specific mixins rather 
     than using viewsets.ModelSerializer for all the ops."""
 
     serializer_class = ArchiveSerializer
@@ -144,6 +147,7 @@ class ArchiveViewset(mixins.CreateModelMixin,
         """Stub for POST metadata object creation - ie:
 
         POST /perfsonar/archive/"""
+        print 'create'
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
             return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
@@ -159,12 +163,47 @@ class ArchiveViewset(mixins.CreateModelMixin,
                 status.HTTP_400_BAD_REQUEST)
 
         # process the json blob that was sent to the server.
-        print request_data
+        # print request_data
 
         # assemble return payload and send back to the client, or 
         # empty string/etc.
         return_payload = dict(thanks='for that')
         return Response(return_payload, status.HTTP_201_CREATED)
+
+    def update(self, request, **kwargs):
+        """Stub for PUT detail object creation to a metadata instance 
+        for bulk data/event type creation. ie:
+
+        PUT /perfsonar/archive/$METADATA_KEY/
+
+        'metadata_key' will be in kwargs
+        """
+        print 'update', kwargs
+        # validate the incoming json and data contained therein.
+        if not request.content_type.startswith('application/json'):
+            return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
+                status.HTTP_400_BAD_REQUEST)
+
+        if not request.body:
+            return Response({'error': 'No data payload POSTed.'}, status.HTTP_400_BAD_REQUEST)
+
+        try:
+            request_data = json.loads(request.body)
+        except ValueError:
+            return Response({'error': 'POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body)},
+                status.HTTP_400_BAD_REQUEST)
+
+        # process the json blob that was sent to the server.
+        # print request_data
+
+        # assemble return payload and send back to the client, or 
+        # empty string/etc.
+        return_payload = dict(thanks='for that')
+        return Response(return_payload, status.HTTP_201_CREATED)
+
+    def partial_update(self, request, **kwargs):
+        return Response({'error': 'does not support PATCH verb'}, status.HTTP_400_BAD_REQUEST)
+
 
 
 
