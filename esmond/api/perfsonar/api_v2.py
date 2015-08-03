@@ -112,7 +112,7 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
 
         for k,v in et_map.items():
             d = dict(
-                base_uri='/base',
+                base_uri='{0}/base'.format(k),
                 event_type=k,
                 time_updated=v.get('time_updated'),
                 summaries=[],
