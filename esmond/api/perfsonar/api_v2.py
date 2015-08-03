@@ -24,12 +24,6 @@ from esmond.api.models import (PSMetadata, PSPointToPointSubject, PSEventTypes,
 
 from esmond.api.api_v2 import DataObject
 
-
-class BaseSerializer(serializers.Serializer):
-    def to_representation(self, obj):
-        ret = super(BaseSerializer).to_representation(obj)
-        return ret
-
 #
 # Base /archive/ endpoint
 #
@@ -41,6 +35,24 @@ class ArchiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = PSMetadata
         fields = ('metadata_key', 'subject_type')
+
+    def to_representation(self, obj):
+        """
+        Modify outgoing data: massage underscore => dash
+        """
+        ret = super(ArchiveSerializer, self).to_representation(obj)
+        for i in ret.keys():
+            ret[i.replace('_', '-')] = ret.pop(i)
+        return ret
+
+    def to_internal_value(self, data):
+        """
+        Modify incoming json: massage dash => underscore before calling 
+        base code.
+        """
+        for i in data.keys():
+            data[i.replace('-', '_')] = data.pop(i)
+        ret = super(ArchiveSerializer, self).to_internal_value(data)
 
 class ArchiveViewset(mixins.CreateModelMixin,
                     mixins.ListModelMixin,

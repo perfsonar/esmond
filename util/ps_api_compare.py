@@ -72,7 +72,5 @@ def main():
         print r.content
     print pp.pprint(json.loads(r.content))
 
-    pass
-
 if __name__ == '__main__':
     main()
