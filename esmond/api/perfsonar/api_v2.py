@@ -91,7 +91,11 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
 
         # serialize it now
         ret = super(ArchiveSerializer, self).to_representation(obj)
-        # now add the "arbitrary" metadata values from the 
+
+        # now add the arbitrary metadata values from the PSMetadataParameters
+        # table.
+        for p in obj.psmetadataparameters.all():
+            ret[p.parameter_key] = p.parameter_value
 
         # convert underscores to dashes in attr names
         self.to_dash_dict(ret)
