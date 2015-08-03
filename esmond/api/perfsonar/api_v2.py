@@ -72,7 +72,6 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
     # so just use the type elements.
     event_types = fields.ListField(child=serializers.DictField())
 
-
     def to_representation(self, obj):
         """
         Generate event_types list.
@@ -126,7 +125,8 @@ class ArchiveViewset(mixins.CreateModelMixin,
 
     def list(self, request):
         """Stub for list GET ie:
-        /perfsonar/archive/"""
+
+        GET /perfsonar/archive/"""
         return super(ArchiveViewset, self).list(request)
 
     def retrieve(self, request, **kwargs):
@@ -134,14 +134,16 @@ class ArchiveViewset(mixins.CreateModelMixin,
         the kwargs since that is defined as the lookup field for the 
         detail view - ie:
 
-        /perfsonar/archive/$METADATA_KEY/
+        /GET perfsonar/archive/$METADATA_KEY/
         """
+        print self.kwargs
         instance = self.get_object()
         return super(ArchiveViewset, self).retrieve(request, **kwargs)
 
     def create(self, request):
         """Stub for POST metadata object creation - ie:
-        /perfsonar/archive/"""
+
+        POST /perfsonar/archive/"""
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
             return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
@@ -157,6 +159,7 @@ class ArchiveViewset(mixins.CreateModelMixin,
                 status.HTTP_400_BAD_REQUEST)
 
         # process the json blob that was sent to the server.
+        print request_data
 
         # assemble return payload and send back to the client, or 
         # empty string/etc.

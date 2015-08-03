@@ -74,6 +74,8 @@ pdu_router.register(
 #
 # Perfsonar V2 router/etc
 
+PS_ROOT = 'perfsonar2'
+
 ps_router = routers.DefaultRouter()
 ps_router.register('archive', ArchiveViewset, base_name='archive')
 
@@ -103,5 +105,6 @@ urlpatterns = patterns('',
     # nested uri for pdu/outlet data endpoint
     (r'v2/pdu/(?P<name>[^/]+)/outlet/(?P<outletID>[^/]+)/(?P<outlet_dataset>[^/]+)/?$', OutletDataViewset.as_view({'get': 'retrieve'})),
     ## URL definitions for V2 Perfsonar API
-    (r'perfsonar2/', include(ps_router.urls)),
+    (r'{0}/'.format(PS_ROOT), include(ps_router.urls)),
+    # (r'{0}/archive/(?P<metadata_key>[^/]+)/?$'.format(PS_ROOT), ArchiveViewset.as_view({'get': 'retrieve', 'post': 'bulk_post'})),
 )

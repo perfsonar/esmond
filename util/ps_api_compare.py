@@ -76,9 +76,14 @@ def main():
     print pp.pprint(json.loads(r.content))
 
     if options.post_back:
-        print 'SENDING', type(json.loads(r.content)[0])
+        got = json.loads(r.content)
+        if isinstance(got, list):
+            send = got[0]
+        elif isinstance(got, dict):
+            send = got
+
         p = requests.post(options.url + uri_map.get(selection).format('perfsonar2'),
-            data=json.dumps(json.loads(r.content)[0]), headers={ 'content-type': 'application/json' })
+            data=json.dumps(send), headers={ 'content-type': 'application/json' })
         print p.content
 
 if __name__ == '__main__':
