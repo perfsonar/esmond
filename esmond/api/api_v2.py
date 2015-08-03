@@ -1312,7 +1312,7 @@ class TimeseriesRequestViewset(BaseDataViewset, QueryBackend):
         try:
             input_payload = json.loads(request.body)
         except ValueError:
-            return Response({'error': 'POST data payload could not be decoded to a JSON object - given: {0}'.format(bundle.body)},
+            return Response({'error': 'POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body)},
                 status.HTTP_400_BAD_REQUEST)
 
         if not isinstance(input_payload, list):

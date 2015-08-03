@@ -37,6 +37,9 @@ def main():
     parser.add_option('-l', '--legacy',
             dest='legacy', action='store_true', default=False,
             help='Only call v1 endpoint.')
+    parser.add_option('-p', '--post-back',
+            dest='post_back', action='store_true', default=False,
+            help='Verbose output.')
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
@@ -71,6 +74,12 @@ def main():
     if options.verbose or r.status_code != 200:
         print r.content
     print pp.pprint(json.loads(r.content))
+
+    if options.post_back:
+        print 'SENDING', type(json.loads(r.content)[0])
+        p = requests.post(options.url + uri_map.get(selection).format('perfsonar2'),
+            data=json.dumps(json.loads(r.content)[0]), headers={ 'content-type': 'application/json' })
+        print p.content
 
 if __name__ == '__main__':
     main()
