@@ -48,6 +48,7 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
     class Meta:
         model = PSMetadata
         fields = (
+            'url',
             'metadata_key', 
             'subject_type', 
             'destination',
@@ -58,6 +59,10 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
             'input_destination',
             'event_types',
             )
+        # These are for generation of the URL field. The view name corresponds
+        # to the base_name of where this is wired to the router, and lookup_field 
+        # is metadata_key since that's what the details are keying off of.
+        extra_kwargs={'url': {'view_name': 'archive-detail', 'lookup_field': 'metadata_key'}}
 
     ## elements from PSPointToPointSubject
     # ips
