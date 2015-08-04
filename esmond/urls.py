@@ -30,6 +30,7 @@ from esmond.api.api_v2 import (
 
 from esmond.api.perfsonar.api_v2 import (
     ArchiveViewset,
+    EventTypeDetailViewset,
 )
 
 router = routers.DefaultRouter()
@@ -105,5 +106,8 @@ urlpatterns = patterns('',
     # nested uri for pdu/outlet data endpoint
     (r'v2/pdu/(?P<name>[^/]+)/outlet/(?P<outletID>[^/]+)/(?P<outlet_dataset>[^/]+)/?$', OutletDataViewset.as_view({'get': 'retrieve'})),
     ## URL definitions for V2 Perfsonar API
+    # main archive/metadata endpoint.
     (r'{0}/'.format(PS_ROOT), include(ps_router.urls)),
+    # event type detail endpoint.
+    url(r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/?$'.format(PS_ROOT), EventTypeDetailViewset.as_view({'post': 'create', 'get': 'retrieve'}), name='event-type'),
 )
