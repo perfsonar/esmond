@@ -9,6 +9,9 @@ import warnings
 
 from ..util import add_apikey_header
 
+# URI prefix segment - to change during development
+PS_ROOT = 'perfsonar'
+
 MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
 MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())
 
@@ -656,9 +659,9 @@ class ApiConnect(object):
 
     def get_metadata(self):
         if self.script_alias:
-            archive_url = '{0}/{1}/perfsonar/archive/'.format(self.api_url, self.script_alias)
+            archive_url = '{0}/{1}/{2}/archive/'.format(self.api_url, self.script_alias, PS_ROOT)
         else:
-            archive_url = '{0}/perfsonar/archive/'.format(self.api_url)
+            archive_url = '{0}/{1}/archive/'.format(self.api_url, PS_ROOT)
 
         r = requests.get(archive_url,
             params=dict(self.filters.metadata_filters, **self.filters.time_filters),
