@@ -16,7 +16,8 @@ pp = pprint.PrettyPrinter(indent=4)
 
 uri_map = dict(
     archive_root='/{0}/archive/',
-    metadata_root='/{0}/archive/0CB19291FB6D40EAA1955376772BF5D2/'
+    metadata_root='/{0}/archive/0CB19291FB6D40EAA1955376772BF5D2/',
+    event_detail='/{0}/archive/0CB19291FB6D40EAA1955376772BF5D2/histogram-owdelay/',
 )
 
 def main():
@@ -34,6 +35,9 @@ def main():
     parser.add_option('-u', '--url', metavar='URL',
             type='string', dest='url', default='http://localhost:8000',
             help='Url where API is running (default: %default).')
+    parser.add_option('-e', '--event-detail',
+            dest='event_detail', action='store_true', default=False,
+            help='Event type detail.')
     parser.add_option('-l', '--legacy',
             dest='legacy', action='store_true', default=False,
             help='Only call v1 endpoint.')

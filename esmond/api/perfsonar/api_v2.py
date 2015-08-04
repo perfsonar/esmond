@@ -16,13 +16,14 @@ from rest_framework import (viewsets, serializers, status,
 from rest_framework.exceptions import (ParseError, NotFound, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.permissions import DjangoModelPermissions
 
 import rest_framework_filters as filters
 
 from esmond.api.models import (PSMetadata, PSPointToPointSubject, PSEventTypes, 
     PSMetadataParameters, PSNetworkElementSubject)
 
-from esmond.api.api_v2 import DataObject
+from esmond.api.api_v2 import DataObject, _get_ersatz_esmond_api_queryset
 
 #
 # Bases, etc
@@ -39,7 +40,7 @@ class BaseMixin(object):
         for i in d.keys():
             d[i.replace('_', '-')] = d.pop(i)
 
-    def _add_uris(self, o):
+    def add_uris(self, o):
         """Add Uris to payload from serialized URL value."""
         if o.get('url', None):
             # Parse DRF-generated URL field into chunks.
@@ -59,8 +60,46 @@ class BaseMixin(object):
             # no url, can't do anything
             return
 
+    def build_event_type_list(self, queryset):
+        et_map = dict()
+        ret = list()
+
+        for et in queryset:
+            if not et_map.has_key(et.event_type):
+                et_map[et.event_type] = dict(time_updated=None, summaries=list())
+            if et.summary_type == 'base':
+                et_map[et.event_type]['time_updated'] = et.time_updated
+            else:
+                et_map[et.event_type]['summaries'].append((et.summary_type, et.summary_window, et.time_updated))
+
+        for k,v in et_map.items():
+            d = dict(
+                base_uri='{0}/base'.format(k),
+                event_type=k,
+                time_updated=v.get('time_updated'),
+                summaries=[],
+                )
+            
+            if v.get('summaries'):
+                for a in v.get('summaries'):
+                    s = dict(   
+                        uri='/aggregations/{0}'.format(a[1]),
+                        summary_type=a[0],
+                        summary_window=a[1],
+                        time_updated=a[2],
+                    )   
+                    self.to_dash_dict(s)
+                    d['summaries'].append(s)
+
+            self.to_dash_dict(d)
+            ret.append(d)
+
+        return ret
+
 #
-# Base /archive/ endpoint
+# Base endpoint(s) 
+# (GET and POST) /archive/
+# (GET and PUT)  /archive/$METADATA_KEY/ 
 #
 
 class ArchiveDataObject(DataObject):
@@ -107,39 +146,7 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
         """
 
         # generate event type list for outgoing payload
-        obj.event_types = list()
-
-        et_map = dict()
-
-        for et in obj.pseventtypes.all():
-            if not et_map.has_key(et.event_type):
-                et_map[et.event_type] = dict(time_updated=None, summaries=list())
-            if et.summary_type == 'base':
-                et_map[et.event_type]['time_updated'] = et.time_updated
-            else:
-                et_map[et.event_type]['summaries'].append((et.summary_type, et.summary_window, et.time_updated))
-
-        for k,v in et_map.items():
-            d = dict(
-                base_uri='{0}/base'.format(k),
-                event_type=k,
-                time_updated=v.get('time_updated'),
-                summaries=[],
-                )
-            
-            if v.get('summaries'):
-                for a in v.get('summaries'):
-                    s = dict(   
-                        uri='/aggregations/{0}'.format(a[1]),
-                        summary_type=a[0],
-                        summary_window=a[1],
-                        time_updated=a[2],
-                    )   
-                    self.to_dash_dict(s)
-                    d['summaries'].append(s)
-
-            self.to_dash_dict(d)
-            obj.event_types.append(d)
+        obj.event_types = self.build_event_type_list(obj.pseventtypes.all())
 
         # serialize it now
         ret = super(ArchiveSerializer, self).to_representation(obj)
@@ -150,7 +157,7 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
             ret[p.parameter_key] = p.parameter_value
 
         # add uris to various payload elements based on serialized URL field.
-        self._add_uris(ret)
+        self.add_uris(ret)
         # convert underscores to dashes in attr names
         self.to_dash_dict(ret)
         
@@ -179,6 +186,8 @@ class ArchiveViewset(mixins.CreateModelMixin,
 
     serializer_class = ArchiveSerializer
     lookup_field = 'metadata_key'
+    # XXX(mmg): enable permission_classes attr later.
+    # permission_classes = (DjangoModelPerm,)
 
     def get_queryset(self):
         # Modify for custom filtering logic, etc
@@ -267,6 +276,41 @@ class ArchiveViewset(mixins.CreateModelMixin,
         """
         return Response({'error': 'does not support PATCH verb'}, status.HTTP_400_BAD_REQUEST)
 
+#
+# Data retrieval endpoint
+# (GET and POST) /archive/$METADATA_KEY/$EVENT_TYPE/$SUMMARY_TYPE
+# (GET and POST) /archive/$METADATA_KEY/$EVENT_TYPE/$SUMMARY_TYPE/$SUMMARY_WINDOW
+# 
+
+class TimeSeriesSerializer(serializers.Serializer):
+    """Not used since timeseries data will be in several forms."""
+    pass
+
+class TimeSeriesViewset(viewsets.GenericViewSet):
+    """
+    The queryset attribute on this non-model resource is fake.
+    It's there so we can use our custom resource permissions 
+    (see models.APIPermission) with the standard DjangoModelPermissions
+    classes.
+    """
+    queryset = _get_ersatz_esmond_api_queryset('timeseries')
+    serializer_class = TimeSeriesSerializer # mollify viewset
+    # XXX(mmg): enable permission_classes attr later.
+    # permission_classes = (DjangoModelPerm,)
+
+
+    def retrieve(self, request, **kwargs):
+
+        payload = list(
+            dict(ts=30, val=10), dict(ts=60, val=20)
+            )
+
+        return Response(payload)
+
+
+    def create(self, request, **kwargs):
+
+        return Response('', status.HTTP_201_CREATED)
 
 
 
