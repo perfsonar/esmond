@@ -16,6 +16,7 @@ from rest_framework import (viewsets, serializers, status,
 from rest_framework.exceptions import (ParseError, NotFound, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.permissions import (IsAuthenticatedOrReadOnly)
 
 import rest_framework_filters as filters
 
@@ -102,7 +103,7 @@ class UtilMixin(object):
 
 class ViewsetBase(viewsets.GenericViewSet):
     # XXX(mmg): enable permission_classes attr later.
-    # permission_classes = (DjangoModelPerm,)
+    # permission_classes = (IsAuthenticatedOrReadOnly, DjangoModelPerm,)
     pass
 
 #
