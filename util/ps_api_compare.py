@@ -18,6 +18,8 @@ uri_map = dict(
     archive_root='/{0}/archive/',
     metadata_root='/{0}/archive/0CB19291FB6D40EAA1955376772BF5D2/',
     event_detail='/{0}/archive/0CB19291FB6D40EAA1955376772BF5D2/histogram-owdelay/',
+    timeseries_data='/{0}/archive/0CB19291FB6D40EAA1955376772BF5D2/histogram-owdelay/base',
+    summary_data='/{0}/archive/0CB19291FB6D40EAA1955376772BF5D2/histogram-owdelay/aggregations/86400',
 )
 
 def main():
@@ -38,6 +40,12 @@ def main():
     parser.add_option('-e', '--event-detail',
             dest='event_detail', action='store_true', default=False,
             help='Event type detail.')
+    parser.add_option('-t', '--timeseries-data',
+            dest='timeseries_data', action='store_true', default=False,
+            help='Timeseries endpoint.')
+    parser.add_option('-s', '--summary-data',
+            dest='summary_data', action='store_true', default=False,
+            help='Summary data.')
     parser.add_option('-l', '--legacy',
             dest='legacy', action='store_true', default=False,
             help='Only call v1 endpoint.')

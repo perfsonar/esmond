@@ -31,6 +31,7 @@ from esmond.api.api_v2 import (
 from esmond.api.perfsonar.api_v2 import (
     ArchiveViewset,
     EventTypeDetailViewset,
+    TimeSeriesViewset,
 )
 
 router = routers.DefaultRouter()
@@ -109,5 +110,8 @@ urlpatterns = patterns('',
     # main archive/metadata endpoint.
     (r'{0}/'.format(PS_ROOT), include(ps_router.urls)),
     # event type detail endpoint.
-    url(r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/?$'.format(PS_ROOT), EventTypeDetailViewset.as_view({'post': 'create', 'get': 'retrieve'}), name='event-type'),
+    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/?$'.format(PS_ROOT), EventTypeDetailViewset.as_view({'post': 'create', 'get': 'retrieve'})),
+    # timeseries data endpoint.
+    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
+    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/(?P<summary_window>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
 )
