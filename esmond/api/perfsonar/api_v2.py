@@ -30,19 +30,27 @@ from esmond.api.api_v2 import DataObject
 
 class BaseMixin(object):
     def undash_dict(self, d):
+        """Dict key dash => underscore conversion."""
         for i in d.keys():
             d[i.replace('-', '_')] = d.pop(i)
 
     def to_dash_dict(self, d):
+        """Dict key underscore => dash conversion."""
         for i in d.keys():
             d[i.replace('_', '-')] = d.pop(i)
 
     def _add_uris(self, o):
+        """Add Uris to payload from serialized URL value."""
         if o.get('url', None):
+            # Parse DRF-generated URL field into chunks.
             up = urlparse.urlparse(o.get('url'))
+            # Assign uri element to "main" payload
             o['uri'] = up.path
+            # If there are event types associated, process them. If so,
+            # the dicts in the events types list have already been 
+            # "dashed" (ie: base-uri) even though the "main" payload
+            # values (ie: event_types) have not.
             if o.get('event_types', None):
-                # contents of event types list have already been 'dashed'
                 for et in o.get('event_types'):
                     et['base-uri'] = o.get('uri') + et.get('base-uri')
                     for s in et.get('summaries'):
@@ -95,6 +103,7 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
         """
         Generate event_types list.
         Modify outgoing data: massage underscore => dash.
+        Add arbitrary values from PS metadata parameters.
         """
 
         # generate event type list for outgoing payload
@@ -126,7 +135,6 @@ class ArchiveSerializer(BaseMixin, serializers.ModelSerializer):
                         summary_window=a[1],
                         time_updated=a[2],
                     )   
-                    print s
                     self.to_dash_dict(s)
                     d['summaries'].append(s)
 
@@ -180,7 +188,10 @@ class ArchiveViewset(mixins.CreateModelMixin,
     def list(self, request):
         """Stub for list GET ie:
 
-        GET /perfsonar/archive/"""
+        GET /perfsonar/archive/
+
+        Probably won't need modification, just here for reference.
+        """
         return super(ArchiveViewset, self).list(request)
 
     def retrieve(self, request, **kwargs):
@@ -189,16 +200,15 @@ class ArchiveViewset(mixins.CreateModelMixin,
         detail view - ie:
 
         /GET perfsonar/archive/$METADATA_KEY/
+
+        Probably won't need modification, just here for reference.
         """
-        print self.kwargs
-        instance = self.get_object()
         return super(ArchiveViewset, self).retrieve(request, **kwargs)
 
     def create(self, request):
         """Stub for POST metadata object creation - ie:
 
         POST /perfsonar/archive/"""
-        print 'create'
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
             return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
@@ -229,7 +239,6 @@ class ArchiveViewset(mixins.CreateModelMixin,
 
         'metadata_key' will be in kwargs
         """
-        print 'update', kwargs
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
             return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
@@ -253,6 +262,9 @@ class ArchiveViewset(mixins.CreateModelMixin,
         return Response(return_payload, status.HTTP_201_CREATED)
 
     def partial_update(self, request, **kwargs):
+        """
+        No PATCH verb.
+        """
         return Response({'error': 'does not support PATCH verb'}, status.HTTP_400_BAD_REQUEST)
 
 
