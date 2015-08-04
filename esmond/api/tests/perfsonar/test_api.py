@@ -17,6 +17,10 @@ from esmond.config import get_config, get_config_path
 from esmond.api.perfsonar.validators import *
 import time
 
+# This is just for development to switch the base 
+# of the URI structure to something else if need be.
+PS_ROOT = 'perfsonar'
+
 class PSAPIBaseTest(ResourceTestCase):
     fixtures = ['perfsonar_api_metadata.json']
     
@@ -26,11 +30,10 @@ class PSAPIBaseTest(ResourceTestCase):
         #create user credentials
         self.noperms_user = User(username="no_perms", is_staff=True)
         self.noperms_user.save()
-        self.noperms_apikey = ApiKey(user=self.noperms_user)
-        self.noperms_apikey.key = self.noperms_apikey.generate_key()
-        self.noperms_apikey.save()
+        
         self.admin_user = User(username="admin", is_staff=True)
         self.admin_user.save()
+
         for model_name in ['psmetadata', 'pspointtopointsubject', 'pseventtypes', 'psmetadataparameters']:
             for perm_name in ['add', 'change', 'delete']:
                 perm = Permission.objects.get(codename='{0}_{1}'.format(perm_name, model_name))
@@ -40,6 +43,11 @@ class PSAPIBaseTest(ResourceTestCase):
             perm = Permission.objects.get(codename='esmond_api.{0}_timeseries'.format(perm_name))
             self.admin_user.user_permissions.add(perm)
         self.admin_user.save()
+
+        self.noperms_apikey = ApiKey(user=self.noperms_user)
+        self.noperms_apikey.key = self.noperms_apikey.generate_key()
+        self.noperms_apikey.save()
+
         self.admin_apikey = ApiKey(user=self.admin_user)
         self.admin_apikey.key = self.admin_apikey.generate_key()
         self.admin_apikey.save()
@@ -219,7 +227,7 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         self.assertEquals(len(data), count)
         
     def test_get_metadata_list(self):
-        url = '/perfsonar/archive/'
+        url = '/{0}/archive/'.format(PS_ROOT)
             
         #test getting full list
         self.assertMetadataCount(16, url)
@@ -349,28 +357,28 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         self.assertMetadataCount(6, url, {OFFSET_FILTER: 10, LIMIT_FILTER: 10})
         
     def test_get_metadata_detail(self):
-        url = '/perfsonar/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/'
+        url = '/{0}/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/'.format(PS_ROOT)
         response = self.client.get(url)
         self.assertHttpOK(response)
         data = json.loads(response.content)
         self.assertEquals(self.md_detail, data)
     
     def test_get_event_type_detail(self):
-        url = '/perfsonar/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/throughput/'
+        url = '/{0}/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/throughput/'.format(PS_ROOT)
         response = self.client.get(url)
         self.assertHttpOK(response)
         self.assertEquals(self.et_detail, json.loads(response.content))
 
     
     def test_get_summary_detail(self):
-        url = '/perfsonar/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/throughput/averages/'
+        url = '/{0}/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/throughput/averages/'.format(PS_ROOT)
         response = self.client.get(url)
         self.assertHttpOK(response)
         self.assertEquals(self.summ_detail, json.loads(response.content))
     
     
     def test_post_metadata_list(self):
-        url = '/perfsonar/archive/'
+        url = '/{0}/archive/'.format(PS_ROOT)
         
         #test with no credentials
         self.assertHttpUnauthorized(self.api_client.post(url, format='json', data=self.post_data))
@@ -579,7 +587,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         db = CASSANDRA_DB(config)
         
     def test_integer_data(self): 
-        base_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'
+        base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
         start = 1398965989
         interval = 7200
         
@@ -593,21 +601,21 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertSinglePostConflict(base_url, start, self.int_data[0])
         
         #bulk post
-        bulk_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/'
+        bulk_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/'.format(PS_ROOT)
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.int_data, 'throughput')
         
         #query average summary
         expected = [{"ts": 1398902400, "val": 6575755000.0}]
-        avg_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/averages/86400/'
+        avg_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/averages/86400/'.format(PS_ROOT)
         self.assertExpectedResponse(expected, avg_url)
         
         #query aggregation summary
         expected = [{"ts": 1398902400, "val": 26303020000}]
-        agg_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/aggregations/86400/'
+        agg_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/aggregations/86400/'.format(PS_ROOT)
         self.assertExpectedResponse(expected, agg_url)
     
     def test_float_data(self):
-        base_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/time-error-estimates/base/'
+        base_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/time-error-estimates/base/'.format(PS_ROOT)
         start = 1398965989
         interval = 60
         
@@ -621,21 +629,21 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertSinglePostConflict(base_url, start, self.float_data[0])
         
         #bulk post
-        bulk_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/'
+        bulk_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/'.format(PS_ROOT)
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.float_data, 'time-error-estimates')
         
         #query average summary
         expected = [{"ts": 1398902400, "val": .002}]
-        avg_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/time-error-estimates/averages/86400/'
+        avg_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/time-error-estimates/averages/86400/'.format(PS_ROOT)
         self.assertExpectedResponse(expected, avg_url)
         
         #query aggregation summary
         expected = [{"ts": 1398902400, "val": .01}]
-        agg_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/time-error-estimates/aggregations/86400/'
+        agg_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/time-error-estimates/aggregations/86400/'.format(PS_ROOT)
         self.assertExpectedResponse(expected, agg_url)
     
     def test_json_data(self):
-        base_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/failures/base/'
+        base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/failures/base/'.format(PS_ROOT)
         start = 1398965989
         interval = 7200
         
@@ -643,11 +651,11 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertSinglePostSuccess(base_url, start, self.json_data[0])
         
         #bulk post
-        bulk_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/'
+        bulk_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/'.format(PS_ROOT)
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.json_data, 'failures')
     
     def test_percentage_data(self):
-        base_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/packet-loss-rate/base/'
+        base_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/packet-loss-rate/base/'.format(PS_ROOT)
         start = 1398965989
         interval = 60
         
@@ -669,7 +677,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertSinglePostConflict(base_url, start, self.perc_post_data[0])
         
         #bulk post
-        bulk_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/'
+        bulk_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/'.format(PS_ROOT)
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.perc_post_data, 'packet-loss-rate')
         expected_data = []
         for i in range(0, len(self.perc_expected_data)):
@@ -678,7 +686,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertExpectedResponse(expected_data, base_url)
         
     def test_subinterval_data(self):
-        base_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput-subintervals/base/'
+        base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput-subintervals/base/'.format(PS_ROOT)
         start = 1398965989
         interval = 7200
         
@@ -696,11 +704,11 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertSinglePostSuccess(base_url, start, self.subint_data[0])
         
         #bulk post
-        bulk_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/'
+        bulk_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/'.format(PS_ROOT)
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.subint_data, 'throughput-subintervals')
     
     def test_post_histogram_data(self):
-        base_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/histogram-rtt/base/'
+        base_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/histogram-rtt/base/'.format(PS_ROOT)
         start = 1398965989
         interval = 600
         
@@ -711,17 +719,17 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertSinglePostSuccess(base_url, start, self.hist_data[0])
         
         #bulk post
-        bulk_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/'
+        bulk_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/'.format(PS_ROOT)
         self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.hist_data, 'histogram-rtt')
         
         #query aggregation summary
         expected = [{u'ts': 1398902400, u'val': {u'41.10': 98, u'41.00': 98, u'50.0': 1, u'41.20': 3}}]
-        agg_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/histogram-rtt/aggregations/86400/'
+        agg_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/histogram-rtt/aggregations/86400/'.format(PS_ROOT)
         self.assertExpectedResponse(expected, agg_url)
         
         #query stats summary
         expected =[{u'ts': 1398902400, u'val': {u'standard-deviation': 0.6333174559413313, u'median': 41.1, u'maximum': 50.0, u'minimum': 41.0, u'mode': [41.1, 41.0], u'percentile-75': 41.1, u'percentile-25': 41.0, u'percentile-95': 41.1, u'variance': 0.40109100000000003, u'mean': 41.097}}]
-        stat_url = '/perfsonar/archive/67a3c298de0b4237abee56b879e03587/histogram-rtt/statistics/86400/'
+        stat_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/histogram-rtt/statistics/86400/'.format(PS_ROOT)
         self.assertExpectedResponse(expected, stat_url)
         
         #test non-numeric key(should work) and re-check stats
@@ -729,7 +737,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertExpectedResponse([{u'ts': 1398902400, u'val': {}}], stat_url)
         
     def test_authentication_failures(self):
-        base_url = '/perfsonar/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'
+        base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
         self.assertAuthFailure(base_url, 1398965989, self.int_data[0], None)
         self.assertAuthFailure(base_url, 1398965989, self.int_data[0], self.create_noperms_credentials())
     

@@ -41,7 +41,8 @@ class UtilMixin(object):
             d[i.replace('_', '-')] = d.pop(i)
 
     def datetime_to_ts(self, dt):
-        return calendar.timegm(dt.utctimetuple())
+        if dt:
+            return calendar.timegm(dt.utctimetuple())
 
     def add_uris(self, o):
         """Add Uris to payload from serialized URL value."""
