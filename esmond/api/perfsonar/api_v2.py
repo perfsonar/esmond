@@ -104,7 +104,7 @@ class UtilMixin(object):
 class ViewsetBase(viewsets.GenericViewSet):
     # XXX(mmg): enable permission_classes attr later.
     # permission_classes = (IsAuthenticatedOrReadOnly, DjangoModelPerm,)
-    permission_classes = (AllowAny,)
+    permission_classes = (AllowAny,) # lack of comma == error
 
 #
 # Base endpoint(s) 
