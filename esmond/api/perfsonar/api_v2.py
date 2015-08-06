@@ -42,6 +42,7 @@ class UtilMixin(object):
             d[i.replace('_', '-')] = d.pop(i)
 
     def datetime_to_ts(self, dt):
+        """Convert internal DB timestamp to unixtime."""
         if dt:
             return calendar.timegm(dt.utctimetuple())
 
@@ -66,6 +67,8 @@ class UtilMixin(object):
             return
 
     def build_event_type_list(self, queryset):
+        """Given a filtered queryset/list, generate a formatted 
+        list of event types."""
         et_map = dict()
         ret = list()
 
