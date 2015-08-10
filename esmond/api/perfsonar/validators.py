@@ -1,5 +1,7 @@
 import json
 import math
+# XXX(mmg) get rid of this and can use 
+# rest_framework.exceptions.ParseError to raise a HTTP_400 error.
 from tastypie.exceptions import BadRequest
 
 '''
