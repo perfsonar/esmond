@@ -26,8 +26,6 @@ from collections import namedtuple
 from django.test import TestCase
 from django.conf import settings
 
-from tastypie.test import ResourceTestCase
-
 from rest_framework.test import APIClient
 
 from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
@@ -1572,7 +1570,7 @@ class TestCassandraApiQueries(BaseTestCase):
         loops = 5 # leave a little overhead
 
         if not config.api_throttle_at:
-            loops += 150 # tastypie default
+            loops += 150 # API V1 default
         else:
             loops += config.api_throttle_at
 
