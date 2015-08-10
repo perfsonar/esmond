@@ -6,8 +6,6 @@ from django.conf import settings
 from django.contrib.auth.models import User, Group, Permission
 from django.utils.timezone import utc, make_aware, now
 
-from tastypie.models import ApiKey
-
 from rest_framework.authtoken.models import Token
 
 from esmond.api.models import *
@@ -218,22 +216,13 @@ def users_testdata(td):
             td.user_admin.user_permissions.add(perm)
 
     td.user_admin.save()
-
-    # td.user_admin_apikey = ApiKey(user=td.user_admin)
-    # td.user_admin_apikey.key = td.user_admin_apikey.generate_key()
-    # td.user_admin_apikey.save()
-    # td.user_admin.save()
-
+    
     td.user_admin_apikey = Token.objects.create(user=td.user_admin)
 
     td.user_seeall = User(username="seeall", is_staff=False)
     td.user_seeall.save()
     td.user_seeall.user_permissions.add(seeall)
     td.user_seeall.save()
-
-    # td.user_seeall_apikey = ApiKey(user=td.user_seeall)
-    # td.user_seeall_apikey.key = td.user_seeall_apikey.generate_key()
-    # td.user_seeall_apikey.save()
 
     td.user_seeall_apikey = Token.objects.create(user=td.user_seeall)
 
