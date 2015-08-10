@@ -879,7 +879,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         # data structures and values being sent.
 
         # NOTE: CONTENT_TYPE and content_type kwargs do different 
-        # things!  Former just sets the header in the tastypie
+        # things!  Former just sets the header in the test
         # client and the latter is passed to the underlying django
         # client and impacts serialization (and header).
 
