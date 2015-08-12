@@ -901,14 +901,20 @@ class PSTimeSeriesResource(Resource):
         col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(db, SUMMARY_TYPES[summary_type])
         if col_fam is None:
             col_fam = EVENT_TYPE_CF_MAP[query_type]
-        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%d end=%d cf=%s datapath=%s" %
-                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, col_fam, datapath))
-
+            
         #prep times
         begin_millis = begin_time*1000
         end_millis = None
-        if end_time is not None:
+        if end_time is None:
+            # we need a value here so we know what years to look at when we get row keys
+            # add a 3600 second buffer to capture results that may have been updated after we 
+            # calculate this timestamp.
+            end_millis = (int(time()) + 3600) * 1000
+        else:
             end_millis = end_time*1000
+        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%s end=%s start_millis=%s end_millis=%s cf=%s datapath=%s" %
+                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, begin_millis, end_millis, col_fam, datapath))
+
 
         if col_fam == db.agg_cf:
             results = db.query_aggregation_timerange(path=datapath, freq=freq,
