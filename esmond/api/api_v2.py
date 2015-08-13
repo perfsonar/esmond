@@ -20,7 +20,7 @@ from rest_framework import (viewsets, serializers, status,
 from rest_framework.exceptions import (ParseError, NotFound, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.utils.urls import replace_query_param
+from rest_framework.utils.urls import replace_query_param, remove_query_param
 from rest_framework.permissions import (AllowAny, DjangoModelPermissions)
 
 from rest_framework_extensions.mixins import NestedViewSetMixin
