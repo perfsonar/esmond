@@ -20,6 +20,7 @@ from rest_framework import (viewsets, serializers, status,
 from rest_framework.exceptions import (ParseError, NotFound, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.utils.urls import replace_query_param
 from rest_framework.permissions import (AllowAny, DjangoModelPermissions)
 
 from rest_framework_extensions.mixins import NestedViewSetMixin
@@ -719,11 +720,7 @@ class EsmondPaginator(pagination.LimitOffsetPagination):
         except (AttributeError, TypeError):
             return len(queryset)
 
-    def get_next_link(self):
-        if self.limit == 0 and self.offset == 0:
-            return None
-        else:
-            return super(EsmondPaginator, self).get_next_link()
+    
 
     def paginate_queryset(self, queryset, request, view=None):
         """
@@ -763,6 +760,36 @@ class EsmondPaginator(pagination.LimitOffsetPagination):
                 'children': data,
             }
         )
+
+    #
+    # XXX(mmg): these are copied and pasted/adapted from the DRF 3.2 version.
+    # The 3.1 version isn't generating the links with both limit 
+    # and offset but it's not totally safe to upgrade to 3.2 yet.
+    #
+
+    def get_next_link(self):
+        if self.limit == 0 and self.offset == 0:
+            # custom logic for our limit=0 mods.
+            return None
+
+        url = self.request.build_absolute_uri()
+        url = replace_query_param(url, self.limit_query_param, self.limit)
+
+        offset = self.offset + self.limit
+        return replace_query_param(url, self.offset_query_param, offset)
+
+    def get_previous_link(self):
+        if self.offset <= 0:
+            return None
+
+        url = self.request.build_absolute_uri()
+        url = replace_query_param(url, self.limit_query_param, self.limit)
+
+        if self.offset - self.limit <= 0:
+            return remove_query_param(url, self.offset_query_param)
+
+        offset = self.offset - self.limit
+        return replace_query_param(url, self.offset_query_param, offset)
 
 class InterfaceSerializer(BaseMixin, serializers.ModelSerializer):
     serializer_url_field = InterfaceHyperlinkField
