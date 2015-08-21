@@ -215,11 +215,39 @@ class FilterUtilMixin(object):
                 "end": end_time,
                 "has_filters": has_filters}
 
+
+class PSPaginator(pagination.LimitOffsetPagination):
+    """
+    General paginator that defaults to a set number of items and returns an
+    unmodified response.
+    """
+    default_limit = 1000
+    
+    ## I actually kinda like the default pagination better
+    ## but sticking with backward compatibility here
+    def get_paginated_response(self, data):
+        return Response(data)
+        
+class PSMetadataPaginator(PSPaginator):
+    """
+    Metadata API spec requires us to put pagination details in the first
+    item returned so that is down here.
+    """
+
+    def get_paginated_response(self, data):
+        
+        if len(data) > 0:
+            data[0]['metadata-count-total'] = self.count
+            data[0]['metadata-previous-page'] = self.get_previous_link()
+            data[0]['metadata-next-page'] = self.get_next_link()
+            
+        return Response(data)
+        
 class ViewsetBase(viewsets.GenericViewSet):
     # XXX(mmg): enable permission_classes attr later.
     # permission_classes = (IsAuthenticatedOrReadOnly, DjangoModelPerm,)
     permission_classes = (AllowAny,) # lack of comma == error
-
+    pagination_class = PSPaginator
 #
 # Base endpoint(s) 
 # (GET and POST) /archive/
@@ -248,7 +276,7 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
         # to the base_name of where this is wired to the router, and lookup_field 
         # is metadata_key since that's what the details are keying off of.
         extra_kwargs={'url': {'view_name': 'archive-detail', 'lookup_field': 'metadata_key'}}
-
+    
     ## elements from PSPointToPointSubject
     # ips
     source = fields.IPAddressField(source='pspointtopointsubject.source')
@@ -311,7 +339,7 @@ class ArchiveViewset(mixins.CreateModelMixin,
 
     serializer_class = ArchiveSerializer
     lookup_field = 'metadata_key'
-    
+    pagination_class = PSMetadataPaginator
     
     def get_queryset(self):
         """
