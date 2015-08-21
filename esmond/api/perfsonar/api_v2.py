@@ -11,6 +11,11 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
+from django.db.models import Q
+from django.utils.timezone import utc
+
+from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
+
 from rest_framework import (viewsets, serializers, status, 
         fields, relations, pagination, mixins, throttling)
 from rest_framework.exceptions import (ParseError, NotFound, APIException)
@@ -25,6 +30,15 @@ from esmond.api.models import (PSMetadata, PSPointToPointSubject, PSEventTypes,
 
 from esmond.api.api_v2 import (DataObject, _get_ersatz_esmond_api_queryset,
     DjangoModelPerm)
+
+from esmond.api.perfsonar.types import *
+
+from esmond.util import get_logger
+
+#
+# Logger
+#
+log = get_logger(__name__)
 
 #
 # Bases, etc
@@ -103,6 +117,103 @@ class UtilMixin(object):
             ret.append(d)
 
         return ret
+
+class FilterUtilMixin(object):
+
+    def lookup_hostname(self, host, family):
+        """
+        Does a lookup of the IP for host in type family (i.e. AF_INET or AF_INET6)
+        """
+        addr = None
+        addr_info = None
+        try:
+            addr_info = getaddrinfo(host, 80, family, SOCK_STREAM, SOL_TCP)
+        except:
+            pass
+        if addr_info and len(addr_info) >= 1 and len(addr_info[0]) >= 5 and len(addr_info[0][4]) >= 1:
+            addr = addr_info[0][4][0]
+        
+        return addr
+        
+    def prepare_ip(self, host, dns_match_rule):
+        """
+        Maps a given hostname to an IPv4 and/or IPv6 address. The addresses
+        it return are dependent on the dns_match_rule. teh default is to return
+        both v4 and v6 addresses found. Variations allow one or the other to be
+        preferred or even required. If an address is not found a BadRequest is
+        thrown.
+        """
+        #Set default match rule
+        if dns_match_rule is None:
+            dns_match_rule = DNS_MATCH_V4_V6
+        
+        #get IP address
+        addrs = []
+        addr4 = None
+        addr6 = None
+        if dns_match_rule == DNS_MATCH_ONLY_V6:
+            addr6 = self.lookup_hostname(host, AF_INET6)
+        elif dns_match_rule == DNS_MATCH_ONLY_V4:
+            addr4 = self.lookup_hostname(host, AF_INET)
+        elif dns_match_rule == DNS_MATCH_PREFER_V6:
+            addr6 = self.lookup_hostname(host, AF_INET6)
+            if addr6 is None:
+                addr4 = self.lookup_hostname(host, AF_INET)
+        elif dns_match_rule == DNS_MATCH_PREFER_V4:
+            addr4 = self.lookup_hostname(host, AF_INET)
+            if addr4 is None:
+                addr6 = self.lookup_hostname(host, AF_INET6)
+        elif dns_match_rule == DNS_MATCH_V4_V6:
+            addr6 = self.lookup_hostname(host, AF_INET6)
+            addr4 = self.lookup_hostname(host, AF_INET)
+        else:
+            raise ParseError(detail="Invalid %s parameter %s" % (DNS_MATCH_RULE_FILTER, dns_match_rule))
+        
+        #add results to list
+        if addr4: addrs.append(addr4)
+        if addr6: addrs.append(addr6)
+        if len(addrs) == 0:
+            raise ParseError(detail="Unable to find address for host %s" % host)
+        return addrs
+    
+    def valid_time(self, t):
+        try:
+            t = int(t)
+        except ValueError:
+            raise ParseError(detail="Time parameter must be an integer")
+        return t
+    
+    def handle_time_filters(self, filters):
+        end_time = int(time.time())
+        begin_time = 0
+        has_filters = True
+        if filters.has_key(TIME_FILTER):
+            begin_time = self.valid_time(filters[TIME_FILTER])
+            end_time = begin_time
+        elif filters.has_key(TIME_START_FILTER) and filters.has_key(TIME_END_FILTER):
+            begin_time = self.valid_time(filters[TIME_START_FILTER])
+            end_time = self.valid_time(filters[TIME_END_FILTER])
+        elif filters.has_key(TIME_START_FILTER) and filters.has_key(TIME_RANGE_FILTER):
+            begin_time = self.valid_time(filters[TIME_START_FILTER])
+            end_time = begin_time + self.valid_time(filters[TIME_RANGE_FILTER])
+        elif filters.has_key(TIME_END_FILTER) and filters.has_key(TIME_RANGE_FILTER):
+            end_time = self.valid_time(filters[TIME_END_FILTER])
+            begin_time = end_time - self.valid_time(filters[TIME_RANGE_FILTER])
+        elif filters.has_key(TIME_START_FILTER):
+            begin_time = self.valid_time(filters[TIME_START_FILTER])
+            end_time = None
+        elif filters.has_key(TIME_END_FILTER):
+            end_time = self.valid_time(filters[TIME_END_FILTER])
+        elif filters.has_key(TIME_RANGE_FILTER):
+            begin_time = end_time - self.valid_time(filters[TIME_RANGE_FILTER])
+            end_time = None
+        else:
+            has_filters = False
+        if (end_time is not None) and (end_time < begin_time):
+            raise ParseError(detail="Requested start time must be less than end time")
+        return {"begin": begin_time,
+                "end": end_time,
+                "has_filters": has_filters}
 
 class ViewsetBase(viewsets.GenericViewSet):
     # XXX(mmg): enable permission_classes attr later.
@@ -192,6 +303,7 @@ class ArchiveViewset(mixins.CreateModelMixin,
                     mixins.ListModelMixin,
                     mixins.RetrieveModelMixin,
                     mixins.UpdateModelMixin,
+                    FilterUtilMixin,
                     ViewsetBase):
 
     """Implements GET, PUT and POST model operations w/specific mixins rather 
@@ -199,11 +311,89 @@ class ArchiveViewset(mixins.CreateModelMixin,
 
     serializer_class = ArchiveSerializer
     lookup_field = 'metadata_key'
-
+    
+    
     def get_queryset(self):
-        # Modify for custom filtering logic, etc
+        """
+        Customize to do three things:
+        1. Make sure event type parameters match the same event type object
+        2. Apply the free-form metadata parameter filters also making sure they match the same row
+        3. Create an OR condition between different subject types with same name
+        """
+        
         ret = PSMetadata.objects.all()
-        return ret
+        metadata_only_filters = {}
+        subject_qs = []
+        event_type_qs = []
+        parameter_qs = []
+        #we need to make sure we have this before processing IP values
+        dns_match_rule = self.request.query_params.get(DNS_MATCH_RULE_FILTER, None)
+        
+        #Convert get parameters to Django model filters
+        for filter in self.request.query_params:
+            filter_val = self.request.query_params.get(filter)
+            
+            #Determine type of filter
+            if filter in SUBJECT_FILTER_MAP:
+                # map subject to subject field
+                subject_q = None
+                for subject_db_field in SUBJECT_FILTER_MAP[filter]:
+                    tmp_filters = {}
+                    if filter in IP_FIELDS:
+                        ip_val = self.prepare_ip(filter_val, dns_match_rule)
+                        filter_key = "%s__in" % subject_db_field
+                        tmp_filters[filter_key] = ip_val
+                    else:
+                        tmp_filters[subject_db_field] = filter_val
+                    
+                    if(subject_q is None):
+                        subject_q = Q(**tmp_filters)
+                    else:
+                        subject_q = subject_q | Q(**tmp_filters)
+                if(subject_q is not None):
+                    subject_qs.append(subject_q)
+            elif filter == EVENT_TYPE_FILTER:
+                event_type_qs.append(Q(pseventtypes__event_type=filter_val))
+            elif filter == SUMMARY_TYPE_FILTER:
+                event_type_qs.append(Q(pseventtypes__summary_type=filter_val))
+            elif filter == SUMMARY_WINDOW_FILTER:
+                event_type_qs.append(Q(pseventtypes__summary_window=filter_val))            
+            elif filter == SUBJECT_TYPE_FILTER:
+                ret = ret.filter(subject_type=filter_val)
+            elif filter == METADATA_KEY_FILTER:
+                ret = ret.filter(metadata_key=filter_val)
+            elif filter not in RESERVED_GET_PARAMS:
+                if filter in IP_FIELDS:
+                    ip_val = self.prepare_ip(filter_val, dns_match_rule)
+                    # map to ps_metadata_parameters
+                    parameter_qs.append(Q(
+                        psmetadataparameters__parameter_key=filter,
+                        psmetadataparameters__parameter_value__in=ip_val))
+                else:
+                    # map to ps_metadata_parameters
+                    parameter_qs.append(Q(
+                    psmetadataparameters__parameter_key=filter,
+                    psmetadataparameters__parameter_value=filter_val))
+        
+        #add time filters if there are any
+        time_filters = self.handle_time_filters(self.request.query_params)
+        if(time_filters["has_filters"]):
+            #print "begin_ts=%d, end_ts=%d" % (time_filters['begin'], time_filters['end'])
+            begin = datetime.datetime.utcfromtimestamp(time_filters['begin']).replace(tzinfo=utc)
+            event_type_qs.append(Q(pseventtypes__time_updated__gte=begin))
+            if time_filters['end'] is not None:
+                end = datetime.utcfromtimestamp(time_filters['end']).replace(tzinfo=utc)
+                event_type_qs.append(Q(pseventtypes__time_updated__lte=end))
+            
+        #apply filters. this is done down here to ensure proper grouping
+        if event_type_qs:
+            ret = ret.filter(*event_type_qs)
+        for parameter_q in parameter_qs:
+            ret = ret.filter(parameter_q)
+        for subject_q in subject_qs:
+            ret = ret.filter(subject_q)
+        
+        return ret.distinct()
 
     def list(self, request):
         """Stub for list GET ie:

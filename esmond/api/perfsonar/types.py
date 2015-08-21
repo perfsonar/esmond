@@ -224,6 +224,8 @@ DEFAULT_FLOAT_PRECISION=10000
 '''
 Constants that map to common filters
 '''
+SUBJECT_TYPE_FILTER = "subject-type"
+METADATA_KEY_FILTER = "metadata-key"
 EVENT_TYPE_FILTER = "event-type"
 SUMMARY_TYPE_FILTER = "summary-type"
 SUMMARY_WINDOW_FILTER = "summary-window"
