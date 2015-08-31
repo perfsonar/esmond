@@ -395,6 +395,19 @@ def scan_and_load(file_path, last_record, options, _log):
 
     return o
 
+# - code to handle "standard vs. json" stuff for the main() code block
+
+def get_pickle_path(options):
+    json_or_not = {
+        False: './load_grid_ftp.pickle',
+        True : './load_grid_ftp.json.pickle',
+    }
+
+    if options.pickle:
+        return os.path.normpath(options.pickle)
+    else:
+        return os.path.normpath(json_or_not.get(options.json, False))
+
 def main():
     usage = '%prog [ -f filename | -v ]'
     parser = OptionParser(usage=usage)
@@ -402,8 +415,8 @@ def main():
             type='string', dest='filename', 
             help='Input filename.')
     parser.add_option('-p', '--pickle_file', metavar='FILE',
-            type='string', dest='pickle', default='./load_grid_ftp.pickle',
-            help='Path to pickle file (default=%default).')
+            type='string', dest='pickle', default='',
+            help='Path to pickle file (./load_grid_ftp.pickle or ./load_grid_ftp.json.pickle).')
     parser.add_option('-d', '--dont_write',
             dest='write', action='store_false', default=True,
             help='Do not write last position pickle file - can be used to process multiple files by hand, development, etc.')
@@ -444,6 +457,9 @@ def main():
     parser.add_option('-P', '--no-progress',
             dest='progress', action='store_false', default=True,
             help='Suppress processing progress messages to console (default: on).')
+    parser.add_option('-J', '--json',
+            dest='json', action='store_true', default=False,
+            help='Read JSON formatted GridFTP logs.')
     options, args = parser.parse_args()
 
     log_path = None
@@ -460,12 +476,13 @@ def main():
         parser.error('Filename is required.')
     
     file_path = os.path.normpath(options.filename)
-    pickle_path = os.path.normpath(options.pickle)
-    
+
     if not os.path.exists(file_path):
         parser.error('{f} does not exist'.format(f=file_path))
 
     # Check for previously saved state file
+
+    pickle_path = get_pickle_path(options)
 
     last_record = None
 
