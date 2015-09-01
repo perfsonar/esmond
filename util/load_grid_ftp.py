@@ -102,17 +102,17 @@ case the --dont_write flag should be used.
 
 import calendar
 import datetime
-import pickle
+import json
+import logging
 import os
+import pickle
 import socket
 import sys
+import time
 
 from optparse import OptionParser
 
 from esmond_client.perfsonar.post import MetadataPost, EventTypePost
-
-import logging
-import time
 
 # # # #
 # Base classes, utility functions, etc
@@ -152,7 +152,6 @@ class GracefulInterruptHandler(object):
         
         return True
 
-
 def setup_log(log_path):
     """
     Usage:
@@ -171,6 +170,9 @@ def setup_log(log_path):
     return log
 
 class LogEntryBase(object):
+    """
+    Base class (a mixin really) for the log entry classes.
+    """
     def to_pickle(self, f):
         fh = open(f, 'w')
         pickle.dump(self.to_dict(), fh)
@@ -185,11 +187,53 @@ class LogEntryBase(object):
     def to_dict(self):
         return self._data
 
+FTP_CODES = {
+    200: 'Command okay.',
+    202: 'Command not implemented, superfluous at this site.',
+    211: 'System status, or system help reply.',
+    212: 'Directory status.',
+    213: 'File status.',
+    214: 'Help message.',
+    215: 'NAME system type.',
+    220: 'Service ready for new user.',
+    221: 'Service closing control connection.',
+    225: 'Data connection open; no transfer in progress.',
+    226: 'Closing data connection.',
+    227: 'Entering Passive Mode (h1,h2,h3,h4,p1,p2).',
+    230: 'User logged in, proceed.',
+    250: 'Requested file action okay, completed.',
+    257: '"PATHNAME" created.',
+    331: 'User name okay, need password.',
+    332: 'Need account for login.',
+    350: 'Requested file action pending further information.',
+    421: 'Service not available, closing control connection.',
+    425: 'Cant open data connection.',
+    426: 'Connection closed; transfer aborted.',
+    450: 'Requested file action not taken.',
+    451: 'Requested action aborted: local error in processing.',
+    452: 'Requested action not taken.',
+    500: 'Syntax error, command unrecognized.',
+    501: 'Syntax error in parameters or arguments.',
+    502: 'Command not implemented.',
+    503: 'Bad sequence of commands.',
+    504: 'Command not implemented for that parameter.',
+    530: 'Not logged in.',
+    532: 'Need account for storing files.',
+    550: 'Requested action not taken.',
+    551: 'Requested action aborted: page type unknown.',
+    552: 'Requested file action aborted.',
+    553: 'Requested action not taken.',
+}
+
 # # # #
 # Code/classes to handle the netlogger style logs
 # # # #
 
 class LogEntryDataObject(LogEntryBase):
+    """
+    Encapsulation object to handle a line of netlogger 
+    style GridFTP logs. Sanitizes the keys when need be.
+    """
     def __init__(self, initial=None):
         self.__dict__['_data'] = {}
 
@@ -252,6 +296,10 @@ def _epoch(d):
     return calendar.timegm(d.utctimetuple())
 
 def _generate_metadata_args(o):
+    """
+    Generate the args for the MetadataPost depending on the 
+    xfer type - this is for the netlogger style log.
+    """
 
     dest = o.dest.lstrip('[').rstrip(']')
 
@@ -272,45 +320,12 @@ def _generate_metadata_args(o):
 
     return args
 
-FTP_CODES = {
-    200: 'Command okay.',
-    202: 'Command not implemented, superfluous at this site.',
-    211: 'System status, or system help reply.',
-    212: 'Directory status.',
-    213: 'File status.',
-    214: 'Help message.',
-    215: 'NAME system type.',
-    220: 'Service ready for new user.',
-    221: 'Service closing control connection.',
-    225: 'Data connection open; no transfer in progress.',
-    226: 'Closing data connection.',
-    227: 'Entering Passive Mode (h1,h2,h3,h4,p1,p2).',
-    230: 'User logged in, proceed.',
-    250: 'Requested file action okay, completed.',
-    257: '"PATHNAME" created.',
-    331: 'User name okay, need password.',
-    332: 'Need account for login.',
-    350: 'Requested file action pending further information.',
-    421: 'Service not available, closing control connection.',
-    425: 'Cant open data connection.',
-    426: 'Connection closed; transfer aborted.',
-    450: 'Requested file action not taken.',
-    451: 'Requested action aborted: local error in processing.',
-    452: 'Requested action not taken.',
-    500: 'Syntax error, command unrecognized.',
-    501: 'Syntax error in parameters or arguments.',
-    502: 'Command not implemented.',
-    503: 'Bad sequence of commands.',
-    504: 'Command not implemented for that parameter.',
-    530: 'Not logged in.',
-    532: 'Need account for storing files.',
-    550: 'Requested action not taken.',
-    551: 'Requested action aborted: page type unknown.',
-    552: 'Requested file action aborted.',
-    553: 'Requested action not taken.',
-}
 
-def scan_and_load(file_path, last_record, options, _log):
+def scan_and_load_netlogger(file_path, last_record, options, _log):
+    """
+    Process the netlogger style logs.  If the metadata can not be 
+    created, the processing loop halts and returns None.
+    """
     # Load the log
 
     with open(file_path,'r') as fh:
@@ -338,11 +353,11 @@ def scan_and_load(file_path, last_record, options, _log):
                 continue
             count += 1
             if options.progress:
-                if count % 100 == 0: _log('scan_and_load.info', '{0} records processed'.format(count))
+                if count % 100 == 0: _log('scan_and_load_netlogger.info', '{0} records processed'.format(count))
             try:
                 mda = _generate_metadata_args(o)
             except Exception, e:
-                _log('scan_and_load.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
+                _log('scan_and_load_netlogger.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
                 continue
             mp = MetadataPost(options.api_url, username=options.user,
                 api_key=options.key, script_alias=options.script_alias, 
@@ -369,7 +384,7 @@ def scan_and_load(file_path, last_record, options, _log):
             metadata = mp.post_metadata()
 
             if not metadata:
-                _log('scan_and_load.error', 'MetadataPost failed, abort processing, not updating record state')
+                _log('scan_and_load_netlogger.error', 'MetadataPost failed, abort processing, not updating record state')
                 return None
 
             if o.code == 226:
@@ -397,10 +412,206 @@ def scan_and_load(file_path, last_record, options, _log):
 
             if options.single or h.interrupted:
                 if h.interrupted:
-                    _log('scan_and_load.info', 'Got SIGINT - exiting.')
+                    _log('scan_and_load_netlogger.info', 'Got SIGINT - exiting.')
                 break
 
-    _log('scan_and_load.end', 'Loaded {0} records'.format(count))
+    _log('scan_and_load_netlogger.end', 'Loaded {0} records'.format(count))
+
+    return o
+
+# # # #
+# Code/classes to handle the json style logs
+# # # #
+
+class JsonLogEntryDataObject(LogEntryBase):
+    """
+    Container for the "main" json log entries. Returns attributes
+    or other wrapper containers.
+    """
+    def __init__(self, data={}):
+        self._data = data
+
+    # attributes from the "top level/main" json doc
+
+    @property
+    def cmd_type(self):
+        return self._data.get('cmd_type')
+
+    @property
+    def dest(self):
+        return self._data.get('dest')
+
+    @property
+    def end_ts(self):
+        return datetime.datetime.utcfromtimestamp(float(self._data.get('end_timestamp')))
+
+    @property
+    def event_type(self):
+        return self._data.get('event_type')
+
+    @property
+    def file(self):
+        return self._data('file') 
+
+    @property
+    def globus_blocksize(self):
+        return self._data.get('globus_blocksize')
+
+    @property
+    def nbytes(self):
+        return self._data.get('nbytes')
+
+    @property
+    def nstreams(self):
+        return self._data.get('nstreams')
+
+    @property
+    def ret_code(self):
+        return self._data.get('ret_code')
+
+    @property
+    def start_ts(self):
+        return datetime.datetime.utcfromtimestamp(float(self._data.get('start_timestamp')))
+
+    @property
+    def tcp_bufsize(self):
+        return self._data.get('tcp_bufsize')
+
+    @property
+    def transfer_id(self):
+        return self._data.get('transferID')
+
+    @property
+    def user(self):
+        return self._data.get('user')
+
+    # "nested/richer" document components
+
+    @property
+    def getrusage(self):
+        return EntryDataObject(self._data.get('getrusage'))
+
+    @property
+    def iostat(self):
+        return EntryDataObject(self._data.get('iostat'))
+
+    @property
+    def mpstat(self):
+        return EntryDataObject(self._data.get('mpstat'))
+
+    @property
+    def streams(self):
+        """Return a list of stream objects - favor getting filtered data with 
+        the other properties."""
+        return [ JsonLogEntryStream(x) for x in self._data.get('streams', []) ]
+
+class JsonLogEntryStream(object):
+    """
+    Wrapper for the entries in the streams array.
+    """
+    def __init__(self, data):
+        self._data = data
+
+    @property
+    def stream(self):
+        return self._data.get('stream')
+
+    @property
+    def stripe(self):
+        return self._data.get('stripe')
+
+    @property
+    def tcpinfo(self):
+        return EntryDataObject(self._data.get('TCPinfo'))
+
+class EntryDataObject(object):
+    """
+    Wrapper for the actual data values in the iostat, getrusage, 
+    mpstat and tcpinfo dicts.  Typical encapsulation object and 
+    also _sanitize() the keys of the incoming dicts.
+    """
+    def __init__(self, initial=None):
+        self.__dict__['_data'] = {}
+
+        if hasattr(initial, 'items'):
+            self.__dict__['_data'] = initial
+
+            for k,v in self._data.items():
+                if k != self._sanitize(k):
+                    self._data[self._sanitize(k)] = self._data.pop(k)
+
+
+    def _sanitize(self, s):
+        """
+        Sanitize the keys of the incoming data.
+        Change '/' -> '_' and '%' -> ''
+        """
+        return s.lower().replace('/', '_').replace('%', '')
+
+    def __getattr__(self, name):
+        return self._data.get(name, None)
+
+    def __setattr__(self, name, value):
+        self.__dict__['_data'][name] = value
+
+    def __str__(self):
+        m = ''
+        for k,v in self._data.items():
+            m += ' {0} : {1}\n'.format(k,v)
+        return 'Contains: {0}'.format(m)
+
+    def get_members(self):
+        for k in self._data.keys():
+            yield k
+
+    def to_dict(self):
+        return self._data
+
+def scan_and_load_json(file_path, last_record, options, _log):
+    """
+    Process the json style logs.  If the metadata can not be 
+    created, the processing loop halts and returns None.
+    """
+    # suck up the log
+    with open(file_path,'r') as fh:
+        data = fh.read()
+    data = data.split('\n')
+
+    # Read up to the last record that was processed and start processing
+    # subsequent records
+
+    scanning = False
+
+    o = None
+    count = 0
+
+    with GracefulInterruptHandler() as h:
+        for row in data:
+            row = row.strip()
+            if not row: continue
+            try:
+                o = JsonLogEntryDataObject(json.loads(row))
+            except ValueError:
+                _log('scan_and_load_json.error', 'skipping - log line is not valid json: {0}'.format(row))
+                continue
+
+            if last_record and not scanning:
+                if o.to_dict() == last_record.to_dict():
+                    scanning = True
+                continue
+
+            count += 1
+            if options.progress:
+                if count % 100 == 0: _log('scan_and_load_json.info', '{0} records processed'.format(count))
+
+            # XXX(mmg) - do stuff....
+
+            if options.single or h.interrupted:
+                if h.interrupted:
+                    _log('scan_and_load_netlogger.info', 'Got SIGINT - exiting.')
+                break
+
+    _log('scan_and_load_json.end', 'Loaded {0} records'.format(count))
 
     return o
 
@@ -409,6 +620,11 @@ def scan_and_load(file_path, last_record, options, _log):
 # # # #
 
 def get_pickle_path(options):
+    """
+    Hold two default pickle file names depending on what kind of 
+    log we are processing. Having a single default in OptionParser or
+    requiring a manual arg will doubtlessly cause problems.
+    """
     json_or_not = {
         False: './load_grid_ftp.pickle',
         True : './load_grid_ftp.json.pickle',
@@ -420,19 +636,43 @@ def get_pickle_path(options):
         return os.path.normpath(json_or_not.get(options.json, False))
 
 def get_log_entry_container(options, log_line=None):
+    """
+    Return the appropriate kind of log entry container class to 
+    logic in main() that doesn't need to care which type.
+    """
     json_or_not = {
         False: LogEntryDataObject,
+        True: JsonLogEntryDataObject,
     }
 
     def init_entry(options):
         if not options.json:
             return log_line.split()
+        else:
+            try:
+                return json.loads(log_line)
+            except ValueError:
+                # XXX(mmg) this should go away after they take care
+                # of the errors in the logs - only gets called by the 
+                # code that looks for the last processed line, so an 
+                # empty dict will do the trick.
+                return {}
 
     if not log_line:
         # return an "empty" instance
         return json_or_not.get(options.json, False)()
     else:
         return json_or_not.get(options.json, False)(init_entry(options))
+
+def scan_and_load(file_path, last_record, options, _log):
+    """
+    This is an entry point called by main() to dispatch to the 
+    appropriate file format handler.
+    """
+    if not options.json:
+        return scan_and_load_netlogger(file_path, last_record, options, _log)
+    else:
+        return scan_and_load_json(file_path, last_record, options, _log)
 
 def main():
     usage = '%prog [ -f filename | -v ]'
