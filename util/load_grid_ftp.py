@@ -114,6 +114,10 @@ from esmond_client.perfsonar.post import MetadataPost, EventTypePost
 import logging
 import time
 
+# # # #
+# Base classes, utility functions, etc
+# # # #
+
 # snippet courtesy of gist: https://gist.github.com/nonZero/2907502
 import signal
  
@@ -166,7 +170,26 @@ def setup_log(log_path):
     log.setLevel(logging.INFO)
     return log
 
-class LogEntryDataObject(object):
+class LogEntryBase(object):
+    def to_pickle(self, f):
+        fh = open(f, 'w')
+        pickle.dump(self.to_dict(), fh)
+        fh.close()
+
+    def from_pickle(self, f):
+        fh = open(f, 'r')
+        d = pickle.load(fh)
+        fh.close()
+        self.__dict__['_data'] = d
+
+    def to_dict(self):
+        return self._data
+
+# # # #
+# Code/classes to handle the netlogger style logs
+# # # #
+
+class LogEntryDataObject(LogEntryBase):
     def __init__(self, initial=None):
         self.__dict__['_data'] = {}
 
@@ -200,20 +223,6 @@ class LogEntryDataObject(object):
 
     def _parse_date(self, d):
         return datetime.datetime.strptime(d, '%Y%m%d%H%M%S.%f')
-
-    def to_pickle(self, f):
-        fh = open(f, 'w')
-        pickle.dump(self.to_dict(), fh)
-        fh.close()
-
-    def from_pickle(self, f):
-        fh = open(f, 'r')
-        d = pickle.load(fh)
-        fh.close()
-        self.__dict__['_data'] = d
-
-    def to_dict(self):
-        return self._data
 
 def _convert_host(dest, hn):
     version = None
@@ -395,7 +404,9 @@ def scan_and_load(file_path, last_record, options, _log):
 
     return o
 
-# - code to handle "standard vs. json" stuff for the main() code block
+# # # #
+# code to handle "standard vs. json" stuff for the main() code block
+# # # #
 
 def get_pickle_path(options):
     json_or_not = {
@@ -407,6 +418,21 @@ def get_pickle_path(options):
         return os.path.normpath(options.pickle)
     else:
         return os.path.normpath(json_or_not.get(options.json, False))
+
+def get_log_entry_container(options, log_line=None):
+    json_or_not = {
+        False: LogEntryDataObject,
+    }
+
+    def init_entry(options):
+        if not options.json:
+            return log_line.split()
+
+    if not log_line:
+        # return an "empty" instance
+        return json_or_not.get(options.json, False)()
+    else:
+        return json_or_not.get(options.json, False)(init_entry(options))
 
 def main():
     usage = '%prog [ -f filename | -v ]'
@@ -483,11 +509,12 @@ def main():
     # Check for previously saved state file
 
     pickle_path = get_pickle_path(options)
+    print 'pickle_path', pickle_path
 
     last_record = None
 
     if os.path.exists(pickle_path):
-        last_record = LogEntryDataObject()
+        last_record = get_log_entry_container(options)
         last_record.from_pickle(pickle_path)
         _log('main.start', 'found last record: {0}'.format(last_record.to_dict()))
     else:
@@ -506,7 +533,7 @@ def main():
         for row in data:
             row = row.strip()
             if not row: continue
-            o = LogEntryDataObject(row.split())
+            o = get_log_entry_container(options, row)
             if o.to_dict() == last_record.to_dict():
                 last_record_check = True
                 break
