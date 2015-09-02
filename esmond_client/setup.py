@@ -10,7 +10,7 @@ def read(*paths):
 
 setup(
     name='esmond_client',
-    version='1.4',
+    version='1.5',
     description='API client libraries and command line tools for the ESnet Monitoring Daemon (esmond).',
     long_description=(read('README.rst')),
     author='Monte M. Goode',
