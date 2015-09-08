@@ -284,13 +284,16 @@ class EventTypePost(PostBase):
                 self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
 
     def _validate(self):
+        """Method is called before a POST to do any sanity checks on the 
+        payload being sent."""
         for i in self._payload:
-            if isinstance(i['val'], dict):
-                for k,v in i['val'].items():
-                    try:
-                        int(k), int(v)
-                    except ValueError:
-                        raise EventTypePostException('Histogram dict items must be integer values - got {0} {1}'.format(k,v))
+            pass
+            # if isinstance(i['val'], dict):
+            #     for k,v in i['val'].items():
+            #         try:
+            #             int(k), int(v)
+            #         except ValueError:
+            #             raise EventTypePostException('Histogram dict items must be integer values - got {0} {1}'.format(k,v))
 
 class EventTypeBulkPost(PostBase):
     wrn = EventTypePostWarning

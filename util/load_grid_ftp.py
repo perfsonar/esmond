@@ -437,6 +437,16 @@ class JsonLogEntryDataObject(LogEntryBase):
     def __init__(self, data={}):
         self._data = data
 
+        # "initialize" nested documents in the EntryDataObject containers
+        # to ensure that this class' to_dict() method properly
+        # return sanitized keys.  EntryDataObject._sanitize() changes 
+        # the internal dicts, not merely changes the keys on the way out.
+        self.getrusage
+        self.iostat
+        self.mpstat
+        for s in self.streams:
+            s.tcpinfo
+
     # attributes from the "top level/main" json doc
 
     @property
@@ -448,7 +458,7 @@ class JsonLogEntryDataObject(LogEntryBase):
         return self._data.get('dest')
 
     @property
-    def end_ts(self):
+    def end_timestamp(self):
         return datetime.datetime.utcfromtimestamp(float(self._data.get('end_timestamp')))
 
     @property
@@ -476,7 +486,7 @@ class JsonLogEntryDataObject(LogEntryBase):
         return self._data.get('ret_code')
 
     @property
-    def start_ts(self):
+    def start_timestamp(self):
         return datetime.datetime.utcfromtimestamp(float(self._data.get('start_timestamp')))
 
     @property
@@ -529,6 +539,9 @@ class JsonLogEntryStream(object):
     @property
     def tcpinfo(self):
         return EntryDataObject(self._data.get('TCPinfo'))
+
+    def to_dict(self):
+        return self._data
 
 class EntryDataObject(object):
     """
@@ -601,6 +614,9 @@ def scan_and_load_json(file_path, last_record, options, _log):
                 _log('scan_and_load_json.error', 'skipping - log line is not valid json: {0}'.format(row))
                 continue
 
+            if o.event_type != 'Transfer-End':
+                continue
+
             if last_record and not scanning:
                 if o.to_dict() == last_record.to_dict():
                     scanning = True
@@ -610,7 +626,88 @@ def scan_and_load_json(file_path, last_record, options, _log):
             if options.progress:
                 if count % 100 == 0: _log('scan_and_load_json.info', '{0} records processed'.format(count))
 
-            # XXX(mmg) - do stuff....
+            try:
+                # XXX(mmg) place holder for host since it is not there
+                # presuming they will get it in in IP format. Revisit
+                # all of this when added to the logs.
+                host = '127.0.0.1'
+                mda = _generate_metadata_args(host, o.dest, o.cmd_type, host_to_ip=False)
+            except Exception, e:
+                _log('scan_and_load_json.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
+                continue
+
+            mp = MetadataPost(options.api_url, username=options.user,
+                api_key=options.key, script_alias=options.script_alias, 
+                **mda)
+            mp.add_event_type('throughput')
+            mp.add_event_type('streams-packet-retransmits')
+            # Additional/optional data
+            mp.add_freeform_key_value('bw-parallel-streams', o.nstreams)
+            # find largest stripe in streams array
+            stripes = 0
+            for s in o.streams:
+                if s.stripe > stripes:
+                    stripes = s.stripe
+            mp.add_freeform_key_value('bw-stripes', stripes+1)
+            # XXX(mmg) - PROG not in the json yet. Revisit this, remove 
+            # if they can't give it to us, adjust object attr as need be.
+            # mp.add_freeform_key_value('gridftp-program', o.prog)
+            mp.add_freeform_key_value('gridftp-block-size', o.globus_blocksize)
+            mp.add_freeform_key_value('tcp-window-size', o.tcp_bufsize)
+            mp.add_freeform_key_value('gridftp-bytes-transferred', o.nbytes)
+             # Optional vars - these must be enabled via boolean 
+            # command line args since these values might be sensitive.
+            if options.file_attr:
+                mp.add_freeform_key_value('gridftp-file', o.file)
+            if options.name_attr:
+                mp.add_freeform_key_value('gridftp-user', o.user)
+            # XXX(mmg) VOLUME not in the json yet. Revisit as per PROG above.
+            # if options.volume_attr:
+            #     mp.add_freeform_key_value('gridftp-volume', o.volume)
+
+            metadata = mp.post_metadata()
+            print metadata
+
+            if not metadata:
+                _log('scan_and_load_netlogger.error', 'MetadataPost failed, abort processing, not updating record state')
+                return None
+
+            # Calculate/Post throughput
+            et = EventTypePost(options.api_url, username=options.user,
+                    api_key=options.key, script_alias=options.script_alias, 
+                    metadata_key=metadata.metadata_key,
+                    event_type='throughput')
+            throughput = 8 * o.nbytes / (o.end_timestamp - o.start_timestamp).total_seconds()
+            et.add_data_point(_epoch(o.start_timestamp), throughput)
+            et.post_data()
+
+            # Calculate/Post retransmits - a list of integers in this case
+            retrans = list()
+            for s in o.streams:
+                retrans.append(s.tcpinfo.total_retrans)
+
+            et = EventTypePost(options.api_url, username=options.user,
+                    api_key=options.key, script_alias=options.script_alias, 
+                    metadata_key=metadata.metadata_key,
+                    event_type='streams-packet-retransmits')
+            et.add_data_point(_epoch(o.start_timestamp), retrans)
+            et.post_data()
+
+            # these event types are added wholesale as json blobs.
+            et_map = {
+                'iostat': o.iostat.to_dict(),
+                'mpstat': o.mpstat.to_dict(),
+                'rusage': o.getrusage.to_dict(),
+                'streams-tcpinfo': [ x.to_dict() for x in o.streams ]
+            }
+
+            for k,v in et_map.items():
+                et = EventTypePost(options.api_url, username=options.user,
+                    api_key=options.key, script_alias=options.script_alias, 
+                    metadata_key=metadata.metadata_key,
+                    event_type=k)
+                et.add_data_point(_epoch(o.start_timestamp), v)
+                et.post_data()
 
             if options.single or h.interrupted:
                 if h.interrupted:
