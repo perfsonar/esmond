@@ -441,9 +441,8 @@ class JsonLogEntryDataObject(LogEntryBase):
         # to ensure that this class' to_dict() method properly
         # return sanitized keys.  EntryDataObject._sanitize() changes 
         # the internal dicts, not merely changes the keys on the way out.
-        self.getrusage
-        self.iostat
-        self.mpstat
+        for s in ('getrusage', 'iostat', 'mpstat'):
+            getattr(self, s)
         for s in self.streams:
             s.tcpinfo
 
