@@ -851,7 +851,6 @@ def main():
     # Check for previously saved state file
 
     pickle_path = get_pickle_path(options)
-    print 'pickle_path', pickle_path
 
     last_record = None
 
