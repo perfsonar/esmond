@@ -225,6 +225,64 @@ FTP_CODES = {
     553: 'Requested action not taken.',
 }
 
+def _convert_host(dest, hn, convert=True):
+    """
+    Convert host to a v4 or v6 ip address
+    """
+
+    # if host is in ip form, then skip
+    if not convert:
+        return hn
+
+    version = None
+
+    try:
+        socket.inet_aton(dest)
+        version = 4
+    except socket.error:
+        pass
+
+    try:
+        socket.inet_pton(socket.AF_INET6,dest)
+        version = 6
+    except socket.error:
+        pass
+
+    if version == 4:
+        r =  socket.getaddrinfo(hn, None)
+    elif version == 6:
+        r = socket.getaddrinfo(hn, None, socket.AF_INET6)
+    else:
+        r = None
+    
+    return r[0][4][0]
+
+def _generate_metadata_args(host, dest, xfer_type, host_to_ip=True):
+    """
+    Generate the args for the MetadataPost depending on the 
+    xfer type - this is for the netlogger style log.
+    """
+
+    args = { 'tool_name': 'gridftp', 'subject_type': 'point-to-point' }
+
+    if xfer_type == 'RETR':
+        args['source'] = _convert_host(dest, host, host_to_ip)
+        args['destination'] = dest
+        args['input_source'] = host
+        args['input_destination'] = dest
+    elif xfer_type == 'STOR':
+        args['source'] = dest
+        args['destination'] = _convert_host(dest, host, host_to_ip)
+        args['input_source'] = dest
+        args['input_destination'] = host
+
+    args['measurement_agent'] = _convert_host(dest, host, host_to_ip)
+
+    return args
+
+def _epoch(d):
+    return calendar.timegm(d.utctimetuple())
+
 # # # #
 # Code/classes to handle the netlogger style logs
 # # # #
@@ -268,59 +326,6 @@ class LogEntryDataObject(LogEntryBase):
     def _parse_date(self, d):
         return datetime.datetime.strptime(d, '%Y%m%d%H%M%S.%f')
 
-def _convert_host(dest, hn):
-    version = None
-
-    try:
-        socket.inet_aton(dest)
-        version = 4
-    except socket.error:
-        pass
-
-    try:
-        socket.inet_pton(socket.AF_INET6,dest)
-        version = 6
-    except socket.error:
-        pass
-
-    if version == 4:
-        r =  socket.getaddrinfo(hn, None)
-    elif version == 6:
-        r = socket.getaddrinfo(hn, None, socket.AF_INET6)
-    else:
-        r = None
-    
-    return r[0][4][0]
-
-def _epoch(d):
-    return calendar.timegm(d.utctimetuple())
-
-def _generate_metadata_args(o):
-    """
-    Generate the args for the MetadataPost depending on the 
-    xfer type - this is for the netlogger style log.
-    """
-
-    dest = o.dest.lstrip('[').rstrip(']')
-
-    args = { 'tool_name': 'gridftp', 'subject_type': 'point-to-point' }
-
-    if o.type == 'RETR':
-        args['source'] = _convert_host(dest, o.host)
-        args['destination'] = dest
-        args['input_source'] = o.host
-        args['input_destination'] = dest
-    elif o.type == 'STOR':
-        args['source'] = dest
-        args['destination'] = _convert_host(dest, o.host)
-        args['input_source'] = dest
-        args['input_destination'] = o.host
-
-    args['measurement_agent'] = _convert_host(dest, o.host)
-
-    return args
-
-
 def scan_and_load_netlogger(file_path, last_record, options, _log):
     """
     Process the netlogger style logs.  If the metadata can not be 
@@ -355,7 +360,8 @@ def scan_and_load_netlogger(file_path, last_record, options, _log):
             if options.progress:
                 if count % 100 == 0: _log('scan_and_load_netlogger.info', '{0} records processed'.format(count))
             try:
-                mda = _generate_metadata_args(o)
+                dest = o.dest.lstrip('[').rstrip(']')
+                mda = _generate_metadata_args(o.host, dest, o.type)
             except Exception, e:
                 _log('scan_and_load_netlogger.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
                 continue
