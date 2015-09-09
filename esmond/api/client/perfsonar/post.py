@@ -210,12 +210,12 @@ class MetadataPost(PostBase):
         try:
             r = requests.post(url, data=self.json_payload(), headers=self.headers)
         except ConnectionError, e:
-            self.warn('POST connection error: {0}'.format(str(e)))
+            self.ex('POST connection error: {0}'.format(str(e)))
             return None
 
         if not r.status_code == 201:
             # Change this to an exception?
-            self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
             return None
 
         return Metadata(json.loads(r.content), self.api_url, ApiFilters())
@@ -284,10 +284,10 @@ class EventTypePost(PostBase):
             try:
                 r = requests.post(url, data=json.dumps(dp), headers=self.headers)
             except ConnectionError, e:
-                self.warn('POST connection error: {0}'.format(str(e)))
+                self.ex('POST connection error: {0}'.format(str(e)))
 
             if not r.status_code == 201:
-                self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+                self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
 
     def ex(self, msg):
         raise EventTypePostException(msg)
@@ -352,11 +352,11 @@ class EventTypeBulkPost(PostBase):
         try:
             r = requests.post(url, data=self.json_payload(), headers=self.headers)
         except ConnectionError, e:
-            self.warn('POST connection error: {0}'.format(str(e)))
+            self.ex('POST connection error: {0}'.format(str(e)))
 
         if not r.status_code == 201:
             # Change this to an exception?
-            self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
 
     def ex(self, msg):
         raise EventTypeBulkPostException(msg)        
