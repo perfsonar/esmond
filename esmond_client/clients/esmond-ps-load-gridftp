@@ -114,7 +114,8 @@ import time
 
 from optparse import OptionParser
 
-from esmond_client.perfsonar.post import MetadataPost, EventTypePost
+from esmond_client.perfsonar.post import (MetadataPost, EventTypePost,
+    MetadataPostException, EventTypePostException)
 
 # # # #
 # Base classes, utility functions, etc
@@ -389,9 +390,9 @@ def scan_and_load_netlogger(file_path, last_record, options, _log):
             if options.volume_attr:
                 mp.add_freeform_key_value('gridftp-volume', o.volume)
             
-            metadata = mp.post_metadata()
-
-            if not metadata:
+            try:
+                metadata = mp.post_metadata()
+            except MetadataPostException:
                 _log('scan_and_load_netlogger.error', 'MetadataPost failed, abort processing, not updating record state')
                 return None
 
@@ -402,13 +403,19 @@ def scan_and_load_netlogger(file_path, last_record, options, _log):
                     event_type='throughput')
                 throughput = 8 * o.nbytes / (o.date - o.start).total_seconds()
                 et.add_data_point(_epoch(o.start), throughput)
-                et.post_data()
+                try:
+                    et.post_data()
+                except EventTypePostException as e:
+                    _log('scan_and_load_netlogger.warning', str(e))
                 et = EventTypePost(options.api_url, username=options.user,
                     api_key=options.key, script_alias=options.script_alias, 
                     metadata_key=metadata.metadata_key,
                     event_type='streams-packet-retransmits')
                 et.add_data_point(_epoch(o.start), o.retrans)
-                et.post_data()
+                try:
+                    et.post_data()
+                except EventTypePostException as e:
+                    _log('scan_and_load_netlogger.warning', str(e))
             else:
                 et = EventTypePost(options.api_url, username=options.user,
                     api_key=options.key, script_alias=options.script_alias, 
@@ -416,7 +423,10 @@ def scan_and_load_netlogger(file_path, last_record, options, _log):
                     event_type='failures')
                 et.add_data_point(_epoch(o.start), 
                     { 'error': '{0} {1}'.format(o.code, FTP_CODES.get(o.code, None)) })
-                et.post_data()
+                try:
+                    et.post_data()
+                except EventTypePostException as e:
+                    _log('scan_and_load_netlogger.warning', str(e))
 
             if options.single or h.interrupted:
                 if h.interrupted:
@@ -666,10 +676,10 @@ def scan_and_load_json(file_path, last_record, options, _log):
             # if options.volume_attr:
             #     mp.add_freeform_key_value('gridftp-volume', o.volume)
 
-            metadata = mp.post_metadata()
-
-            if not metadata:
-                _log('scan_and_load_netlogger.error', 'MetadataPost failed, abort processing, not updating record state')
+            try:
+                metadata = mp.post_metadata()
+            except MetadataPostException:
+                _log('scan_and_load_json.error', 'MetadataPost failed, abort processing, not updating record state')
                 return None
 
             # Calculate/Post throughput
@@ -679,7 +689,10 @@ def scan_and_load_json(file_path, last_record, options, _log):
                     event_type='throughput')
             throughput = 8 * o.nbytes / (o.end_timestamp - o.start_timestamp).total_seconds()
             et.add_data_point(_epoch(o.start_timestamp), throughput)
-            et.post_data()
+            try:
+                et.post_data()
+            except EventTypePostException as e:
+                _log('scan_and_load_json.warning', str(e))
 
             # Calculate/Post retransmits - a list of integers in this case
             retrans = list()
@@ -691,7 +704,10 @@ def scan_and_load_json(file_path, last_record, options, _log):
                     metadata_key=metadata.metadata_key,
                     event_type='streams-packet-retransmits')
             et.add_data_point(_epoch(o.start_timestamp), retrans)
-            et.post_data()
+            try:
+                et.post_data()
+            except EventTypePostException as e:
+                _log('scan_and_load_json.warning', str(e))
 
             # these event types are added wholesale as json blobs.
             et_map = {
@@ -707,7 +723,10 @@ def scan_and_load_json(file_path, last_record, options, _log):
                     metadata_key=metadata.metadata_key,
                     event_type=k)
                 et.add_data_point(_epoch(o.start_timestamp), v)
-                et.post_data()
+                try:
+                    et.post_data()
+                except EventTypePostException as e:
+                    _log('scan_and_load_json.warning', str(e))
 
             if options.single or h.interrupted:
                 if h.interrupted:
