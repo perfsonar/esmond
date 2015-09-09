@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 """
+esmond-ps-load-gridftp - process GridFTP logs and load into an Esmond MA.
+
 Utility to parse and load GridFTP data.
 
 This will read the default gridftp logs, process the "Transfer stats" entries, 
@@ -665,7 +667,6 @@ def scan_and_load_json(file_path, last_record, options, _log):
             #     mp.add_freeform_key_value('gridftp-volume', o.volume)
 
             metadata = mp.post_metadata()
-            print metadata
 
             if not metadata:
                 _log('scan_and_load_netlogger.error', 'MetadataPost failed, abort processing, not updating record state')

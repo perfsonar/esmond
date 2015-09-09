@@ -22,6 +22,7 @@ setup(
         'clients/esmond-ps-get-bulk',
         'clients/esmond-ps-get-endpoints', 
         'clients/esmond-ps-get-metadata',
+        'clients/esmond-ps-load-gridftp',
     ],
     install_requires=['requests', 'python-dateutil'],
     classifiers=[
