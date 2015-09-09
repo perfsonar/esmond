@@ -78,6 +78,9 @@ class PostBase(AlertMixin, object):
             if self.script_alias:
                 self._schema_root = '{0}/{1}'.format(self.script_alias, self._schema_root)
 
+    def ex(self, msg):
+        raise NotImplementedError('Must be implemented in subclass')
+
     def _validate(self):
         """Will be overridden in subclass.  Needs to run whatever validation
         checks on the internal payload data before sending it to the API."""
@@ -217,6 +220,9 @@ class MetadataPost(PostBase):
 
         return Metadata(json.loads(r.content), self.api_url, ApiFilters())
 
+    def ex(self, msg):
+        raise MetadataPostException(msg)
+
     def _validate(self):
         redash = lambda s: s.replace('_', '-')
 
@@ -283,6 +289,9 @@ class EventTypePost(PostBase):
             if not r.status_code == 201:
                 self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
 
+    def ex(self, msg):
+        raise EventTypePostException(msg)
+
     def _validate(self):
         """Method is called before a POST to do any sanity checks on the 
         payload being sent."""
@@ -348,6 +357,9 @@ class EventTypeBulkPost(PostBase):
         if not r.status_code == 201:
             # Change this to an exception?
             self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+
+    def ex(self, msg):
+        raise EventTypeBulkPostException(msg)        
 
     def _validate(self):
         for i in self._payload['data']:
