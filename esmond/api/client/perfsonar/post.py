@@ -288,12 +288,6 @@ class EventTypePost(PostBase):
         payload being sent."""
         for i in self._payload:
             pass
-            # if isinstance(i['val'], dict):
-            #     for k,v in i['val'].items():
-            #         try:
-            #             int(k), int(v)
-            #         except ValueError:
-            #             raise EventTypePostException('Histogram dict items must be integer values - got {0} {1}'.format(k,v))
 
 class EventTypeBulkPost(PostBase):
     wrn = EventTypePostWarning
