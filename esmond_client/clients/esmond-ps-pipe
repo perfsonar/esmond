@@ -16,6 +16,10 @@ import time
 
 from optparse import OptionParser
 
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
+
 class EsmondPipeException(Exception):
     def __init__(self, value):
         self.value = value
@@ -84,6 +88,9 @@ class RecursiveDataObject(object):
     def __setattr__(self, name, value):
         self.__dict__['_data'][name] = value
 
+    def __str__(self):
+        return pp.pformat(self.to_dict())
+
     def to_dict(self):
         return self._data
 
@@ -102,6 +109,9 @@ def id_and_extract(data, _log):
     json_block = ''
 
     scanning = False
+
+    # XXX(mmg) - FIX THIS. Need verbose output to get the metadata
+    # and this parsing block made incorrect assumptions.
 
     for i in data:
         if not i.strip():
@@ -137,6 +147,110 @@ def id_and_extract(data, _log):
 
 def process_iperf3(o, _log):
     _log('process_iperf3.start', 'begin')
+
+    # metadata
+
+    # event type values
+
+    # XXX(mmg) - what is the ts for each of these data points?
+
+    # throughput
+    tp = o.end.sum_received.bits_per_second
+
+    # throughput-subintervals
+    # XXX(mmg) - the list of dicts will be the value.
+    tp_subints = list()
+
+    for i in o.intervals:
+        d = dict(
+            start=i.sum.start, 
+            duration=i.sum.seconds, 
+            throughput=i.sum.bits_per_second
+        )
+        tp_subints.append(RecursiveDataObject(d))
+
+    # packet-count-lost
+    # and
+    # packet-count-sent
+    # and
+    # packet-loss-rate
+    # XXX(mmg) - need to get example of these to make sure this works.
+    if o.start.test_start.protocol == 'UDP':
+        pl = ps = None
+        # lost
+        if o.end.sum.lost_packets:
+            pl = o.end.sum.lost_packets
+        # sent
+        if o.end.sum.packets:
+            ps = o.end.sum.packets
+        # loss rate
+        if pl and ps:
+            lr = RecursiveDataObject(dict(numerator=pl, denominator=ps))
+
+    # packet-retransmits
+    prt = o.end.sum_sent.retransmits
+
+    # packet-retransmits-subintervals
+    # XXX(mmg) - the list of dicts will be the value.
+    pr_subints = list()
+
+    for i in o.intervals:
+        d = dict(
+            start=i.sum.start, 
+            duration=i.sum.seconds, 
+            retransmits=i.sum.retransmits
+        )
+        pr_subints.append(RecursiveDataObject(d))
+
+    # streams-packet-retransmits
+    # and
+    # streams-packet-retransmits-subintervals
+    # and
+    # streams-throughput
+    # and
+    # streams-throughput-subintervals
+    if o.start.test_start.num_streams == 1: # <--- XXX(mmg) FIX THIS!!!!
+        # retrans
+        sp_retrans = list()
+        for i in o.end.streams:
+            # XXX(mmg) - need clarification on this
+            pass
+
+        # retrans-subint
+        # XXX(mmg) - would be good to get a real example of this
+        # to make sure this is all correct.
+        sp_retrans_subint = list()
+        for i in o.intervals:
+            sl = list()
+            for ii in i.streams:
+                d = dict(
+                    start=ii.start, 
+                    duration=ii.seconds, 
+                    retransmits=ii.retransmits
+                )
+                sl.append(RecursiveDataObject(d))
+            sp_retrans_subint.append(sl)
+
+        # throughput
+        for i in o.end.streams:
+            # XXX(mmg) - need clarification on this
+            # same as above.
+            print i
+
+        # throughput-subint
+        st_tput_subint = list()
+        for i in o.intervals:
+            sl = list()
+            for ii in i.streams:
+                d = dict(
+                    start=ii.start, 
+                    duration=ii.seconds, 
+                    throughput=ii.bits_per_second
+                )
+                sl.append(RecursiveDataObject(d))
+            st_tput_subint.append(sl)
+        
+
 
 
 
