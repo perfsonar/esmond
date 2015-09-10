@@ -194,7 +194,7 @@ def main():
     try:
         o = RecursiveDataObject(payload.payload)
     except EsmondPipeException as e:
-        _log('main.fatal', 'error encapsulating json - ERROR: {0}'.foramt(str(e)))
+        _log('main.fatal', 'error encapsulating json - ERROR: {0}'.format(str(e)))
         _log('main.fatal', 'exiting')
         sys.exit(-1)
 
