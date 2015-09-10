@@ -7,14 +7,22 @@ perfsonar MA. To wit:
 bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable | esmond-ps-pipe -url http://ps-archive.es.net
 """
 
+import datetime
 import json
+import logging
 import os
 import sys
+import time
 
 from optparse import OptionParser
 
-import logging
-import time
+class EsmondPipeException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class EsmondPipeWarning(Warning): pass
 
 def setup_log(log_path=None):
     """
@@ -33,6 +41,51 @@ def setup_log(log_path=None):
     log.addHandler(_h)
     log.setLevel(logging.INFO)
     return log
+
+class RecursiveDataObject(object):
+    def __init__(self, initial=None):
+        self.__dict__['_data'] = {}
+
+        if hasattr(initial, 'items'):
+            self.__dict__['_data'] = initial
+            try:
+                # Recurse through entire all attrs at all levels
+                # to make sure the wrapping is ok so we can check
+                # the parse once.
+                for i in self._data.keys():
+                    self._wrap(self._data.get(i), i)
+            except Exception as e:
+                raise EsmondPipeException(str(e))
+
+    def _wrap(self, data, name):
+        # print 'wrap', name
+        # dict => wrapper object
+        if isinstance(data, dict):
+            return RecursiveDataObject(data)
+        # list of dicts => list of wrapper objects
+        elif isinstance(data, list):
+            return [ RecursiveDataObject(x) for x in data ]
+        # modify outgoing named attributes
+        elif name in ('time','timesecs',):
+            return self._to_datetime(data)
+
+        return data
+
+    def _to_datetime(self, d):
+        if isinstance(d, int):
+            # presume unixtime
+            return datetime.datetime.utcfromtimestamp(d)
+        else:
+            return datetime.datetime.strptime(d, '%a, %d %b %Y %X GMT')
+
+    def __getattr__(self, name):
+        return self._wrap(self._data.get(name, None), name)
+
+    def __setattr__(self, name, value):
+        self.__dict__['_data'][name] = value
+
+    def to_dict(self):
+        return self._data
 
 def id_and_extract(data, _log):
     """
@@ -81,7 +134,18 @@ def id_and_extract(data, _log):
         return None
     else:
         return payload
-    
+
+def process_iperf3(o, _log):
+    _log('process_iperf3.start', 'begin')
+
+
+
+    _log('process_iperf3.end', 'finished')
+
+
+typemap = dict(
+    iperf3=process_iperf3,
+)
 
 def main():
     usage = ' bwctl ... | %prog [ -u USER -k API_KEY | -U ESMOND_REST_URL | -v ]'
@@ -127,7 +191,21 @@ def main():
         _log('main.fatal', 'exiting')
         sys.exit(-1)
 
+    try:
+        o = RecursiveDataObject(payload.payload)
+    except EsmondPipeException as e:
+        _log('main.fatal', 'error encapsulating json - ERROR: {0}'.foramt(str(e)))
+        _log('main.fatal', 'exiting')
+        sys.exit(-1)
 
+    # process the encapsulated data
+    try:
+        typemap[payload.input_type](o, _log)
+    except KeyError:
+        _log('main.fatal', 'there is no handler for input type: {0}'.format(payload.input_type))
+        _log('main.fatal', 'exiting')
+    except EsmondPipeException as e:
+        _log('main.error', 'unable to process input: {0}'.format(str(e)))
 
     sys.exit(0)
 
