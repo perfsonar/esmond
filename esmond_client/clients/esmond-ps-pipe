@@ -99,9 +99,19 @@ def main():
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
+    parser.add_option('-l', '--log_dir', metavar='DIR',
+                type='string', dest='logdir', default='',
+                help='Write log output to specified directory - if not set, log goes to stdout.')
     options, args = parser.parse_args()
 
-    log = setup_log()
+    log_path = None
+    
+    if options.logdir:
+        log_path = os.path.normpath(options.logdir)
+        if not os.path.exists(log_path):
+            parser.error('{0} log path does not exist.'.format(log_path))
+    
+    log = setup_log(log_path)
     _log = lambda e, s: log.info('event={e} id={gid} {s}'.format(e=e, gid=int(time.time()), s=s))
 
     if not options.user or not options.key:
@@ -117,7 +127,7 @@ def main():
         _log('main.fatal', 'exiting')
         sys.exit(-1)
 
-    
+
 
     sys.exit(0)
 
