@@ -161,11 +161,11 @@ def setup_log(log_path):
     _log('main.start', 'happy simple log event')
     _log('launch', 'more={0}, complex={1} log=event'.format(100, 200))
     """
-    log = logging.getLogger("grid_ftp_esmond_load")
+    log = logging.getLogger("esmond-ps-load-gridftp")
     if not log_path:
         _h = logging.StreamHandler()
     else:
-        logfile = '{0}/grid_ftp_esmond_load.log'.format(log_path)
+        logfile = '{0}/esmond-ps-load-gridftp.log'.format(log_path)
         _h = logging.FileHandler(logfile)
     _h.setFormatter(logging.Formatter('ts=%(asctime)s %(message)s'))
     log.addHandler(_h)

@@ -1,0 +1,125 @@
+#!/usr/bin/env python
+
+"""
+esmond-ps-pipe - take piped json output from bwctl and load into an esmond 
+perfsonar MA. To wit:
+
+bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable | esmond-ps-pipe -url http://ps-archive.es.net
+"""
+
+import json
+import os
+import sys
+
+from optparse import OptionParser
+
+import logging
+import time
+
+def setup_log(log_path=None):
+    """
+    Usage:
+    _log('main.start', 'happy simple log event')
+    _log('launch', 'more={0}, complex={1} log=event'.format(100, 200))
+    """
+    log = logging.getLogger("esmond-ps-pipe")
+    if not log_path:
+        _h = logging.StreamHandler()
+    else:
+        # it's on you to make sure log_path is valid.
+        logfile = '{0}/esmond-ps-pipe.log'.format(log_path)
+        _h = logging.FileHandler(logfile)
+    _h.setFormatter(logging.Formatter('ts=%(asctime)s %(message)s'))
+    log.addHandler(_h)
+    log.setLevel(logging.INFO)
+    return log
+
+def id_and_extract(data, _log):
+    """
+    Identify the piped input and isolate the json part.
+    """
+
+    class Payload(object):
+        input_type = None
+        payload = None
+
+    payload = Payload()
+
+    input_type = None
+    json_block = ''
+
+    scanning = False
+
+    for i in data:
+        if not i.strip():
+            continue
+
+        if i.startswith('bwctl: Using tool:'):
+            input_type = i.split()[3]
+
+        if i.startswith('SENDER END'):
+            scanning = False
+            break
+
+        if scanning:
+            json_block += i
+
+        if i.startswith('SENDER START'):
+            scanning = True
+
+    if not input_type:
+        _log('id_and_extract.error', 'could not extract test type.')
+    else:
+        payload.input_type = input_type
+
+    try:
+        payload.payload = json.loads(json_block)
+    except ValueError:
+        _log('id_and_extract.error', 'could not load json_block: {0}'.format(json_block))
+
+    if not payload.payload or not payload.input_type:
+        return None
+    else:
+        return payload
+    
+
+def main():
+    usage = ' bwctl ... | %prog [ -u USER -k API_KEY | -U ESMOND_REST_URL | -v ]'
+    parser = OptionParser(usage=usage)
+    parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
+            type='string', dest='api_url', 
+            help='URL for the REST API (default=%default) - required.',
+            default='http://localhost:8000')
+    parser.add_option('-u', '--user', metavar='USER',
+            type='string', dest='user', default='',
+            help='POST interface username.')
+    parser.add_option('-k', '--key', metavar='API_KEY',
+            type='string', dest='key', default='',
+            help='API key for POST operation.')
+    parser.add_option('-v', '--verbose',
+        dest='verbose', action='store_true', default=False,
+        help='Verbose output.')
+    options, args = parser.parse_args()
+
+    log = setup_log()
+    _log = lambda e, s: log.info('event={e} id={gid} {s}'.format(e=e, gid=int(time.time()), s=s))
+
+    if not options.user or not options.key:
+        parser.error('both --user and --key args are required.')
+
+    data = sys.stdin.readlines()
+    
+    payload = id_and_extract(data, _log)
+
+    if not payload:
+        _log('main.fatal', 'could not extract type and valid json from input')
+        _log('main.debug', '{0}'.format(''.join(data)))
+        _log('main.fatal', 'exiting')
+        sys.exit(-1)
+
+    
+
+    sys.exit(0)
+
+if __name__ == '__main__':
+    main()
