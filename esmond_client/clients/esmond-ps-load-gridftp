@@ -392,8 +392,8 @@ def scan_and_load_netlogger(file_path, last_record, options, _log):
             
             try:
                 metadata = mp.post_metadata()
-            except MetadataPostException:
-                _log('scan_and_load_netlogger.error', 'MetadataPost failed, abort processing, not updating record state')
+            except MetadataPostException as e:
+                _log('scan_and_load_netlogger.error', 'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(str(e)))
                 return None
 
             if o.code == 226:
@@ -678,8 +678,8 @@ def scan_and_load_json(file_path, last_record, options, _log):
 
             try:
                 metadata = mp.post_metadata()
-            except MetadataPostException:
-                _log('scan_and_load_json.error', 'MetadataPost failed, abort processing, not updating record state')
+            except MetadataPostException as e:
+                _log('scan_and_load_json.error', 'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(str(e)))
                 return None
 
             # Calculate/Post throughput
