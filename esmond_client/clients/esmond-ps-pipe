@@ -17,6 +17,9 @@ import time
 
 from optparse import OptionParser
 
+from esmond_client.perfsonar.post import (MetadataPost, EventTypePost,
+    MetadataPostException, EventTypePostException)
+
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -213,9 +216,9 @@ def _iperf3_metadata_args(o, payload):
         input_destination=payload.input_destination,
         measurement_agent=payload.measurement_agent,
         ip_transport_protocol=o.start.test_start.protocol,
-        bw_parallel_streams=o.start.test_start.num_streams,
+        # bw_parallel_streams=o.start.test_start.num_streams,
         time_duration=o.start.test_start.duration,
-        bw_ignore_first_seconds=o.start.test_start.omit,
+        # bw_ignore_first_seconds=o.start.test_start.omit,
     )
 
     
@@ -251,6 +254,24 @@ def process_iperf3(o, payload, options, _log):
     # metadata
 
     mda, event_types = _iperf3_metadata_args(o, payload)
+
+    mp = MetadataPost(options.api_url, username=options.user,
+            api_key=options.key, script_alias=options.script_alias, 
+            **mda)
+
+    for et in event_types:
+        mp.add_event_type(et)
+
+    mp.add_freeform_key_value('bw-parallel-streams', o.start.test_start.num_streams)
+    mp.add_freeform_key_value('bw_ignore_first_seconds', o.start.test_start.omit)
+
+    try:
+        metadata = mp.post_metadata()
+    except MetadataPostException as e:
+        _log('process_iperf3.error', 'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(str(e)))
+        return None
+
+    print metadata
 
     # event type values
 
@@ -370,6 +391,9 @@ def main():
     parser.add_option('-k', '--key', metavar='API_KEY',
             type='string', dest='key', default='',
             help='API key for POST operation.')
+    parser.add_option('-s', '--script_alias', metavar='URI_PREFIX',
+            type='string', dest='script_alias', default='/',
+            help='Set the script_alias arg if the perfsonar API is configured to use one (default=%default which means none set).')
     parser.add_option('-v', '--verbose',
         dest='verbose', action='store_true', default=False,
         help='Verbose output.')
