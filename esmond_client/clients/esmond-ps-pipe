@@ -100,47 +100,69 @@ def id_and_extract(data, _log):
     """
 
     class Payload(object):
-        input_type = None
+        tool_type = None
+        input_source = None
+        input_destination = None
         payload = None
 
     payload = Payload()
 
-    input_type = None
     json_block = ''
 
     scanning = False
 
-    # XXX(mmg) - FIX THIS. Need verbose output to get the metadata
-    # and this parsing block made incorrect assumptions.
-
     for i in data:
+        ## ignore
+        # skip blank lines
         if not i.strip():
             continue
+        # skip extraneous output if not scanning the json
+        if not scanning and not i.startswith('bwctl:'):
+            continue
 
+        ## pull out metadata from the --verbose output
         if i.startswith('bwctl: Using tool:'):
-            input_type = i.split()[3]
+            payload.tool_type = i.split()[3]
 
-        if i.startswith('SENDER END'):
-            scanning = False
+        if i.strip().endswith('as the address for remote sender'):
+            payload.input_source = i.split()[2]
+
+        if i.strip().endswith('as the address for remote receiver'):
+            payload.input_destination = i.split()[2]
+
+        ## scanning logic
+        # end scanning token
+        if i.startswith('bwctl: stop_tool:'):
             break
-
+        # gather the json
         if scanning:
             json_block += i
-
-        if i.startswith('SENDER START'):
+        # token to start gathering the json
+        if i.startswith('bwctl: start_tool:'):
             scanning = True
 
-    if not input_type:
-        _log('id_and_extract.error', 'could not extract test type.')
-    else:
-        payload.input_type = input_type
+    # did we find the scanning tokens?
+    if not scanning:
+        _log('id_and_extract.error', 'did not find bwctl: start_tool token to extract JSON from output')
+        _log('id_and_extract.error', 'bwctl must be run with the --verbose flag')
 
+    # check that appropriate metadata was extracted
+    metadata_found = True
+    fields = ('tool_type', 'input_source', 'input_destination',)
+
+    for f in fields:
+        if not getattr(payload, f):
+            metadata_found = False
+            _log('id_and_extract.error', 'could not extract {0}'.format(f))
+
+    # parse the json
     try:
         payload.payload = json.loads(json_block)
     except ValueError:
         _log('id_and_extract.error', 'could not load json_block: {0}'.format(json_block))
 
-    if not payload.payload or not payload.input_type:
+    # make sure we got everything
+    if not payload.payload or not metadata_found:
         return None
     else:
         return payload
@@ -300,8 +322,9 @@ def main():
     payload = id_and_extract(data, _log)
 
     if not payload:
-        _log('main.fatal', 'could not extract type and valid json from input')
-        _log('main.debug', '{0}'.format(''.join(data)))
+        _log('main.fatal', 'could not extract metadata and valid json from input')
+        if options.verbose:
+            _log('main.debug', '{0}'.format(''.join(data)))
         _log('main.fatal', 'exiting')
         sys.exit(-1)
 
@@ -314,7 +337,7 @@ def main():
 
     # process the encapsulated data
     try:
-        typemap[payload.input_type](o, _log)
+        typemap[payload.tool_type](o, _log)
     except KeyError:
         _log('main.fatal', 'there is no handler for input type: {0}'.format(payload.input_type))
         _log('main.fatal', 'exiting')
