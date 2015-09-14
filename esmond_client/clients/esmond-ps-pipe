@@ -11,6 +11,7 @@ import datetime
 import json
 import logging
 import os
+import socket
 import sys
 import time
 
@@ -94,18 +95,49 @@ class RecursiveDataObject(object):
     def to_dict(self):
         return self._data
 
+class BwctlPayload(object):
+    def __init__(self):
+        self.tool_name = None
+        self.input_source = None
+        self.input_destination = None
+        self.payload = None
+
+        self._measurement_agent = None
+
+    @property
+    def measurement_agent(self):
+        if self._measurement_agent:
+            return self._measurement_agent
+
+        version = None
+
+        try:
+            socket.gethostbyname(self.input_destination)
+            version = 4
+        except socket.gaierror:
+            pass
+
+        try:
+            socket.getaddrinfo(self.input_destination, None, socket.AF_INET6)
+            version = 6
+        except socket.gaierror:
+            pass
+
+        sock_flags = { 4: socket.AF_INET, 6: socket.SOCK_DGRAM }
+
+        s = socket.socket(sock_flags.get(version), socket.SOCK_DGRAM)
+        s.connect((self.input_destination, 80))
+        self._measurement_agent = (s.getsockname()[0])
+        s.close()
+
+        return self._measurement_agent
+
 def id_and_extract(data, _log):
     """
     Identify the piped input and isolate the json part.
     """
 
-    class Payload(object):
-        tool_type = None
-        input_source = None
-        input_destination = None
-        payload = None
-
-    payload = Payload()
+    payload = BwctlPayload()
 
     json_block = ''
 
@@ -122,7 +154,7 @@ def id_and_extract(data, _log):
 
         ## pull out metadata from the --verbose output
         if i.startswith('bwctl: Using tool:'):
-            payload.tool_type = i.split()[3]
+            payload.tool_name = i.split()[3]
 
         if i.strip().endswith('as the address for remote sender'):
             payload.input_source = i.split()[2]
@@ -148,7 +180,7 @@ def id_and_extract(data, _log):
 
     # check that appropriate metadata was extracted
     metadata_found = True
-    fields = ('tool_type', 'input_source', 'input_destination',)
+    fields = ('tool_name', 'input_source', 'input_destination',)
 
     for f in fields:
         if not getattr(payload, f):
@@ -165,6 +197,7 @@ def id_and_extract(data, _log):
     if not payload.payload or not metadata_found:
         return None
     else:
+        print payload.measurement_agent
         return payload
 
 def process_iperf3(o, _log):
@@ -337,7 +370,7 @@ def main():
 
     # process the encapsulated data
     try:
-        typemap[payload.tool_type](o, _log)
+        typemap[payload.tool_name](o, _log)
     except KeyError:
         _log('main.fatal', 'there is no handler for input type: {0}'.format(payload.input_type))
         _log('main.fatal', 'exiting')
