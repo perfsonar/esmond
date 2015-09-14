@@ -71,7 +71,7 @@ class RecursiveDataObject(object):
         elif isinstance(data, list):
             return [ RecursiveDataObject(x) for x in data ]
         # modify outgoing named attributes
-        elif name in ('time','timesecs',):
+        elif name in ('time',):
             return self._to_datetime(data)
 
         return data
@@ -197,23 +197,22 @@ def id_and_extract(data, _log):
     if not payload.payload or not metadata_found:
         return None
     else:
-        print payload.measurement_agent
         return payload
 
-def process_iperf3(o, _log):
+def process_iperf3(o, payload, _log):
     _log('process_iperf3.start', 'begin')
 
     # metadata
 
     # event type values
 
-    # XXX(mmg) - what is the ts for each of these data points?
+    # timestamp for all event type inserts
+    ts = o.start.timestamp.timesecs
 
     # throughput
     tp = o.end.sum_received.bits_per_second
 
     # throughput-subintervals
-    # XXX(mmg) - the list of dicts will be the value.
     tp_subints = list()
 
     for i in o.intervals:
@@ -222,7 +221,7 @@ def process_iperf3(o, _log):
             duration=i.sum.seconds, 
             throughput=i.sum.bits_per_second
         )
-        tp_subints.append(RecursiveDataObject(d))
+        tp_subints.append(d)
 
     # packet-count-lost
     # and
@@ -240,13 +239,12 @@ def process_iperf3(o, _log):
             ps = o.end.sum.packets
         # loss rate
         if pl and ps:
-            lr = RecursiveDataObject(dict(numerator=pl, denominator=ps))
+            lr = dict(numerator=pl, denominator=ps)
 
     # packet-retransmits
     prt = o.end.sum_sent.retransmits
 
     # packet-retransmits-subintervals
-    # XXX(mmg) - the list of dicts will be the value.
     pr_subints = list()
 
     for i in o.intervals:
@@ -255,7 +253,7 @@ def process_iperf3(o, _log):
             duration=i.sum.seconds, 
             retransmits=i.sum.retransmits
         )
-        pr_subints.append(RecursiveDataObject(d))
+        pr_subints.append(d)
 
     # streams-packet-retransmits
     # and
@@ -268,29 +266,28 @@ def process_iperf3(o, _log):
         # retrans
         sp_retrans = list()
         for i in o.end.streams:
-            # XXX(mmg) - need clarification on this
-            pass
+            sp_retrans.append(i.sender.retransmits)
 
         # retrans-subint
         # XXX(mmg) - would be good to get a real example of this
         # to make sure this is all correct.
         sp_retrans_subint = list()
         for i in o.intervals:
-            sl = list()
+            sl = list() # sub-list
             for ii in i.streams:
                 d = dict(
                     start=ii.start, 
                     duration=ii.seconds, 
                     retransmits=ii.retransmits
                 )
-                sl.append(RecursiveDataObject(d))
+                sl.append(d)
             sp_retrans_subint.append(sl)
+        print 'xxx', sp_retrans_subint
 
         # throughput
+        sp_throughput = list()
         for i in o.end.streams:
-            # XXX(mmg) - need clarification on this
-            # same as above.
-            print i
+            sp_throughput.append(i.receiver.bits_per_second)
 
         # throughput-subint
         st_tput_subint = list()
@@ -302,11 +299,8 @@ def process_iperf3(o, _log):
                     duration=ii.seconds, 
                     throughput=ii.bits_per_second
                 )
-                sl.append(RecursiveDataObject(d))
+                sl.append(d)
             st_tput_subint.append(sl)
-        
-
-
 
 
     _log('process_iperf3.end', 'finished')
@@ -370,7 +364,7 @@ def main():
 
     # process the encapsulated data
     try:
-        typemap[payload.tool_name](o, _log)
+        typemap[payload.tool_name](o, payload, _log)
     except KeyError:
         _log('main.fatal', 'there is no handler for input type: {0}'.format(payload.input_type))
         _log('main.fatal', 'exiting')
