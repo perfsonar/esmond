@@ -242,7 +242,7 @@ def _iperf3_metadata_args(o, payload):
 
     return mda, event_types
 
-def process_iperf3(o, payload, _log):
+def process_iperf3(o, payload, options, _log):
     """
     Process iperf3 input.
     """
@@ -411,7 +411,7 @@ def main():
 
     # process the encapsulated data
     try:
-        typemap[payload.tool_name](o, payload, _log)
+        typemap[payload.tool_name](o, payload, options, _log)
     except KeyError:
         _log('main.fatal', 'there is no handler for input type: {0}'.format(payload.input_type))
         _log('main.fatal', 'exiting')
