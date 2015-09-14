@@ -331,6 +331,9 @@ def process_iperf3(o, payload, options, _log):
         )
         tp_subints.append(d)
 
+    # XXX(mmg) - busted
+    # _process_event_type('throughput-subintervals', tp_subints, et_args)
+
     # packet-count-lost
     # and
     # packet-count-sent
@@ -341,20 +344,23 @@ def process_iperf3(o, payload, options, _log):
         # lost
         if o.end.sum.lost_packets is not None:
             pl = o.end.sum.lost_packets
+            _process_event_type('packet-count-lost', pl, et_args)
         # sent
         if o.end.sum.packets is not None:
             ps = o.end.sum.packets
+            _process_event_type('packet-count-sent', ps, et_args)
         # loss rate
         if pl is not None and ps is not None:
             lr = dict(numerator=pl, denominator=ps)
+            _process_event_type('packet-loss-rate', lr, et_args)
 
     # packet-retransmits
     if o.start.test_start.protocol == 'TCP':
         prt = o.end.sum_sent.retransmits
+        _process_event_type('packet-retransmits', prt, et_args)
 
     # packet-retransmits-subintervals
     pr_subints = list()
-
     for i in o.intervals:
         d = dict(
             start=i.sum.start, 
@@ -362,6 +368,9 @@ def process_iperf3(o, payload, options, _log):
             retransmits=i.sum.retransmits
         )
         pr_subints.append(d)
+
+    # XXX(mmg) - busted
+    # _process_event_type('packet-retransmits-subintervals', pr_subints, et_args)
 
     # streams-packet-retransmits
     # and
@@ -376,6 +385,8 @@ def process_iperf3(o, payload, options, _log):
         for i in o.end.streams:
             sp_retrans.append(i.sender.retransmits)
 
+        _process_event_type('streams-packet-retransmits', sp_retrans, et_args)
+
         # retrans-subint
         sp_retrans_subint = list()
         for i in o.intervals:
@@ -389,13 +400,17 @@ def process_iperf3(o, payload, options, _log):
                 sl.append(d)
             sp_retrans_subint.append(sl)
 
+        _process_event_type('streams-packet-retransmits-subintervals', sp_retrans_subint, et_args)
+
         # throughput
-        sp_throughput = list()
+        s_throughput = list()
         for i in o.end.streams:
-            sp_throughput.append(i.receiver.bits_per_second)
+            s_throughput.append(i.receiver.bits_per_second)
+
+        _process_event_type('streams-throughput', s_throughput, et_args)
 
         # throughput-subint
-        st_tput_subint = list()
+        s_tput_subint = list()
         for i in o.intervals:
             sl = list()
             for ii in i.streams:
@@ -405,7 +420,9 @@ def process_iperf3(o, payload, options, _log):
                     throughput=ii.bits_per_second
                 )
                 sl.append(d)
-            st_tput_subint.append(sl)
+            s_tput_subint.append(sl)
+
+        _process_event_type('streams-throughput-subintervals', s_tput_subint, et_args)
 
 
     _log('process_iperf3.end', 'finished')
