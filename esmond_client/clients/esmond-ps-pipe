@@ -225,7 +225,7 @@ def _process_event_type(event_type, val, args):
     try:
         et.post_data()
     except EventTypePostException as e:
-        args._log('scan_and_load_netlogger.warning', str(e))
+        args._log('_process_event_type.warning', str(e))
 
 #
 # Code to process the iperf3 data
