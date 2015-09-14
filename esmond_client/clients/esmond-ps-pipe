@@ -199,10 +199,58 @@ def id_and_extract(data, _log):
     else:
         return payload
 
+def _iperf3_metadata_args(o, payload):
+    """
+    Assemble the metadata args and the event types for the 
+    metadata depending on what kind of iperf3 input we got.
+    """
+    mda = dict(
+        subject_type='point-to-point',
+        source=o.start.connected[0].local_host,
+        destination=o.start.connected[0].remote_host,
+        tool_name='bwctl/{0}'.format(payload.tool_name),
+        input_source=payload.input_source,
+        input_destination=payload.input_destination,
+        measurement_agent=payload.measurement_agent,
+        ip_transport_protocol=o.start.test_start.protocol,
+        bw_parallel_streams=o.start.test_start.num_streams,
+        time_duration=o.start.test_start.duration,
+        bw_ignore_first_seconds=o.start.test_start.omit,
+    )
+
+    
+    event_types = [
+        'throughput',
+        'throughput-subintervals',
+        'packet-retransmits-subintervals',
+        
+    ]
+
+    if o.start.test_start.num_streams > 1:
+        event_types += [
+            'streams-packet-retransmits',
+            'streams-packet-retransmits-subintervals',
+            'streams-throughput',
+            'streams-throughput-subintervals',
+        ]
+
+    if o.start.test_start.protocol == 'TCP':
+        event_types += ['packet-retransmits']
+
+    if o.start.test_start.protocol == 'UDP':
+        event_types += ['packet-count-lost', 'packet-count-sent', 'packet-loss-rate']
+
+    return mda, event_types
+
 def process_iperf3(o, payload, _log):
+    """
+    Process iperf3 input.
+    """
     _log('process_iperf3.start', 'begin')
 
     # metadata
+
+    mda, event_types = _iperf3_metadata_args(o, payload)
 
     # event type values
 
@@ -210,12 +258,13 @@ def process_iperf3(o, payload, _log):
     ts = o.start.timestamp.timesecs
 
     # throughput
-    # XXX(mmg) - figure this out RE: UDP
-    tp = o.end.sum_received.bits_per_second
+    if o.start.test_start.protocol == 'TCP':
+        tp = o.end.sum_received.bits_per_second
+    elif o.start.test_start.protocol == 'UDP':
+        tp = o.end.sum.bits_per_second
 
     # throughput-subintervals
     tp_subints = list()
-
     for i in o.intervals:
         d = dict(
             start=i.sum.start, 
@@ -242,8 +291,8 @@ def process_iperf3(o, payload, _log):
             lr = dict(numerator=pl, denominator=ps)
 
     # packet-retransmits
-    # XXX(mmg) - figure this out RE: UDP
-    prt = o.end.sum_sent.retransmits
+    if o.start.test_start.protocol == 'TCP':
+        prt = o.end.sum_sent.retransmits
 
     # packet-retransmits-subintervals
     pr_subints = list()
