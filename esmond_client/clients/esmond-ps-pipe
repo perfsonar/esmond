@@ -50,6 +50,10 @@ def setup_log(log_path=None):
     log.setLevel(logging.INFO)
     return log
 
+#
+# Data objects
+#
+
 class RecursiveDataObject(object):
     def __init__(self, initial=None):
         self.__dict__['_data'] = {}
@@ -135,6 +139,10 @@ class BwctlPayload(object):
 
         return self._measurement_agent
 
+#
+# Code for all tool types
+#
+
 def id_and_extract(data, _log):
     """
     Identify the piped input and isolate the json part.
@@ -202,6 +210,27 @@ def id_and_extract(data, _log):
     else:
         return payload
 
+def _process_event_type(event_type, val, args):
+    """
+    Function to handle an event type with a single data point.
+    """
+    et = EventTypePost(args.options.api_url, username=args.options.user,
+            api_key=args.options.key, script_alias=args.options.script_alias, 
+            metadata_key=args.metadata.metadata_key,
+            event_type=event_type)
+    
+    et.add_data_point(args.ts, val)
+
+    # XXX(mmg) - double check we want to do it like this.
+    try:
+        et.post_data()
+    except EventTypePostException as e:
+        args._log('scan_and_load_netlogger.warning', str(e))
+
+#
+# Code to process the iperf3 data
+#
+
 def _iperf3_metadata_args(o, payload):
     """
     Assemble the metadata args and the event types for the 
@@ -216,9 +245,7 @@ def _iperf3_metadata_args(o, payload):
         input_destination=payload.input_destination,
         measurement_agent=payload.measurement_agent,
         ip_transport_protocol=o.start.test_start.protocol,
-        # bw_parallel_streams=o.start.test_start.num_streams,
         time_duration=o.start.test_start.duration,
-        # bw_ignore_first_seconds=o.start.test_start.omit,
     )
 
     
@@ -278,11 +305,21 @@ def process_iperf3(o, payload, options, _log):
     # timestamp for all event type inserts
     ts = o.start.timestamp.timesecs
 
+    # global event type arg to pass to _process_event_type()
+    class A(object):pass
+    et_args = A()
+    et_args.metadata = metadata
+    et_args.options = options
+    et_args.ts = ts
+    et_args._log = _log
+
     # throughput
     if o.start.test_start.protocol == 'TCP':
         tp = o.end.sum_received.bits_per_second
     elif o.start.test_start.protocol == 'UDP':
         tp = o.end.sum.bits_per_second
+
+    _process_event_type('throughput', tp, et_args)
 
     # throughput-subintervals
     tp_subints = list()
