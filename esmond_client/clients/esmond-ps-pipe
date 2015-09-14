@@ -210,6 +210,7 @@ def process_iperf3(o, payload, _log):
     ts = o.start.timestamp.timesecs
 
     # throughput
+    # XXX(mmg) - figure this out RE: UDP
     tp = o.end.sum_received.bits_per_second
 
     # throughput-subintervals
@@ -228,20 +229,20 @@ def process_iperf3(o, payload, _log):
     # packet-count-sent
     # and
     # packet-loss-rate
-    # XXX(mmg) - need to get example of these to make sure this works.
     if o.start.test_start.protocol == 'UDP':
         pl = ps = None
         # lost
-        if o.end.sum.lost_packets:
+        if o.end.sum.lost_packets is not None:
             pl = o.end.sum.lost_packets
         # sent
-        if o.end.sum.packets:
+        if o.end.sum.packets is not None:
             ps = o.end.sum.packets
         # loss rate
-        if pl and ps:
+        if pl is not None and ps is not None:
             lr = dict(numerator=pl, denominator=ps)
 
     # packet-retransmits
+    # XXX(mmg) - figure this out RE: UDP
     prt = o.end.sum_sent.retransmits
 
     # packet-retransmits-subintervals
@@ -262,15 +263,13 @@ def process_iperf3(o, payload, _log):
     # streams-throughput
     # and
     # streams-throughput-subintervals
-    if o.start.test_start.num_streams == 1: # <--- XXX(mmg) FIX THIS!!!!
+    if o.start.test_start.num_streams > 1:
         # retrans
         sp_retrans = list()
         for i in o.end.streams:
             sp_retrans.append(i.sender.retransmits)
 
         # retrans-subint
-        # XXX(mmg) - would be good to get a real example of this
-        # to make sure this is all correct.
         sp_retrans_subint = list()
         for i in o.intervals:
             sl = list() # sub-list
@@ -282,7 +281,6 @@ def process_iperf3(o, payload, _log):
                 )
                 sl.append(d)
             sp_retrans_subint.append(sl)
-        print 'xxx', sp_retrans_subint
 
         # throughput
         sp_throughput = list()
