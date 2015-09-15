@@ -485,12 +485,21 @@ class JsonLogEntryDataObject(LogEntryBase):
         return self._data.get('globus_blocksize')
 
     @property
+    def host(self):
+        # XXX(mmg) - bulletproof against spurious newline in log
+        return self._data.get('host').strip()
+
+    @property
     def nbytes(self):
         return self._data.get('nbytes')
 
     @property
     def nstreams(self):
         return self._data.get('nstreams')
+
+    @property
+    def prog(self):
+        return self._data.get('prog')
 
     @property
     def ret_code(self):
@@ -511,6 +520,10 @@ class JsonLogEntryDataObject(LogEntryBase):
     @property
     def user(self):
         return self._data.get('user')
+
+    @property
+    def volume(self):
+        return self._data.get('volume')
 
     # "nested/richer" document components
 
@@ -638,11 +651,7 @@ def scan_and_load_json(file_path, last_record, options, _log):
                 if count % 100 == 0: _log('scan_and_load_json.info', '{0} records processed'.format(count))
 
             try:
-                # XXX(mmg) place holder for host since it is not there
-                # presuming they will get it in in IP format. Revisit
-                # all of this when added to the logs.
-                host = '127.0.0.1'
-                mda = _generate_metadata_args(host, o.dest, o.cmd_type, host_to_ip=False)
+                mda = _generate_metadata_args(o.host, o.dest, o.cmd_type, host_to_ip=False)
             except Exception, e:
                 _log('scan_and_load_json.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
                 continue
@@ -660,9 +669,7 @@ def scan_and_load_json(file_path, last_record, options, _log):
                 if s.stripe > stripes:
                     stripes = s.stripe
             mp.add_freeform_key_value('bw-stripes', stripes+1)
-            # XXX(mmg) - PROG not in the json yet. Revisit this, remove 
-            # if they can't give it to us, adjust object attr as need be.
-            # mp.add_freeform_key_value('gridftp-program', o.prog)
+            mp.add_freeform_key_value('gridftp-program', o.prog)
             mp.add_freeform_key_value('gridftp-block-size', o.globus_blocksize)
             mp.add_freeform_key_value('tcp-window-size', o.tcp_bufsize)
             mp.add_freeform_key_value('gridftp-bytes-transferred', o.nbytes)
@@ -672,9 +679,8 @@ def scan_and_load_json(file_path, last_record, options, _log):
                 mp.add_freeform_key_value('gridftp-file', o.file)
             if options.name_attr:
                 mp.add_freeform_key_value('gridftp-user', o.user)
-            # XXX(mmg) VOLUME not in the json yet. Revisit as per PROG above.
-            # if options.volume_attr:
-            #     mp.add_freeform_key_value('gridftp-volume', o.volume)
+            if options.volume_attr:
+                mp.add_freeform_key_value('gridftp-volume', o.volume)
 
             try:
                 metadata = mp.post_metadata()
