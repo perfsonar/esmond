@@ -312,6 +312,162 @@ directory in json format:
 
     esmond-ps-get-bulk --url http://nettest.lbl.gov/ --output-format json
 
+Esmond perfSONAR data loading programs
+======================================
+
+There are also client programs for writing data to an MA. This requires that the 
+user have write access to the esmond instance.
+
+Core and/or required args
+-------------------------
+
+The following args are required/generally needed by all programs that write 
+data to an MA.
+
+--user and --key
+~~~~~~~~~~~~~~~~
+
+Both of these args are required. It is the username and api key string that 
+was generated on the MA to allow access to it.
+
+--url
+~~~~~
+
+The url of the MA. Format http://example.com:80 where http or https can be the 
+prefix. Just host and port information, no uri information. Defaults to 
+http://localhost:8080.
+
+--script_alias
+~~~~~~~~~~~~~~
+
+Used when the REST API has been deployed under Apache using a ScriptAlias 
+directive/prefix. This would commonly be set to 'esmond' since the canned 
+CentOS deployments use script alias of /esmond to allow other things to 
+run on the webserver (ie: so the REST API is not the root of the webserver).  
+The default value is '/' - which will not perform any prefixing.
+
+esmond-ps-load-gridftp
+======================
+
+Utility to parse and load GridFTP data.
+
+This will read the default gridftp logs, process the "Transfer stats" entries, 
+and upload the results to the pS esmond backend as metadata and either 
+throughput or failures event types. This has been expanded (using the --json 
+flag) to read the new json formatted gridftp logs that contain additional 
+event types like retransmits, iostat, etc.
+
+The basic use case would that this script be run from cron periodically 
+over the day to parse and load data from the gridftp logs into an esmond 
+backend.  The scanning code will write out the contents of the record that 
+was last loaded as a python pickle file to disc.  This state file is used 
+to pick up from the point the last processing pass got to.
+
+Basic usage: the following arguments are required for baseline operation:
+
+::
+
+    esmond-ps-load-gridftp -f ~/Desktop/gridftp.log -U http://localhost:8000 -u mgoode -k api_key_for_mgoode
+
+In addition to the flags outlined above, required args
+------------------------------------------------------
+
+--file
+~~~~~~
+
+The path to the logfile to process.  The code will normalize the path, 
+so relative paths are fine.  No default.
+
+Commonly used args
+------------------
+
+--json
+~~~~~~
+
+Specifies that the log indicate by the --file flag is the json-formatted 
+GridFTP files.
+
+--pickle
+~~~~~~~~
+
+The path to the pickle file the scanning code uses to store the "state" 
+of the last record that has been processed.  Code uses this to know where 
+to pick up on subsequent scans.  This defaults to ./load_grid_ftp.pickle 
+or ./load_grid_ftp.json.pickle as appropriate - will probably want to 
+change this to a fully qualified path somewhere.
+
+--dont_write
+~~~~~~~~~~~~
+
+Suppresses writing the pickle state file out when the file has been scanned. 
+This would be used when manually/etc processing one or more log files where 
+it is desired to just parse the contents of an entire static (ie: no longer 
+being written to) file.  Defaults to False - use this flag to suppress 
+writing the state file.
+
+--log_dir
+~~~~~~~~~
+
+Can be used to specify a directory to write a log from the program to. 
+If this is not set (the default), then log output will go to stdout.
+
+Optional content selection args
+-------------------------------
+
+The gridftp logs contain information on the user, the file being sent and 
+the volume being written to.  Since these might be considered to be sensitive 
+data, this information is not sent to the backend by default.  The following 
+flags can be set to send that information if desired:
+
+::
+
+    -F (--file_attr): send gridftp-file/value of FILE
+    -N (--name_attr): send gridftp-user/value of USER (name)
+    -V (--volume_attr): send gridftp-volume/value of VOLUME
+
+Other/development args
+----------------------
+
+--single
+~~~~~~~~
+
+Will process a single value starting at the last record sent and stop.  
+This is mostly used for development/testing to "step through" a file 
+record by record.  It will set the pickle state file to the single 
+record sent before exiting.
+
+Running from cron and dealing with rotated logs
+-----------------------------------------------
+
+When running from cron the script should be run with the required arguments
+enumerated above and set the --pickle arg to a fully qualified path, and 
+the --file arg should point to the logfile.  It can be run at whatever 
+frequency the user desires as the code will pick up from the last record 
+that was processed.  When running from cron, the --log_dir arg should 
+be set so the logging output is written to a file rather than sent to 
+stdout.
+
+Log rotation interfere with this if the code has not finished scanning 
+a log before it is rotated and renamed.  If the code is run on the "fresh" 
+log, it will not find the last record that was processed.   To deal with 
+this, this script should also be kicked off using the "prerotate" hook 
+that logrotated provides.
+
+When running this as a prerotate job, the -D (--delete_state) flag should
+also be used.  This will delete the pickle state file when the scan is 
+done with the log before it is rotated.  The state file is deleted so that 
+when the next cron job runs on the new "fresh" log, it will just start 
+scaning from the beginning and not try to search for a record that it 
+won't find.
+
+Alternately if the user doesn't need the data to be periodically loaded, 
+one could opt to exclusively run this as a logrotated/prerotate job such 
+that the entire log is processed in one throw before it is rotated.  In that
+case the --dont_write flag should be used.
+
+esmond-ps-pipe
+--------------
+
 API Client Libraries for perfSONAR data
 =======================================
 
