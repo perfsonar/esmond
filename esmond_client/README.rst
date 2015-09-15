@@ -488,8 +488,7 @@ outlined above and piped input from the bwctl command:
 The primary thing (other than using a -T <tool> that is supported) is that bwctl 
 *must* be run with both the --parsable flag (which generates the json output) 
 *and also* the --verbose flag. esmond-ps-pipe pulls important metadata from 
-the --verbose output, and uses the output to identify the json part of the 
-output. 
+the --verbose output, and uses it to identify the json part of the output. 
 
 If the program is unable to extract the necessary metadata and a valid json 
 payload from the piped input, it will log a fatal error and exit.
