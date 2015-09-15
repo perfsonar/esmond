@@ -466,7 +466,69 @@ that the entire log is processed in one throw before it is rotated.  In that
 case the --dont_write flag should be used.
 
 esmond-ps-pipe
---------------
+==============
+
+Utility to take json-formatted output from bwctl (--parsable flag) and 
+load the data into an esmond MA.
+
+Currently supported tool types:
+
+    * iperf3
+
+Usage
+-----
+
+Primarily relies on the required command line args (--user, --key, etc) 
+outlined above and piped input from the bwctl command:
+
+::
+
+    bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose | ./esmond-ps-pipe --user mgoode --key api_key_for_mgoode
+
+The primary thing (other than using a -T <tool> that is supported) is that bwctl 
+*must* be run with both the --parsable flag (which generates the json output) 
+*and also* the --verbose flag. esmond-ps-pipe pulls important metadata from 
+the --verbose output, and uses the output to identify the json part of the 
+output. 
+
+If the program is unable to extract the necessary metadata and a valid json 
+payload from the piped input, it will log a fatal error and exit.
+
+Optional args
+-------------
+
+--log_dir
+~~~~~~~~~
+
+Like esmond-ps-load-gridftp, this takes a --log_dir arg which specifies the 
+directory that logging output should be written to. If not specified, logging 
+output will got to stdout.
+
+Event types
+-----------
+
+iperf3
+~~~~~~
+
+The following event types are extracted (as appropriate RE: TCP, UDP, streams,
+etc) from the iperf3 data:
+
+::
+
+    throughput
+    throughput-subintervals
+    packet-retransmits-subintervals
+    streams-packet-retransmits
+    streams-packet-retransmits-subintervals
+    streams-throughput
+    streams-throughput-subintervals
+    packet-retransmits
+    packet-count-lost
+    packet-count-sent
+    packet-loss-rate
+
+
+
 
 API Client Libraries for perfSONAR data
 =======================================

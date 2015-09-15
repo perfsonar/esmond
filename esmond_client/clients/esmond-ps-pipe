@@ -4,7 +4,10 @@
 esmond-ps-pipe - take piped json output from bwctl and load into an esmond 
 perfsonar MA. To wit:
 
-bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable | esmond-ps-pipe -url http://ps-archive.es.net
+bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose | esmond-ps-pipe -url http://ps-archive.es.net --user mgoode --key api_key_string
+
+See further documention in README.rst or use the --help flag for a full 
+list of arguments.
 """
 
 import datetime
