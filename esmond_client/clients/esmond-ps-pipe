@@ -214,6 +214,9 @@ def _process_event_type(event_type, val, args):
     """
     Function to handle an event type with a single data point.
     """
+    if args.options.verbose:
+        args._log('_process_event_type.start', '{0}'.format(event_type))
+
     et = EventTypePost(args.options.api_url, username=args.options.user,
             api_key=args.options.key, script_alias=args.options.script_alias, 
             metadata_key=args.metadata.metadata_key,
@@ -221,9 +224,10 @@ def _process_event_type(event_type, val, args):
     
     et.add_data_point(args.ts, val)
 
-    # XXX(mmg) - double check we want to do it like this.
     try:
         et.post_data()
+        if args.options.verbose:
+            args._log('_process_event_type.end', '{0}'.format(event_type))
     except EventTypePostException as e:
         args._log('_process_event_type.warning', str(e))
 
@@ -327,12 +331,11 @@ def process_iperf3(o, payload, options, _log):
         d = dict(
             start=i.sum.start, 
             duration=i.sum.seconds, 
-            throughput=i.sum.bits_per_second
+            val=i.sum.bits_per_second
         )
         tp_subints.append(d)
 
-    # XXX(mmg) - busted
-    # _process_event_type('throughput-subintervals', tp_subints, et_args)
+    _process_event_type('throughput-subintervals', tp_subints, et_args)
 
     # packet-count-lost
     # and
@@ -365,12 +368,11 @@ def process_iperf3(o, payload, options, _log):
         d = dict(
             start=i.sum.start, 
             duration=i.sum.seconds, 
-            retransmits=i.sum.retransmits
+            val=i.sum.retransmits
         )
         pr_subints.append(d)
 
-    # XXX(mmg) - busted
-    # _process_event_type('packet-retransmits-subintervals', pr_subints, et_args)
+    _process_event_type('packet-retransmits-subintervals', pr_subints, et_args)
 
     # streams-packet-retransmits
     # and
