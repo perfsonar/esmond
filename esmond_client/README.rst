@@ -312,6 +312,7 @@ directory in json format:
 
     esmond-ps-get-bulk --url http://nettest.lbl.gov/ --output-format json
 
+======================================
 Esmond perfSONAR data loading programs
 ======================================
 
@@ -319,26 +320,26 @@ There are also client programs for writing data to an MA. This requires that the
 user have write access to the esmond instance.
 
 Core and/or required args
--------------------------
+=========================
 
 The following args are required/generally needed by all programs that write 
 data to an MA.
 
 --user and --key
-~~~~~~~~~~~~~~~~
+----------------
 
 Both of these args are required. It is the username and api key string that 
 was generated on the MA to allow access to it.
 
 --url
-~~~~~
+-----
 
 The url of the MA. Format http://example.com:80 where http or https can be the 
 prefix. Just host and port information, no uri information. Defaults to 
 http://localhost:8080.
 
 --script_alias
-~~~~~~~~~~~~~~
+--------------
 
 Used when the REST API has been deployed under Apache using a ScriptAlias 
 directive/prefix. This would commonly be set to 'esmond' since the canned 
@@ -473,7 +474,7 @@ load the data into an esmond MA.
 
 Currently supported tool types:
 
-    * iperf3
+* iperf3
 
 Usage
 -----
