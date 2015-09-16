@@ -305,8 +305,6 @@ def process_iperf3(o, payload, options, _log):
         _log('process_iperf3.error', 'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(str(e)))
         return None
 
-    print metadata
-
     # event type values
 
     # timestamp for all event type inserts
