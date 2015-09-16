@@ -487,8 +487,8 @@ outlined above and piped input from the bwctl command:
     bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose | ./esmond-ps-pipe --user mgoode --key api_key_for_mgoode
 
 The primary thing (other than using a -T <tool> that is supported) is that bwctl 
-*must* be run with both the --parsable flag (which generates the json output) 
-*and also* the --verbose flag. esmond-ps-pipe pulls important metadata from 
+**must** be run with both the --parsable flag (which generates the json output) 
+**and also** the --verbose flag. esmond-ps-pipe pulls important metadata from 
 the --verbose output, and uses it to identify the json part of the output. 
 
 If the program is unable to extract the necessary metadata and a valid json 
@@ -529,7 +529,7 @@ etc) from the iperf3 data:
 
 
 
-
+=======================================
 API Client Libraries for perfSONAR data
 =======================================
 
