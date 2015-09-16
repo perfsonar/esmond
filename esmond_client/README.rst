@@ -1,12 +1,13 @@
-=================================================================
+*****************************************************************
 Client libraries and programs for esmond: ESnet Monitoring Daemon
-=================================================================
+*****************************************************************
 
+==================================
 Client programs for perfSONAR data
 ==================================
 
 esmond-ps-get-endpoints
------------------------
+=======================
 
 A discovery tool to quickly see what tests have been stored in an esmond 
 perfSONAR archive. Give a list of tests in MA with the following sample
@@ -22,7 +23,7 @@ information:
 
 
 esmond-ps-get-metadata
-----------------------
+======================
 
 Similar to get-endpoints, but this will fetch the actual metadata test data 
 from an esmond perfSONAR archive.  By default it will show the measurements 
@@ -72,7 +73,7 @@ Sample output with the --metadata-extended flag:
 
 
 esmond-ps-get
--------------
+=============
 
 Tool to pull smaller, more focused sets of data from a perfSONAR MA. This 
 requires a source/dest pair as well as a specific event type. Intended to 
@@ -80,7 +81,7 @@ be more of a "quick look" at some data.  To gather more/larger amounts
 of data, esmond-ps-get-bulk is intended for that.
 
 esmond-ps-get-bulk
-------------------
+==================
 
 Tool to pull non-trivial amounts of data from a perfSONAR esmond archive.
 
