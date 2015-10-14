@@ -20,8 +20,14 @@ import time
 
 from optparse import OptionParser
 
-from esmond_client.perfsonar.post import (MetadataPost, EventTypePost,
-    MetadataPostException, EventTypePostException)
+from esmond_client.perfsonar.post import (
+    EventTypeBulkPost,
+    EventTypeBulkPostException,
+    EventTypePost,
+    EventTypePostException, 
+    MetadataPost, 
+    MetadataPostException, 
+)
 
 import pprint
 
@@ -213,6 +219,8 @@ def id_and_extract(data, _log):
     else:
         return payload
 
+etb = None
+
 def _process_event_type(event_type, val, args):
     """
     Function to handle an event type with a single data point.
@@ -220,19 +228,16 @@ def _process_event_type(event_type, val, args):
     if args.options.verbose:
         args._log('_process_event_type.start', '{0}'.format(event_type))
 
-    et = EventTypePost(args.options.api_url, username=args.options.user,
-            api_key=args.options.key, script_alias=args.options.script_alias, 
-            metadata_key=args.metadata.metadata_key,
-            event_type=event_type)
-    
-    et.add_data_point(args.ts, val)
+    global etb
 
-    try:
-        et.post_data()
+    if not etb:
         if args.options.verbose:
-            args._log('_process_event_type.end', '{0}'.format(event_type))
-    except EventTypePostException as e:
-        args._log('_process_event_type.warning', str(e))
+            args._log('_process_event_type', 'initializing bulk object')
+        etb = EventTypeBulkPost(args.options.api_url, username=args.options.user,
+                api_key=args.options.key, script_alias=args.options.script_alias, 
+                metadata_key=args.metadata.metadata_key)
+    
+    etb.add_data_point(event_type, args.ts, val)
 
 #
 # Code to process the iperf3 data
@@ -427,6 +432,16 @@ def process_iperf3(o, payload, options, _log):
 
         _process_event_type('streams-throughput-subintervals', s_tput_subint, et_args)
 
+    global etb
+
+    try:
+        etb.post_data()
+    except EventTypeBulkPostException as e:
+        _log('process_iperf3.warning', str(e))
+
+    # this should never be an issue since everything should fall out 
+    # of scope after every run but let's be sure.
+    etb = None
 
     _log('process_iperf3.end', 'finished')
 

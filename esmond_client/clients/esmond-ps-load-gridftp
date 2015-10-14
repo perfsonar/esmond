@@ -19,8 +19,14 @@ import time
 
 from optparse import OptionParser
 
-from esmond_client.perfsonar.post import (MetadataPost, EventTypePost,
-    MetadataPostException, EventTypePostException)
+from esmond_client.perfsonar.post import (
+    EventTypeBulkPost,
+    EventTypeBulkPostException,
+    EventTypePost,
+    EventTypePostException,
+    MetadataPost, 
+    MetadataPostException, 
+)
 
 # # # #
 # Base classes, utility functions, etc
@@ -302,31 +308,26 @@ def scan_and_load_netlogger(file_path, last_record, options, _log):
                 return None
 
             if o.code == 226:
-                et = EventTypePost(options.api_url, username=options.user,
+                # Set up bulk post object
+                etb = EventTypeBulkPost(options.api_url, username=options.user,
                     api_key=options.key, script_alias=options.script_alias, 
-                    metadata_key=metadata.metadata_key,
-                    event_type='throughput')
+                    metadata_key=metadata.metadata_key)
+                # Calculate throughput
                 try:
                     throughput = 8 * o.nbytes / (o.date - o.start).total_seconds()
-                    et.add_data_point(_epoch(o.start), throughput)
-                    try:
-                        et.post_data()
-                    except EventTypePostException as e:
-                        _log('scan_and_load_netlogger.warning', str(e))
+                    etb.add_data_point('throughput', _epoch(o.start), throughput)
                 except ZeroDivisionError:
                     # If there is a divide by zero issue calculating throughput
                     # (ie: same timestamps), then don't add the data point.
                     pass
 
-                et = EventTypePost(options.api_url, username=options.user,
-                    api_key=options.key, script_alias=options.script_alias, 
-                    metadata_key=metadata.metadata_key,
-                    event_type='streams-packet-retransmits')
-                et.add_data_point(_epoch(o.start), o.retrans)
+                # Add retransmits
+                etb.add_data_point('streams-packet-retransmits', _epoch(o.start), o.retrans)
+
                 try:
-                    et.post_data()
-                except EventTypePostException as e:
-                    _log('scan_and_load_netlogger.warning', str(e))
+                    etb.post_data()
+                except EventTypeBulkPostException as e:
+                    _log('scan_and_load_json.warning', str(e))
             else:
                 et = EventTypePost(options.api_url, username=options.user,
                     api_key=options.key, script_alias=options.script_alias, 
@@ -599,39 +600,28 @@ def scan_and_load_json(file_path, last_record, options, _log):
                 _log('scan_and_load_json.error', 'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(str(e)))
                 return None
 
-            # Calculate/Post throughput
-            et = EventTypePost(options.api_url, username=options.user,
+            # Set up event type bulk object
+            etb = EventTypeBulkPost(options.api_url, username=options.user,
                     api_key=options.key, script_alias=options.script_alias, 
-                    metadata_key=metadata.metadata_key,
-                    event_type='throughput')
+                    metadata_key=metadata.metadata_key)
+
+            # Calculate throughput
             try:
                 throughput = 8 * o.nbytes / (o.end_timestamp - o.start_timestamp).total_seconds()
-                et.add_data_point(_epoch(o.start_timestamp), throughput)
-                try:
-                    et.post_data()
-                except EventTypePostException as e:
-                    _log('scan_and_load_json.warning', str(e))
+                etb.add_data_point('throughput', _epoch(o.start_timestamp), throughput)
             except ZeroDivisionError:
                 # If there is a divide by zero issue calculating throughput
                 # (ie: same timestamps), then don't add the data point.
                 pass
 
-            # Calculate/Post retransmits - a list of integers in this case
+            # # Calculate retransmits - a list of integers in this case
             retrans = list()
             for s in o.streams:
                 retrans.append(s.tcpinfo.total_retrans)
 
-            et = EventTypePost(options.api_url, username=options.user,
-                    api_key=options.key, script_alias=options.script_alias, 
-                    metadata_key=metadata.metadata_key,
-                    event_type='streams-packet-retransmits')
-            et.add_data_point(_epoch(o.start_timestamp), retrans)
-            try:
-                et.post_data()
-            except EventTypePostException as e:
-                _log('scan_and_load_json.warning', str(e))
+            etb.add_data_point('streams-packet-retransmits', _epoch(o.start_timestamp), retrans)
 
-            # these event types are added wholesale as json blobs.
+            # # these event types are added wholesale as json blobs.
             et_map = {
                 'iostat': o.iostat.to_dict(),
                 'mpstat': o.mpstat.to_dict(),
@@ -640,15 +630,12 @@ def scan_and_load_json(file_path, last_record, options, _log):
             }
 
             for k,v in et_map.items():
-                et = EventTypePost(options.api_url, username=options.user,
-                    api_key=options.key, script_alias=options.script_alias, 
-                    metadata_key=metadata.metadata_key,
-                    event_type=k)
-                et.add_data_point(_epoch(o.start_timestamp), v)
-                try:
-                    et.post_data()
-                except EventTypePostException as e:
-                    _log('scan_and_load_json.warning', str(e))
+                etb.add_data_point(k, _epoch(o.start_timestamp), v)
+
+            try:
+                etb.post_data()
+            except EventTypeBulkPostException as e:
+                _log('scan_and_load_json.warning', str(e))
 
             if options.single or h.interrupted:
                 if h.interrupted:

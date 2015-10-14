@@ -355,7 +355,6 @@ class EventTypeBulkPost(PostBase):
             self.ex('POST connection error: {0}'.format(str(e)))
 
         if not r.status_code == 201:
-            # Change this to an exception?
             self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
 
     def ex(self, msg):
