@@ -33,12 +33,39 @@ from esmond.api.api_v2 import (DataObject, _get_ersatz_esmond_api_queryset,
 
 from esmond.api.perfsonar.types import *
 
+from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData, AggregationBin
+
+from esmond.config import get_config_path, get_config
+
 from esmond.util import get_logger
 
 #
 # Logger
 #
 log = get_logger(__name__)
+
+#
+# Cassandra db connection
+#
+try:
+    db = CASSANDRA_DB(get_config(get_config_path()), qname='perfsonar')
+except ConnectionException, e:
+    error_msg = "Unable to connect to cassandra. Please verify cassandra is running."
+    log.error(error_msg)
+    log.debug(str(e))
+    raise ConnectionException(error_msg)
+
+#
+# Column families
+#
+EVENT_TYPE_CF_MAP = {
+    'histogram': db.raw_cf,
+    'integer': db.rate_cf,
+    'json': db.raw_cf,
+    'percentage': db.agg_cf,
+    'subinterval': db.raw_cf,
+    'float': db.agg_cf
+}
 
 #
 # Bases, etc
@@ -117,6 +144,9 @@ class UtilMixin(object):
             ret.append(d)
 
         return ret
+
+    def row_prefix(self, event_type):
+        return ['ps', event_type.replace('-', '_') ]
 
 class FilterUtilMixin(object):
 
@@ -214,6 +244,13 @@ class FilterUtilMixin(object):
         return {"begin": begin_time,
                 "end": end_time,
                 "has_filters": has_filters}
+                
+    def valid_summary_window(self, sw):
+        try:
+            sw = int(sw)
+        except ValueError:
+            raise ParseError(detail="Summary window parameter must be an integer")
+        return sw
 
 
 class PSPaginator(pagination.LimitOffsetPagination):
@@ -226,7 +263,23 @@ class PSPaginator(pagination.LimitOffsetPagination):
     ## I actually kinda like the default pagination better
     ## but sticking with backward compatibility here
     def get_paginated_response(self, data):
-        return Response(data)
+    
+        #create some pagination links in headers
+        next_url = self.get_next_link()
+        previous_url = self.get_previous_link()
+        if next_url is not None and previous_url is not None:
+            link = '<{next_url}>; rel="next", <{previous_url}>; rel="prev"'
+        elif next_url is not None:
+            link = '<{next_url}>; rel="next"'
+        elif previous_url is not None:
+            link = '<{previous_url}>; rel="prev"'
+        else:
+            link = ''
+        link = link.format(next_url=next_url, previous_url=previous_url)
+        headers = {'Link': link} if link else {}
+        
+        #return response with unmodified data and links in headers
+        return Response(data, headers=headers)
         
 class PSMetadataPaginator(PSPaginator):
     """
@@ -241,7 +294,7 @@ class PSMetadataPaginator(PSPaginator):
             data[0]['metadata-previous-page'] = self.get_previous_link()
             data[0]['metadata-next-page'] = self.get_next_link()
             
-        return Response(data)
+        return super(PSMetadataPaginator, self).get_paginated_response(data)
         
 class ViewsetBase(viewsets.GenericViewSet):
     # XXX(mmg): enable permission_classes attr later.
@@ -596,10 +649,18 @@ class EventTypeDetailViewset(UtilMixin, ViewsetBase):
 # 
 
 class TimeSeriesSerializer(serializers.Serializer):
-    """Not used since timeseries data will be in several forms."""
-    pass
+    
+    def to_representation(self, obj):
+        if obj.has_key('ts'):
+            obj['ts'] = int( obj['ts'] / 1e3 )
+        if obj.has_key('is_valid'):
+            del obj['is_valid']
+        if obj.has_key('cf'):
+            del obj['cf']
+            
+        return obj
 
-class TimeSeriesViewset(UtilMixin, ViewsetBase):
+class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
     """
     The queryset attribute on this non-model resource is fake.
     It's there so we can use our custom resource permissions 
@@ -608,7 +669,50 @@ class TimeSeriesViewset(UtilMixin, ViewsetBase):
     """
     queryset = _get_ersatz_esmond_api_queryset('timeseries')
     serializer_class = TimeSeriesSerializer # mollify viewset
+    pagination_class = PSPaginator
+    
+    def _query_database(self, metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results):
+        results = []
+        datapath = self.row_prefix(event_type)
+        datapath.append(metadata_key)
+        if(summary_type != 'base'):
+            datapath.append(SUMMARY_TYPES[summary_type])
+        
+        query_type = EVENT_TYPE_CONFIG[event_type]["type"]
+        if query_type not in EVENT_TYPE_CF_MAP:
+            raise ParseError(detail="Misconfigured event type on server side. Invalid 'type' %s" % query_type)
+        col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(db, SUMMARY_TYPES[summary_type])
+        if col_fam is None:
+            col_fam = EVENT_TYPE_CF_MAP[query_type]
+            
+        #prep times
+        begin_millis = begin_time*1000
+        end_millis = None
+        if end_time is None:
+            # we need a value here so we know what years to look at when we get row keys
+            # add a 3600 second buffer to capture results that may have been updated after we 
+            # calculate this timestamp.
+            end_millis = (int(time.time()) + 3600) * 1000
+        else:
+            end_millis = end_time*1000
+        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%s end=%s start_millis=%s end_millis=%s cf=%s datapath=%s" %
+                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, begin_millis, end_millis, col_fam, datapath))
 
+        if col_fam == db.agg_cf:
+            results = db.query_aggregation_timerange(path=datapath, freq=freq,
+                   cf='average', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
+        elif col_fam == db.rate_cf:
+            results = db.query_baserate_timerange(path=datapath, freq=freq,
+                    cf='delta', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
+        elif col_fam == db.raw_cf:
+            results = db.query_raw_data(path=datapath, freq=freq,
+                   ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
+        else:
+            log.debug("action=query_timeseries.end status=-1")
+            raise ParseError(detail="Requested data does not map to a known column-family")
+
+        return results
+        
     def retrieve(self, request, **kwargs):
         """
         GET request for timeseries data.
@@ -625,14 +729,50 @@ class TimeSeriesViewset(UtilMixin, ViewsetBase):
 
         depending on the request.
         """
+        
+        #verify URL
+        if 'event_type' not in kwargs:
+            raise ParseError(detail="No event type specified for data query")
+        elif 'metadata_key' not in kwargs:
+            raise ParseError(detail="No metadata key specified for data query")
+        elif kwargs['event_type'] not in EVENT_TYPE_CONFIG:
+            raise ParseError(detail="Unsupported event type '%s' provided" % kwargs['event_type'])
+        elif "type" not in EVENT_TYPE_CONFIG[kwargs['event_type']]:
+            raise ParseError(detail="Misconfigured event type on server side. Missing 'type' field")
+        event_type = kwargs['event_type']
+        metadata_key = kwargs['metadata_key']
+        summary_type = 'base'
+        if 'summary_type' in kwargs:
+            summary_type = kwargs['summary_type']
+            if summary_type not in SUMMARY_TYPES:
+                raise ParseError(detail="Invalid summary type '%s'" % summary_type)
+        freq = None
+        if 'summary_window' in kwargs:
+            freq = self.valid_summary_window(kwargs['summary_window'])
 
-        # generate response based on kwargs and query args, 
-        # feed response payload to Response()
-        payload = [
-            dict(ts=30, val=10), dict(ts=60, val=20)
-            ]
-
-        return Response(payload)
+        #Handle time filters
+        time_result = self.handle_time_filters(request.query_params)
+        begin_time = time_result['begin']
+        end_time = time_result['end']
+        
+        #Handle pagination
+        ##set high limit by default. This is a performance gain so pycassa doesn't have to count
+        max_results = 1000000 
+        #if specified, make sure we grab enough results so can handle offset
+        if LIMIT_FILTER in request.query_params:
+            max_results = int(request.query_params[LIMIT_FILTER])
+            if OFFSET_FILTER in request.query_params:
+                max_results += int(request.query_params[OFFSET_FILTER])
+                
+        #send query
+        results = self._query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results)
+        #serialize result
+        data = self.serializer_class(results, many=True).data
+        #paginate result
+        data = self.paginator.paginate_queryset(data, self.request, view=self)
+        
+        #return response with pagination headers set
+        return self.paginator.get_paginated_response(data)
 
 
     def create(self, request, **kwargs):
@@ -669,6 +809,3 @@ class TimeSeriesViewset(UtilMixin, ViewsetBase):
         print request_data
 
         return Response('', status.HTTP_201_CREATED)
-
-
-
