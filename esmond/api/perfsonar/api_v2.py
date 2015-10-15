@@ -11,6 +11,7 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
+from django.db import connection, transaction
 from django.db.models import Q
 from django.utils.timezone import utc
 
@@ -18,7 +19,7 @@ from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
 
 from rest_framework import (viewsets, serializers, status, 
         fields, relations, pagination, mixins, throttling)
-from rest_framework.exceptions import (ParseError, NotFound, APIException)
+from rest_framework.exceptions import (ParseError, NotFound, MethodNotAllowed, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.permissions import (IsAuthenticatedOrReadOnly, AllowAny)
@@ -145,9 +146,6 @@ class UtilMixin(object):
 
         return ret
 
-    def row_prefix(self, event_type):
-        return ['ps', event_type.replace('-', '_') ]
-
 class FilterUtilMixin(object):
 
     def lookup_hostname(self, host, family):
@@ -252,6 +250,9 @@ class FilterUtilMixin(object):
             raise ParseError(detail="Summary window parameter must be an integer")
         return sw
 
+class ConflictException(APIException):
+    status_code=status.HTTP_409_CONFLICT
+    default_detail="Resource already exists"
 
 class PSPaginator(pagination.LimitOffsetPagination):
     """
@@ -280,7 +281,7 @@ class PSPaginator(pagination.LimitOffsetPagination):
         
         #return response with unmodified data and links in headers
         return Response(data, headers=headers)
-        
+
 class PSMetadataPaginator(PSPaginator):
     """
     Metadata API spec requires us to put pagination details in the first
@@ -295,12 +296,178 @@ class PSMetadataPaginator(PSPaginator):
             data[0]['metadata-next-page'] = self.get_next_link()
             
         return super(PSMetadataPaginator, self).get_paginated_response(data)
-        
+
 class ViewsetBase(viewsets.GenericViewSet):
     # XXX(mmg): enable permission_classes attr later.
     # permission_classes = (IsAuthenticatedOrReadOnly, DjangoModelPerm,)
     permission_classes = (AllowAny,) # lack of comma == error
     pagination_class = PSPaginator
+
+class PSTimeSeriesObject(object):
+    def __init__(self, ts, value, metadata_key, event_type=None, summary_type='base', summary_window=0):
+        self._time = ts
+        self.value = value
+        self.metadata_key = metadata_key
+        self.event_type = event_type
+        self.summary_type = summary_type
+        self.summary_window = summary_window
+    
+    @property
+    def datapath(self):
+        datapath = PSTimeSeriesObject.row_prefix(self.event_type)
+        datapath.append(self.metadata_key)
+        if self.summary_type != "base":
+            datapath.append(self.summary_type)
+        
+        return datapath
+    
+    @property
+    def freq(self):
+        freq = None
+        if self.summary_window > 0:
+            freq = self.summary_window
+        
+        return freq
+    
+    @property
+    def base_freq(self):
+        base_freq = 1000
+        if EVENT_TYPE_CONFIG[self.event_type]["type"] == "float":
+            #multiply by 1000 to compensate for division in AggregationBin average 
+            base_freq = DEFAULT_FLOAT_PRECISION * 1000
+        
+        return base_freq
+    
+    @property
+    def time(self):
+        ts = self._time
+        #calculate summary bin
+        if self.summary_type != 'base' and self.summary_window > 0:
+            ts = math.floor(long(ts)/long(self.summary_window)) * long(self.summary_window)
+        
+        return ts
+    
+    def get_datetime(self):
+        return datetime.datetime.utcfromtimestamp(float(self.time))
+    
+    def save(self):
+        #verify object does not already exist
+        if EVENT_TYPE_CF_MAP[EVENT_TYPE_CONFIG[self.event_type]["type"]] != db.raw_cf:
+            existing = PSTimeSeriesObject.query_database(self.metadata_key, self.event_type, 'base', None, int(self.time), int(self.time), 1)
+            if(len(existing) > 0):
+                raise ConflictException(detail="Time series value already exists with event type %s at time %d" % (self.event_type, int(self.time)))
+
+        #Insert into cassandra
+        local_cache = {}
+        #NOTE: Ordering in model allows statistics to go last. If this ever changes may need to update code here.
+        #check that this event_type is defined
+        rawsql_cursor = connection.cursor()
+        rawsql_cursor.execute("SELECT summary_type, summary_window FROM ps_event_types WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s) ORDER BY summary_type", [self.event_type, self.metadata_key])
+        for et in rawsql_cursor.fetchall():
+            ts_obj = PSTimeSeriesObject(self.time,
+                                            self.value,
+                                            self.metadata_key,
+                                            event_type=self.event_type,
+                                            summary_type=et[0],
+                                            summary_window=et[1]
+                                            )
+            self.database_write(ts_obj, local_cache)
+        #make sqlite happy (mainly for unit tests not configured to use postgres)
+        if connection.vendor.startswith('sqlite'):
+            rawsql_cursor.execute("UPDATE ps_event_types SET time_updated='now' WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [self.event_type, self.metadata_key])
+        else:
+            #update time. clear out microseconds since timestamp filters are only seconds and we want to allow exact matches
+            rawsql_cursor.execute("UPDATE ps_event_types SET time_updated=now() WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [self.event_type, self.metadata_key])
+        transaction.commit_unless_managed()
+    
+    @staticmethod
+    def row_prefix(event_type):
+        return ['ps', event_type.replace('-', '_') ]
+    
+    @staticmethod
+    def query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results):
+        results = []
+        datapath = PSTimeSeriesObject.row_prefix(event_type)
+        datapath.append(metadata_key)
+        if(summary_type != 'base'):
+            datapath.append(SUMMARY_TYPES[summary_type])
+        
+        query_type = EVENT_TYPE_CONFIG[event_type]["type"]
+        if query_type not in EVENT_TYPE_CF_MAP:
+            raise ParseError(detail="Misconfigured event type on server side. Invalid 'type' %s" % query_type)
+        col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(db, SUMMARY_TYPES[summary_type])
+        if col_fam is None:
+            col_fam = EVENT_TYPE_CF_MAP[query_type]
+            
+        #prep times
+        begin_millis = begin_time*1000
+        end_millis = None
+        if end_time is None:
+            # we need a value here so we know what years to look at when we get row keys
+            # add a 3600 second buffer to capture results that may have been updated after we 
+            # calculate this timestamp.
+            end_millis = (int(time.time()) + 3600) * 1000
+        else:
+            end_millis = end_time*1000
+        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%s end=%s start_millis=%s end_millis=%s cf=%s datapath=%s" %
+                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, begin_millis, end_millis, col_fam, datapath))
+
+        if col_fam == db.agg_cf:
+            results = db.query_aggregation_timerange(path=datapath, freq=freq,
+                   cf='average', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
+        elif col_fam == db.rate_cf:
+            results = db.query_baserate_timerange(path=datapath, freq=freq,
+                    cf='delta', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
+        elif col_fam == db.raw_cf:
+            results = db.query_raw_data(path=datapath, freq=freq,
+                   ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
+        else:
+            log.debug("action=query_timeseries.end status=-1")
+            raise ParseError(detail="Requested data does not map to a known column-family")
+
+        return results
+
+    def database_write(self, ts_obj, local_cache):
+        data_type = EVENT_TYPE_CONFIG[ts_obj.event_type]["type"]
+        validator = TYPE_VALIDATOR_MAP[data_type]
+        
+        #Determine if we can do the summary
+        if ts_obj.summary_type != "base" and ts_obj.summary_type not in ALLOWED_SUMMARIES[data_type]:
+            #skip invalid summary. should do logging here
+            return
+        
+        #validate data
+        ts_obj.value = validator.validate(ts_obj)
+        
+        #Determine column family
+        col_family = validator.summary_cf(db, ts_obj.summary_type)
+        if col_family is None:
+            col_family = EVENT_TYPE_CF_MAP[data_type]
+        
+        #perform initial summarization
+        if  ts_obj.summary_type== "aggregation":
+            validator.aggregation(db, ts_obj, local_cache)
+        elif ts_obj.summary_type == "average":
+            validator.average(db, ts_obj)
+        elif ts_obj.summary_type == "statistics":
+            validator.statistics(db, ts_obj, local_cache)
+        
+        #insert the data in the target column-family
+        log.debug("action=create_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s ts=%s val=%s cf=%s datapath=%s freq=%s base_freq=%s" %
+                  (ts_obj.metadata_key, ts_obj.event_type, ts_obj.summary_type, ts_obj.summary_window, str(ts_obj.get_datetime()), str(ts_obj.value), col_family, ts_obj.datapath, ts_obj.freq, ts_obj.base_freq ))
+        if col_family == db.rate_cf:
+            ratebin = BaseRateBin(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
+            db.update_rate_bin(ratebin)
+        elif col_family == db.agg_cf:
+            agg = AggregationBin(path=ts_obj.datapath,
+                    ts=ts_obj.get_datetime(), val=ts_obj.value["numerator"],
+                    freq=ts_obj.freq, base_freq=ts_obj.base_freq, count=ts_obj.value["denominator"])
+            db.aggs.insert(agg.get_key(), {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): agg.count}})
+        elif col_family == db.raw_cf:
+            rawdata = RawRateData(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
+            db.set_raw_data(rawdata)
+        log.debug("action=create_timeseries.end status=0")
+
 #
 # Base endpoint(s) 
 # (GET and POST) /archive/
@@ -502,17 +669,15 @@ class ArchiveViewset(mixins.CreateModelMixin,
         POST /perfsonar/archive/"""
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
-            return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
-                status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='Must post content-type: application/json header and json-formatted payload.')
 
         if not request.body:
-            return Response({'error': 'No data payload POSTed.'}, status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='No data payload POSTed.')
 
         try:
             request_data = json.loads(request.body)
         except ValueError:
-            return Response({'error': 'POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body)},
-                status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
 
         # process the json blob that was sent to the server.
         # print request_data
@@ -532,31 +697,59 @@ class ArchiveViewset(mixins.CreateModelMixin,
         """
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
-            return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
-                status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='Must post content-type: application/json header and json-formatted payload.')
 
         if not request.body:
-            return Response({'error': 'No data payload POSTed.'}, status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='No data payload POSTed.')
 
         try:
             request_data = json.loads(request.body)
         except ValueError:
-            return Response({'error': 'POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body)},
-                status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
+        
+        #validate kwargs
+        if "metadata_key" not in kwargs:
+            raise BadRequest("No metadata key provided in URL")
+        
+        #validate data
+        if "data" not in request_data:
+            raise ParseError(detail="Request must contain 'data' element")
+        if not isinstance(request_data["data"], list):
+            raise ParseError(detail="The 'data' element must be an array")
+        
+        #validate 
+        i = 0
+        for ts_item in request_data["data"]:
+            i += 1
+            if DATA_KEY_TIME not in ts_item:
+                raise ParseError(detail="Missing %s field in provided data list at position %d" % (DATA_KEY_TIME, i))                
+            if DATA_KEY_VALUE not in ts_item:
+                raise ParseError(detail="Missing %s field in provided data list at position %d" % (DATA_KEY_VALUE, i))
+            if not isinstance(ts_item[DATA_KEY_VALUE], list):
+                raise ParseError(detail="'%s' field must be an array in provided data list at position %d" % (DATA_KEY_VALUE, i))
+            ts = ts_item[DATA_KEY_TIME]
+            j = 0
+            for val_item in ts_item[DATA_KEY_VALUE]:
+                j += 1
+                if 'event-type' not in val_item:
+                    raise ParseError(detail="Missing event-type field at data item %d in value %d " % (i, j))
+                if DATA_KEY_VALUE not in val_item:
+                    raise ParseError(detail="Missing %s field at data item %d in value %d " % (DATA_KEY_VALUE, i, j))
+                tmp_obj = { DATA_KEY_TIME: ts, DATA_KEY_VALUE: val_item[DATA_KEY_VALUE] }
+                obj = PSTimeSeriesObject(ts, val_item[DATA_KEY_VALUE], kwargs["metadata_key"])
+                obj.event_type =  val_item['event-type']
+                obj.save()
+                
+        #everything succeeded so save to database
+        db.flush()
 
-        # process the json blob that was sent to the server.
-        # print request_data
-
-        # assemble return payload and send back to the client, or 
-        # empty string/etc.
-        return_payload = dict(thanks='for that')
-        return Response(return_payload, status.HTTP_201_CREATED)
+        return Response('', status.HTTP_201_CREATED)
 
     def partial_update(self, request, **kwargs):
         """
         No PATCH verb.
         """
-        return Response({'error': 'does not support PATCH verb'}, status.HTTP_400_BAD_REQUEST)
+        raise MethodNotAllowed(detail='does not support PATCH verb')
 
 #
 # Event type detail endpoint
@@ -625,17 +818,15 @@ class EventTypeDetailViewset(UtilMixin, ViewsetBase):
         """
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
-            return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
-                status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='Must post content-type: application/json header and json-formatted payload.')
 
         if not request.body:
-            return Response({'error': 'No data payload POSTed.'}, status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='No data payload POSTed.')
 
         try:
             request_data = json.loads(request.body)
         except ValueError:
-            return Response({'error': 'POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body)},
-                status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
 
         # process the json blob that was sent to the server.
         # print request_data
@@ -670,48 +861,6 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
     queryset = _get_ersatz_esmond_api_queryset('timeseries')
     serializer_class = TimeSeriesSerializer # mollify viewset
     pagination_class = PSPaginator
-    
-    def _query_database(self, metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results):
-        results = []
-        datapath = self.row_prefix(event_type)
-        datapath.append(metadata_key)
-        if(summary_type != 'base'):
-            datapath.append(SUMMARY_TYPES[summary_type])
-        
-        query_type = EVENT_TYPE_CONFIG[event_type]["type"]
-        if query_type not in EVENT_TYPE_CF_MAP:
-            raise ParseError(detail="Misconfigured event type on server side. Invalid 'type' %s" % query_type)
-        col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(db, SUMMARY_TYPES[summary_type])
-        if col_fam is None:
-            col_fam = EVENT_TYPE_CF_MAP[query_type]
-            
-        #prep times
-        begin_millis = begin_time*1000
-        end_millis = None
-        if end_time is None:
-            # we need a value here so we know what years to look at when we get row keys
-            # add a 3600 second buffer to capture results that may have been updated after we 
-            # calculate this timestamp.
-            end_millis = (int(time.time()) + 3600) * 1000
-        else:
-            end_millis = end_time*1000
-        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%s end=%s start_millis=%s end_millis=%s cf=%s datapath=%s" %
-                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, begin_millis, end_millis, col_fam, datapath))
-
-        if col_fam == db.agg_cf:
-            results = db.query_aggregation_timerange(path=datapath, freq=freq,
-                   cf='average', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
-        elif col_fam == db.rate_cf:
-            results = db.query_baserate_timerange(path=datapath, freq=freq,
-                    cf='delta', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
-        elif col_fam == db.raw_cf:
-            results = db.query_raw_data(path=datapath, freq=freq,
-                   ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
-        else:
-            log.debug("action=query_timeseries.end status=-1")
-            raise ParseError(detail="Requested data does not map to a known column-family")
-
-        return results
         
     def retrieve(self, request, **kwargs):
         """
@@ -765,7 +914,7 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
                 max_results += int(request.query_params[OFFSET_FILTER])
                 
         #send query
-        results = self._query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results)
+        results = PSTimeSeriesObject.query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results)
         #serialize result
         data = self.serializer_class(results, many=True).data
         #paginate result
@@ -793,19 +942,44 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
         """
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
-            return Response({'error': 'Must post content-type: application/json header and json-formatted payload.'},
-                status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='Must post content-type: application/json header and json-formatted payload.')
 
         if not request.body:
-            return Response({'error': 'No data payload POSTed.'}, status.HTTP_400_BAD_REQUEST)
+            raise ParseError(detail='No data payload POSTed.')
 
         try:
             request_data = json.loads(request.body)
         except ValueError:
-            return Response({'error': 'POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body)},
-                status.HTTP_400_BAD_REQUEST)
-
-        # process the json blob that was sent to the server.
-        print request_data
-
+            raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
+        
+        #validate JSON fields
+        if DATA_KEY_TIME not in request_data:
+            raise ParseError(detail="Required field %s not provided in request" % DATA_KEY_TIME)
+        try:
+            long(request_data[DATA_KEY_TIME])
+        except:
+            raise ParseError(detail="Time must be a unix timestamp")
+        if DATA_KEY_VALUE not in request_data:
+            raise ParseError(detail="Required field %s not provided in request" % DATA_KEY_VALUE)
+        
+        #validate kwargs
+        if "metadata_key" not in kwargs:
+            raise ParseError(detail="No metadata key provided in URL")
+        if "event_type" not in kwargs:
+            raise ParseError(detail="event_type must be defined in URL.")
+        if kwargs["event_type"] not in EVENT_TYPE_CONFIG:
+            raise ParseError(detail="Invalid event type %s" % kwargs["event_type"])
+        if "summary_type" in kwargs and kwargs["summary_type"] not in SUMMARY_TYPES:
+            raise ParseError(detail="Invalid summary type %s" % kwargs["summary_type"])
+        if "summary_type" in kwargs and kwargs["summary_type"] != 'base':
+            raise ParseError(detail="Only base summary-type allowed for writing. Cannot use %s" % kwargs["summary_type"])
+ 
+        # Convert to PSTimeSeries object
+        obj = PSTimeSeriesObject(request_data[DATA_KEY_TIME], request_data[DATA_KEY_VALUE], kwargs["metadata_key"])
+        obj.event_type =  kwargs["event_type"] 
+        obj.save()
+        #everything succeeded so save to database. 
+        #do this here as opposed to in obj.save() for performance reasons.
+        db.flush()
+        
         return Response('', status.HTTP_201_CREATED)
