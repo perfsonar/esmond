@@ -2,10 +2,13 @@ import calendar
 import collections
 import copy
 import datetime
+import hashlib
 import inspect
 import json
+import math
 import time
 import urlparse
+import uuid
 
 import pprint
 
@@ -13,6 +16,7 @@ pp = pprint.PrettyPrinter(indent=4)
 
 from django.db import connection, transaction
 from django.db.models import Q
+from django.utils.text import slugify
 from django.utils.timezone import utc
 
 from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
@@ -477,6 +481,16 @@ class PSTimeSeriesObject(object):
 class ArchiveDataObject(DataObject):
     pass
 
+class PointToPointSubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PSPointToPointSubject
+        fields = ('source', 'destination', 'measurement_agent', 'tool_name', 'input_source', 'input_destination')
+
+class NetworkElementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PSNetworkElementSubject
+        fields = ('source', 'measurement_agent', 'tool_name', 'input_source')
+        
 class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
     class Meta:
         model = PSMetadata
@@ -484,12 +498,8 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
             'url',
             'metadata_key', 
             'subject_type', 
-            'destination',
-            'source',
-            'tool_name',
-            'measurement_agent',
-            'input_source',
-            'input_destination',
+            'pspointtopointsubject',
+            'psnetworkelementsubject',
             'event_types',
             )
         # These are for generation of the URL field. The view name corresponds
@@ -497,15 +507,10 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
         # is metadata_key since that's what the details are keying off of.
         extra_kwargs={'url': {'view_name': 'archive-detail', 'lookup_field': 'metadata_key'}}
     
-    ## elements from PSPointToPointSubject
-    # ips
-    source = fields.IPAddressField(source='pspointtopointsubject.source')
-    destination = fields.IPAddressField(source='pspointtopointsubject.destination')
-    measurement_agent = fields.IPAddressField(source='pspointtopointsubject.measurement_agent')
-    # char fields
-    tool_name = fields.CharField(source='pspointtopointsubject.tool_name')
-    input_source = fields.CharField(source='pspointtopointsubject.input_source')
-    input_destination = fields.CharField(source='pspointtopointsubject.input_destination')
+    #create serializers for the subject types. this saves some parsing and allows dynamic
+    #storing of subject fields later in the code.
+    pspointtopointsubject = PointToPointSubjectSerializer(many=False)
+    psnetworkelementsubject = NetworkElementSerializer(many=False)
     ## elements from event type table - this is dynamically generated, 
     # so just use the type elements.
     event_types = fields.ListField(child=serializers.DictField())
@@ -514,6 +519,7 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
         """
         Generate event_types list.
         Modify outgoing data: massage underscore => dash.
+        Add subject fields
         Add arbitrary values from PS metadata parameters.
         """
 
@@ -522,7 +528,14 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
 
         # serialize it now
         ret = super(ArchiveSerializer, self).to_representation(obj)
-
+        
+        #flatten subject params
+        for subject_type in SUBJECT_MODEL_MAP:
+            subject = ret.pop(SUBJECT_MODEL_MAP[subject_type])
+            if subject is not None:
+                for subj_key in subject:
+                    ret[subj_key] = subject[subj_key]
+        
         # now add the arbitrary metadata values from the PSMetadataParameters
         # table.
         for p in obj.psmetadataparameters.all():
@@ -537,15 +550,152 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         """
-        Modify incoming json: massage dash => underscore before calling 
-        base code. Probably irrelevant since input will be handled 
-        by custom create methods.
+        Modify incoming json
         """
-        # convert dashes to underscores before doing object
-        # conversion.
-        self.undash_dict(data)
-        ret = super(ArchiveSerializer, self).to_internal_value(data)
-        return ret
+        
+        #Verify subject information provided
+        if 'subject-type' not in data:
+            raise ParseError(detail="Missing subject-type field in request")
+        
+        #Verify event types provided
+        if 'event-types' not in data:
+            raise ParseError(detail="Missing event-types field in request")
+        
+        if data['subject-type'] not in SUBJECT_TYPE_MAP:
+            raise ParseError(detail="Invalid subject type %s" % data['subject-type'])
+        
+        #Don't allow metadata key to be specified
+        if 'metadata-key' in data:
+            raise ParseError(detail="metadata-key is not allowed to be specified")
+        
+        #Build deserialized object
+        subject_model = SUBJECT_MODEL_MAP[data['subject-type']]
+        validated_data = {}
+        validated_data[subject_model] = {}
+        validated_data['psmetadataparameters'] = []
+        subject_prefix = "%s__" % subject_model
+        for k in data:
+            if k == 'subject-type':
+                validated_data['subject_type'] = data[k]
+            elif k == 'event-types':
+                validated_data['pseventtypes'] = self.deserialize_event_types(data[k])
+            elif k in SUBJECT_FILTER_MAP:
+                subj_k = ""
+                for f in SUBJECT_FILTER_MAP[k]:
+                    if f.startswith(subject_prefix):
+                        subj_k = f.replace(subject_prefix, '', 1)
+                        break
+                validated_data[subject_model][subj_k] = data[k]
+            else:
+                validated_data['psmetadataparameters'].append({
+                    'parameter_key': k,
+                    'parameter_value': data[k]
+                    })
+        
+        #calculate checksum
+        validated_data['checksum'] = self.calculate_checksum(validated_data, subject_model)
+        
+        #set metatadatakey
+        validated_data['metadata_key'] = slugify(unicode(uuid.uuid4().hex))
+        
+        return validated_data
+    
+    def create(self, validated_data):
+        # check if exists. just return existing if it does
+        existing_md = PSMetadata.objects.filter(checksum=validated_data["checksum"])
+        if existing_md.count() > 0:
+            return existing_md[0]
+        
+        #pop objects we create separately.
+        subject_model = SUBJECT_MODEL_MAP[validated_data['subject_type']]
+        subject = validated_data.pop(subject_model)
+        event_types= validated_data.pop('pseventtypes')
+        md_params= validated_data.pop('psmetadataparameters')
+        
+        #store metadata object and subjects
+        metadata = PSMetadata.objects.create(**validated_data)
+        
+        #store subject. this depends on the subject type so do some dynamic lookups
+        self.get_fields()[subject_model].Meta.model.objects.create(metadata=metadata, **subject)
+        
+        #store event types
+        for event_type in event_types:
+            PSEventTypes.objects.create(metadata=metadata, **event_type)
+        
+        #store parameters
+        for md_param in md_params:
+            PSMetadataParameters.objects.create(metadata=metadata, **md_param)
+        
+        return metadata
+    
+    def deserialize_event_types(self, event_types):
+        if event_types is None:
+            return []
+        
+        if not isinstance(event_types, list):
+            raise ParseError(detail="event_types must be a list")
+        
+        deserialized_event_types = []
+        for event_type in event_types:
+            #Validate object
+            if EVENT_TYPE_FILTER not in event_type:
+                #verify event-type defined
+                raise ParseError(detail="No event-type defined")
+            elif event_type[EVENT_TYPE_FILTER] not in EVENT_TYPE_CONFIG:
+                #verify valid event-type
+                raise ParseError(detail="Invalid event-type %s" % str(event_type[EVENT_TYPE_FILTER]))
+            
+            #set the data type
+            data_type = EVENT_TYPE_CONFIG[event_type[EVENT_TYPE_FILTER]]['type']
+            
+            #Create base object
+            deserialized_event_types.append({
+                'event_type': event_type[EVENT_TYPE_FILTER],
+                'summary_type': 'base',
+                'summary_window': '0'})
+            
+            #Build summaries
+            if 'summaries' in event_type:
+                for summary in event_type['summaries']:
+                    # Validate summary
+                    if 'summary-type' not in summary:
+                        raise ParseError(detail="Summary must contain summary-type")
+                    elif summary['summary-type'] not in INVERSE_SUMMARY_TYPES:
+                        raise ParseError(detail="Invalid summary type '%s'" % summary['summary-type'])
+                    elif summary['summary-type'] == 'base':
+                        continue
+                    elif summary['summary-type'] not in ALLOWED_SUMMARIES[data_type]:
+                        raise ParseError(detail="Summary type %s not allowed for event-type %s" % (summary['summary-type'], event_type[EVENT_TYPE_FILTER]))
+                    elif 'summary-window' not in summary:
+                        raise ParseError(detail="Summary must contain summary-window")
+                    
+                    #Verify summary window is an integer
+                    try:
+                        int(summary['summary-window'])
+                    except ValueError:
+                        raise ParseError(detail="Summary window must be an integer")
+                    
+                    #Everything looks good so add summary
+                    deserialized_event_types.append({
+                        'event_type': event_type[EVENT_TYPE_FILTER],
+                        'summary_type': summary['summary-type'],
+                        'summary_window': summary['summary-window']})
+            
+        return deserialized_event_types
+
+    def calculate_checksum(self, data, subject_field):
+        data['psmetadataparameters'] = sorted(data['psmetadataparameters'], key=lambda md_param: md_param["parameter_key"])
+        data['pseventtypes'] = sorted(data['pseventtypes'], key=lambda et:(et["event_type"], et["summary_type"], et["summary_window"]))
+        checksum = hashlib.sha256()
+        checksum.update("subject-type::%s" %   data['subject_type'].lower())
+        for subj_param in sorted(data[subject_field]):
+            checksum.update(",%s::%s" % (str(subj_param).lower(), str(data[subject_field][subj_param]).lower()))
+        for md_param in data['psmetadataparameters']:
+            checksum.update(",%s::%s" % (str(md_param['parameter_key']).lower(), str(md_param['parameter_value']).lower()))
+        for et in data['pseventtypes']:
+            checksum.update(",%s::%s::%s" % (str(et['event_type']).lower(), str(et['summary_type']).lower(), str(et['summary_window']).lower()))
+
+        return checksum.hexdigest()
 
 class ArchiveViewset(mixins.CreateModelMixin,
                     mixins.ListModelMixin,
@@ -665,27 +815,10 @@ class ArchiveViewset(mixins.CreateModelMixin,
 
     def create(self, request):
         """Stub for POST metadata object creation - ie:
-
-        POST /perfsonar/archive/"""
-        # validate the incoming json and data contained therein.
-        if not request.content_type.startswith('application/json'):
-            raise ParseError(detail='Must post content-type: application/json header and json-formatted payload.')
-
-        if not request.body:
-            raise ParseError(detail='No data payload POSTed.')
-
-        try:
-            request_data = json.loads(request.body)
-        except ValueError:
-            raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
-
-        # process the json blob that was sent to the server.
-        # print request_data
-
-        # assemble return payload and send back to the client, or 
-        # empty string/etc.
-        return_payload = dict(thanks='for that')
-        return Response(return_payload, status.HTTP_201_CREATED)
+        POST /perfsonar/archive/
+        """
+        
+        return super(ArchiveViewset, self).create(request)
 
     def update(self, request, **kwargs):
         """Stub for PUT detail object creation to a metadata instance 
