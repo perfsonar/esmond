@@ -137,7 +137,7 @@ class UtilMixin(object):
             if v.get('summaries'):
                 for a in v.get('summaries'):
                     s = dict(   
-                        uri='{0}/aggregations/{1}'.format(k, a[1]),
+                        uri='{0}/{1}/{2}'.format(k, INVERSE_SUMMARY_TYPES[a[0]], a[1]),
                         summary_type=a[0],
                         summary_window=a[1],
                         time_updated=self.datetime_to_ts(a[2]),
