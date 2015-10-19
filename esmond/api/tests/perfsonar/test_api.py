@@ -8,9 +8,8 @@ os.environ['ESMOND_UNIT_TESTS'] = 'True'
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now
-from tastypie.exceptions import BadRequest
-from tastypie.models import ApiKey
-from tastypie.test import ResourceTestCase
+from django.test import TestCase
+
 from esmond.api.models import PSEventTypes
 from esmond.api.perfsonar.types import *
 from esmond.cassandra import CASSANDRA_DB
@@ -18,12 +17,14 @@ from esmond.config import get_config, get_config_path
 from esmond.api.perfsonar.validators import *
 
 from rest_framework.exceptions import ParseError
+from rest_framework.test import APIClient
+from rest_framework.authtoken.models import Token
 
 # This is just for development to switch the base 
 # of the URI structure to something else if need be.
 PS_ROOT = 'perfsonar2'
 
-class PSAPIBaseTest(ResourceTestCase):
+class PSAPIBaseTest(TestCase):
     fixtures = ['perfsonar_api_metadata.json']
     
     def setUp(self):
@@ -46,28 +47,42 @@ class PSAPIBaseTest(ResourceTestCase):
             self.admin_user.user_permissions.add(perm)
         self.admin_user.save()
 
-        self.noperms_apikey = ApiKey(user=self.noperms_user)
-        self.noperms_apikey.key = self.noperms_apikey.generate_key()
-        self.noperms_apikey.save()
+        self.noperms_apikey = Token.objects.create(user=self.noperms_user)
 
-        self.admin_apikey = ApiKey(user=self.admin_user)
-        self.admin_apikey.key = self.admin_apikey.generate_key()
-        self.admin_apikey.save()
-        
-    def create_noperms_credentials(self):
-        return self.create_apikey(self.noperms_user.username, self.noperms_apikey.key)
-        
-    def create_admin_credentials(self):
-        return self.create_apikey(self.admin_user.username, self.admin_apikey.key)
-    
+        self.admin_apikey = Token.objects.create(user=self.admin_user)
+
+        self.client = APIClient()
+
     def assertExpectedResponse(self, expected, url, get_params={}):
         response = self.client.get(url, get_params)
         self.assertHttpOK(response)
         data = json.loads(response.content)
         self.assertEquals(expected, data)
 
+    def assertHttpOK(self, resp):
+        return self.assertEqual(resp.status_code, 200)
+
+    def assertHttpCreated(self, resp):
+        return self.assertEqual(resp.status_code, 201)
+
     def assertHttpBadRequest(self, resp):
-      return self.assertEqual(resp.status_code, 400)
+        return self.assertEqual(resp.status_code, 400)
+
+    def assertHttpUnauthorized(self, resp):
+        return self.assertEqual(resp.status_code, 401)
+
+    def assertHttpConflict(self, resp):
+        return self.assertEqual(resp.status_code, 409)
+
+    def get_api_client(self, admin_auth=False, noperm_auth=False):
+        client = APIClient()
+
+        if admin_auth:
+            client.credentials(HTTP_AUTHORIZATION='Token {0}'.format(self.admin_apikey.key))
+        if noperm_auth:
+            client.credentials(HTTP_AUTHORIZATION='Token {0}'.format(self.noperms_apikey.key))
+
+        return client
         
 class PSArchiveResourceTest(PSAPIBaseTest):
     """
@@ -386,13 +401,13 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         url = '/{0}/archive/'.format(PS_ROOT)
         
         #test with no credentials
-        self.assertHttpUnauthorized(self.api_client.post(url, format='json', data=self.post_data))
+        self.assertHttpUnauthorized(self.get_api_client().post(url, format='json', data=self.post_data))
         
         #test with credentials with no permissions
-        self.assertHttpUnauthorized(self.api_client.post(url, format='json', data=self.post_data, authentication=self.create_noperms_credentials()))
+        self.assertHttpUnauthorized(self.get_api_client(noperm_auth=True).post(url, format='json', data=self.post_data))
         
         #test with credentials with permissions
-        response = self.api_client.post(url, format='json', data=self.post_data, authentication=self.create_admin_credentials())
+        response = self.get_api_client(admin_auth=True).post(url, format='json', data=self.post_data)
         self.assertHttpCreated(response)
         data = json.loads(response.content)
         #verify the server generated he uri and metadata keys
@@ -409,7 +424,7 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         #test creating existing object returns same object
         existing_uri = data['uri']
         existing_mdkey = data['metadata-key']
-        response = self.api_client.post(url, format='json', data=self.post_data, authentication=self.create_admin_credentials())
+        response = self.get_api_client(admin_auth=True).post(url, format='json', data=self.post_data)
         self.assertHttpCreated(response)
         new_data = json.loads(response.content)
         self.assertEquals(new_data['uri'], existing_uri )
@@ -546,7 +561,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
 
     def assertSinglePostSuccess(self, url, ts, val, test_equals=True):
         post_data = {'ts': ts, 'val': val}
-        response = self.api_client.post(url, format='json', data=post_data, authentication=self.create_admin_credentials())
+        response = self.get_api_client(admin_auth=True).post(url, format='json', data=post_data)
         self.assertHttpCreated(response)
         response = self.client.get(url, {'time': ts})
         self.assertHttpOK(response)
@@ -557,12 +572,12 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
     
     def assertSinglePostFailure(self, url, ts, val):
         post_data = {'ts': ts, 'val': val}
-        response = self.api_client.post(url, format='json', data=post_data, authentication=self.create_admin_credentials())
+        response = self.get_api_client(admin_auth=True).post(url, format='json', data=post_data)
         self.assertHttpBadRequest(response)
     
     def assertSinglePostConflict(self, url, ts, val):
         post_data = {'ts': ts, 'val': val}
-        response = self.api_client.post(url, format='json', data=post_data, authentication=self.create_admin_credentials())
+        response = self.get_api_client(admin_auth=True).post(url, format='json', data=post_data)
         self.assertHttpConflict(response)
         
     def assertBulkTSPutSuccess(self, bulk_url, base_url, start, interval, data, event_type):
@@ -571,16 +586,16 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         for i in range(1, len(data)):
             end = start + i*interval
             bulk_data['data'].append({'ts': end, 'val':  [{'event-type': event_type, 'val': data[i]}]})
-        response = self.api_client.put(bulk_url, format='json', data=bulk_data, authentication=self.create_admin_credentials())
+        response = self.get_api_client(admin_auth=True).put(bulk_url, format='json', data=bulk_data)
         self.assertHttpCreated(response)
         response = self.client.get(base_url, {'time-start': start, 'time-end': end})
         self.assertHttpOK(response)
         response_data = json.loads(response.content)
         self.assertEquals(len(response_data), len(data))
     
-    def assertAuthFailure(self, url, ts, val, credentials):
+    def assertAuthFailure(self, url, ts, val, cred):
         post_data = {'ts': ts, 'val': val}
-        response = self.api_client.post(url, format='json', data=post_data, authentication=credentials)
+        response = self.get_api_client(noperm_auth=cred).post(url, format='json', data=post_data)
         self.assertHttpUnauthorized(response)
         
     def test_a_config_cassandra(self):
@@ -743,8 +758,8 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
     def test_authentication_failures(self):
         base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
-        self.assertAuthFailure(base_url, 1398965989, self.int_data[0], None)
-        self.assertAuthFailure(base_url, 1398965989, self.int_data[0], self.create_noperms_credentials())
+        self.assertAuthFailure(base_url, 1398965989, self.int_data[0], False)
+        self.assertAuthFailure(base_url, 1398965989, self.int_data[0], True)
     
     def test_validator_edge_cases(self):
         '''
