@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 # This MUST be here in any testing modules that use cassandra!
 os.environ['ESMOND_UNIT_TESTS'] = 'True'
@@ -15,7 +16,8 @@ from esmond.api.perfsonar.types import *
 from esmond.cassandra import CASSANDRA_DB
 from esmond.config import get_config, get_config_path
 from esmond.api.perfsonar.validators import *
-import time
+
+from rest_framework.exceptions import ParseError
 
 # This is just for development to switch the base 
 # of the URI structure to something else if need be.
@@ -63,6 +65,9 @@ class PSAPIBaseTest(ResourceTestCase):
         self.assertHttpOK(response)
         data = json.loads(response.content)
         self.assertEquals(expected, data)
+
+    def assertHttpBadRequest(self, resp):
+      return self.assertEqual(resp.status_code, 400)
         
 class PSArchiveResourceTest(PSAPIBaseTest):
     """
@@ -747,8 +752,8 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         changes going forward.
         '''
         #test invalid json
-        self.assertRaises(BadRequest, JSONValidator().validate, ({'value': '{invalidjson'}))
-        self.assertRaises(BadRequest, HistogramValidator().validate, ({'value': '{invalidjson'}))
+        self.assertRaises(ParseError, JSONValidator().validate, ({'value': '{invalidjson'}))
+        self.assertRaises(ParseError, HistogramValidator().validate, ({'value': '{invalidjson'}))
         
         #test percentile calculations when only one element
         p = Percentile(40, 1)
