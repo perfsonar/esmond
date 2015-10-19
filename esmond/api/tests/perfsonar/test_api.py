@@ -19,7 +19,7 @@ import time
 
 # This is just for development to switch the base 
 # of the URI structure to something else if need be.
-PS_ROOT = 'perfsonar'
+PS_ROOT = 'perfsonar2'
 
 class PSAPIBaseTest(ResourceTestCase):
     fixtures = ['perfsonar_api_metadata.json']
@@ -560,13 +560,13 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         response = self.api_client.post(url, format='json', data=post_data, authentication=self.create_admin_credentials())
         self.assertHttpConflict(response)
         
-    def assertBulkTSPostSuccess(self, bulk_url, base_url, start, interval, data, event_type):
+    def assertBulkTSPutSuccess(self, bulk_url, base_url, start, interval, data, event_type):
         end=0
         bulk_data = { 'data': []}
         for i in range(1, len(data)):
             end = start + i*interval
             bulk_data['data'].append({'ts': end, 'val':  [{'event-type': event_type, 'val': data[i]}]})
-        response = self.api_client.post(bulk_url, format='json', data=bulk_data, authentication=self.create_admin_credentials())
+        response = self.api_client.put(bulk_url, format='json', data=bulk_data, authentication=self.create_admin_credentials())
         self.assertHttpCreated(response)
         response = self.client.get(base_url, {'time-start': start, 'time-end': end})
         self.assertHttpOK(response)
@@ -602,7 +602,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
         #bulk post
         bulk_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/'.format(PS_ROOT)
-        self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.int_data, 'throughput')
+        self.assertBulkTSPutSuccess(bulk_url, base_url, start, interval, self.int_data, 'throughput')
         
         #query average summary
         expected = [{"ts": 1398902400, "val": 6575755000.0}]
@@ -630,7 +630,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
         #bulk post
         bulk_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/'.format(PS_ROOT)
-        self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.float_data, 'time-error-estimates')
+        self.assertBulkTSPutSuccess(bulk_url, base_url, start, interval, self.float_data, 'time-error-estimates')
         
         #query average summary
         expected = [{"ts": 1398902400, "val": .002}]
@@ -652,7 +652,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
         #bulk post
         bulk_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/'.format(PS_ROOT)
-        self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.json_data, 'failures')
+        self.assertBulkTSPutSuccess(bulk_url, base_url, start, interval, self.json_data, 'failures')
     
     def test_percentage_data(self):
         base_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/packet-loss-rate/base/'.format(PS_ROOT)
@@ -678,7 +678,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
         #bulk post
         bulk_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/'.format(PS_ROOT)
-        self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.perc_post_data, 'packet-loss-rate')
+        self.assertBulkTSPutSuccess(bulk_url, base_url, start, interval, self.perc_post_data, 'packet-loss-rate')
         expected_data = []
         for i in range(0, len(self.perc_expected_data)):
             ts = start + i*interval
@@ -705,7 +705,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
         #bulk post
         bulk_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/'.format(PS_ROOT)
-        self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.subint_data, 'throughput-subintervals')
+        self.assertBulkTSPutSuccess(bulk_url, base_url, start, interval, self.subint_data, 'throughput-subintervals')
     
     def test_post_histogram_data(self):
         base_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/histogram-rtt/base/'.format(PS_ROOT)
@@ -720,7 +720,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
         #bulk post
         bulk_url = '/{0}/archive/67a3c298de0b4237abee56b879e03587/'.format(PS_ROOT)
-        self.assertBulkTSPostSuccess(bulk_url, base_url, start, interval, self.hist_data, 'histogram-rtt')
+        self.assertBulkTSPutSuccess(bulk_url, base_url, start, interval, self.hist_data, 'histogram-rtt')
         
         #query aggregation summary
         expected = [{u'ts': 1398902400, u'val': {u'41.10': 98, u'41.00': 98, u'50.0': 1, u'41.20': 3}}]
