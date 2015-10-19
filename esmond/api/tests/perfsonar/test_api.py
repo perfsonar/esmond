@@ -71,6 +71,9 @@ class PSAPIBaseTest(TestCase):
     def assertHttpUnauthorized(self, resp):
         return self.assertEqual(resp.status_code, 401)
 
+    def assertHttpForbidden(self, resp):
+        return self.assertEqual(resp.status_code, 403)
+
     def assertHttpConflict(self, resp):
         return self.assertEqual(resp.status_code, 409)
 
@@ -404,7 +407,7 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         self.assertHttpUnauthorized(self.get_api_client().post(url, format='json', data=self.post_data))
         
         #test with credentials with no permissions
-        self.assertHttpUnauthorized(self.get_api_client(noperm_auth=True).post(url, format='json', data=self.post_data))
+        self.assertHttpForbidden(self.get_api_client(noperm_auth=True).post(url, format='json', data=self.post_data))
         
         #test with credentials with permissions
         response = self.get_api_client(admin_auth=True).post(url, format='json', data=self.post_data)
@@ -596,7 +599,10 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
     def assertAuthFailure(self, url, ts, val, cred):
         post_data = {'ts': ts, 'val': val}
         response = self.get_api_client(noperm_auth=cred).post(url, format='json', data=post_data)
-        self.assertHttpUnauthorized(response)
+        if cred:
+            self.assertHttpForbidden(response)
+        else:
+            self.assertHttpUnauthorized(response)
         
     def test_a_config_cassandra(self):
         '''

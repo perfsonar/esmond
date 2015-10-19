@@ -302,9 +302,7 @@ class PSMetadataPaginator(PSPaginator):
         return super(PSMetadataPaginator, self).get_paginated_response(data)
 
 class ViewsetBase(viewsets.GenericViewSet):
-    # XXX(mmg): enable permission_classes attr later.
-    # permission_classes = (IsAuthenticatedOrReadOnly, DjangoModelPerm,)
-    permission_classes = (AllowAny,) # lack of comma == error
+    permission_classes = (IsAuthenticatedOrReadOnly, DjangoModelPerm,)# lack of comma == error
     pagination_class = PSPaginator
 
 class PSTimeSeriesObject(object):
@@ -404,6 +402,8 @@ class PSTimeSeriesObject(object):
             col_fam = EVENT_TYPE_CF_MAP[query_type]
             
         #prep times
+        if freq:
+            freq = int(freq)
         begin_millis = begin_time*1000
         end_millis = None
         if end_time is None:
