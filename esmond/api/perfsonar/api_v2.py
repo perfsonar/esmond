@@ -139,9 +139,9 @@ class UtilMixin(object):
                     s = dict(   
                         uri='{0}/{1}/{2}'.format(k, INVERSE_SUMMARY_TYPES[a[0]], a[1]),
                         summary_type=a[0],
-                        summary_window=a[1],
+                        summary_window=unicode(a[1]),
                         time_updated=self.datetime_to_ts(a[2]),
-                    )   
+                    )
                     self.to_dash_dict(s)
                     d['summaries'].append(s)
 
@@ -252,7 +252,7 @@ class FilterUtilMixin(object):
             sw = int(sw)
         except ValueError:
             raise ParseError(detail="Summary window parameter must be an integer")
-        return sw
+        return unicode(sw)
 
 class ConflictException(APIException):
     status_code=status.HTTP_409_CONFLICT
@@ -780,7 +780,7 @@ class ArchiveViewset(mixins.CreateModelMixin,
             begin = datetime.datetime.utcfromtimestamp(time_filters['begin']).replace(tzinfo=utc)
             event_type_qs.append(Q(pseventtypes__time_updated__gte=begin))
             if time_filters['end'] is not None:
-                end = datetime.utcfromtimestamp(time_filters['end']).replace(tzinfo=utc)
+                end = datetime.datetime.utcfromtimestamp(time_filters['end']).replace(tzinfo=utc)
                 event_type_qs.append(Q(pseventtypes__time_updated__lte=end))
             
         #apply filters. this is done down here to ensure proper grouping
@@ -1011,7 +1011,6 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
 
         depending on the request.
         """
-        
         #verify URL
         if 'event_type' not in kwargs:
             raise ParseError(detail="No event type specified for data query")
