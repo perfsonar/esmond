@@ -61,14 +61,12 @@ class PSAPIBaseTest(TestCase):
         data = json.loads(response.content)
 
         # Trigger object inspection if we have a mismatch. This is to 
-        # assist in debugging 
-        expected_cmp = json.dumps( expected, indent=4, sort_keys=True, default=str)
-        data_cmp = json.dumps( data, indent=4, sort_keys=True, default=str)
+        # assist in debugging
 
-        if not filecomp.diffjson(expected_cmp, data_cmp):
-            print 'mismatch detected, inspecting payload'
+        if cmp(expected, data) != 0:
+            print '\n* mismatch detected, inspecting payload'
             if isinstance(expected, list):
-                print 'checking list'
+                print ' * checking list'
                 for i in xrange(len(expected)):
                     print '  * list index: {0}'.format(i)
                     self._compare_expected(expected[i], data[i])
@@ -82,7 +80,7 @@ class PSAPIBaseTest(TestCase):
         expected_cmp = json.dumps( expected, indent=4, sort_keys=True, default=str)
         data_cmp = json.dumps( data, indent=4, sort_keys=True, default=str)
 
-        # print filecomp.diffjson(expected_cmp, data_cmp)
+        filecomp.diffjson(expected_cmp, data_cmp)
 
         for k,v in expected.items():
             if k not in data.keys():
