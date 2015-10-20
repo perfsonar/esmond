@@ -350,7 +350,7 @@ class EventTypeBulkPost(PostBase):
             self.metadata_key)
         
         try:
-            r = requests.post(url, data=self.json_payload(), headers=self.headers)
+            r = requests.put(url, data=self.json_payload(), headers=self.headers)
         except ConnectionError, e:
             self.ex('POST connection error: {0}'.format(str(e)))
 
