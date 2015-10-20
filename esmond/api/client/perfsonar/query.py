@@ -10,7 +10,7 @@ import warnings
 from ..util import add_apikey_header
 
 # URI prefix segment - to change during development
-PS_ROOT = 'perfsonar2'
+PS_ROOT = 'perfsonar'
 
 MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
 MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())

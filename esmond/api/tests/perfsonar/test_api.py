@@ -2,6 +2,8 @@ import json
 import os
 import time
 
+import pandokia.helpers.filecomp as filecomp
+
 # This MUST be here in any testing modules that use cassandra!
 os.environ['ESMOND_UNIT_TESTS'] = 'True'
 
@@ -22,7 +24,7 @@ from rest_framework.authtoken.models import Token
 
 # This is just for development to switch the base 
 # of the URI structure to something else if need be.
-PS_ROOT = 'perfsonar2'
+PS_ROOT = 'perfsonar'
 
 class PSAPIBaseTest(TestCase):
     fixtures = ['perfsonar_api_metadata.json']
@@ -57,7 +59,37 @@ class PSAPIBaseTest(TestCase):
         response = self.client.get(url, get_params)
         self.assertHttpOK(response)
         data = json.loads(response.content)
+
+        # Trigger object inspection if we have a mismatch. This is to 
+        # assist in debugging 
+        expected_cmp = json.dumps( expected, indent=4, sort_keys=True, default=str)
+        data_cmp = json.dumps( data, indent=4, sort_keys=True, default=str)
+
+        if not filecomp.diffjson(expected_cmp, data_cmp):
+            print 'mismatch detected, inspecting payload'
+            if isinstance(expected, list):
+                print 'checking list'
+                for i in xrange(len(expected)):
+                    print '  * list index: {0}'.format(i)
+                    self._compare_expected(expected[i], data[i])
+            elif isinstance(expected, dict):
+                self._compare_expected(expected, data)
+
         self.assertEquals(expected, data)
+
+    def _compare_expected(self, expected, data):
+
+        expected_cmp = json.dumps( expected, indent=4, sort_keys=True, default=str)
+        data_cmp = json.dumps( data, indent=4, sort_keys=True, default=str)
+
+        # print filecomp.diffjson(expected_cmp, data_cmp)
+
+        for k,v in expected.items():
+            if k not in data.keys():
+                print '  ** key not found:', k
+                continue
+            if v != data[k]:
+                print '  ** value mismatch:', v, data[i][k]
 
     def assertHttpOK(self, resp):
         return self.assertEqual(resp.status_code, 200)
@@ -116,6 +148,7 @@ class PSArchiveResourceTest(PSAPIBaseTest):
            "input-destination":"lbl-pt1.es.net",
            "destination":"198.129.254.30",
            "uri":"/perfsonar/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/",
+           "url": "http://testserver/perfsonar/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/",
            "event-types":[
               {
                  "time-updated":1398785370,

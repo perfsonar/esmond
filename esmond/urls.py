@@ -76,7 +76,7 @@ pdu_router.register(
 #
 # Perfsonar V2 router/etc
 
-PS_ROOT = 'perfsonar2'
+PS_ROOT = 'perfsonar'
 
 ps_router = routers.DefaultRouter()
 ps_router.register('archive', ArchiveViewset, base_name='archive')
@@ -88,7 +88,8 @@ ps_router.register('archive', ArchiveViewset, base_name='archive')
 urlpatterns = patterns('',
     # Original urls - built in the original api.py files and attached here.
     (r'^admin/', include(admin.site.urls)),
-    (r'', include(v1_api.urls + perfsonar_api.urls)),
+    (r'', include(v1_api.urls)),
+    # (r'', include(perfsonar_api.urls)), # old ps api
     ## URL definitions for V2 esmond API.
     # standard root level urls
     (r'v2/',include(router.urls)),

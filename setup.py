@@ -13,7 +13,7 @@ setup(name='esmond',
             'djangorestframework==3.1.3', 'drf-extensions==0.2.7',
             'djangorestframework-filters==0.3.0',
             'python-memcached', 'pycassa', 'psycopg2','python-mimeparse',
-            'requests', 'mock', 'nagiosplugin'],
+            'requests', 'mock', 'nagiosplugin', 'pandokia'],
         entry_points = {
             'console_scripts': [
                 'espolld = esmond.poll:espolld',
