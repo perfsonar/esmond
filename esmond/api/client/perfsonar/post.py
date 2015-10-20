@@ -78,6 +78,9 @@ class PostBase(AlertMixin, object):
             if self.script_alias:
                 self._schema_root = '{0}/{1}'.format(self.script_alias, self._schema_root)
 
+    def ex(self, msg):
+        raise NotImplementedError('Must be implemented in subclass')
+
     def _validate(self):
         """Will be overridden in subclass.  Needs to run whatever validation
         checks on the internal payload data before sending it to the API."""
@@ -207,15 +210,18 @@ class MetadataPost(PostBase):
         try:
             r = requests.post(url, data=self.json_payload(), headers=self.headers)
         except ConnectionError, e:
-            self.warn('POST connection error: {0}'.format(str(e)))
+            self.ex('POST connection error: {0}'.format(str(e)))
             return None
 
         if not r.status_code == 201:
             # Change this to an exception?
-            self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
             return None
 
         return Metadata(json.loads(r.content), self.api_url, ApiFilters())
+
+    def ex(self, msg):
+        raise MetadataPostException(msg)
 
     def _validate(self):
         redash = lambda s: s.replace('_', '-')
@@ -278,19 +284,19 @@ class EventTypePost(PostBase):
             try:
                 r = requests.post(url, data=json.dumps(dp), headers=self.headers)
             except ConnectionError, e:
-                self.warn('POST connection error: {0}'.format(str(e)))
+                self.ex('POST connection error: {0}'.format(str(e)))
 
             if not r.status_code == 201:
-                self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+                self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+
+    def ex(self, msg):
+        raise EventTypePostException(msg)
 
     def _validate(self):
+        """Method is called before a POST to do any sanity checks on the 
+        payload being sent."""
         for i in self._payload:
-            if isinstance(i['val'], dict):
-                for k,v in i['val'].items():
-                    try:
-                        int(k), int(v)
-                    except ValueError:
-                        raise EventTypePostException('Histogram dict items must be integer values - got {0} {1}'.format(k,v))
+            pass
 
 class EventTypeBulkPost(PostBase):
     wrn = EventTypePostWarning
@@ -346,11 +352,13 @@ class EventTypeBulkPost(PostBase):
         try:
             r = requests.post(url, data=self.json_payload(), headers=self.headers)
         except ConnectionError, e:
-            self.warn('POST connection error: {0}'.format(str(e)))
+            self.ex('POST connection error: {0}'.format(str(e)))
 
         if not r.status_code == 201:
-            # Change this to an exception?
-            self.warn('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+            self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
+
+    def ex(self, msg):
+        raise EventTypeBulkPostException(msg)        
 
     def _validate(self):
         for i in self._payload['data']:

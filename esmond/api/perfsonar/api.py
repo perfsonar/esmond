@@ -130,13 +130,15 @@ def handle_time_filters(filters):
         begin_time = end_time - valid_time(filters[TIME_RANGE_FILTER])
     elif filters.has_key(TIME_START_FILTER):
         begin_time = valid_time(filters[TIME_START_FILTER])
+        end_time = None
     elif filters.has_key(TIME_END_FILTER):
         end_time = valid_time(filters[TIME_END_FILTER])
     elif filters.has_key(TIME_RANGE_FILTER):
         begin_time = end_time - valid_time(filters[TIME_RANGE_FILTER])
+        end_time = None
     else:
         has_filters = False
-    if(end_time < begin_time):
+    if (end_time is not None) and (end_time < begin_time):
         raise BadRequest("Requested start time must be less than end time")
     return {"begin": begin_time,
             "end": end_time,
@@ -745,10 +747,10 @@ class PSArchiveResource(CustomModelResource):
         if(time_filters["has_filters"]):
             #print "begin_ts=%d, end_ts=%d" % (time_filters['begin'], time_filters['end'])
             begin = datetime.utcfromtimestamp(time_filters['begin']).replace(tzinfo=utc)
-            end = datetime.utcfromtimestamp(time_filters['end']).replace(tzinfo=utc)
-            #print "begin=%s, end=%s" % (begin, end)
             event_type_qs.append(Q(pseventtypes__time_updated__gte=begin))
-            event_type_qs.append(Q(pseventtypes__time_updated__lte=end))
+            if time_filters['end'] is not None:
+                end = datetime.utcfromtimestamp(time_filters['end']).replace(tzinfo=utc)
+                event_type_qs.append(Q(pseventtypes__time_updated__lte=end))
             
         # Create standard ORM filters
         orm_filters = super(CustomModelResource, self).build_filters(formatted_filters)
@@ -899,18 +901,30 @@ class PSTimeSeriesResource(Resource):
         col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(db, SUMMARY_TYPES[summary_type])
         if col_fam is None:
             col_fam = EVENT_TYPE_CF_MAP[query_type]
-        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%d end=%d cf=%s datapath=%s" %
-                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, col_fam, datapath))
+            
+        #prep times
+        begin_millis = begin_time*1000
+        end_millis = None
+        if end_time is None:
+            # we need a value here so we know what years to look at when we get row keys
+            # add a 3600 second buffer to capture results that may have been updated after we 
+            # calculate this timestamp.
+            end_millis = (int(time()) + 3600) * 1000
+        else:
+            end_millis = end_time*1000
+        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%s end=%s start_millis=%s end_millis=%s cf=%s datapath=%s" %
+                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, begin_millis, end_millis, col_fam, datapath))
+
 
         if col_fam == db.agg_cf:
             results = db.query_aggregation_timerange(path=datapath, freq=freq,
-                   cf='average', ts_min=begin_time*1000, ts_max=end_time*1000, column_count=max_results)
+                   cf='average', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
         elif col_fam == db.rate_cf:
             results = db.query_baserate_timerange(path=datapath, freq=freq,
-                    cf='delta', ts_min=begin_time*1000, ts_max=end_time*1000, column_count=max_results)
+                    cf='delta', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
         elif col_fam == db.raw_cf:
             results = db.query_raw_data(path=datapath, freq=freq,
-                   ts_min=begin_time*1000, ts_max=end_time*1000, column_count=max_results)
+                   ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
         else:
             log.debug("action=query_timeseries.end status=-1")
             raise BadRequest("Requested data does not map to a known column-family")

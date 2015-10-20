@@ -10,7 +10,7 @@ def read(*paths):
 
 setup(
     name='esmond_client',
-    version='1.3',
+    version='1.5',
     description='API client libraries and command line tools for the ESnet Monitoring Daemon (esmond).',
     long_description=(read('README.rst')),
     author='Monte M. Goode',
@@ -22,6 +22,8 @@ setup(
         'clients/esmond-ps-get-bulk',
         'clients/esmond-ps-get-endpoints', 
         'clients/esmond-ps-get-metadata',
+        'clients/esmond-ps-load-gridftp',
+        'clients/esmond-ps-pipe',
     ],
     install_requires=['requests', 'python-dateutil'],
     classifiers=[
