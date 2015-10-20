@@ -45,6 +45,15 @@ class NodeInfo(object):
 
         self.request_headers = {}
 
+        if self.filters and \
+            self.filters.auth_username and \
+            self.filters.auth_apikey:
+            add_apikey_header(
+                self.filters.auth_username, 
+                self.filters.auth_apikey, 
+                self.request_headers
+            )
+
         self._pp = pprint.PrettyPrinter(indent=4)
 
     def _convert_to_datetime(self, d):
@@ -656,6 +665,9 @@ class ApiConnect(object):
             self.script_alias = script_alias.lstrip('/')
 
         self.request_headers = {}
+
+        if username and api_key:
+            add_apikey_header(username, api_key, self.request_headers)
 
     def get_metadata(self):
         if self.script_alias:

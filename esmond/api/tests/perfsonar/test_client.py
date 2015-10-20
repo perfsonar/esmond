@@ -34,6 +34,10 @@ class TestClientLibs(LiveServerTestCase):
     Tests to validate that the apprpriate known data points from the 
     test_data module matche the corresponding points returned from the
     client libraries.
+
+    The query operations are using an authenticated user as well so the 
+    REST API throttling won't impact those tests if the entire testing 
+    suite is run.
     """
     fixtures = ['perfsonar_client_metadata.json']
 
@@ -77,7 +81,8 @@ class TestClientLibs(LiveServerTestCase):
 
     def test_histograms(self):
         conn = ApiConnect('http://localhost:8081', self.filters,
-                script_alias=None)
+            username=self.admin_user.username, api_key=self.admin_apikey.key,
+            script_alias=None)
         self.filters.input_source = 'lbl-owamp.es.net'
 
         md = list(conn.get_metadata())[0]
@@ -106,7 +111,8 @@ class TestClientLibs(LiveServerTestCase):
 
     def test_values(self):
         conn = ApiConnect('http://localhost:8081', self.filters,
-                script_alias=None)
+            username=self.admin_user.username, api_key=self.admin_apikey.key,
+            script_alias=None)
         self.filters.input_source = 'lbl-pt1.es.net'
 
         md = list(conn.get_metadata())[0]
@@ -160,7 +166,8 @@ class TestClientLibs(LiveServerTestCase):
 
     def test_summaries(self):
         conn = ApiConnect('http://localhost:8081', self.filters,
-                script_alias=None)
+            username=self.admin_user.username, api_key=self.admin_apikey.key,
+            script_alias=None)
         self.filters.input_source = 'lbl-owamp.es.net'
 
         md = list(conn.get_metadata())[0]
