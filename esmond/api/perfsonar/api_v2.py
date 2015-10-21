@@ -994,7 +994,7 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
     queryset = _get_ersatz_esmond_api_queryset('timeseries')
     serializer_class = TimeSeriesSerializer # mollify viewset
     pagination_class = PSPaginator
-        
+
     def retrieve(self, request, **kwargs):
         """
         GET request for timeseries data.
@@ -1030,7 +1030,9 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
         freq = None
         if 'summary_window' in kwargs:
             freq = self.valid_summary_window(kwargs['summary_window'])
-
+        elif summary_type != 'base':
+           return self.summary_details(request, metadata_key, event_type, summary_type)
+            
         #Handle time filters
         time_result = self.handle_time_filters(request.query_params)
         begin_time = time_result['begin']
@@ -1115,3 +1117,27 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
         db.flush()
         
         return Response('', status.HTTP_201_CREATED)
+
+    def summary_details(self, request, metadata_key, event_type, summary_type):
+        """
+        Format response for GET /archive/$METADATA_KEY/$EVENT_TYPE/$SUMMARY_TYPE where 
+        $SUMMARY_TYPE is not 'base'. This is just a listing of the available summary windows
+        """
+        qs = PSEventTypes.objects.filter(
+                metadata__metadata_key=metadata_key,
+                event_type=event_type,
+                summary_type=SUMMARY_TYPES[summary_type]
+            )
+        event_type_detail = self.build_event_type_list(qs)
+        if len(event_type_detail) == 0 or 'summaries' not in event_type_detail[0]:
+            raise NotFound()
+        
+        #Fix URIs
+        mdata_url = reverse('archive-detail',  
+                            kwargs={'metadata_key': self.kwargs.get('metadata_key')},
+                            request=request)
+        up = urlparse.urlparse(mdata_url)
+        for s in event_type_detail[0]['summaries']:
+            s['uri'] = up.path + s['uri']
+            
+        return Response(event_type_detail[0]['summaries'])
