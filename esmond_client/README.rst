@@ -485,7 +485,7 @@ outlined above and piped input from the bwctl command:
 
 ::
 
-    bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose | ./esmond-ps-pipe --user mgoode --key api_key_for_mgoode
+    bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose |& esmond-ps-pipe --user mgoode --key api_key_for_mgoode
 
 The primary thing (other than using a -T <tool> that is supported) is that bwctl 
 **must** be run with both the --parsable flag (which generates the json output) 
@@ -494,6 +494,22 @@ the --verbose output, and uses it to identify the json part of the output.
 
 If the program is unable to extract the necessary metadata and a valid json 
 payload from the piped input, it will log a fatal error and exit.
+
+Shell redirection
+-----------------
+Note the "**|&**" that redirects the output from bwctl to esmond-ps-pipe - both stdout and stderr need to be piped to esmond-ps-pipe. That should work on Csh and current versions of Bash. This may vary from shell to shell - for example, older versions of Bash might need to use "**2>&1 |**" or something similar. The short of it is, the shell-specific way to redirect both stdout and stderr from bwctl is necessary.
+
+If an error that looks something like this is generated:
+
+::
+
+    ts=2015-10-20 11:37:24,881 event=id_and_extract.error id=1445366244 could not extract tool_name
+    ts=2015-10-20 11:37:24,881 event=id_and_extract.error id=1445366244 could not extract input_source
+    ts=2015-10-20 11:37:24,881 event=id_and_extract.error id=1445366244 could not extract input_destination
+    ts=2015-10-20 11:37:24,881 event=main.fatal id=1445366244 could not extract metadata and valid json from input
+    ts=2015-10-20 11:37:24,882 event=main.fatal id=1445366244 exiting
+
+It is likely that the redirection is not being executed properly because tool_name, input_source and input_destination are all read from the bwctl headers that are being written to stdout.
 
 Optional args
 -------------
