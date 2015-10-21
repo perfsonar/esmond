@@ -370,6 +370,8 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         #test query using DNS name on name with both A and AAAA records
         ipv6_data[0]['metadata-count-total'] = 2
         del ipv4_data[0]['metadata-count-total']
+        del ipv4_data[0]['metadata-previous-page']
+        del ipv4_data[0]['metadata-next-page']
         self.assertExpectedResponse(ipv6_data + ipv4_data, url, {'source': self.v4v6_name})
         
         #test query using DNS name on name with both A and AAAA records and telling it to return all v4 and v6 results
