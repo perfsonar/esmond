@@ -18,6 +18,7 @@ from django.db import connection, transaction
 from django.db.models import Q
 from django.utils.text import slugify
 from django.utils.timezone import utc
+from django.db.utils import DatabaseError
 
 from socket import getaddrinfo, AF_INET, AF_INET6, SOL_TCP, SOCK_STREAM
 
@@ -26,12 +27,13 @@ from rest_framework import (viewsets, serializers, status,
 from rest_framework.exceptions import (ParseError, NotFound, MethodNotAllowed, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.permissions import (IsAuthenticatedOrReadOnly, AllowAny)
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.authentication import BaseAuthentication, TokenAuthentication
 
 import rest_framework_filters as filters
 
 from esmond.api.models import (PSMetadata, PSPointToPointSubject, PSEventTypes, 
-    PSMetadataParameters, PSNetworkElementSubject)
+    PSMetadataParameters, PSNetworkElementSubject, UserIpAddress)
 
 from esmond.api.api_v2 import (DataObject, _get_ersatz_esmond_api_queryset,
     DjangoModelPerm)
@@ -301,7 +303,27 @@ class PSMetadataPaginator(PSPaginator):
             
         return super(PSMetadataPaginator, self).get_paginated_response(data)
 
+class IpAuth(BaseAuthentication):
+    def authenticate(self, request):
+        remoteip = request.META['REMOTE_ADDR']
+        #sort so that most specific subnet is at top of list
+        userip = []
+        
+        try:
+            userip = UserIpAddress.objects.filter(ip=remoteip).order_by("-ip")
+            # userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip")
+            if userip:
+                # print 'authed', (userip[0].user, None)
+                return (userip[0].user, None)
+        except DatabaseError as e:
+            # print 'error', str(e)
+            #if you are here then the backend doesn't support IP operations, moving on
+            pass
+            
+        return None
+
 class ViewsetBase(viewsets.GenericViewSet):
+    authentication_classes = (TokenAuthentication, IpAuth,)
     permission_classes = (IsAuthenticatedOrReadOnly, DjangoModelPerm,)# lack of comma == error
     pagination_class = PSPaginator
 

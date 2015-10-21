@@ -12,7 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now
 from django.test import TestCase
 
-from esmond.api.models import PSEventTypes
+from esmond.api.models import PSEventTypes, UserIpAddress
 from esmond.api.perfsonar.types import *
 from esmond.cassandra import CASSANDRA_DB
 from esmond.config import get_config, get_config_path
@@ -799,6 +799,19 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
         self.assertAuthFailure(base_url, 1398965989, self.int_data[0], False)
         self.assertAuthFailure(base_url, 1398965989, self.int_data[0], True)
+
+    def test_ip_auth(self):
+        base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
+        # Make an unauthenticated post
+        post_data = {'ts': 1398965999, 'val': 23}
+        response = self.get_api_client().post(base_url, format='json', data=post_data)
+        self.assertEquals(response.status_code, 401)
+
+        # Associate localhost ip address with the admin user and try again.
+        UserIpAddress.objects.create(ip='127.0.0.1', user=self.admin_user)
+
+        response = self.get_api_client().post(base_url, format='json', data=post_data)
+        self.assertEquals(response.status_code, 201)
     
     def test_validator_edge_cases(self):
         '''
