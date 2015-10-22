@@ -1,3 +1,4 @@
+import ast
 import calendar
 import collections
 import copy
@@ -6,6 +7,7 @@ import hashlib
 import inspect
 import json
 import math
+import os
 import time
 import urlparse
 import uuid
@@ -310,13 +312,17 @@ class IpAuth(BaseAuthentication):
         userip = []
         
         try:
-            userip = UserIpAddress.objects.filter(ip=remoteip).order_by("-ip")
-            # userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip")
+            if ast.literal_eval(os.environ.get('ESMOND_UNIT_TESTS', 'False')):
+                # If running the unit tests (sqlite), use simplified filtering
+                # to test the basic functionality.
+                userip = UserIpAddress.objects.filter(ip=remoteip).order_by("-ip")
+            else:
+                # Otherwise, use the more advanced IP filtering in production.
+                userip = UserIpAddress.objects.filter(ip__net_contains_or_equals=remoteip).order_by("-ip")
             if userip:
                 # print 'authed', (userip[0].user, None)
                 return (userip[0].user, None)
         except DatabaseError as e:
-            # print 'error', str(e)
             #if you are here then the backend doesn't support IP operations, moving on
             pass
             
