@@ -239,6 +239,27 @@ def _process_event_type(event_type, val, args):
     
     etb.add_data_point(event_type, args.ts, val)
 
+class PostEvents(object):
+    def __init__(self, metadata, ts, options, _log):
+        """
+
+        """
+        self.metadata = metadata
+        self.ts = ts # one ts used for all of the events
+        self.options = options # option parser object
+        self._log = _log
+
+        self.etb = EventTypeBulkPost(options.api_url, username=options.user,
+                api_key=options.key, script_alias=options.script_alias, 
+                metadata_key=metadata.metadata_key)
+
+    def process_event_type(self, event_type, val, ts):
+        if args.options.verbose:
+            args._log('process_event_type.start', '{0}'.format(event_type))
+
+        self.etb.add_data_point(event_type, ts, val)
+
+
 #
 # Code to process the iperf3 data
 #
@@ -314,6 +335,8 @@ def process_iperf3(o, payload, options, _log):
 
     # timestamp for all event type inserts
     ts = o.start.timestamp.timesecs
+
+    post = PostEvents(metadata, ts, options, _log)
 
     # global event type arg to pass to _process_event_type()
     class A(object):pass
