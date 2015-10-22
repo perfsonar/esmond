@@ -485,7 +485,10 @@ def main():
     _log = lambda e, s: log.info('event={e} id={gid} {s}'.format(e=e, gid=int(time.time()), s=s))
 
     if not options.user or not options.key:
+        # this exits with error status 2 FYI
         parser.error('both --user and --key args are required.')
+
+    _log('main.start', 'reading input')
 
     data = sys.stdin.readlines()
     
@@ -513,6 +516,8 @@ def main():
         _log('main.fatal', 'exiting')
     except EsmondPipeException as e:
         _log('main.error', 'unable to process input: {0}'.format(str(e)))
+
+    _log('main.exit', 'success')
 
     sys.exit(0)
 
