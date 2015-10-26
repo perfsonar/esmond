@@ -1,0 +1,2 @@
+etc/esmond/settings.py usr/share/pyshared/esmond/settings.py
+usr/share/pyshared/esmond/api/fixtures usr/lib/python2.7/dist-packages/esmond/api/fixtures

@@ -1,0 +1,8 @@
+django python-django
+pycassa python-pycassa
+psycopg2 python-psycopg2
+python_mimeparse python-mimeparse
+requests python-requests
+mock python-mock
+nagiosplugin python-nagiosplugin
+python_tastypie python-django-tastypie
