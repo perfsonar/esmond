@@ -28,5 +28,3 @@ pysqlite2-doc/install-source.txt
 # sublime
 *.sublime-project
 *.sublime-workspace
-# Quilt cache directory
-.pc/
