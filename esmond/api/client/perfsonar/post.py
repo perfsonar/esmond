@@ -218,7 +218,13 @@ class MetadataPost(PostBase):
             self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
             return None
 
-        return Metadata(json.loads(r.content), self.api_url, ApiFilters())
+        filters = ApiFilters()
+
+        if self.username and self.api_key:
+            filters.auth_username = self.username
+            filters.auth_apikey = self.api_key
+
+        return Metadata(json.loads(r.content), self.api_url, filters)
 
     def ex(self, msg):
         raise MetadataPostException(msg)
@@ -355,7 +361,6 @@ class EventTypeBulkPost(PostBase):
             self.ex('POST connection error: {0}'.format(str(e)))
 
         if not r.status_code == 201:
-            # Change this to an exception?
             self.ex('POST error: status_code: {0}, message: {1}'.format(r.status_code, r.content))
 
     def ex(self, msg):

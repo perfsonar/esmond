@@ -4,7 +4,7 @@
 esmond-ps-pipe - take piped json output from bwctl and load into an esmond 
 perfsonar MA. To wit:
 
-bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose | esmond-ps-pipe -url http://ps-archive.es.net --user mgoode --key api_key_string
+bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose |& esmond-ps-pipe -url http://ps-archive.es.net --user mgoode --key api_key_string
 
 See further documention in README.rst or use the --help flag for a full 
 list of arguments.
@@ -20,8 +20,14 @@ import time
 
 from optparse import OptionParser
 
-from esmond_client.perfsonar.post import (MetadataPost, EventTypePost,
-    MetadataPostException, EventTypePostException)
+from esmond_client.perfsonar.post import (
+    EventTypeBulkPost,
+    EventTypeBulkPostException,
+    EventTypePost,
+    EventTypePostException, 
+    MetadataPost, 
+    MetadataPostException, 
+)
 
 import pprint
 
@@ -213,26 +219,31 @@ def id_and_extract(data, _log):
     else:
         return payload
 
-def _process_event_type(event_type, val, args):
-    """
-    Function to handle an event type with a single data point.
-    """
-    if args.options.verbose:
-        args._log('_process_event_type.start', '{0}'.format(event_type))
+class PostEvents(object):
+    def __init__(self, metadata, ts, options, _log):
+        """
+        Wrapper around the EventTypeBulkPost class.
+        """
+        self.metadata = metadata
+        self.ts = ts # one ts used for all of the events
+        self.options = options # option parser object
+        self._log = _log
 
-    et = EventTypePost(args.options.api_url, username=args.options.user,
-            api_key=args.options.key, script_alias=args.options.script_alias, 
-            metadata_key=args.metadata.metadata_key,
-            event_type=event_type)
-    
-    et.add_data_point(args.ts, val)
+        self.etb = EventTypeBulkPost(options.api_url, username=options.user,
+                api_key=options.key, script_alias=options.script_alias, 
+                metadata_key=metadata.metadata_key)
 
-    try:
-        et.post_data()
-        if args.options.verbose:
-            args._log('_process_event_type.end', '{0}'.format(event_type))
-    except EventTypePostException as e:
-        args._log('_process_event_type.warning', str(e))
+    def process_event_type(self, event_type, val, ts):
+        if self.options.verbose:
+            self._log('process_event_type.start', '{0}'.format(event_type))
+
+        self.etb.add_data_point(event_type, ts, val)
+
+    def write(self):
+        try:
+            self.etb.post_data()
+        except EventTypeBulkPostException as e:
+            self._log('write.warning', str(e))
 
 #
 # Code to process the iperf3 data
@@ -310,13 +321,8 @@ def process_iperf3(o, payload, options, _log):
     # timestamp for all event type inserts
     ts = o.start.timestamp.timesecs
 
-    # global event type arg to pass to _process_event_type()
-    class A(object):pass
-    et_args = A()
-    et_args.metadata = metadata
-    et_args.options = options
-    et_args.ts = ts
-    et_args._log = _log
+    # Wrapper around event bulk post object
+    post = PostEvents(metadata, ts, options, _log)
 
     # throughput
     if o.start.test_start.protocol == 'TCP':
@@ -324,7 +330,7 @@ def process_iperf3(o, payload, options, _log):
     elif o.start.test_start.protocol == 'UDP':
         tp = o.end.sum.bits_per_second
 
-    _process_event_type('throughput', tp, et_args)
+    post.process_event_type('throughput', tp, ts)
 
     # throughput-subintervals
     tp_subints = list()
@@ -336,7 +342,7 @@ def process_iperf3(o, payload, options, _log):
         )
         tp_subints.append(d)
 
-    _process_event_type('throughput-subintervals', tp_subints, et_args)
+    post.process_event_type('throughput-subintervals', tp_subints, ts)
 
     # packet-count-lost
     # and
@@ -348,20 +354,20 @@ def process_iperf3(o, payload, options, _log):
         # lost
         if o.end.sum.lost_packets is not None:
             pl = o.end.sum.lost_packets
-            _process_event_type('packet-count-lost', pl, et_args)
+            post.process_event_type('packet-count-lost', pl, ts)
         # sent
         if o.end.sum.packets is not None:
             ps = o.end.sum.packets
-            _process_event_type('packet-count-sent', ps, et_args)
+            post.process_event_type('packet-count-sent', ps, ts)
         # loss rate
         if pl is not None and ps is not None:
             lr = dict(numerator=pl, denominator=ps)
-            _process_event_type('packet-loss-rate', lr, et_args)
+            post.process_event_type('packet-loss-rate', lr, ts)
 
     # packet-retransmits
     if o.start.test_start.protocol == 'TCP':
         prt = o.end.sum_sent.retransmits
-        _process_event_type('packet-retransmits', prt, et_args)
+        post.process_event_type('packet-retransmits', prt, ts)
 
     # packet-retransmits-subintervals
     pr_subints = list()
@@ -373,7 +379,7 @@ def process_iperf3(o, payload, options, _log):
         )
         pr_subints.append(d)
 
-    _process_event_type('packet-retransmits-subintervals', pr_subints, et_args)
+    post.process_event_type('packet-retransmits-subintervals', pr_subints, ts)
 
     # streams-packet-retransmits
     # and
@@ -388,7 +394,7 @@ def process_iperf3(o, payload, options, _log):
         for i in o.end.streams:
             sp_retrans.append(i.sender.retransmits)
 
-        _process_event_type('streams-packet-retransmits', sp_retrans, et_args)
+        post.process_event_type('streams-packet-retransmits', sp_retrans, ts)
 
         # retrans-subint
         sp_retrans_subint = list()
@@ -403,14 +409,14 @@ def process_iperf3(o, payload, options, _log):
                 sl.append(d)
             sp_retrans_subint.append(sl)
 
-        _process_event_type('streams-packet-retransmits-subintervals', sp_retrans_subint, et_args)
+        post.process_event_type('streams-packet-retransmits-subintervals', sp_retrans_subint, ts)
 
         # throughput
         s_throughput = list()
         for i in o.end.streams:
             s_throughput.append(i.receiver.bits_per_second)
 
-        _process_event_type('streams-throughput', s_throughput, et_args)
+        post.process_event_type('streams-throughput', s_throughput, ts)
 
         # throughput-subint
         s_tput_subint = list()
@@ -425,8 +431,9 @@ def process_iperf3(o, payload, options, _log):
                 sl.append(d)
             s_tput_subint.append(sl)
 
-        _process_event_type('streams-throughput-subintervals', s_tput_subint, et_args)
+        post.process_event_type('streams-throughput-subintervals', s_tput_subint, ts)
 
+    post.write()
 
     _log('process_iperf3.end', 'finished')
 
@@ -470,7 +477,10 @@ def main():
     _log = lambda e, s: log.info('event={e} id={gid} {s}'.format(e=e, gid=int(time.time()), s=s))
 
     if not options.user or not options.key:
+        # this exits with error status 2 FYI
         parser.error('both --user and --key args are required.')
+
+    _log('main.start', 'reading input')
 
     data = sys.stdin.readlines()
     
@@ -498,6 +508,8 @@ def main():
         _log('main.fatal', 'exiting')
     except EsmondPipeException as e:
         _log('main.error', 'unable to process input: {0}'.format(str(e)))
+
+    _log('main.exit', 'success')
 
     sys.exit(0)
 

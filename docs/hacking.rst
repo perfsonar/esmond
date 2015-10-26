@@ -24,6 +24,10 @@ To setup the database and load the basic config data (OIDs, OIDSets, etc)::
     # this loads the oidsets
     python esmond/manage.py loaddata oidsets.json
 
+    # this loads perfsonar metadata
+    python esmond/manage.py loaddata perfsonar_api_metadata.json
+    python esmond/manage.py loaddata perfsonar_client_metadata.json
+
 To run tests do::
 
     # run all the tests in the api app
