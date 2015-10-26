@@ -9,7 +9,7 @@ import warnings
 from .util import add_apikey_header, AlertMixin
 
 """
-Library to fetch data from 'simplified' API /v1/snmp/ namespace.
+Library to fetch data from 'simplified' API /v2/snmp/ namespace.
 
 The class ApiConnect is the 'entry point' that the client uses, and 
 the ApiFilters class is used to set time/device/etc filters, and is 
