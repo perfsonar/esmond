@@ -104,13 +104,12 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'django.contrib.admin',
-    'esmond.api',
+    'rest_framework',
+    'rest_framework.authtoken',
     # 'esmond.admin',
     # apps need a unique label and this clashes with the django admin module.
     'esmond.apps.EsmondAdminConfig',
-    'tastypie',
-    'rest_framework',
-    'rest_framework.authtoken',
+    'esmond.api',
 )
 
 REST_FRAMEWORK = {
