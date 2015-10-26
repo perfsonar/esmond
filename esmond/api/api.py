@@ -7,7 +7,7 @@ import calendar
 from collections import OrderedDict
 
 from django.core.serializers.json import DjangoJSONEncoder
-from django.conf.urls.defaults import url
+from django.conf.urls import url
 from django.utils.timezone import make_aware, utc
 from django.utils.timezone import now as django_now
 from django.core.exceptions import ObjectDoesNotExist
