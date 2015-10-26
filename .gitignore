@@ -10,6 +10,7 @@
 # place to dump temporary junk
 /tmp
 /eggs
+dist/*.tar.gz
 # ignore generated environment config
 esmond.env
 .env
