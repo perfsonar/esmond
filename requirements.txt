@@ -1,6 +1,6 @@
 sphinx
 django-discover-runner
-django-netfields
+django-netfields==0.3.1
 -e hg+https://bitbucket.org/jdugan/dlnetsnmp#egg=DLNetSNMP
 -e .
 -e ./esmond_client/
