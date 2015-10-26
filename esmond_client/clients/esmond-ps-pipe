@@ -443,7 +443,7 @@ typemap = dict(
 )
 
 def main():
-    usage = ' bwctl ... | %prog [ -u USER -k API_KEY | -U ESMOND_REST_URL | -v ]'
+    usage = ' bwctl ... |& %prog [ -u USER -k API_KEY | -U ESMOND_REST_URL | -v ]'
     parser = OptionParser(usage=usage)
     parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
             type='string', dest='api_url', 
