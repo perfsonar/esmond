@@ -10,7 +10,6 @@ from esmond.config import get_config
 TESTING = os.environ.get("ESMOND_TESTING", False)
 ESMOND_CONF = os.environ.get("ESMOND_CONF")
 ESMOND_ROOT = os.environ.get("ESMOND_ROOT")
-TEST_RUNNER = 'discover_runner.DiscoverRunner'
 
 
 if not ESMOND_ROOT:
@@ -106,8 +105,9 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'esmond.api',
-    'esmond.admin',
-    'discover_runner',
+    # 'esmond.admin',
+    # apps need a unique label and this clashes with the django admin module.
+    'esmond.apps.EsmondAdminConfig',
     'tastypie',
     'rest_framework',
     'rest_framework.authtoken',
