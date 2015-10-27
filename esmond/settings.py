@@ -104,12 +104,18 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'django.contrib.admin',
+    # We have namespaced the app oddly and it manifest when django was
+    # upgraded to 1.8 - 'api' should be a discrete app in a project. Keeping
+    # the 'esmond.api' entry is necessary to not break how we have historically
+    # laid things out, but api.models uses app_label = 'api' in the model Meta
+    # or warnings (and future incompatabilites) will occur.
+    'esmond.api',
+    # 'esmond.admin',
+    # apps need a unique label and 'esmond.admin' clashes with the django 
+    # 'admin' module, so fix it in esmond.apps by subclassing AppConfig.
+    'esmond.apps.EsmondAdminConfig',
     'rest_framework',
     'rest_framework.authtoken',
-    # 'esmond.admin',
-    # apps need a unique label and this clashes with the django admin module.
-    'esmond.apps.EsmondAdminConfig',
-    'esmond.api',
 )
 
 REST_FRAMEWORK = {
