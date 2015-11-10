@@ -1000,26 +1000,28 @@ class PSTimeSeriesResource(Resource):
         #Insert into cassandra
         local_cache = {}
         #NOTE: Ordering in model allows statistics to go last. If this ever changes may need to update code here.
-        #check that this event_type is defined
-        rawsql_cursor = connection.cursor()
-        rawsql_cursor.execute("SELECT summary_type, summary_window FROM ps_event_types WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s) ORDER BY summary_type", [obj.event_type, obj.metadata_key])
-        for et in rawsql_cursor.fetchall():
+
+        # Pass in the cached in et_to_update for bulk create performance
+        et_to_update = kwargs.get("events_to_update")
+        if et_to_update is None:
+            et_to_update = PSEventTypes.objects.filter(
+                metadata__metadata_key=obj.metadata_key,
+                event_type=obj.event_type)
+        for et in et_to_update:
             ts_obj = PSTimeSeriesObject(obj.time,
                                             obj.value,
                                             obj.metadata_key,
                                             event_type=obj.event_type,
-                                            summary_type=et[0],
-                                            summary_window=et[1]
+                                            summary_type=et.summary_type,
+                                            summary_window=et.summary_window
                                             )
             self.database_write(ts_obj, local_cache)
-        #make sqlite happy (mainly for unit tests not configured to use postgres)
-        if connection.vendor.startswith('sqlite'):
-            rawsql_cursor.execute("UPDATE ps_event_types SET time_updated='now' WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
-        else:
-            #update time. clear out microseconds since timestamp filters are only seconds and we want to allow exact matches
-            rawsql_cursor.execute("UPDATE ps_event_types SET time_updated=now() WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [obj.event_type, obj.metadata_key])
-        transaction.commit_unless_managed()
-        
+
+        # Only update time when not bulk processing
+        if "events_to_update" not in kwargs:
+            #update time. clear out microseconds since timestamp filters are only seconds and we wwant to allow exact matches
+            et_to_update.update(time_updated=now().replace(microsecond=0))
+
         return obj
     
     def database_write(self, ts_obj, local_cache):
@@ -1080,7 +1082,8 @@ class PSBulkTimeSeriesResource(PSTimeSeriesResource):
             raise BadRequest("The 'data' element must be an array")
         #authorize
         self.authorized_create_detail(bundle.data["data"], bundle)
-        
+
+        et_to_update_cache = {}
         i = 0
         for ts_item in bundle.data["data"]:
             i += 1
@@ -1099,9 +1102,21 @@ class PSBulkTimeSeriesResource(PSTimeSeriesResource):
                 if DATA_KEY_VALUE not in val_item:
                     raise BadRequest("Missing %s field at data item %d in value %d " % (DATA_KEY_VALUE, i, j))
                 tmp_obj = { DATA_KEY_TIME: ts, DATA_KEY_VALUE: val_item[DATA_KEY_VALUE] }
+                if val_item['event-type'] not in et_to_update_cache:
+                    et_to_update_cache[val_item['event-type']] = PSEventTypes.objects.filter(
+                                metadata__metadata_key=kwargs['metadata_key'],
+                                event_type=val_item['event-type'])
                 #assign last item to bundle.obj to avoid null error
-                bundle.obj = self._obj_create(tmp_obj, metadata_key=kwargs['metadata_key'], event_type=val_item['event-type'], summary_type='base')
-                
+                bundle.obj = self._obj_create(
+                    tmp_obj,
+                    metadata_key=kwargs['metadata_key'],
+                    event_type=val_item['event-type'],
+                    summary_type='base',
+                    events_to_update=et_to_update_cache[val_item['event-type']]
+                )
+
+        for et_to_update in et_to_update_cache.itervalues():
+            et_to_update.update(time_updated=now().replace(microsecond=0))
         #everything succeeded so save to database
         db.flush()
         
