@@ -5,6 +5,7 @@ when you run "manage.py test".
 Replace this with more appropriate tests for your application.
 """
 
+import copy
 import os
 import os.path
 import json
@@ -12,6 +13,10 @@ import datetime
 import calendar
 import shutil
 import time
+
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 # This MUST be here in any testing modules that use cassandra!
 os.environ['ESMOND_UNIT_TESTS'] = 'True'
@@ -21,7 +26,7 @@ from collections import namedtuple
 from django.test import TestCase
 from django.conf import settings
 
-from tastypie.test import ResourceTestCase
+from rest_framework.test import APIClient
 
 from esmond.api.models import Device, IfRef, ALUSAPRef, OIDSet, DeviceOIDSetMap
 
@@ -873,7 +878,32 @@ class TestCassandraPollPersister(TestCase):
         p.db.close()
 
 
-class TestCassandraApiQueries(ResourceTestCase):
+class BaseTestCase(TestCase):
+    def setUp(self):
+        """
+        Bridge code while getting rid of the tasty pie test code.
+        """
+        super(BaseTestCase, self).setUp()
+
+        self.client = APIClient()
+
+        self.ctr = CassandraTestResults()
+
+        # Check connection in case the test_api module was unable
+        # to connect but we've not seen an error yet.  This way
+        # we'll see an explicit error that makes sense.
+        check_connection()
+
+    def get_api_client(self, admin_auth=False):
+        client = APIClient()
+
+        if admin_auth:
+            client.credentials(HTTP_AUTHORIZATION='Token {0}'.format(self.td.user_admin_apikey.key))
+
+        return client
+
+
+class TestCassandraApiQueries(BaseTestCase):
     fixtures = ['oidsets.json']
 
     def setUp(self):
@@ -883,13 +913,7 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         build_metadata_from_test_data(test_data)
-
-        self.ctr = CassandraTestResults()
-
-        # Check connection in case the test_api module was unable
-        # to connect but we've not seen an error yet.  This way
-        # we'll see an explicit error that makes sense.
-        check_connection()
+        
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
@@ -903,21 +927,21 @@ class TestCassandraApiQueries(ResourceTestCase):
         p.db.close()
 
     def test_get_device_list(self):
-        url = '/v1/device/'
+        url = '/v2/device/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(data[0]['resource_uri'], '/v1/device/rtr_d/')
+        self.assertEquals(data[0]['resource_uri'], '/v2/device/rtr_d/')
 
     def test_get_device_interface_list(self):
-        url = '/v1/device/rtr_d/interface/'
+        url = '/v2/device/rtr_d/interface/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEquals(data['children'][0]['resource_uri'], 
-            '/v1/device/rtr_d/interface/fxp0.0')
+            '/v2/device/rtr_d/interface/fxp0.0')
 
     def test_get_device_interface_data_detail(self):
         params = {
@@ -925,7 +949,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end
         }
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -952,12 +976,13 @@ class TestCassandraApiQueries(ResourceTestCase):
             'agg': self.ctr.agg_freq
         }
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -971,12 +996,13 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         params['cf'] = 'min'
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -991,12 +1017,13 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         params['cf'] = 'max'
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
 
         self.assertEquals(data['end_time'], params['end'])
         self.assertEquals(data['begin_time'], params['begin'])
@@ -1022,7 +1049,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000
         }
 
-        url = '/v1/timeseries/BaseRate/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
+        url = '/v2/timeseries/BaseRate/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -1050,7 +1077,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000,
         }
 
-        url = '/v1/timeseries/Aggs/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/{1}'.format(SNMP_NAMESPACE, self.ctr.agg_freq*1000)
+        url = '/v2/timeseries/Aggs/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/{1}'.format(SNMP_NAMESPACE, self.ctr.agg_freq*1000)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -1113,7 +1140,7 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end * 1000
         }
 
-        url = '/v1/timeseries/RawData/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
+        url = '/v2/timeseries/RawData/{0}/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'.format(SNMP_NAMESPACE)
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 200)
@@ -1135,11 +1162,8 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         interface_name = 'interface_test/0/0.0'
 
-        authn = self.create_apikey(self.td.user_admin.username, 
-            self.td.user_admin_apikey.key)
-
         # raw data writes
-        url = '/v1/timeseries/RawData/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
+        url = '/v2/timeseries/RawData/{0}/rtr_test/FastPollHC/ifHCInOctets/{1}/30000'.format(SNMP_NAMESPACE, atencode(interface_name))
 
         params = { 
             'ts': int(time.time()) * 1000, 
@@ -1149,11 +1173,15 @@ class TestCassandraApiQueries(ResourceTestCase):
         # Params sent as json list and not post vars now.
         payload = [ params ]
 
-        response = self.api_client.post(url, data=payload, format='json',
-            authentication=authn)
+        # try POSTing w/out auth first
+        response = self.get_api_client().post(url, data=payload, format='json')
+        self.assertEquals(response.status_code, 401)
+
+        # now again with auth.
+        response = self.get_api_client(admin_auth=True).post(url, data=payload, format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
-        response = self.client.get(url, authentication=authn)
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
@@ -1167,15 +1195,14 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['cf'], 'raw')
 
         # base rate write
-        url = '/v1/timeseries/BaseRate/rtr_test/FastPollHC/ifHCInOctets/{0}/30000'.format(atencode(interface_name))
+        url = '/v2/timeseries/BaseRate/{0}/rtr_test/FastPollHC/ifHCInOctets/{1}/30000'.format(SNMP_NAMESPACE, atencode(interface_name))
 
         payload[0]['ts'] = (payload[0]['ts']/30000)*30000
 
-        response = self.api_client.post(url, data=payload, format='json',
-            authentication=authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload, format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
-        response = self.client.get(url, authentication=authn)
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
@@ -1208,11 +1235,12 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end
         }
 
-        response = self.api_client.post('/v1/bulk/interface/', data=payload,
+        response = self.get_api_client().post('/v2/bulk/interface/', data=payload,
             format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(len(data['data']), 2)
         self.assertEquals(data['data'][0]['path']['iface'], ifaces[0])
         self.assertEquals(len(data['data'][0]['data']), 21)
@@ -1236,11 +1264,12 @@ class TestCassandraApiQueries(ResourceTestCase):
             'end': self.ctr.end*1000
         }
 
-        response = self.api_client.post('/v1/bulk/timeseries/', data=payload,
+        response = self.get_api_client().post('/v2/bulk/timeseries/', data=payload,
             format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(len(data['data']), 2)
         self.assertEquals(data['data'][0]['path'], paths[0])
         self.assertEquals(data['data'][1]['path'], paths[1])
@@ -1249,14 +1278,14 @@ class TestCassandraApiQueries(ResourceTestCase):
         self.assertEquals(data['begin_time'], payload['begin'])
 
     def test_device_info(self):
-        response = self.api_client.get('/v1/device/')
+        response = self.get_api_client().get('/v2/device/')
         self.assertEquals(response.status_code, 200)
         payload = json.loads(response.content)
         self.assertEquals(len(payload), 1)
 
         data = payload[0]
 
-        self.assertEquals(data['resource_uri'], '/v1/device/rtr_d/')
+        self.assertEquals(data['resource_uri'], '/v2/device/rtr_d/')
         self.assertEquals(data['id'], 1)
         self.assertEquals(data['name'], 'rtr_d')
 
@@ -1270,22 +1299,115 @@ class TestCassandraApiQueries(ResourceTestCase):
 
         ifaces += '?limit=0'
 
-        response = self.api_client.get(ifaces)
+        response = self.get_api_client().get(ifaces)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertTrue(len(data['children']))
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
+    def test_device_endpoint_verbs(self):
+        # GET list
+        response = self.get_api_client().get('/v2/device/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+
+        # GET detail
+        response = self.get_api_client().get('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+
+        original_begin_time = payload.get('begin_time')
+        original_end_time = payload.get('end_time')
+
+        # print json.dumps(payload, indent=4)
+
+        # POST - no post allowed
+        # no auth
+        tmp = copy.copy(payload)
+        tmp['name'] = 'rtr_z'
+        response = self.get_api_client().post('/v2/device/', tmp, format='json' )
+        self.assertEquals(response.status_code, 401)
+        # with auth, should return bad request
+        response = self.get_api_client(admin_auth=True).post('/v2/device/', tmp, format='json' )
+        self.assertEquals(response.status_code, 400)
+
+        # DELETE - no delete allowed
+        # no auth
+        response = self.get_api_client().delete('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 401)
+        # with auth, should return bad request
+        response = self.get_api_client(admin_auth=True).delete('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 400)
+
+        # PATCH - no patch allowed
+        # no auth
+        tmp = copy.copy(payload)
+        tmp.pop('id')
+        tmp.pop('end_time')
+        response = self.get_api_client().patch('/v2/device/rtr_d/', tmp, format='json' )
+        self.assertEquals(response.status_code, 401)
+        # with auth, should return bad request
+        response = self.get_api_client(admin_auth=True).patch('/v2/device/rtr_d/', tmp, format='json' )
+        self.assertEquals(response.status_code, 400)
+
+        # PUT -- SentryPoll
+        # no auth
+        response = self.get_api_client().put('/v2/device/rtr_d/', payload, format='json')
+        self.assertEquals(response.status_code, 401)
+        # with auth, change some data
+
+        payload['active'] = False
+        payload['oidsets'].append('SentryPoll')
+        response = self.get_api_client(admin_auth=True).put('/v2/device/rtr_d/', payload, format='json')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        # Check changes
+        self.assertFalse(payload.get('active'))
+        self.assertEqual(len(payload.get('oidsets')), 2)
+
+        # Verify changes with a GET
+        response = self.get_api_client().get('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertFalse(payload.get('active'))
+        self.assertEqual(len(payload.get('oidsets')), 2)
+
+        # Change values back, make sure m2m handling is working right.
+        payload['active'] = True
+        payload['oidsets'].pop()
+        response = self.get_api_client(admin_auth=True).put('/v2/device/rtr_d/', payload, format='json')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        # Check changes
+        self.assertTrue(payload.get('active'))
+        self.assertEqual(len(payload.get('oidsets')), 1)
+
+        # Try an update with a bogus oidset
+        payload['oidsets'].append('BogusOIDSet')
+        response = self.get_api_client(admin_auth=True).put('/v2/device/rtr_d/', payload, format='json')
+        self.assertEquals(response.status_code, 400)
+
+        # One last get to make sure the times have been going in an out 
+        # correctly RE: the custom serializer.
+        response = self.get_api_client().get('/v2/device/rtr_d/')
+        self.assertEquals(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertEquals(payload.get('begin_time'), original_begin_time)
+        self.assertEquals(payload.get('end_time'), original_end_time)
+
     def test_interface_info(self):
-        response = self.api_client.get('/v1/interface/?limit=0&ifName__contains=fxp')
+        response = self.get_api_client().get('/v2/interface/?limit=0&ifName__contains=fxp')
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertTrue(len(data['children']))
+        self.assertLessEqual(len(data['children']), 1)
         self.assertEquals(data['children'][0]['ifName'], 'fxp0.0')
         self.assertEquals(len(data['children']), data['meta']['total_count'])
 
     def test_oidset_info(self):
-        response = self.api_client.get('/v1/oidset/')
+        response = self.get_api_client().get('/v2/oidset/')
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
         
@@ -1392,20 +1514,48 @@ class TestCassandraApiQueries(ResourceTestCase):
         # Make a request the bulk endpoint will throttle for too many 
         # queries w/out auth.
 
-        response = self.api_client.post('/v1/bulk/interface/', data=payload,
+        response = self.get_api_client().post('/v2/bulk/interface/', data=payload,
             format='json')
+        # print response.status_code
+        # print response.content
         self.assertEquals(response.status_code, 401)
 
         # Make the same request with authentication.
 
-        authn = self.create_apikey(self.td.user_admin.username, 
-            self.td.user_admin_apikey.key)
-        response = self.api_client.post('/v1/bulk/interface/', data=payload,
-            format='json', authentication=authn)
+        response = self.get_api_client(admin_auth=True).post('/v2/bulk/interface/', data=payload,
+            format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
-        # Make a bunch of requests to make sure that the throttling
-        # code kicks in.
+        # Make sure the timeseries endpoint will throttle too.
+
+        paths = list()
+
+        # These paths won't be valid, just generating a lot to make the custom
+        # throttle code kick in.
+        for i in ifaces:
+            paths.append(['snmp', 'rtr_d', 'FastPollHC', 'ifHCInOctets', i, '30000'])
+
+        payload = {
+            'paths': paths, 
+            'begin': self.ctr.begin,
+            'end': self.ctr.end,
+            'type': 'RawData',
+        }
+
+        response = self.get_api_client().post('/v2/bulk/timeseries/', data=payload,
+            format='json')
+        self.assertEquals(response.status_code, 401)
+
+        # This query will "fail" (400 Bad Request) since the paths are 
+        # bogus but that doen't matter, the throttle let it through.
+        response = self.get_api_client(admin_auth=True).post('/v2/bulk/timeseries/', data=payload,
+            format='json')
+        self.assertEquals(response.status_code, 400)
+        d = json.loads(response.content)
+        self.assertTrue(d.get('query error', None))
+
+        # Make a bunch of requests to make sure that the general 
+        # AnonRateThrottle kicks in.
 
         params = {
             'begin': self.ctr.begin-3600, # back an hour to get agg bin.
@@ -1413,14 +1563,14 @@ class TestCassandraApiQueries(ResourceTestCase):
             'agg': self.ctr.agg_freq
         }
 
-        url = '/v1/device/rtr_d/interface/fxp0.0/in'
+        url = '/v2/device/rtr_d/interface/fxp0.0/in'
 
         response = self.client.get(url, params)
 
         loops = 5 # leave a little overhead
 
         if not config.api_throttle_at:
-            loops += 150 # tastypie default
+            loops += 150 # API V1 default
         else:
             loops += config.api_throttle_at
 
@@ -1463,7 +1613,7 @@ class TestFitToBins(TestCase):
         self.assertEqual({1386369690000: 249747233}, r)
         self.assertLess(time.time()-t0, 0.5)
 
-class TestCassandraApiQueriesALU(ResourceTestCase):
+class TestCassandraApiQueriesALU(BaseTestCase):
     fixtures = ['oidsets.json']
 
     def setUp(self):
@@ -1473,13 +1623,6 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
 
         test_data = load_test_data("rtr_alu_ifhcin_long.json")
         build_metadata_from_test_data(test_data)
-
-        self.ctr = CassandraTestResults()
-
-        # Check connection in case the test_api module was unable
-        # to connect but we've not seen an error yet.  This way
-        # we'll see an explicit error that makes sense.
-        check_connection()
 
 
     def test_a_load_data(self):
@@ -1499,12 +1642,9 @@ class TestCassandraApiQueriesALU(ResourceTestCase):
             'end': self.ctr.end
         }
 
-        url = '/v1/device/rtr_alu/interface/1@2F1@2F1/in'
+        url = '/v2/device/rtr_alu/interface/1@2F1@2F1/in'
 
-        authn = self.create_apikey(self.td.user_admin.username,
-                                  self.td.user_admin_apikey.key)
-
-        response = self.api_client.get(url, data=params, authentication=authn)
+        response = self.get_api_client(admin_auth=True).get(url, data=params)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)

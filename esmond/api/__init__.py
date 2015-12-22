@@ -6,9 +6,6 @@ other modules.  Reduces the overhead/etc of importing api.py itself.
 from esmond.config import get_config_path, get_config
 from esmond.api.models import OIDSet
 
-from tastypie.authorization import Authorization
-from tastypie.authentication import ApiKeyAuthentication
-
 # Prefix used in all the snmp data cassandra keys
 SNMP_NAMESPACE = 'snmp'
 

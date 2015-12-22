@@ -9,7 +9,8 @@ import ConfigParser
 
 def add_apikey_header(user, key, header_dict):
     """Format an auth header for rest api key."""
-    header_dict['Authorization'] = 'ApiKey {0}:{1}'.format(user, key)
+    # header_dict['Authorization'] = 'ApiKey {0}:{1}'.format(user, key)
+    header_dict['Authorization'] = 'Token {0}'.format(key)
 
 class AlertMixin(object):
     def http_alert(self, r):

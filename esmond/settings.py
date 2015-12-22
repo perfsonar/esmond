@@ -10,7 +10,6 @@ from esmond.config import get_config
 TESTING = os.environ.get("ESMOND_TESTING", False)
 ESMOND_CONF = os.environ.get("ESMOND_CONF")
 ESMOND_ROOT = os.environ.get("ESMOND_ROOT")
-TEST_RUNNER = 'discover_runner.DiscoverRunner'
 
 
 if not ESMOND_ROOT:
@@ -105,11 +104,63 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'django.contrib.admin',
+    # We have namespaced the app oddly and it manifest when django was
+    # upgraded to 1.8 - 'api' should be a discrete app in a project. Keeping
+    # the 'esmond.api' entry is necessary to not break how we have historically
+    # laid things out, but api.models uses app_label = 'api' in the model Meta
+    # or warnings (and future incompatabilites) will occur.
     'esmond.api',
-    'esmond.admin',
-    'discover_runner',
-    'tastypie',
+    # 'esmond.admin',
+    # apps need a unique label and 'esmond.admin' clashes with the django 
+    # 'admin' module, so fix it in esmond.apps by subclassing AppConfig.
+    'esmond.apps.EsmondAdminConfig',
+    'rest_framework',
+    'rest_framework.authtoken',
 )
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+
+    'DEFAULT_FILTER_BACKENDS': (
+        'rest_framework_filters.backends.DjangoFilterBackend',
+    ),
+
+    # Pagination parameters are being handled in custom pagination 
+    # classes since pagination is only being done on a few 
+    # endpoints, not globally.
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        # This places token based auth (analogous to old API key),
+        # on ALL endpoints, but does not enforce ANY access 
+        # control. That will need to be handled by a permissions
+        # (or custom throttle) class.
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+
+    'DEFAULT_PERMISSION_CLASSES': (
+        # This puts "anonymous read only" perms on all endpoints. 
+        # Anything can GET, HEAD or OPTIONS. Is overridded with 
+        # AllowAny in the bulk endpoints with custom auth-based
+        # throttling.
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ),
+
+    # These stanzas put general anonymous client throttling on all 
+    # endpoints. The bulk retrieval classes have their own custom 
+    # throttling classes.
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        # 'rest_framework.throttling.UserRateThrottle'
+    ),
+
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '150/hour',
+        # 'user': '1000/day'
+    }
+}
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 if ESMOND_SETTINGS.allowed_hosts:

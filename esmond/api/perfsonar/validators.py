@@ -1,6 +1,6 @@
 import json
 import math
-from tastypie.exceptions import BadRequest
+from rest_framework.exceptions import ParseError
 
 '''
 DataValidator: Base validator class. Subclasses should override vaildate class
@@ -36,7 +36,7 @@ class FloatValidator(DataValidator):
                 'denominator': 1
             }
         except ValueError:
-            raise BadRequest("Value must be a floating point number")
+            raise ParseError(detail="Value must be a floating point number")
         
         return formatted_value
     
@@ -95,9 +95,9 @@ class HistogramValidator(DataValidator):
             for k in obj.value:
                 obj.value[k] = long(obj.value[k])
         except ValueError:
-            raise BadRequest("Value of histogram must be an integer")
+            raise ParseError(detail="Value of histogram must be an integer")
         except:
-            raise BadRequest("Invalid histogram provided")
+            raise ParseError(detail="Invalid histogram provided")
         
         return obj.value
     
@@ -212,7 +212,7 @@ class IntegerValidator(DataValidator):
         try:
             return long(obj.value)
         except ValueError:
-            raise BadRequest("Value must be an integer")
+            raise ParseError(detail="Value must be an integer")
     
     def summary_cf(self, db, summary_type):
         if summary_type == 'average':
@@ -237,7 +237,7 @@ class JSONValidator(DataValidator):
             json.dumps(obj.value)
         except:
             #This is pretty much an impossible case since TastyPie JSON parser breaks before this
-            raise BadRequest("Value must be valid JSON")
+            raise ParseError(detail="Value must be valid JSON")
         
         return obj.value
         
@@ -247,22 +247,22 @@ PercentageValidator: Simple validator for percentage types
 class PercentageValidator(DataValidator):
     def validate(self, obj):
         if "numerator" not in obj.value:
-            raise BadRequest("Missing required field 'numerator'")
+            raise ParseError(detail="Missing required field 'numerator'")
         elif "denominator" not in obj.value:
-            raise BadRequest("Missing required field 'denominator'")
+            raise ParseError(detail="Missing required field 'denominator'")
         try:
             obj.value["numerator"] = long(obj.value["numerator"])
         except:
-            raise BadRequest("The field 'numerator' must be an integer")
+            raise ParseError(detail="The field 'numerator' must be an integer")
         try:
             obj.value["denominator"] = long(obj.value["denominator"])
         except:
-            raise BadRequest("The field 'denominator' must be an integer")
+            raise ParseError(detail="The field 'denominator' must be an integer")
         
         if(obj.value["denominator"] <= 0):
-            raise BadRequest("The field 'denominator' must be greater than 0")
+            raise ParseError(detail="The field 'denominator' must be greater than 0")
         elif(obj.value["numerator"] < 0):
-            raise BadRequest("The field 'numerator' cannot be negative")
+            raise ParseError(detail="The field 'numerator' cannot be negative")
         
         return obj.value
     
@@ -279,7 +279,7 @@ class SubintervalValidator(DataValidator):
             json.dumps(obj.value)
             pos = 1
             if len(obj.value) == 0:
-                 raise BadRequest("Empty subinterval provided")
+                 raise ParseError(detail="Empty subinterval provided")
                  
             for si in obj.value:
                 if('start' not in si):
@@ -295,11 +295,11 @@ class SubintervalValidator(DataValidator):
                 float(si['duration'])
                 pos += 1
         except ValueError:
-            raise BadRequest("Subinterval 'start' and 'duration' must be floating point numbers")
+            raise ParseError(detail="Subinterval 'start' and 'duration' must be floating point numbers")
         except:
-            raise BadRequest("Invalid subintervals provided")
+            raise ParseError(detail="Invalid subintervals provided")
         
         if err is not None:
-            raise BadRequest(err)
+            raise ParseError(detail=err)
         
         return obj.value

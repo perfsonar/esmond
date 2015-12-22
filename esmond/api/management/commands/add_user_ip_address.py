@@ -5,7 +5,6 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User, Group, Permission
 
-from tastypie.models import ApiKey
 from esmond.api.models import UserIpAddress
 
 class Command(BaseCommand):

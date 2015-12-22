@@ -6,7 +6,7 @@ from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionE
 from esmond.config import get_config_path, get_config
 from esmond.util import get_logger
 from datetime import datetime
-from django.conf.urls.defaults import url
+from django.conf.urls import url
 from django.db import connection, transaction
 from django.db.models import Q
 from django.utils.text import slugify

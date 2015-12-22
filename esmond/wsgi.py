@@ -32,7 +32,7 @@ def application(environ, start_response):
 
 """
 Example apache httpd.conf directives:
-Make sure that WSGIPassAuthorization is on when using the tastypie/django 
+Make sure that WSGIPassAuthorization is on when using the REST framework/django 
 level auth or mod_wsgi will munch the auth headers.
 
 WSGIScriptAlias / /services/esmond/esmond/wsgi.py

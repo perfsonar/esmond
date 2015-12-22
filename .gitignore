@@ -10,6 +10,7 @@
 # place to dump temporary junk
 /tmp
 /eggs
+dist/*.tar.gz
 # ignore generated environment config
 esmond.env
 .env
@@ -28,5 +29,4 @@ pysqlite2-doc/install-source.txt
 # sublime
 *.sublime-project
 *.sublime-workspace
-# Quilt cache directory
-.pc/
+pip-selfcheck.json
