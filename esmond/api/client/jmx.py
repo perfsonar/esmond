@@ -13,15 +13,24 @@ import xml.etree.ElementTree as ET
 
 import requests
 
+
 class CassandraJMXException(Exception):
+    """Client exception class"""
     def __init__(self, value):
+        # pylint: disable=super-init-not-called
         self.value = value
+
     def __str__(self):
         return repr(self.value)
 
-class CassandraJMXWarning(Warning): pass
 
-class CassandraJMX(object):
+class CassandraJMXWarning(Warning):
+    """Client warning class"""
+    pass
+
+
+class CassandraJMX(object):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
+    """Client class to fetch JMX variables from a Cassandra instance."""
     def __init__(self, url='http://localhost:8081'):
         self.url = url.rstrip('/')
         # - JMX variables
@@ -45,11 +54,11 @@ class CassandraJMX(object):
         url = '{0}/mbean?{1}'.format(self.url, urllib.urlencode(qs))
         r = requests.get(url)
         if r.status_code != 200:
-            warnings.warn('Bad request: {0} got return code: {1}'.format(url, r.status_code), 
-                CassandraJMXWarning, stacklevel=2)
+            warnings.warn('Bad request: {0} got return code: {1}'.format(url, r.status_code),
+                          CassandraJMXWarning, stacklevel=2)
         return r.content
 
-    def _get_attribute_value(self, root, name):
+    def _get_attribute_value(self, root, name):  # pylint: disable=no-self-use
         for i in root.iterfind('Attribute[@name="{0}"]'.format(name)):
             return i.attrib['value']
 
@@ -62,14 +71,16 @@ class CassandraJMX(object):
             pass
         return val
 
-    def _get_contents_dict(self, s):
-        d = {}
-        for i in s[s.find('contents=')+10:-2].split(','):
-            k,v = i.strip().split('=')
+    def _get_contents_dict(self, value):  # pylint: disable=no-self-use
+        d = {}  # pylint: disable=invalid-name
+        for i in value[value.find('contents=')+10:-2].split(','):
+            k, v = i.strip().split('=')
             d[k] = int(v)
         return d
 
     # Memory stats
+    # These accessors don't all need docstrings
+    # pylint: disable=missing-docstring
 
     def get_heap_memory(self):
         value = self._fetch_value(self.jmx_memory, 'HeapMemoryUsage')
@@ -149,4 +160,4 @@ class CassandraJMX(object):
     def get_compaction_complete(self):
         return self._fetch_value(self.jmx_compaction, 'CompletedTasks')
 
-available_tests = filter(lambda x: x.startswith('get_'), dir(CassandraJMX('')))
+AVAILABLE_TESTS = filter(lambda x: x.startswith('get_'), dir(CassandraJMX('')))  # pylint: disable=bad-builtin, deprecated-lambda
