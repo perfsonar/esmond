@@ -80,6 +80,9 @@ disable=import-star-module-level,old-octal-literal,oct-method,print-statement,un
 # List of errors that we are ignoring on a per-file/block basis:
 #
 # line-too-long - it happens.
+# missing-docstring - it happens.
+# esmond specific
+# dangerous-default-value - we do this for a reason in a recursive function.
 
 [REPORTS]
 
@@ -113,8 +116,15 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 # List of builtins function names that should not be used, separated by a comma
 bad-functions=map,filter,input
 
+# v - 'value' along with k for 'key'
+# ii - double iterator/nested 'i'
+# pp - my pretty printer class debug variable.
+# fh - file handle
+# ts - perfectly valid for a timestamp temp var
+# r - frequently used for 'request'
+
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,ex,Run,_
+good-names=i,j,k,ex,Run,_, pp, fh, ts, r, v, ii
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata

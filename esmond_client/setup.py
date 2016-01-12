@@ -14,8 +14,8 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 7:
 
 def read(*paths):
     """Build a file path from *paths* and return the contents."""
-    with open(os.path.join(*paths), 'r') as fhand:
-        return fhand.read()
+    with open(os.path.join(*paths), 'r') as fh:
+        return fh.read()
 
 setup(
     name='esmond_client',
