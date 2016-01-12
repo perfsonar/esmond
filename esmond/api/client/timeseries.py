@@ -231,7 +231,8 @@ class PostData(TimeseriesBase):
         for i in self.payload:
             if not isinstance(i, dict):
                 raise PostException('All elements of payload must be dicts - got: {0}'.format(i))
-            if not i.has_key('ts') or not i.has_key('val'):
+
+            if 'ts' not in i or 'val' not in i:
                 raise PostException(
                     'Expecting list of dicts with keys \'val\' and \'ts\' - got: {0}'.format(i))
             try:
@@ -377,6 +378,7 @@ class BulkException(Exception):
 
 
 class GetBulkData(AlertMixin, object):
+    """Make request for bulk data."""
     wrn = GetBulkWarning
     _schema_root = 'v1/bulk/timeseries'
 
@@ -473,6 +475,7 @@ class GetBulkBaseRate(GetBulkData):
 
 
 class TimeSeriesDataPayload(DataPayload):
+    """Payload class to carry data points."""
     def __init__(self, data={'data': []}):
         super(TimeSeriesDataPayload, self).__init__(data)
 
@@ -493,6 +496,7 @@ class TimeSeriesDataPayload(DataPayload):
 class TimeSeriesDataPoint(object):  # pylint: disable=too-few-public-methods
     """Class to encapsulate the returned data points."""
     __slots__ = ['ts', 'val']
+
     def __init__(self, ts, val):
         super(TimeSeriesDataPoint, self).__init__()
         self.ts = ts
