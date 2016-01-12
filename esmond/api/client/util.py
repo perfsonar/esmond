@@ -82,6 +82,7 @@ def get_summary_name(filterdict):
     if not isinstance(filterdict, dict):
         raise ConfigException('Arg needs to be a dict of the form: {{django_query_filter: filter_criteria}} - got {0}.'.format(
             filterdict))
+
     elif len(filterdict.keys()) > 1:
         raise ConfigException('Dict must contain a single key/value pair of the form: {{django_query_filter: filter_criteria}} - got {0}.'.format(
             filterdict))
@@ -91,10 +92,11 @@ def get_summary_name(filterdict):
 
     type_map = get_type_map()
 
-    if not type_map.has_key(django_query_filter):
+    if django_query_filter not in type_map:
         raise ConfigException('Config file did does not contain a section for {0} - has: {1}'.format(
             django_query_filter, type_map.keys()))
-    elif not type_map[django_query_filter].has_key(filter_criteria):
+
+    elif filter_criteria not in type_map[django_query_filter]:
         raise ConfigException('Config section for {0} does not contain an key/entry for {1} - has: {2}'.format(
             django_query_filter, filter_criteria, type_map[django_query_filter].keys()))
 
@@ -114,9 +116,11 @@ def aggregate_to_ts_and_endpoint(data, verbosity=False):
         for data in row.data:
             if verbosity > 1:
                 print '  *', data
-            if not aggs.has_key(data.ts_epoch):
+            # if not aggs.has_key(data.ts_epoch):
+            if data.ts_epoch not in aggs:
                 aggs[data.ts_epoch] = {}
-            if not aggs[data.ts_epoch].has_key(row.endpoint):
+            # if not aggs[data.ts_epoch].has_key(row.endpoint):
+            if row.endpoint not in aggs[data.ts_epoch]:
                 aggs[data.ts_epoch][row.endpoint] = 0
             if data.val is not None:
                 aggs[data.ts_epoch][row.endpoint] += data.val
@@ -132,12 +136,16 @@ def aggregate_to_device_interface_endpoint(data, verbosity=False):  # pylint: di
     for row in data.data:
         if verbosity:
             print ' *', row
-        if not aggs.has_key(row.device):
+
+        if row.device not in aggs:
             aggs[row.device] = {}
-        if not aggs[row.device].has_key(row.interface):
+
+        if row.interface not in aggs[row.device]:
             aggs[row.device][row.interface] = {}
-        if not aggs[row.device][row.interface].has_key(row.endpoint):
+
+        if row.endpoint not in aggs[row.device][row.interface]:
             aggs[row.device][row.interface][row.endpoint] = 0
+
         for data in row.data:
             if verbosity > 1:
                 print '  *', data
@@ -157,8 +165,17 @@ def iterate_device_interface_endpoint(aggs):  # pylint: disable=invalid-name
 
 # -- timehandling code for summary scripts
 
-lastmonth = lambda (yr,mo): [(y,m+1) for y,m in (divmod((yr*12+mo-2), 12),)][0]
-nextmonth = lambda (yr,mo): (yr+mo/12,mo%12+1)
+# pylint doesn't like these constant names
+# pylint: disable=invalid-name
+
+def lastmonth(yr, mo):
+    """get last month from yr/mo pair"""
+    return [(y, m+1) for y, m in (divmod((yr*12+mo-2), 12),)][0]
+
+
+def nextmonth(yr, mo):
+    """get next month from yr/mo pair"""
+    return (yr+mo / 12, mo % 12+1)
 
 
 def get_month_start_and_end(start_point):
@@ -166,7 +183,7 @@ def get_month_start_and_end(start_point):
 
     start = calendar.timegm((start_point.year, start_point.month, 1, 0, 0, 0, 0, 0, -1))
 
-    n_mo_yr, n_mo = nextmonth((start_point.year, start_point.month))
+    n_mo_yr, n_mo = nextmonth(start_point.year, start_point.month)
 
     end = calendar.timegm((n_mo_yr, n_mo, 1, 0, 0, 0, 0, 0, -1)) - 1
 
@@ -174,9 +191,6 @@ def get_month_start_and_end(start_point):
 
 
 # -- atencode code for handling rest URIs
-
-# pylint doesn't like these constant names
-# pylint: disable=invalid-name
 
 _atencode_safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ0123456789_.-'
 _atencode_map = {}
@@ -226,4 +240,3 @@ def atdecode(s):
             r.append(part)
 
     return ''.join(r)
-
