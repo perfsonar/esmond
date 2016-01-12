@@ -59,7 +59,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-# 
+#
 # Esmond Message Control
 #
 # All of the disabled tests, which are not seperated by a space before "no-member"
@@ -79,6 +79,7 @@ disable=import-star-module-level,old-octal-literal,oct-method,print-statement,un
 #
 # List of errors that we are ignoring on a per-file/block basis:
 #
+# line-too-long - it happens.
 
 [REPORTS]
 
