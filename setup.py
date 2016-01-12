@@ -9,7 +9,7 @@ setup(name='esmond',
         author_email='jdugan@es.net',
         url='http://software.es.net/esmond/',
         packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
-        install_requires=['Django==1.5.1', 'django-tastypie', 'web.py',
+        install_requires=['Django==1.5.1', 'django-tastypie==0.12.2', 'web.py',
             'python-memcached', 'pycassa', 'psycopg2','python-mimeparse',
             'requests', 'mock', 'nagiosplugin'],
         entry_points = {
