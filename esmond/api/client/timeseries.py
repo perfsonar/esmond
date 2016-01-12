@@ -131,7 +131,8 @@ class TimeseriesBase(AlertMixin, object):  # pylint: disable=too-many-instance-a
         self.url = '{0}/{1}/{2}/{3}/{4}'.format(
             self.api_url,
             self._schema_root,
-            self._p_type,
+            # self._p_type defined in subclasses
+            self._p_type,  # pylint: disable=no-member
             '/'.join(self.path),
             self.freq)
 
@@ -411,7 +412,8 @@ class GetBulkData(AlertMixin, object):
         self._validate_args(begin=begin, end=end)
 
         payload = {
-            'type': self._p_type,
+            # self._p_type defined in subclasses
+            'type': self._p_type,  # pylint: disable=no-member
             'paths': paths,
         }
 
