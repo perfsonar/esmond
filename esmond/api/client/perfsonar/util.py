@@ -634,9 +634,11 @@ def get_outfile(options, metadata, event_type):
 
 #
 # Command line argument validation functions
-#
+# Not all use the parser arg
+
 
 def check_url(options, parser):
+    """Validate URL passed to command line args."""
     if not options.url:
         print '--url is a required arg\n'
         parser.print_help()
@@ -645,26 +647,30 @@ def check_url(options, parser):
     # trim URI from --url since people will cut and paste from
     # the list of MAs.
     url = options.url
-    up = urlparse.urlparse(url)
-    if up.path.startswith('/esmond/perfsonar/archive'):
-        options.url = url.replace(up.path, '')
+    upar = urlparse.urlparse(url)
+    if upar.path.startswith('/esmond/perfsonar/archive'):
+        options.url = url.replace(upar.path, '')
         print '\n not necessary to add /esmond/perfsonar/archive to --url arg - trimming'
 
     try:
         urllib.urlopen(options.url)
-    except Exception, e:
-        print 'Could not open --url {0} - error: {1}'.format(options.url, e)
+    except Exception, ex:  # pylint: disable=broad-except
+        print 'Could not open --url {0} - error: {1}'.format(options.url, ex)
 
-def check_valid_hostnames(options, parser, hn_args=[]):
+
+def check_valid_hostnames(options, parser, hn_args=[]):  # pylint: disable=dangerous-default-value, unused-argument
+    """Validate hostnames in cmd line args."""
     try:
-        for hn in hn_args:
-            if getattr(options, hn):
-                socket.gethostbyname(getattr(options, hn))
-    except:
-        print '--{0} arg had invalid hostname: {1}'.format(hn, getattr(options, hn))
+        for hname in hn_args:
+            if getattr(options, hname):
+                socket.gethostbyname(getattr(options, hname))
+    except Exception:  # pylint: disable=broad-except
+        print '--{0} arg had invalid hostname: {1}'.format(hname, getattr(options, hname))
         sys.exit(-1)
 
+
 def check_event_types(options, parser, require_event):
+    """Validate the event types passed in cmd line args."""
     if options.type and options.type not in EVENT_TYPES:
         print '{0} is not a valid event type'.format(options.type)
         list_event_types()
@@ -674,7 +680,9 @@ def check_event_types(options, parser, require_event):
         parser.print_help()
         sys.exit(-1)
 
-def check_formats(options, parser):
+
+def check_formats(options, parser):  # pylint: disable=unused-argument
+    """Validate output formats passed in cmd line args."""
     f_args = ['human', 'json', 'csv']
     if options.format not in f_args:
         print '{0} is not a valid --output-format arg (one of: {1})'.format(options.format, f_args)
@@ -683,19 +691,28 @@ def check_formats(options, parser):
         print '--output-format csv can not be used with --metadata-extended'
         sys.exit(-1)
 
-def check_summary(options, parser):
+
+def check_summary(options, parser):  # pylint: disable=unused-argument
+    """Validate summary passed in the cmd line args."""
     s_args = ['aggregation', 'average', 'statistics']
     if options.summary_type and options.summary_type not in s_args:
-        print '{0} is not a valid --summary-type arg (one of: {1})'.format(options.summary_type, s_args)
+        print '{0} is not a valid --summary-type arg (one of: {1})'.format(
+            options.summary_type, s_args)
         sys.exit(-1)
 
+
 def src_dest_required(options, parser):
-    if not options.src or not (options.dest or (options.type is not None and options.type.startswith('ntp-'))):
+    """Check required source and dest args were given."""
+    if not options.src \
+            or not (options.dest or
+                    (options.type is not None and options.type.startswith('ntp-'))):
         print '--src and --dest args are both required (ntp-* event types only require --src).\n'
         parser.print_help()
         sys.exit(-1)
 
+
 def valid_output_dir(options, parser):
+    """If outputting files to disc, validate the output path."""
     if options.format == 'human':
         print 'please specify either json or csv --output-format for bulk output.\n'
         parser.print_help()
@@ -708,14 +725,17 @@ def valid_output_dir(options, parser):
 # Misc command line --arg functions.
 #
 
+
 def list_event_types():
+    """Dump valid event types to stdout."""
     print '\nValid event types:'
-    for et in EVENT_TYPES:
-        print '    {0}'.format(et)
+    for etype in EVENT_TYPES:
+        print '    {0}'.format(etype)
 
 #
 # Utility functions to import into clients.
 #
+
 
 def get_start_and_end_times(options):
     """
@@ -730,7 +750,7 @@ def get_start_and_end_times(options):
     else:
         try:
             start = parse(options.start)
-        except:
+        except Exception:  # pylint: disable=broad-except
             print 'could not parse --start-time arg: {0}'.format(options.start)
             sys.exit(-1)
 
@@ -739,7 +759,7 @@ def get_start_and_end_times(options):
     else:
         try:
             end = parse(options.end)
-        except:
+        except Exception:  # pylint: disable=broad-except
             print 'could not parse --end-time arg: {0}'.format(options.end)
             sys.exit(-1)
 
@@ -749,66 +769,69 @@ def get_start_and_end_times(options):
 # Canned option parsers for clients
 #
 
+
 def perfsonar_client_opts(require_src_dest=False, require_event=False,
-    require_output=False):
+                          require_output=False):
     """
     Return a standard option parser for the perfsonar clients.
     """
+    # usage/help strings long
+    # pylint: disable=line-too-long
     usage = '%prog [ -u URL -s SRC -d DEST | -a AGENT | -e EVENT | -t TOOL | -L | -o FORMAT | -v ]'
     usage += '\n--begin and --end args parsed by python-dateutil so fairly flexible with the date formats.'
     parser = OptionParser(usage=usage)
     parser.add_option('-u', '--url', metavar='URL',
-            type='string', dest='url',
-            help='URL of esmond API you want to talk to.')
+                      type='string', dest='url',
+                      help='URL of esmond API you want to talk to.')
     parser.add_option('-s', '--src', metavar='SRC',
-            type='string', dest='src',
-            help='Host originating the test.')
+                      type='string', dest='src',
+                      help='Host originating the test.')
     parser.add_option('-d', '--dest', metavar='DEST',
-            type='string', dest='dest',
-            help='Test endpoint.')
+                      type='string', dest='dest',
+                      help='Test endpoint.')
     parser.add_option('-a', '--agent', metavar='AGENT',
-            type='string', dest='agent',
-            help='Host that initiated the test - useful for central MAs.')
+                      type='string', dest='agent',
+                      help='Host that initiated the test - useful for central MAs.')
     parser.add_option('-e', '--event-type', metavar='EVENT',
-            type='string', dest='type',
-            help='Type of data (loss, latency, throughput, etc) - see -L arg.')
+                      type='string', dest='type',
+                      help='Type of data (loss, latency, throughput, etc) - see -L arg.')
     parser.add_option('-t', '--tool', metavar='TOOL',
-            type='string', dest='tool',
-            help='Tool used to run test (bwctl/iperf3, powstream, "bwctl/tracepath,traceroute", gridftp, etc).')
+                      type='string', dest='tool',
+                      help='Tool used to run test (bwctl/iperf3, powstream, "bwctl/tracepath,traceroute", gridftp, etc).')
     parser.add_option('-S', '--start-time', metavar='START',
-            type='string', dest='start',
-            help='Start time of query (default: 24 hours ago).')
+                      type='string', dest='start',
+                      help='Start time of query (default: 24 hours ago).')
     parser.add_option('-E', '--end-time', metavar='END',
-            type='string', dest='end',
-            help='End time of query (default: now).')
+                      type='string', dest='end',
+                      help='End time of query (default: now).')
     parser.add_option('-F', '--filter', metavar='FILTER',
-            type='string', dest='filter', action='append',
-            help='Specify additional query filters - format: -F key:value. Can be used multiple times, invalid filters will be ignored.')
+                      type='string', dest='filter', action='append',
+                      help='Specify additional query filters - format: -F key:value. Can be used multiple times, invalid filters will be ignored.')
     parser.add_option('-L', '--list-events',
-            dest='list_event', action='store_true', default=False,
-            help='List available event types.')
+                      dest='list_event', action='store_true', default=False,
+                      help='List available event types.')
     parser.add_option('-M', '--metadata-extended',
-            dest='metadata', action='store_true', default=False,
-            help='Show extended metadata tool-specific values (can not be used with -o csv).')
+                      dest='metadata', action='store_true', default=False,
+                      help='Show extended metadata tool-specific values (can not be used with -o csv).')
     parser.add_option('-T', '--summary-type', metavar='SUMMARY_TYPE',
-            type='string', dest='summary_type',
-            help='Request summary data of type [aggregation, average, statistics].')
+                      type='string', dest='summary_type',
+                      help='Request summary data of type [aggregation, average, statistics].')
     parser.add_option('-W', '--summary-window', metavar='SUMMARY_WINDOW',
-            type='int', dest='summary_window', default=0,
-            help='Timeframe in seconds described by the summary (default: %default).')
+                      type='int', dest='summary_window', default=0,
+                      help='Timeframe in seconds described by the summary (default: %default).')
     parser.add_option('-o', '--output-format', metavar='O_FORMAT',
-            type='string', dest='format', default='human',
-            help='Output format [human, json, csv] (default: human).')
+                      type='string', dest='format', default='human',
+                      help='Output format [human, json, csv] (default: human).')
     if require_output:
         parser.add_option('-D', '--output-directory', metavar='DIR',
-                type='string', dest='output_dir', default=os.getcwd(),
-                help='Directory to output files to (default: %default).')
+                          type='string', dest='output_dir', default=os.getcwd(),
+                          help='Directory to output files to (default: %default).')
     parser.add_option('-I', '--ip',
-            dest='ip', action='store_true', default=False,
-            help='Show source/dest as IP addresses, not hostnames.')
+                      dest='ip', action='store_true', default=False,
+                      help='Show source/dest as IP addresses, not hostnames.')
     parser.add_option('-v', '--verbose',
-        dest='verbose', action='store_true', default=False,
-        help='Verbose output.')
+                      dest='verbose', action='store_true', default=False,
+                      help='Verbose output.')
     options, args = parser.parse_args()
 
     if options.list_event:
@@ -833,6 +856,7 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False,
 
     return options, args
 
+
 def perfsonar_client_filters(options):
     """
     Return a standard filter object based on the opts in
@@ -856,11 +880,11 @@ def perfsonar_client_filters(options):
 
     if options.filter:
         # Apply arbritrary metadata filters
-        for f in options.filter:
-            if f.find(':') == -1:
-                print '--filter arg {0} should be of the format key:value'.format(f)
+        for flt in options.filter:
+            if flt.find(':') == -1:
+                print '--filter arg {0} should be of the format key:value'.format(flt)
                 continue
-            k,v = f.split(':')
+            k, v = flt.split(':')
             key = k.replace('-', '_')
             if not hasattr(filters, k):
                 print '--filter arg {0} is not a valid filtering value'.format(key)
@@ -868,4 +892,3 @@ def perfsonar_client_filters(options):
             setattr(filters, key, v)
 
     return filters
-
