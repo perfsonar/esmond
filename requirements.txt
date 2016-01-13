@@ -1,5 +1,5 @@
-sphinx
-django-discover-runner
+sphinx==1.3.4
+django-discover-runner==1.0
 django-netfields==0.3.1
 pylint==1.5.1
 -e hg+https://bitbucket.org/jdugan/dlnetsnmp#egg=DLNetSNMP
