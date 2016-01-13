@@ -123,9 +123,10 @@ bad-functions=map,filter,input
 # ts - perfectly valid for a timestamp temp var
 # r - frequently used for 'request'
 # qs - query string or query set in django project
+# ip - IP address perhaps?
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,ex,Run,_, pp, fh, ts, r, v, ii, qs
+good-names=i,j,k,ex,Run,_, pp, fh, ts, r, v, ii, qs, ip
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata

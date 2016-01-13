@@ -20,7 +20,7 @@ from dateutil.parser import parse
 
 from .query import ApiFilters, DataPayload
 
-# Event types with an associated "formatting type" to be 
+# Event types with an associated "formatting type" to be
 # used by esmond-get, etc.
 EVENT_MAP = OrderedDict([
     ('failures', 'failures'),
@@ -60,36 +60,48 @@ EVENT_MAP = OrderedDict([
 
 EVENT_TYPES = EVENT_MAP.keys()
 
-def event_format(et):
-    return EVENT_MAP[et]
+
+def event_format(etype):
+    """Map a specific event type to an output format."""
+    return EVENT_MAP[etype]
 
 DEFAULT_FIELDS = [
-        'source', 
-        'destination', 
-        'measurement_agent',
-        'input_source',
-        'input_destination',
-        'tool_name', 
+    'source',
+    'destination',
+    'measurement_agent',
+    'input_source',
+    'input_destination',
+    'tool_name',
 ]
 
+
 class HeaderRow(OrderedDict):
+    """Headers for human readable output modes."""
     pass
 
 #
 # Exceptions for client operations
 #
 
+
 class EsmondClientException(Exception):
+    """Custom EsmondClient exception"""
     def __init__(self, value):
+        # pylint: disable=super-init-not-called
         self.value = value
+
     def __str__(self):
         return repr(self.value)
 
-class EsmondClientWarning(Warning): pass
+
+class EsmondClientWarning(Warning):
+    """Custom EsmondClient warning"""
+    pass
 
 #
 # Output classes for clients
 #
+
 
 class EsmondOutput(object):
     """Base class for output classes."""
@@ -108,39 +120,44 @@ class EsmondOutput(object):
             raise EsmondClientException('Data arg must be a list of dicts')
 
     def get_output(self):
+        """Get the formatted output. Abstract, override in subclasses."""
         raise NotImplementedError('Implement in subclasses.')
 
     def has_data(self):
+        """Bool - does the class have data."""
+        # pylint: disable=simplifiable-if-statement
+        # return True/False, not non-/zero.
         if len(self._data):
             return True
         else:
             return False
 
-    def add_to_payload(self, d):
-        if not isinstance(d, list):
+    def add_to_payload(self, dat):
+        """Takes a list of data to add to the internal payload."""
+        if not isinstance(dat, list):
             raise EsmondClientException('Arg to add_to_payload must be a list')
 
-        self._data.extend(d)
+        self._data.extend(dat)
 
-    def _massage_row_dict(self, d):
-        # scan first instance to see if we need to fix anything - 
+    def _massage_row_dict(self, dct):
+        # scan first instance to see if we need to fix anything -
         # no point in processing each row if not necessary.
-        if self._list_fields == None:
+        if self._list_fields is None:
             self._list_fields = []
-            for k,v in d.items():
+            for k, v in dct.items():
                 if isinstance(v, list):
                     self._list_fields.append(k)
 
         # if no changes need to be made, just quit
         if len(self._list_fields) == 0:
-            return d
+            return dct
 
         # don't change the original data
-        new_d = copy.copy(d)
+        new_d = copy.copy(dct)
 
         # turn any lists into comma separated sequences
-        for lf in self._list_fields:
-            new_d[lf] = ', '.join( [ str(x) for x in new_d.get(lf) ] )
+        for lfield in self._list_fields:
+            new_d[lfield] = ', '.join([str(x) for x in new_d.get(lfield)])
 
         return new_d
 
@@ -156,27 +173,30 @@ class HumanOutput(EsmondOutput):
     def get_output(self):
         entry_delim = '= + = + = + = + = + =\n'
 
-        if not self._output:
+        if not self._output:  # pylint: disable=too-many-nested-blocks
             self._output = ''
             if self.has_data():
                 for row in self._data:
                     if isinstance(row, HeaderRow):
-                        for k,v in row.items():
+                        for k, v in row.items():
                             self._output += '{0}: {1}\n'.format(k, v)
                     else:
                         row = self._massage_row_dict(row)
+                        # pylint: disable=invalid-name
                         for c in self._columns:
                             self._output += '{0}: {1}\n'.format(c, row.get(c))
                         if self._extended_data:
-                            for k,v in row.items():
-                                if k in self._columns: continue
-                                self._output += '{0}: {1}\n'.format(k,v)
+                            for k, v in row.items():
+                                if k in self._columns:
+                                    continue
+                                self._output += '{0}: {1}\n'.format(k, v)
                     self._output += entry_delim
                 self._output = self._output[:self._output.rfind(entry_delim)]
             else:
                 self._output = 'No data found.'
 
         return self._output
+
 
 class JsonOutput(EsmondOutput):
     """Output results as a json blob."""
@@ -186,8 +206,9 @@ class JsonOutput(EsmondOutput):
             if self.has_data():
                 self._output = json.dumps(self._data)
             else:
-                self._output = json.dumps( [ {'msg': 'No data found.'} ] )
+                self._output = json.dumps([{'msg': 'No data found.'}])
         return self._output
+
 
 class CSVOutput(EsmondOutput):
     """Format output for CSV."""
@@ -201,16 +222,17 @@ class CSVOutput(EsmondOutput):
                 for row in self._data:
                     writer.writerow(self._massage_row_dict(row))
             else:
-                d = dict( [ (x, 'No data') for x in self._columns ] )
-                writer.writerow(d)
+                dct = dict([(x, 'No data') for x in self._columns])
+                writer.writerow(dct)
 
             self._output = cfile.getvalue()
             cfile.close()
         return self._output
 
+
 def output_factory(options, data, columns):
     """
-    Factory function to hand the appropriate output class 
+    Factory function to hand the appropriate output class
     back to the client programs.
     """
     if options.format == 'human':
@@ -223,28 +245,33 @@ def output_factory(options, data, columns):
     elif options.format == 'csv':
         return CSVOutput(data, columns)
 
-class HostnameConversion(object):
+
+class HostnameConversion(object):  # pylint: disable=too-few-public-methods
+    """Convert ip addresses to fully qualified domain names and cache the results."""
     def __init__(self, options):
         self._options = options
         self._ns_cache = {}
 
         self._ip_fields = ['source', 'destination', 'ip', 'measurement_agent']
 
-    def convert(self, d):
+    def convert(self, ddict):
+        """Extract the appropriate IP address values from a data dict,
+        if not cached, convert to fqdn and cache."""
         if not self._options.ip:
             for i in self._ip_fields:
-                if d.get(i):
-                    ip = d.get(i)
+                if ddict.get(i):
+                    ip = ddict.get(i)
                     if not self._ns_cache.get(ip):
                         self._ns_cache[ip] = socket.getfqdn(ip)
-                    d[i] = self._ns_cache.get(ip)
-        return d
+                    ddict[i] = self._ns_cache.get(ip)
+        return ddict
 
 #
 # Generate output for different event types.
-# 
+#
 
-def data_format_factory(options, seed_bulk_output=False):
+
+def data_format_factory(options, seed_bulk_output=False):  # pylint: disable=too-many-locals
     """
     Factory function to format the actual data for output.
 
@@ -256,11 +283,11 @@ def data_format_factory(options, seed_bulk_output=False):
 
     # these columns/values are common to all measurements.
     header_base = [
-        'source', 
-        'destination', 
-        'event_type', 
-        'tool', 
-        'summary_type', 
+        'source',
+        'destination',
+        'event_type',
+        'tool',
+        'summary_type',
         'summary_window',
         'timestamp'
     ]
@@ -268,99 +295,105 @@ def data_format_factory(options, seed_bulk_output=False):
     ip_convert = HostnameConversion(options)
 
     def get_summary_type():
+        """Get base or summary type."""
         if not options.summary_type:
             return 'base'
         else:
             return options.summary_type
 
-    def get_payload(et):
+    def get_payload(etype):
+        """Get the payload from the event type as appropriate vis a vis
+        un-/summarized data."""
         if not options.summary_type:
             # unsummarized data
-            return et.get_data()
+            return etype.get_data()
         else:
             # summary data
-            s = et.get_summary(options.summary_type, options.summary_window)
-            if not s: 
+            sdata = etype.get_summary(options.summary_type, options.summary_window)
+            if not sdata:
                 return DataPayload()
             else:
-                return s.get_data()
+                return sdata.get_data()
 
-    def massage_output(d):
+    def massage_output(ddict):
         """any modifications to the data dicts here."""
 
         # ip -> hostname if need be
-        d = ip_convert.convert(d)
+        ddict = ip_convert.convert(ddict)
 
-        return d
+        return ddict
 
-    def header_row(m, dp):
-        """Special row that will be handled by the human readable 
+    def header_row(meta, dpay):
+        """Special row that will be handled by the human readable
         output class."""
         header = [
-            ('source', m.source),
-            ('destination', m.destination),
+            ('source', meta.source),
+            ('destination', meta.destination),
             ('event_type', options.type),
-            ('tool', m.tool_name),
+            ('tool', meta.tool_name),
             ('summary_type', get_summary_type()),
             ('summary_window', options.summary_window),
-            ('timestamp', str(dp.ts)),
+            ('timestamp', str(dpay.ts)),
         ]
         return HeaderRow(header)
-        
 
     def format_numeric(conn):
-        """aggregation, 300, 3600, 86400"""
+        """numeric format type - aggregation, 300, 3600, 86400"""
 
         header = header_base + ['value']
 
         data = list()
 
-        if seed_bulk_output: return header, data
+        if seed_bulk_output:
+            return header, data
 
-        for m in conn.get_metadata():
-            et = m.get_event_type(options.type)
+        for meta in conn.get_metadata():
+            etype = meta.get_event_type(options.type)
 
-            for dp in get_payload(et).data:
-                d = dict(
-                        source=m.source,
-                        destination=m.destination,
-                        event_type=options.type,
-                        tool=m.tool_name,
-                        summary_type=get_summary_type(),
-                        summary_window=options.summary_window,
-                        timestamp=str(dp.ts),
-                        value=dp.val,
-                    )
-                data.append(massage_output(d))
+            for dpay in get_payload(etype).data:
+                dct = dict(
+                    source=meta.source,
+                    destination=meta.destination,
+                    event_type=options.type,
+                    tool=meta.tool_name,
+                    summary_type=get_summary_type(),
+                    summary_window=options.summary_window,
+                    timestamp=str(dpay.ts),
+                    value=dpay.val,
+                )
+                data.append(massage_output(dct))
 
         return header, data
 
     def format_failures(conn):
+        """Format failures type."""
 
         header = header_base + ['msg']
 
         data = list()
 
-        if seed_bulk_output: return header, data
+        if seed_bulk_output:
+            return header, data
 
-        for m in conn.get_metadata():
-            et = m.get_event_type(options.type)
-            for dp in et.get_data().data:
-                d = dict(
-                    source=m.source,
-                    destination=m.destination,
+        for meta in conn.get_metadata():
+            etype = meta.get_event_type(options.type)
+            for dpay in etype.get_data().data:
+                dct = dict(
+                    source=meta.source,
+                    destination=meta.destination,
                     event_type=options.type,
-                    tool=m.tool_name,
+                    tool=meta.tool_name,
                     summary_type=get_summary_type(),
                     summary_window=options.summary_window,
-                    timestamp=str(dp.ts),
-                    msg=dp.val.get('error')
+                    timestamp=str(dpay.ts),
+                    msg=dpay.val.get('error')
                 )
-                data.append(massage_output(d))
+                data.append(massage_output(dct))
 
         return header, data
 
     def format_packet_trace(conn):
+        """Format packet trace type."""
 
         test_header = ['ttl', 'query', 'success', 'ip', 'rtt', 'mtu', 'error_message']
 
@@ -371,23 +404,24 @@ def data_format_factory(options, seed_bulk_output=False):
 
         data = list()
 
-        if seed_bulk_output: return header, data
+        if seed_bulk_output:
+            return header, data
 
-        for m in conn.get_metadata():
-            et = m.get_event_type(options.type)
-            for dp in et.get_data().data:
+        for meta in conn.get_metadata():
+            etype = meta.get_event_type(options.type)
+            for dpay in etype.get_data().data:
                 if options.format == 'human':
-                    data.append(massage_output(header_row(m,dp)))
-                for val in dp.val:
+                    data.append(massage_output(header_row(meta, dpay)))
+                for val in dpay.val:
                     if options.format != 'human':
-                        d = dict(
-                            source=m.source,
-                            destination=m.destination,
+                        dct = dict(
+                            source=meta.source,
+                            destination=meta.destination,
                             event_type=options.type,
-                            tool=m.tool_name,
+                            tool=meta.tool_name,
                             summary_type=get_summary_type(),
                             summary_window=options.summary_window,
-                            timestamp=str(dp.ts),
+                            timestamp=str(dpay.ts),
                             ttl=val.get('ttl'),
                             query=val.get('query'),
                             success=val.get('success'),
@@ -397,7 +431,7 @@ def data_format_factory(options, seed_bulk_output=False):
                             error_message=val.get('error_message')
                         )
                     else:
-                        d = dict(
+                        dct = dict(
                             ttl=val.get('ttl'),
                             query=val.get('query'),
                             success=val.get('success'),
@@ -406,148 +440,157 @@ def data_format_factory(options, seed_bulk_output=False):
                             mtu=val.get('mtu'),
                             error_message=val.get('error_message')
                         )
-                    data.append(massage_output(d))
+                    data.append(massage_output(dct))
 
         return header, data
 
     def format_histogram(conn):
-        """aggregation, statistics, 300, 3600, 86400"""
+        """Format histogram type - aggregation, statistics, 300, 3600, 86400"""
 
         if options.summary_type == 'statistics':
-            header = header_base + ['min', 'median', 'max', 
-                'mean', 'mode', 'standard_deviation', 'variance', 
-                'percentile_25', 'percentile_75', 'percentile_95']
+            header = header_base + [
+                'min', 'median', 'max',
+                'mean', 'mode', 'standard_deviation', 'variance',
+                'percentile_25', 'percentile_75', 'percentile_95'
+            ]
         else:
             header = header_base + ['bucket', 'value']
 
         data = list()
 
-        if seed_bulk_output: return header, data
+        if seed_bulk_output:
+            return header, data
 
-        for m in conn.get_metadata():
-            et = m.get_event_type(options.type)
+        for meta in conn.get_metadata():
+            etype = meta.get_event_type(options.type)
 
-            for dp in get_payload(et).data:
+            for dpay in get_payload(etype).data:
                 if options.summary_type == 'statistics':
-                    d = dict(
-                        source=m.source,
-                        destination=m.destination,
+                    dct = dict(
+                        source=meta.source,
+                        destination=meta.destination,
                         event_type=options.type,
-                        tool=m.tool_name,
+                        tool=meta.tool_name,
                         summary_type=get_summary_type(),
                         summary_window=options.summary_window,
-                        timestamp=str(dp.ts),
-                        min=dp.val.get('minimum'),
-                        median=dp.val.get('median'),
-                        max=dp.val.get('maximum'),
-                        mean=dp.val.get('mean'),
-                        mode=dp.val.get('mode'),
-                        standard_deviation=dp.val.get('standard-deviation'),
-                        variance=dp.val.get('variance'),
-                        percentile_25=dp.val.get('percentile-25'),
-                        percentile_75=dp.val.get('percentile-75'),
-                        percentile_95=dp.val.get('percentile-95'),
+                        timestamp=str(dpay.ts),
+                        min=dpay.val.get('minimum'),
+                        median=dpay.val.get('median'),
+                        max=dpay.val.get('maximum'),
+                        mean=dpay.val.get('mean'),
+                        mode=dpay.val.get('mode'),
+                        standard_deviation=dpay.val.get('standard-deviation'),
+                        variance=dpay.val.get('variance'),
+                        percentile_25=dpay.val.get('percentile-25'),
+                        percentile_75=dpay.val.get('percentile-75'),
+                        percentile_95=dpay.val.get('percentile-95'),
 
                     )
                 else:
-                    d = dict(
-                        source=m.source,
-                        destination=m.destination,
+                    dct = dict(
+                        source=meta.source,
+                        destination=meta.destination,
                         event_type=options.type,
-                        tool=m.tool_name,
+                        tool=meta.tool_name,
                         summary_type=get_summary_type(),
                         summary_window=options.summary_window,
-                        timestamp=str(dp.ts),
-                        bucket=m.sample_bucket_width,
-                        value=dp.val
+                        timestamp=str(dpay.ts),
+                        bucket=meta.sample_bucket_width,
+                        value=dpay.val
                     )
-                data.append(massage_output(d))
+                data.append(massage_output(dct))
 
         return header, data
 
     def format_subintervals(conn):
-        
+        """Format subintervals type."""
+
         header = header_base + ['start', 'duration', 'value']
 
         data = list()
 
-        if seed_bulk_output: return header, data
+        if seed_bulk_output:
+            return header, data
 
-        for m in conn.get_metadata():
-            et = m.get_event_type(options.type)
+        for meta in conn.get_metadata():
+            etype = meta.get_event_type(options.type)
 
-            for dp in et.get_data().data:
-                for val in dp.val:
-                    d = dict(
-                        source=m.source,
-                        destination=m.destination,
+            for dpay in etype.get_data().data:
+                for val in dpay.val:
+                    dct = dict(
+                        source=meta.source,
+                        destination=meta.destination,
                         event_type=options.type,
-                        tool=m.tool_name,
+                        tool=meta.tool_name,
                         summary_type=get_summary_type(),
                         summary_window=options.summary_window,
-                        timestamp=str(dp.ts),
+                        timestamp=str(dpay.ts),
                         start=val.get('start'),
                         duration=val.get('duration'),
                         value=val.get('val'),
                     )
-                    data.append(massage_output(d))
+                    data.append(massage_output(dct))
 
         return header, data
 
     def format_number_list(conn):
+        """Format number list type output."""
 
         header = header_base + ['stream_num', 'value']
 
         data = list()
 
-        if seed_bulk_output: return header, data
+        if seed_bulk_output:
+            return header, data
 
-        for m in conn.get_metadata():
-            et = m.get_event_type(options.type)
-            for dp in et.get_data().data:
-                for i in range(len(dp.val)):
-                    d = dict(
-                        source=m.source,
-                        destination=m.destination,
+        for meta in conn.get_metadata():
+            etype = meta.get_event_type(options.type)
+            for dpay in etype.get_data().data:
+                for i in range(len(dpay.val)):
+                    dct = dict(
+                        source=meta.source,
+                        destination=meta.destination,
                         event_type=options.type,
-                        tool=m.tool_name,
+                        tool=meta.tool_name,
                         summary_type=get_summary_type(),
                         summary_window=options.summary_window,
-                        timestamp=str(dp.ts),
+                        timestamp=str(dpay.ts),
                         stream_num=i,
-                        value=dp.val[i],
+                        value=dpay.val[i],
                     )
-                    data.append(massage_output(d))
+                    data.append(massage_output(dct))
 
         return header, data
 
     def format_subinterval_list(conn):
+        """Format subinterval list type."""
 
         header = header_base + ['stream_num', 'start', 'duration', 'value']
 
         data = list()
 
-        if seed_bulk_output: return header, data
+        if seed_bulk_output:
+            return header, data
 
-        for m in conn.get_metadata():
-            et = m.get_event_type(options.type)
-            for dp in et.get_data().data:
-                for stream_num in range(len(dp.val)):
-                    for i in range(len(dp.val[stream_num])):
-                        d = dict(
-                            source=m.source,
-                            destination=m.destination,
+        for meta in conn.get_metadata():
+            etype = meta.get_event_type(options.type)
+            for dpay in etype.get_data().data:
+                for stream_num in range(len(dpay.val)):
+                    for i in range(len(dpay.val[stream_num])):
+                        dct = dict(
+                            source=meta.source,
+                            destination=meta.destination,
                             event_type=options.type,
-                            tool=m.tool_name,
+                            tool=meta.tool_name,
                             summary_type=get_summary_type(),
                             summary_window=options.summary_window,
-                            timestamp=str(dp.ts),
+                            timestamp=str(dpay.ts),
                             stream_num=stream_num,
-                            start=dp.val[stream_num][i].get('start'),
-                            duration=dp.val[stream_num][i].get('duration'),
-                            value=dp.val[stream_num][i].get('val'),
+                            start=dpay.val[stream_num][i].get('start'),
+                            duration=dpay.val[stream_num][i].get('duration'),
+                            value=dpay.val[stream_num][i].get('val'),
                         )
-                        data.append(massage_output(d))
+                        data.append(massage_output(dct))
 
         return header, data
 
@@ -563,11 +606,13 @@ def data_format_factory(options, seed_bulk_output=False):
 
     return format_map.get(event_format(options.type))
 
-# 
+#
 # Generate a filename and file handle for output.
 #
 
+
 def get_outfile(options, metadata, event_type):
+    """Generate an output filename and file handle for output to disc."""
 
     if not options.ip:
         source = socket.getfqdn(metadata.source)
@@ -576,13 +621,14 @@ def get_outfile(options, metadata, event_type):
         source = metadata.source
         dest = metadata.destination
 
-    def utciso(dt):
-        return datetime.datetime.utcfromtimestamp(dt).strftime('%Y-%m-%d')
+    def utciso(ts):
+        """Convet timestamp to ISO formatted date string."""
+        return datetime.datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d')
 
-    s = utciso(metadata.filters.time_start)
-    e = utciso(metadata.filters.time_end)
+    start = utciso(metadata.filters.time_start)
+    end = utciso(metadata.filters.time_end)
 
-    outfile =  '{0}.{1}'.format('_'.join([source, dest, event_type, s, e]), options.format)
+    outfile = '{0}.{1}'.format('_'.join([source, dest, event_type, start, end]), options.format)
 
     return open(os.path.join(os.path.abspath(options.output_dir), outfile), 'wb')
 
@@ -596,7 +642,7 @@ def check_url(options, parser):
         parser.print_help()
         sys.exit(-1)
 
-    # trim URI from --url since people will cut and paste from 
+    # trim URI from --url since people will cut and paste from
     # the list of MAs.
     url = options.url
     up = urlparse.urlparse(url)
@@ -712,28 +758,28 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False,
     usage += '\n--begin and --end args parsed by python-dateutil so fairly flexible with the date formats.'
     parser = OptionParser(usage=usage)
     parser.add_option('-u', '--url', metavar='URL',
-            type='string', dest='url', 
+            type='string', dest='url',
             help='URL of esmond API you want to talk to.')
     parser.add_option('-s', '--src', metavar='SRC',
-            type='string', dest='src', 
+            type='string', dest='src',
             help='Host originating the test.')
     parser.add_option('-d', '--dest', metavar='DEST',
-            type='string', dest='dest', 
+            type='string', dest='dest',
             help='Test endpoint.')
     parser.add_option('-a', '--agent', metavar='AGENT',
-            type='string', dest='agent', 
+            type='string', dest='agent',
             help='Host that initiated the test - useful for central MAs.')
     parser.add_option('-e', '--event-type', metavar='EVENT',
-            type='string', dest='type', 
+            type='string', dest='type',
             help='Type of data (loss, latency, throughput, etc) - see -L arg.')
     parser.add_option('-t', '--tool', metavar='TOOL',
-            type='string', dest='tool', 
+            type='string', dest='tool',
             help='Tool used to run test (bwctl/iperf3, powstream, "bwctl/tracepath,traceroute", gridftp, etc).')
     parser.add_option('-S', '--start-time', metavar='START',
-            type='string', dest='start', 
+            type='string', dest='start',
             help='Start time of query (default: 24 hours ago).')
     parser.add_option('-E', '--end-time', metavar='END',
-            type='string', dest='end', 
+            type='string', dest='end',
             help='End time of query (default: now).')
     parser.add_option('-F', '--filter', metavar='FILTER',
             type='string', dest='filter', action='append',
@@ -745,7 +791,7 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False,
             dest='metadata', action='store_true', default=False,
             help='Show extended metadata tool-specific values (can not be used with -o csv).')
     parser.add_option('-T', '--summary-type', metavar='SUMMARY_TYPE',
-            type='string', dest='summary_type', 
+            type='string', dest='summary_type',
             help='Request summary data of type [aggregation, average, statistics].')
     parser.add_option('-W', '--summary-window', metavar='SUMMARY_WINDOW',
             type='int', dest='summary_window', default=0,
@@ -789,7 +835,7 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False,
 
 def perfsonar_client_filters(options):
     """
-    Return a standard filter object based on the opts in 
+    Return a standard filter object based on the opts in
     perfsonar_client_opts()
     """
 
