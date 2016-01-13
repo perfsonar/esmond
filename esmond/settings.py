@@ -14,7 +14,7 @@ TEST_RUNNER = 'discover_runner.DiscoverRunner'
 
 
 if not ESMOND_ROOT:
-    raise Error("ESMOND_ROOT not definied in environemnt")
+    raise Exception("ESMOND_ROOT not definied in environemnt")
 
 if not ESMOND_CONF:
     ESMOND_CONF = os.path.join(ESMOND_ROOT, "esmond.conf")
