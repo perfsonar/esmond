@@ -264,7 +264,10 @@ class MetadataPost(PostBase):  # pylint: disable=too-many-instance-attributes
         raise MetadataPostException(msg)
 
     def _validate(self):
-        redash = lambda s: s.replace('_', '-')
+
+        def redash(val):
+            """Change values from_this_style back-to-this-style."""
+            return val.replace('_', '-')
 
         # make sure required args are present
         for arg in self._required_args:
