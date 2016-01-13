@@ -18,7 +18,7 @@ Depends: apache2-mpm-worker | httpd, libapache2-mod-wsgi, postgresql,
  python-pycassa, python-memcache, python-webpy, python-mock, python-dlnetsnmp,
  python-pynetsnmp, adduser, dbconfig-common, libsnmp-base, python-django (>= 1.5.1),
  python-django (<< 1.6), python-django-discover-runner,
- python-django-netfields, python-django-tastypie (>= 0.12.0),
+ python-django-netfields (= 0.3.1), python-django-tastypie (>= 0.12.0),
  ${misc:Depends}
 Description: ESnet Monitoring Daemon
  Esmond is a system for collecting and storing large sets of time-series data.
