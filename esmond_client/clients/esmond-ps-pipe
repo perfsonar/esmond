@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# doesn't like script name, couple of long docstrings.
+# pylint: disable=invalid-name, line-too-long
+
 """
 esmond-ps-pipe - take piped json output from bwctl and load into an esmond
 perfsonar MA. To wit:
@@ -9,8 +12,6 @@ bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose |& esm
 See further documention in README.rst or use the --help flag for a full
 list of arguments.
 """
-
-# doesn't like script name, couple of long docstrings.
 
 import datetime
 import json
@@ -310,7 +311,7 @@ def _iperf3_metadata_args(obj, payload):
     return mda, event_types
 
 
-def process_iperf3(o, payload, options, _log):
+def process_iperf3(obj, payload, options, _log):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     """
     Process iperf3 input.
     """
@@ -318,7 +319,7 @@ def process_iperf3(o, payload, options, _log):
 
     # metadata
 
-    mda, event_types = _iperf3_metadata_args(o, payload)
+    mda, event_types = _iperf3_metadata_args(obj, payload)
 
     mpost = MetadataPost(options.api_url, username=options.user,
                          api_key=options.key, script_alias=options.script_alias,
@@ -327,8 +328,8 @@ def process_iperf3(o, payload, options, _log):
     for etype in event_types:
         mpost.add_event_type(etype)
 
-    mpost.add_freeform_key_value('bw-parallel-streams', o.start.test_start.num_streams)
-    mpost.add_freeform_key_value('bw_ignore_first_seconds', o.start.test_start.omit)
+    mpost.add_freeform_key_value('bw-parallel-streams', obj.start.test_start.num_streams)
+    mpost.add_freeform_key_value('bw_ignore_first_seconds', obj.start.test_start.omit)
 
     try:
         metadata = mpost.post_metadata()
@@ -341,22 +342,22 @@ def process_iperf3(o, payload, options, _log):
     # event type values
 
     # timestamp for all event type inserts
-    ts = o.start.timestamp.timesecs
+    ts = obj.start.timestamp.timesecs
 
     # Wrapper around event bulk post object
     post = PostEvents(metadata, ts, options, _log)
 
     # throughput
-    if o.start.test_start.protocol == 'TCP':
-        tput = o.end.sum_received.bits_per_second
-    elif o.start.test_start.protocol == 'UDP':
-        tput = o.end.sum.bits_per_second
+    if obj.start.test_start.protocol == 'TCP':
+        tput = obj.end.sum_received.bits_per_second
+    elif obj.start.test_start.protocol == 'UDP':
+        tput = obj.end.sum.bits_per_second
 
     post.process_event_type('throughput', tput, ts)
 
     # throughput-subintervals
     tp_subints = list()
-    for i in o.intervals:
+    for i in obj.intervals:
         dct = dict(
             start=i.sum.start,
             duration=i.sum.seconds,
@@ -371,15 +372,15 @@ def process_iperf3(o, payload, options, _log):
     # packet-count-sent
     # and
     # packet-loss-rate
-    if o.start.test_start.protocol == 'UDP':
+    if obj.start.test_start.protocol == 'UDP':
         plost = psent = None
         # lost
-        if o.end.sum.lost_packets is not None:
-            plost = o.end.sum.lost_packets
+        if obj.end.sum.lost_packets is not None:
+            plost = obj.end.sum.lost_packets
             post.process_event_type('packet-count-lost', plost, ts)
         # sent
-        if o.end.sum.packets is not None:
-            psent = o.end.sum.packets
+        if obj.end.sum.packets is not None:
+            psent = obj.end.sum.packets
             post.process_event_type('packet-count-sent', psent, ts)
         # loss rate
         if plost is not None and psent is not None:
@@ -387,13 +388,13 @@ def process_iperf3(o, payload, options, _log):
             post.process_event_type('packet-loss-rate', lrate, ts)
 
     # packet-retransmits
-    if o.start.test_start.protocol == 'TCP':
-        prt = o.end.sum_sent.retransmits
+    if obj.start.test_start.protocol == 'TCP':
+        prt = obj.end.sum_sent.retransmits
         post.process_event_type('packet-retransmits', prt, ts)
 
     # packet-retransmits-subintervals
     pr_subints = list()
-    for i in o.intervals:
+    for i in obj.intervals:
         dct = dict(
             start=i.sum.start,
             duration=i.sum.seconds,
@@ -410,17 +411,17 @@ def process_iperf3(o, payload, options, _log):
     # streams-throughput
     # and
     # streams-throughput-subintervals
-    if o.start.test_start.num_streams > 1:
+    if obj.start.test_start.num_streams > 1:
         # retrans
         sp_retrans = list()
-        for i in o.end.streams:
+        for i in obj.end.streams:
             sp_retrans.append(i.sender.retransmits)
 
         post.process_event_type('streams-packet-retransmits', sp_retrans, ts)
 
         # retrans-subint
         sp_retrans_subint = list()
-        for i in o.intervals:
+        for i in obj.intervals:
             sublist = list()  # sub-list
             for ii in i.streams:
                 dct = dict(
@@ -435,14 +436,14 @@ def process_iperf3(o, payload, options, _log):
 
         # throughput
         s_throughput = list()
-        for i in o.end.streams:
+        for i in obj.end.streams:
             s_throughput.append(i.receiver.bits_per_second)
 
         post.process_event_type('streams-throughput', s_throughput, ts)
 
         # throughput-subint
         s_tput_subint = list()
-        for i in o.intervals:
+        for i in obj.intervals:
             sublist = list()
             for ii in i.streams:
                 dct = dict(
