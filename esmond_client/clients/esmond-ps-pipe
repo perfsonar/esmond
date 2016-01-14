@@ -499,7 +499,9 @@ def main():
             parser.error('{0} log path does not exist.'.format(log_path))
 
     log = setup_log(log_path)
-    _log = lambda e, s: log.info('event={e} id={gid} {s}'.format(e=e, gid=int(time.time()), s=s))
+
+    def _log(event, msg):
+        log.info('event=%s id=%s %s', event, int(time.time()), msg)
 
     if not options.user or not options.key:
         # this exits with error status 2 FYI
