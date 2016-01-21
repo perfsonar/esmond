@@ -114,6 +114,7 @@ INSTALLED_APPS = (
     # apps need a unique label and 'esmond.admin' clashes with the django 
     # 'admin' module, so fix it in esmond.apps by subclassing AppConfig.
     'esmond.apps.EsmondAdminConfig',
+    'netfields',
     'rest_framework',
     'rest_framework.authtoken',
 )
