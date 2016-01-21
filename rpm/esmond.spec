@@ -10,8 +10,8 @@
 %define init_script_2 espersistd
  
 Name:           esmond
-Version:        1.0       
-Release:        16%{?dist}
+Version:        2.0       
+Release:        0.1.a1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -144,6 +144,10 @@ chown -R esmond:esmond /var/lib/esmond
 # Create the 'run' directory
 mkdir -p /var/run/esmond
 chown -R esmond:esmond /var/run/esmond
+
+#create static files directory
+mkdir -p /opt/esmond/staticfiles
+django-admin collectstatic --clear --noinput
 
 
 %files
