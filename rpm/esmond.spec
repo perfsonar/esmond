@@ -10,8 +10,8 @@
 %define init_script_2 espersistd
  
 Name:           esmond
-Version:        1.0       
-Release:        16%{?dist}
+Version:        2.0       
+Release:        0.1.a1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -117,6 +117,9 @@ source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 . bin/activate
 
+#generate secret key
+grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.py >> esmond/settings.py
+
 #handle database updates
 if [ "$1" = "2" ]; then
     chmod 755 configure_esmond
@@ -125,9 +128,6 @@ fi
 
 mkdir -p tsdb-data
 touch tsdb-data/TSDB
-
-#generate secret key
-grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.py >> esmond/settings.py
 
 # Create the logging directories
 mkdir -p /var/log/esmond
@@ -145,11 +145,15 @@ chown -R esmond:esmond /var/lib/esmond
 mkdir -p /var/run/esmond
 chown -R esmond:esmond /var/run/esmond
 
+#create static files directory
+mkdir -p /opt/esmond/staticfiles
+django-admin collectstatic --clear --noinput
+
 
 %files
 %defattr(-,root,root,-)
 %config(noreplace) %{install_base}/esmond.conf
-%config(noreplace) %{install_base}/esmond/settings.py
+%config %{install_base}/esmond/settings.py
 %{install_base}/*
 /etc/init.d/%{init_script_1}
 /etc/init.d/%{init_script_2}
