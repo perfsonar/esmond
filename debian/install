@@ -1,6 +1,6 @@
-rpm/config_files/apache-esmond.conf etc/apache2/conf.d
+rpm/config_files/apache-esmond.conf etc/apache2/conf-available
 rpm/config_files/esmond.conf usr/share/esmond
 rpm/config_files/settings.py usr/share/esmond
 debian/pgsql usr/share/dbconfig-common/data/esmond/install
 util/* usr/share/esmond/util
-esmond/api/fixtures/* usr/share/pyshared/esmond/api/fixtures
+esmond/api/fixtures/* usr/lib/python2.7/dist-packages/esmond/api/fixtures

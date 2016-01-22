@@ -52,13 +52,12 @@ case "$1" in
         chmod 640 /etc/esmond/esmond.conf
 
         # update django secret key
-	if ! grep '^SECRET_KEY *=' /etc/esmond/settings.py >> ${tmp_settings_py} 2>/dev/null; then
+        if ! grep '^SECRET_KEY *=' /etc/esmond/settings.py >> ${tmp_settings_py} 2>/dev/null; then
             python /usr/share/esmond/util/gen_django_secret_key.py >> ${tmp_settings_py}
         fi
         ucf --debconf-ok ${tmp_settings_py} /etc/esmond/settings.py
         chgrp www-data /etc/esmond/settings.py
         chmod 640 /etc/esmond/settings.py
-        ln -sf /etc/esmond/settings.py /usr/share/pyshared/esmond/settings.py
 
         # setup database
         (
@@ -69,6 +68,7 @@ case "$1" in
 
         # setup apache
         chown -R www-data:www-data /var/log/esmond
+        a2enconf apache-esmond
         if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
             invoke-rc.d apache2 reload || true
         fi
