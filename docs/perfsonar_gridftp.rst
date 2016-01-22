@@ -35,10 +35,9 @@ Once you have a measurement archive, you will need to create credentials so that
     cd /opt/esmond
     source /opt/rh/python27/enable
     . bin/activate
-    python esmond/manage.py add_ps_metadata_post_user gridftp
-    python esmond/manage.py add_timeseries_post_user gridftp
+    python esmond/manage.py add_api_key_user gridftp
 
-**IMPORTANT: The last two commands will output an API key that should be noted for later configuration steps.**
+**IMPORTANT: The last command will output an API key that should be noted for later configuration steps.**
 
 .. note:: You may re-run the commands in this section at any time if you forget the API key and they will output the existing key.  
 
