@@ -7,4 +7,5 @@ export DJANGO_SETTINGS_MODULE=esmond.settings
 
 #build tables
 cd /opt/esmond
-python esmond/manage.py syncdb --noinput
+python esmond/manage.py migrate &> /var/log/esmond/install.log
+python util/migrate_tastypie_keys.py &>> /var/log/esmond/install.log

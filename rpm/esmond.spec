@@ -131,7 +131,7 @@ chown -R apache:apache /var/log/esmond
 #handle database updates
 if [ "$1" = "2" ]; then
     chmod 755 configure_esmond
-    python esmond/manage.py migrate &> /var/log/esmond/install.log
+   ./configure_esmond
 fi
 
 mkdir -p tsdb-data
