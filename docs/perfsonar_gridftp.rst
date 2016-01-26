@@ -2,11 +2,10 @@
 Registering GridFTP Results
 ***************************
 
-Esmond includes a script capable of parsing GridFTP server transfer logs and registering data such as throughput and packet-retransmits to a central esmond server. This document describes how to install, configure and run this script. 
+The Esmond client package includes a script capable of parsing GridFTP server transfer logs and registering data such as throughput and packet-retransmits to a central esmond server. This document describes how to install, configure and run this script. 
 
 Preparing Your Environment
 ==========================
-
 
 Preparing Your GridFTP Server(s)
 --------------------------------
@@ -20,15 +19,13 @@ On the system you wish to install the script you will need the following softwar
 
 * The *esmond-client* Python package
     * See :ref:`gridftp-install-esmond-client`
-
-* The load_gridftp.py script from esmond
-    * See :ref:`gridftp-install-script`
+    
 
 .. _gridftp-prepare-ma:
 
 Preparing Your Measurement Archive
 ----------------------------------
-In addition you will need an esmond installation *on a different host* where you can store the results, often referred to as a Measurement Archive (MA). It needs to be on a different host to prevent conflicts with packages installed by GridFTP and esmond. The esmond installation that comes on the `perfSONAR Toolkit <http://www.perfsonar.net>`_ can serve this purpose. Likewise you can install a standalone esmond instance by following the instructions at :doc:`rpm_install`. 
+You will need an esmond installation *on a different host* where you can store the results, often referred to as a Measurement Archive (MA). It needs to be on a different host to prevent conflicts with packages installed by GridFTP and esmond. The esmond installation that comes on the `perfSONAR Toolkit <http://www.perfsonar.net>`_ can serve this purpose. Likewise you can install a standalone esmond instance by following the instructions at :doc:`rpm_install`. 
 
 Once you have a measurement archive, you will need to create credentials so that the GridFTP log parser can register data to it. The credentials take the form of a username and API key. If you have multiple GridFTP servers you may allow them to share the same credentials or create them each individual credentials. Sharing is simpler to manage and individual accounts make it easier to revoke access at a later date for an individual host. The decision is up to you and/or the MA administrator, but you may create an account by logging-in to the host running esmond and issuing the following commands (you may replace *gridftp* with the name of the user you want to add)::
 
@@ -79,14 +76,6 @@ Run the following to install the package::
 
 .. _gridftp-install-script:
 
-Installing the Log Parser Script
---------------------------------
-Run the following commands::
-
-    mkdir -p /opt/esmond-gridftp
-    cd /opt/esmond-gridftp
-    wget --no-check-certificate https://raw.githubusercontent.com/esnet/esmond/develop/util/load_grid_ftp.py
-
 Running the Log Parser
 ======================
 
@@ -98,21 +87,21 @@ Assuming you followed all the installation steps you should be able to run a set
     cd /opt/esmond-gridftp
     source /opt/rh/python27/enable
     . bin/activate
-    python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/ -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
+    python /opt/esmond-gridftp/bin/esmond-ps-load-gridftp -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/ -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
 
 .. note:: If you are not running CentOS 6 or RHEL 6 then you only need to run the last command
 
-.. note:: The first time you call load_grid_ftp.py it may take several minutes to complete if you have a large log file. 
+.. note:: The first time you call esmond-ps-load-gridftp it may take several minutes to complete if you have a large log file. 
 
-The `load_grid_ftp.py` script has a number of options but the most commonly used ones are in the example above. For a complete listing see the *-h* option of `load_grid_ftp.py`. A description of the options used in the example are as follows:
+The `esmond-ps-load-gridftp` script has a number of options but the most commonly used ones are in the example above. For a complete listing see the *-h* option of `esmond-ps-load-gridftp`. A description of the options used in the example are as follows:
 
 * *-f* is the path to the GridFTP log file to be parsed. In general it will be found at /var/log/gridftp-transfer.log but may be different depending on the system. You will know it's the correct log file if it has lines like the following::
 
     DATE=20150407145945.113944 HOST=lbl-diskpt1.es.net PROG=globus-gridftp-server NL.EVNT=FTP_INFO START=20150407145936.596363 USER=anonymous FILE=/data1/100M.dat BUFFER=87380 BLOCK=262144 NBYTES=100000000 VOLUME=/ STREAMS=5 STRIPES=1 DEST=[192.100.78.81] TYPE=RETR CODE=226 retrans=36,17,27,25,61
 
-* *-p* is the path to a file used by the 'load_grid_ftp.py' script to keep track of what lines it has already parsed between runs. This file will be created if it doesn't already exist. If you delete this file, the script may complain about trying to register data that is already in the measurement archive. 
+* *-p* is the path to a file used by the 'esmond-ps-load-gridftp' script to keep track of what lines it has already parsed between runs. This file will be created if it doesn't already exist. If you delete this file, the script may complain about trying to register data that is already in the measurement archive. 
 
-* *-l* is the directory to keep log files generated by 'load_grid_ftp.py' to track its own progress and report parsing errors, etc. This is NOT the GridFTP server log, so don't confuse it with *-f*. 
+* *-l* is the directory to keep log files generated by 'esmond-ps-load-gridftp' to track its own progress and report parsing errors, etc. This is NOT the GridFTP server log, so don't confuse it with *-f*. 
 
 * *-U* is the URL of your esmond measurement archive. It should begin with *http://* or *https://* and end with /esmond usually. The hostname in between should be the name of the host where you want the data sent. 
 
@@ -120,6 +109,7 @@ The `load_grid_ftp.py` script has a number of options but the most commonly used
 
 * *-k* is the API key used to authenticate to esmond. You should have set this up in :ref:`gridftp-prepare-ma`.
 
+* *-J* is used when you want it to parse the JSON formatted GridFTP logs
 
 Running in Cron
 ---------------
@@ -132,7 +122,7 @@ Most likely you will not want to run that by hand, rather you'll want it to auto
     cd /opt/esmond-gridftp
     source /opt/rh/python27/enable
     . bin/activate
-    python /opt/esmond-gridftp/load_grid_ftp.py -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/ -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
+    python /opt/esmond-gridftp/bin/esmond-ps-load-gridftp -f /var/log/gridftp-transfer.log -p /opt/esmond-gridftp/load_grid_ftp.pickle -l /var/log/ -U https://archive.mydomain.net/esmond -u gridftp -k ABCDEF1234567890
 
 #. Run the following command to give it execute permissions::
 
@@ -177,6 +167,8 @@ Displaying Results in a Dashboard
 ---------------------------------
 
 You may use `MaDDash <http://software.es.net/maddash>`_ to display and alert on throughput results reported by GridFTP. The process for doing so is the same a configuring MaDDash for BWCTL/iperf results since the event type is the same. See the MaDDash `configuration guide <http://software.es.net/maddash/config_server.html>`_ for more details.
+
+.. note:: If you are storing both BWCTL and GridFTP results in the same archive AND between the same source-destination pairs then you will need to manually add the *--tool gridftp* option to the `command <http://software.es.net/maddash/config_server.html#nagioscheck>`_ option in your *maddash.yaml* file.
 
 
 
