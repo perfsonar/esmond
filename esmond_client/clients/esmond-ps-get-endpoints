@@ -4,15 +4,21 @@
 esmond-ps-get-endpoints - discover tests stored in a Perfsonar esmond instance.
 """
 
-import os
-import sys
+# for the script name:
+# pylint: disable=invalid-name
 
 from esmond_client.perfsonar.query import ApiConnect
-from esmond_client.perfsonar.util import (perfsonar_client_opts, 
-    perfsonar_client_filters, output_factory, HostnameConversion)
+from esmond_client.perfsonar.util import (
+    HostnameConversion,
+    output_factory,
+    perfsonar_client_filters,
+    perfsonar_client_opts,
+)
+
 
 def main():
-    options, args = perfsonar_client_opts()
+    """Parse args and execute query."""
+    options, _ = perfsonar_client_opts()
 
     ip_convert = HostnameConversion(options)
 
@@ -21,28 +27,26 @@ def main():
 
     data = list()
 
-    for m in conn.get_metadata():
+    for meta in conn.get_metadata():
         row = dict(
-            source=m.source,
-            destination=m.destination,
-            measurement_agent=m.measurement_agent,
-            tool_name=m.tool_name,
-            event_type=[ et.event_type for et in m.get_all_event_types() ],
+            source=meta.source,
+            destination=meta.destination,
+            measurement_agent=meta.measurement_agent,
+            tool_name=meta.tool_name,
+            event_type=[etype.event_type for etype in meta.get_all_event_types()],
         )
         data.append(ip_convert.convert(row))
 
     column_ordering = [
-        'source', 
-        'destination', 
-        'measurement_agent', 
-        'tool_name', 
+        'source',
+        'destination',
+        'measurement_agent',
+        'tool_name',
         'event_type'
     ]
 
-    o = output_factory(options, data, column_ordering)
-    print o.get_output()
-
-    pass
+    output = output_factory(options, data, column_ordering)
+    print output.get_output()
 
 if __name__ == '__main__':
     main()

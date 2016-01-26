@@ -1,21 +1,26 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
+
+"""
+Setup file for esmond_client distribution.
+"""
 
 import os
 import sys
 from setuptools import setup
 
-if sys.version_info[0] == 2 and sys.version_info[1] < 7: 
+if sys.version_info[0] == 2 and sys.version_info[1] < 7:
     sys.exit('Sorry, Python < 2.7 is not supported')
+
 
 def read(*paths):
     """Build a file path from *paths* and return the contents."""
-    with open(os.path.join(*paths), 'r') as f:
-        return f.read()
+    with open(os.path.join(*paths), 'r') as fh:
+        return fh.read()
 
 setup(
     name='esmond_client',
     version='1.6',
-    description='API client libraries and command line tools for the ESnet Monitoring Daemon (esmond).',
+    description='API client libraries and command line tools for the ESnet Monitoring Daemon (esmond).',  # pylint: disable=line-too-long
     long_description=(read('README.rst')),
     author='Monte M. Goode',
     author_email='MMGoode@lbl.gov',
@@ -24,7 +29,7 @@ setup(
     scripts=[
         'clients/esmond-ps-get',
         'clients/esmond-ps-get-bulk',
-        'clients/esmond-ps-get-endpoints', 
+        'clients/esmond-ps-get-endpoints',
         'clients/esmond-ps-get-metadata',
         'clients/esmond-ps-load-gridftp',
         'clients/esmond-ps-pipe',
