@@ -1,3 +1,9 @@
+esmond (2.0-0.1.a1) UNRELEASED; urgency=medium
+
+  * New upstream version.
+
+ -- Valentin Vidic <Valentin.Vidic@CANet.hr>  Wed, 27 Jan 2016 14:17:23 +0100
+
 esmond (1.0.16-1) unstable; urgency=low
 
   * Initial release.
