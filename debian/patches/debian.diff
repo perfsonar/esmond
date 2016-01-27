@@ -7,20 +7,6 @@
  sql_db_name = esmond
  sql_db_user = esmond
  sql_db_password = changeit
---- a/setup.py
-+++ b/setup.py
-@@ -8,7 +8,10 @@
-         author='Jon M. Dugan',
-         author_email='jdugan@es.net',
-         url='http://software.es.net/esmond/',
--        packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
-+        packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin',
-+                  'esmond.api.tests', 'esmond.api.tests.perfsonar', 'esmond.api.perfsonar',
-+                  'esmond.api.client.perfsonar', 'esmond.api.management', 'esmond.api.migrations',
-+                  'esmond.api.management.commands', 'esmond_client', 'test_data'],
-         install_requires=['Django==1.8.5', 'django-tastypie==0.12.2', 'web.py',
-             'djangorestframework==3.1.3', 'drf-extensions==0.2.7',
-             'djangorestframework-filters==0.3.0', 'python-memcached==1.57', 
 --- a/rpm/config_files/apache-esmond.conf
 +++ b/rpm/config_files/apache-esmond.conf
 @@ -1,25 +1,20 @@
@@ -69,3 +55,17 @@
  
  # Absolute path to the directory that holds media.
  # Example: "/home/media/media.lawrence.com/"
+--- a/setup.py
++++ b/setup.py
+@@ -11,7 +11,10 @@
+     author='Jon M. Dugan',
+     author_email='jdugan@es.net',
+     url='http://software.es.net/esmond/',
+-    packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
++    packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin',
++        'esmond.api.tests', 'esmond.api.tests.perfsonar', 'esmond.api.perfsonar',
++        'esmond.api.client.perfsonar', 'esmond.api.management', 'esmond.api.migrations',
++        'esmond.api.management.commands', 'esmond_client', 'test_data'],
+     install_requires=[
+         'Django==1.8.5', 'django-tastypie==0.12.2', 'web.py',
+         'djangorestframework==3.1.3', 'drf-extensions==0.2.7',
