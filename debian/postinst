@@ -68,12 +68,14 @@ case "$1" in
         (
             . /etc/default/esmond
             export ESMOND_ROOT ESMOND_CONF
-            python /usr/lib/python2.7/dist-packages/esmond/manage.py syncdb --noinput
-
             export DJANGO_SETTINGS_MODULE=esmond.settings
+
+            python /usr/lib/python2.7/dist-packages/esmond/manage.py migrate
+            python /usr/share/esmond/util/migrate_tastypie_keys.py
+
             mkdir /var/lib/esmond/staticfiles
             django-admin collectstatic --clear --noinput
-        )
+        ) &> /var/log/esmond/install.log
 
         # fix perms after django runs
         chown -R www-data:www-data /var/log/esmond
