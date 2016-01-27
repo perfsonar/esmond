@@ -4,27 +4,29 @@
 esmond-ps-get - client to fetch perfsonar test results.
 """
 
-import os
-import socket
-import sys
+# for the script name:
+# pylint: disable=invalid-name
 
 from esmond_client.perfsonar.query import ApiConnect
-from esmond_client.perfsonar.util import (perfsonar_client_opts, 
-    perfsonar_client_filters, output_factory, data_format_factory) 
+from esmond_client.perfsonar.util import (
+    data_format_factory,
+    output_factory,
+    perfsonar_client_filters,
+    perfsonar_client_opts,
+)
+
 
 def main():
-    options, args = perfsonar_client_opts(require_src_dest=True,
-        require_event=True)
+    """main loop/execute query."""
+    options, _ = perfsonar_client_opts(require_src_dest=True, require_event=True)
 
     filters = perfsonar_client_filters(options)
     conn = ApiConnect(options.url, filters)
 
     header, data = data_format_factory(options)(conn)
 
-    o = output_factory(options, data, header)
-    print o.get_output()
-
-    pass
+    output = output_factory(options, data, header)
+    print output.get_output()
 
 if __name__ == '__main__':
     main()

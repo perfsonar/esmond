@@ -1,39 +1,44 @@
 #!/usr/bin/env python
 
 """
-esmond-ps-get-bulk - a client program to pull large amounts of perfsonar 
+esmond-ps-get-bulk - a client program to pull large amounts of perfsonar
 data from an esmond host.
 """
 
-import os
-import sys
+# for the script name:
+# pylint: disable=invalid-name
 
-from esmond_client.perfsonar.query import ApiConnect, Metadata
-from esmond_client.perfsonar.util import (perfsonar_client_opts, 
-    perfsonar_client_filters, get_start_and_end_times, output_factory,
-    data_format_factory, get_outfile)
-
-import calendar
 import copy
-import datetime
-import socket
 
-class ConnectionWrapper(object):
+from esmond_client.perfsonar.query import ApiConnect
+from esmond_client.perfsonar.util import (
+    data_format_factory,
+    get_outfile,
+    output_factory,
+    perfsonar_client_filters,
+    perfsonar_client_opts,
+)
+
+
+class ConnectionWrapper(object):  # pylint: disable=too-few-public-methods
     """
     Class to mimic a ApiConnect object to pass a discrete
     metadata object to the format_factory
     """
     def __init__(self, metadata_object):
-        self._data = [ metadata_object ]
+        self._data = [metadata_object]
 
     def get_metadata(self):
-        for d in self._data:
-            yield d
+        """Return the metadata object as if this was the get_metadata
+        method on an ApiConnect object."""
+        for datum in self._data:
+            yield datum
 
-class OptionsWrapper(object):
+
+class OptionsWrapper(object):  # pylint: disable=too-few-public-methods
     """
-    Mimics an options/optparse object to use since we might be 
-    assigning event types
+    Mimics/wraps an options/optparse object to pass to the data_format_factory
+    since we might be dynamically assigning event types.
     """
     def __init__(self, options_object):
         self.__dict__['_data'] = copy.copy(options_object.__dict__)
@@ -45,57 +50,55 @@ class OptionsWrapper(object):
         self.__dict__['_data'][name] = value
 
     def to_dict(self):
+        """Return internal data as a dict."""
         return self._data
 
 
-def main():
-    options, args = perfsonar_client_opts(require_output=True)
+def main():  # pylint: disable=too-many-locals
+    """Parse args and execute query."""
+    options, _ = perfsonar_client_opts(require_output=True)
 
     filters = perfsonar_client_filters(options)
     conn = ApiConnect(options.url, filters)
 
-    for m in conn.get_metadata():
-        print '\n', m
+    for meta in conn.get_metadata():
+        print '\n', meta
         # Use the user supplied event type if supplied, if not
         # pull all event types for the metadata object.
         if options.type:
-            event_type = [ options.type ]
+            event_type = [options.type]
         else:
-            event_type = [ x.event_type for x in m.get_all_event_types() ]
+            event_type = [x.event_type for x in meta.get_all_event_types()]
 
         # Loop through the event types
-        for et in event_type:
-            print '\n  * processing {0}'.format(et)
+        for etype in event_type:
+            print '\n  * processing {0}'.format(etype)
 
             # Mimic options object and assign event type to it.
             options_wrap = OptionsWrapper(options)
-            options_wrap.type = et
+            options_wrap.type = etype  # pylint: disable=attribute-defined-outside-init
 
             # Initialize the output class with the proper event type
             # headers and an empty dataset.
             header, data = data_format_factory(options_wrap, seed_bulk_output=True)(conn)
             output_klass = output_factory(options_wrap, data, header)
 
-            # Generate a series of time slices to make more limited
-            # requests to the back end.
-            ig = IntervalGenerator(m, options)
+            meta_wrap = ConnectionWrapper(meta)
 
-            meta_wrap = ConnectionWrapper(m)
-
-            sub_header, sub_data = data_format_factory(options_wrap)(meta_wrap)
-            if len(sub_data): print '   * got {0} results'.format(len(sub_data))
+            _, sub_data = data_format_factory(options_wrap)(meta_wrap)
+            if len(sub_data):
+                print '   * got {0} results'.format(len(sub_data))
             output_klass.add_to_payload(sub_data)
-            
-            # write it out of we got data
+
+            # write it out if we got data
             if output_klass.has_data():
-                fh = get_outfile(options, m, et)
+                fh = get_outfile(options, meta, etype)
                 print '  * writing {0}'.format(fh.name)
                 fh.write(output_klass.get_output())
                 fh.close()
             else:
                 print '  * no data for that event type, skipping output.'
 
-    pass
 
 if __name__ == '__main__':
     main()
