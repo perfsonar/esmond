@@ -59,15 +59,26 @@ case "$1" in
         chgrp www-data /etc/esmond/settings.py
         chmod 640 /etc/esmond/settings.py
 
+        # create the TSDB directory
+        mkdir -p /var/lib/esmond
+        touch /var/lib/esmond/TSDB
+        chown -R esmond:esmond /var/lib/esmond
+
         # setup database
         (
             . /etc/default/esmond
             export ESMOND_ROOT ESMOND_CONF
             python /usr/lib/python2.7/dist-packages/esmond/manage.py syncdb --noinput
+
+            export DJANGO_SETTINGS_MODULE=esmond.settings
+            mkdir /var/lib/esmond/staticfiles
+            django-admin collectstatic --clear --noinput
         )
 
-        # setup apache
+        # fix perms after django runs
         chown -R www-data:www-data /var/log/esmond
+
+        # setup apache
         a2enconf apache-esmond
         if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
             invoke-rc.d apache2 reload || true

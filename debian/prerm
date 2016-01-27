@@ -24,6 +24,11 @@ case "$1" in
             . /usr/share/dbconfig-common/dpkg/prerm.pgsql
             dbc_go esmond $@
         fi
+
+        a2disconf apache-esmond || true
+        if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
+            invoke-rc.d apache2 reload || true
+        fi
     ;;
 
     failed-upgrade)

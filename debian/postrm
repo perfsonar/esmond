@@ -35,12 +35,8 @@ case "$1" in
         ucf --purge /etc/esmond/settings.py
         rm -f /etc/esmond/settings.py
 
-        a2disconf apache-esmond || true
-        if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
-            invoke-rc.d apache2 reload || true
-        fi
-
         rm -rf /var/log/esmond
+        rm -rf /var/lib/esmond
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

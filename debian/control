@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Valentin Vidic <Valentin.Vidic@CARNet.hr>
 Build-Depends: debhelper (>= 8.0.0), python | python-all | python-dev | python-all-dev,
- python-setuptools, dh-python
+ dh-python
 X-Python-Version: >= 2.7
 Standards-Version: 3.9.3
 Homepage: http://software.es.net/esmond/
