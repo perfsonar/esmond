@@ -73,7 +73,7 @@ case "$1" in
             python /usr/lib/python2.7/dist-packages/esmond/manage.py migrate
             python /usr/share/esmond/util/migrate_tastypie_keys.py
 
-            mkdir /var/lib/esmond/staticfiles
+            mkdir -p /var/lib/esmond/staticfiles
             django-admin collectstatic --clear --noinput
         ) &> /var/log/esmond/install.log
 
