@@ -42,7 +42,7 @@ from pycassa.columnfamily import ColumnFamily
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
      build_metadata_from_test_data, load_test_data, build_rtr_alu_metadata
 from esmond.api import SNMP_NAMESPACE, ANON_LIMIT
-from esmond.api.api import check_connection
+from esmond.api.api_v2 import check_connection
 from esmond.util import atencode
 
 try:
@@ -427,7 +427,7 @@ backwards_counters_test_data = """
 
 class CassandraTestResults(object):
     """
-    Container to hold timestamps and return values common to 
+    Container to hold timestamps and return values common to
     both sets of cassandra data queries (raw and rest apis).
     """
     # Common values
@@ -515,7 +515,7 @@ class TestCassandraPollPersister(TestCase):
 
         Although this isn't supposed to happen, sometimes it does.
         The example data is real data from conf-rtr.sc13.org."""
-        
+
         test_data = json.loads(backwards_counters_test_data)
 
         config = get_config(get_config_path())
@@ -576,7 +576,7 @@ class TestCassandraPollPersister(TestCase):
         p.db.flush()
         p.db.close()
         p.db.stats.report('all')
-        if tsdb:    
+        if tsdb:
             test_data = load_test_data("rtr_d_ifhcin_long.json")
             q = TestPersistQueue(test_data)
             p = TSDBPollPersister(config, "test", persistq=q)
@@ -605,7 +605,7 @@ class TestCassandraPollPersister(TestCase):
                             full_paths[full_path] = 1
 
             ts_db = tsdb.TSDB(config.tsdb_root)
-            
+
             config.db_clear_on_testing = False
             db = CASSANDRA_DB(config)
 
@@ -721,7 +721,7 @@ class TestCassandraPollPersister(TestCase):
         """
         config = get_config(get_config_path())
         db = CASSANDRA_DB(config)
-        
+
         start_time = self.ctr.begin*1000
         end_time = self.ctr.end*1000
 
@@ -759,7 +759,7 @@ class TestCassandraPollPersister(TestCase):
             freq=self.ctr.agg_freq*1000, # required!
             cf='average',  # min | max | average - also required!
         )
-        
+
         self.assertEqual(ret[0]['cf'], 'average')
         self.assertEqual(ret[0]['val'], self.ctr.agg_avg)
         self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
@@ -777,7 +777,7 @@ class TestCassandraPollPersister(TestCase):
         self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
 
         # return
-        
+
         ret = db.query_aggregation_timerange(
             path=[SNMP_NAMESPACE,'rtr_d','FastPollHC','ifHCInOctets','fxp0.0'],
             ts_min=start_time - 3600*1000,
@@ -797,7 +797,7 @@ class TestCassandraPollPersister(TestCase):
             freq=self.ctr.agg_freq*1000, # required!
             cf='max',  # min | max | average - also required!
         )
-        
+
         self.assertEqual(ret[0]['cf'], 'max')
         self.assertEqual(ret[0]['val'], self.ctr.agg_max)
         self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
@@ -826,7 +826,7 @@ class TestCassandraPollPersister(TestCase):
             freq=self.ctr.agg_freq*1000, # required!
             cf='max',  # min | max | average - also required!
         )
-        
+
         self.assertEqual(ret[0]['cf'], 'max')
         self.assertEqual(ret[0]['val'], self.ctr.agg_max)
         self.assertEqual(ret[0]['ts'], self.ctr.agg_ts*1000)
@@ -835,7 +835,7 @@ class TestCassandraPollPersister(TestCase):
         # Set clear on testing to false and load the data
         # again to work the aggregation cache lookup
         # for coverage.  Double the incoming data values
-        # so we can check that the 2 X deltas produce 
+        # so we can check that the 2 X deltas produce
         # new aggregations.
 
         config.db_clear_on_testing = False
@@ -845,7 +845,7 @@ class TestCassandraPollPersister(TestCase):
         for i in test_data:
             for ii in i.get('data'):
                 ii[1] = ii[1]*2
-        
+
         q = TestPersistQueue(test_data)
         p = CassandraPollPersister(config, "test", persistq=q)
         p.run()
@@ -913,7 +913,7 @@ class TestCassandraApiQueries(BaseTestCase):
 
         test_data = load_test_data("rtr_d_ifhcin_long.json")
         build_metadata_from_test_data(test_data)
-        
+
 
     def test_a_load_data(self):
         config = get_config(get_config_path())
@@ -940,7 +940,7 @@ class TestCassandraApiQueries(BaseTestCase):
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertEquals(data['children'][0]['resource_uri'], 
+        self.assertEquals(data['children'][0]['resource_uri'],
             '/v2/device/rtr_d/interface/fxp0.0')
 
     def test_get_device_interface_data_detail(self):
@@ -1133,7 +1133,7 @@ class TestCassandraApiQueries(BaseTestCase):
         # print json.dumps(data, indent=4)
 
     def test_get_timeseries_raw_data(self):
-        """/timeseries rest test for raw data - this reads from the canned 
+        """/timeseries rest test for raw data - this reads from the canned
         test data."""
         params = {
             'begin': self.ctr.begin * 1000,
@@ -1157,7 +1157,7 @@ class TestCassandraApiQueries(BaseTestCase):
         self.assertEquals(data['cf'], 'raw')
 
     def test_timeseries_post_and_read(self):
-        """/timeseries rest test for raw/base rate writes and reads - 
+        """/timeseries rest test for raw/base rate writes and reads -
         does not use the canned test data."""
 
         interface_name = 'interface_test/0/0.0'
@@ -1165,9 +1165,9 @@ class TestCassandraApiQueries(BaseTestCase):
         # raw data writes
         url = '/v2/timeseries/RawData/{0}/rtr_test/FastPollHC/ifHCInOctets/{1}/30000'.format(SNMP_NAMESPACE, atencode(interface_name))
 
-        params = { 
-            'ts': int(time.time()) * 1000, 
-            'val': 1000 
+        params = {
+            'ts': int(time.time()) * 1000,
+            'val': 1000
         }
 
         # Params sent as json list and not post vars now.
@@ -1185,7 +1185,7 @@ class TestCassandraApiQueries(BaseTestCase):
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
-        
+
         self.assertEquals(data['agg'], '30000')
         self.assertEquals(data['resource_uri'], url)
         # Check last value in case the db has not been wiped by a
@@ -1227,8 +1227,8 @@ class TestCassandraApiQueries(BaseTestCase):
         for i in ifaces:
             devs.append({'device': 'rtr_d', 'iface': i})
 
-        payload = { 
-            'interfaces': devs, 
+        payload = {
+            'interfaces': devs,
             'endpoint': ['in'],
             'cf': 'average',
             'begin': self.ctr.begin,
@@ -1388,7 +1388,7 @@ class TestCassandraApiQueries(BaseTestCase):
         response = self.get_api_client(admin_auth=True).put('/v2/device/rtr_d/', payload, format='json')
         self.assertEquals(response.status_code, 400)
 
-        # One last get to make sure the times have been going in an out 
+        # One last get to make sure the times have been going in an out
         # correctly RE: the custom serializer.
         response = self.get_api_client().get('/v2/device/rtr_d/')
         self.assertEquals(response.status_code, 200)
@@ -1410,7 +1410,7 @@ class TestCassandraApiQueries(BaseTestCase):
         response = self.get_api_client().get('/v2/oidset/')
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
-        
+
         self.assertEquals(len(data), 17)
 
     def test_z_throttle(self):
@@ -1495,8 +1495,8 @@ class TestCassandraApiQueries(BaseTestCase):
         for i in ifaces:
             devs.append({'device': 'rtr_d', 'iface': i})
 
-        payload = { 
-            'interfaces': devs, 
+        payload = {
+            'interfaces': devs,
             'endpoint': ['in', 'out'],
             'cf': 'average',
             'begin': self.ctr.begin,
@@ -1504,14 +1504,14 @@ class TestCassandraApiQueries(BaseTestCase):
         }
 
         config = get_config(get_config_path())
-        # This assertion will trigger if the api_anon_limit is set 
+        # This assertion will trigger if the api_anon_limit is set
         # higher than the number of requests that are about to be
         # generated.  The default is usually around 30 and this will
         # generate somewhere in the neighborhood of 150 different
         # queries and should trigger the throttling.
         self.assertLessEqual(ANON_LIMIT, len(ifaces)*len(payload['endpoint']))
 
-        # Make a request the bulk endpoint will throttle for too many 
+        # Make a request the bulk endpoint will throttle for too many
         # queries w/out auth.
 
         response = self.get_api_client().post('/v2/bulk/interface/', data=payload,
@@ -1536,7 +1536,7 @@ class TestCassandraApiQueries(BaseTestCase):
             paths.append(['snmp', 'rtr_d', 'FastPollHC', 'ifHCInOctets', i, '30000'])
 
         payload = {
-            'paths': paths, 
+            'paths': paths,
             'begin': self.ctr.begin,
             'end': self.ctr.end,
             'type': 'RawData',
@@ -1546,7 +1546,7 @@ class TestCassandraApiQueries(BaseTestCase):
             format='json')
         self.assertEquals(response.status_code, 401)
 
-        # This query will "fail" (400 Bad Request) since the paths are 
+        # This query will "fail" (400 Bad Request) since the paths are
         # bogus but that doen't matter, the throttle let it through.
         response = self.get_api_client(admin_auth=True).post('/v2/bulk/timeseries/', data=payload,
             format='json')
@@ -1554,7 +1554,7 @@ class TestCassandraApiQueries(BaseTestCase):
         d = json.loads(response.content)
         self.assertTrue(d.get('query error', None))
 
-        # Make a bunch of requests to make sure that the general 
+        # Make a bunch of requests to make sure that the general
         # AnonRateThrottle kicks in.
 
         params = {
