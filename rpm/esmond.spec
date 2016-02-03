@@ -130,20 +130,16 @@ if [ "$1" = "2" ]; then
     #migrate pre-2.0 files
     if [ -e "/opt/esmond/esmond.conf" ]; then
         mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
-        cp /opt/esmond/esmond.conf %{config_base}/esmond.conf
+        mv /opt/esmond/esmond.conf %{config_base}/esmond.conf
     elif [ -e "/opt/esmond/esmond.conf.rpmsave" ]; then
         mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
-        cp /opt/esmond/esmond.conf.rpmsave %{config_base}/esmond.conf
+        mv /opt/esmond/esmond.conf.rpmsave %{config_base}/esmond.conf
     fi
-    
-    #run config script
-    chmod 755 configure_esmond
-   ./configure_esmond
-   
-   #remove pre-2.0 files now that upgrade had chance to run
-   rm -f /opt/esmond/esmond.conf
-   rm -f /opt/esmond/esmond.conf.rpmsave
 fi
+
+#run config script
+chmod 755 configure_esmond
+./configure_esmond $1
 
 mkdir -p tsdb-data
 touch tsdb-data/TSDB
@@ -156,10 +152,6 @@ chown -R esmond:esmond /var/lib/esmond
 # Create the 'run' directory
 mkdir -p /var/run/esmond
 chown -R esmond:esmond /var/run/esmond
-
-#create static files directory
-mkdir -p %{install_base}/staticfiles
-django-admin collectstatic --clear --noinput
 
 %postun
 if [ "$1" != "0" ]; then
