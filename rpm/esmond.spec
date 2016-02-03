@@ -99,6 +99,8 @@ source /opt/rh/python27/enable
 . bin/activate
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
 python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
+# Need this for the 1.0->2.0 API key migration script
+python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" django-tastypie
 #not pretty but below is the best way I could find to remove references to buildroot
 find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
 find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
@@ -125,15 +127,22 @@ chown -R apache:apache /var/log/esmond
 
 #handle updates
 if [ "$1" = "2" ]; then
+    #migrate pre-2.0 files
     if [ -e "/opt/esmond/esmond.conf" ]; then
         mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
-        mv /opt/esmond/esmond.conf %{config_base}/esmond.conf
+        cp /opt/esmond/esmond.conf %{config_base}/esmond.conf
     elif [ -e "/opt/esmond/esmond.conf.rpmsave" ]; then
         mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
-        mv /opt/esmond/esmond.conf.rpmsave %{config_base}/esmond.conf
+        cp /opt/esmond/esmond.conf.rpmsave %{config_base}/esmond.conf
     fi
+    
+    #run config script
     chmod 755 configure_esmond
    ./configure_esmond
+   
+   #remove pre-2.0 files now that upgrade had chance to run
+   rm -f /opt/esmond/esmond.conf
+   rm -f /opt/esmond/esmond.conf.rpmsave
 fi
 
 mkdir -p tsdb-data
@@ -152,6 +161,11 @@ chown -R esmond:esmond /var/run/esmond
 mkdir -p %{install_base}/staticfiles
 django-admin collectstatic --clear --noinput
 
+%postun
+if [ "$1" != "0" ]; then
+    # An RPM upgrade
+    /etc/init.d/httpd restart
+fi
 
 %files
 %defattr(-,root,root,-)
