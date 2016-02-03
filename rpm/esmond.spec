@@ -4,10 +4,8 @@
 # Don't create a debug package
 %define debug_package %{nil}
 
-%define install_base /opt/esmond
-
-%define init_script_1 espolld
-%define init_script_2 espersistd
+%define install_base /usr/lib/esmond
+%define config_base /etc/esmond
  
 Name:           esmond
 Version:        2.0       
@@ -15,7 +13,7 @@ Release:        0.1.a1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
-URL:            http://REPLACE
+URL:            http://software.es.net/esmond
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:	no
@@ -71,18 +69,13 @@ find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 mkdir -p %{buildroot}/%{install_base}/bin/
 
 # Move the default RPM esmond.conf into place
-mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{install_base}/esmond.conf
+mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{config_base}/esmond.conf
 
 # Move the config script into place
 mv %{buildroot}/%{install_base}/rpm/scripts/configure_esmond %{buildroot}/%{install_base}/configure_esmond
 
 # Move the default settings.py into place
 mv %{buildroot}/%{install_base}/rpm/config_files/settings.py %{buildroot}/%{install_base}/esmond/settings.py
-
-# Move the init scripts into place
-mkdir -p %{buildroot}/etc/init.d
-mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_1} %{buildroot}/etc/init.d/%{init_script_1}
-mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_2} %{buildroot}/etc/init.d/%{init_script_2}
 
 # Move the apache configuration into place
 mkdir -p %{buildroot}/etc/httpd/conf.d/
@@ -128,8 +121,15 @@ touch /var/log/esmond/django.log
 touch /var/log/esmond/install.log
 chown -R apache:apache /var/log/esmond
 
-#handle database updates
+#handle updates
 if [ "$1" = "2" ]; then
+    if [ -e "/opt/esmond/esmond.conf" ]; then
+        mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
+        mv /opt/esmond/esmond.conf %{config_base}/esmond.conf
+    elif [ -e "/opt/esmond/esmond.conf.rpmsave" ]; then
+        mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
+        mv /opt/esmond/esmond.conf.rpmsave %{config_base}/esmond.conf
+    fi
     chmod 755 configure_esmond
    ./configure_esmond
 fi
@@ -147,17 +147,15 @@ mkdir -p /var/run/esmond
 chown -R esmond:esmond /var/run/esmond
 
 #create static files directory
-mkdir -p /opt/esmond/staticfiles
+mkdir -p %{install_base}/staticfiles
 django-admin collectstatic --clear --noinput
 
 
 %files
 %defattr(-,root,root,-)
-%config(noreplace) %{install_base}/esmond.conf
+%config(noreplace) %{config_base}/esmond.conf
 %config %{install_base}/esmond/settings.py
 %{install_base}/*
-/etc/init.d/%{init_script_1}
-/etc/init.d/%{init_script_2}
 /etc/httpd/conf.d/apache-esmond.conf
 /etc/profile.d/esmond.csh
 /etc/profile.d/esmond.sh

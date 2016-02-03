@@ -1,11 +1,11 @@
 #!/bin/bash
 
 #set esmond env variables
-export ESMOND_ROOT=/opt/esmond
-export ESMOND_CONF=$ESMOND_ROOT/esmond.conf
+export ESMOND_ROOT=/usr/lib/esmond
+export ESMOND_CONF=/etc/esmond/esmond.conf
 export DJANGO_SETTINGS_MODULE=esmond.settings
 
 #build tables
-cd /opt/esmond
+cd /usr/lib/esmond
 python esmond/manage.py migrate &> /var/log/esmond/install.log
 python util/migrate_tastypie_keys.py &>> /var/log/esmond/install.log
