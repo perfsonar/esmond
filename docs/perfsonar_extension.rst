@@ -191,12 +191,6 @@ It may be desirable to add support a new type of subject for which measurements 
         "car-color": ['car_subject__color'],
     }
 
-#. Finally we want to be sure a user has permissions to post to the new subject. Open *esmond/api/management/commands/add_ps_metadata_post_user.py* and add the name of the the ``django.db.models.Model`` in all lowercase letters (same as we entered in SUBJECT_MODEL_MAP previously) to the array on line 34::
-
-     print 'Setting metadata POST permissions.'
-     for model_name in ['psmetadata', 'pspointtopointsubject', 'pseventtypes', 'psmetadataparameters', 'psnetworkelementsubject', 'pscarsubject']:
-            ...
-
 That completes the basic process. A few additional notes worth considering:
 
 * If any of your subject fields are IP addresses you may add them to the ``IP_FIELDS`` array in **esmond/api/perfsonar/types.py**. This will allow users to search on this field using a hostname or IP address.

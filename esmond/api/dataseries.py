@@ -7,7 +7,14 @@ import datetime
 from collections import OrderedDict
 
 from esmond.util import atdecode, atencode
-from tastypie.exceptions import BadRequest
+
+class TimerangeException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class TimerangeWarning(Warning): pass
 
 class QueryUtil(object):
     """Class holding common query methods used by multiple resources 
@@ -54,13 +61,13 @@ class QueryUtil(object):
             if e - s > QueryUtil._timerange_limits[obj.agg/divs[in_ms]]:
                 return False
         except KeyError:
-            raise BadRequest('invalid aggregation level: %s' %
+            raise TimerangeException('invalid aggregation level: %s' %
                     obj.agg)
 
         return True
 
     @staticmethod
-    def format_data_payload(data, in_ms=False, coerce_to_bins=None):
+    def format_cassandra_data_payload(data, in_ms=False, coerce_to_bins=None):
         """Massage results from cassandra for json return payload.
 
         The in_ms flag is set to true if a given resource (like the 

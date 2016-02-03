@@ -6,7 +6,7 @@ import requests
 from requests.exceptions import ConnectionError
 
 from ..util import add_apikey_header, AlertMixin
-from .query import Metadata, ApiFilters
+from .query import Metadata, ApiFilters, PS_ROOT
 
 # Custom exceptions and warnings
 
@@ -58,7 +58,7 @@ class PostBase(AlertMixin, object):
     Base class for perfsonar API post functionality.  Should not
     be directly instantiated.
     """
-    _schema_root = 'perfsonar/archive'
+    _schema_root = '{0}/archive'.format(PS_ROOT)
 
     def __init__(self, api_url, username, api_key, script_alias):
         """
@@ -397,7 +397,7 @@ class EventTypeBulkPost(PostBase):
                                     self.metadata_key)
 
         try:
-            r = requests.post(url, data=self.json_payload(), headers=self.headers)
+            r = requests.put(url, data=self.json_payload(), headers=self.headers)
         except ConnectionError, ex:
             self.ex('POST connection error: {0}'.format(str(ex)))
 

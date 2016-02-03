@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User, Group, Permission
 from django.utils.timezone import utc, make_aware, now
 
-from tastypie.models import ApiKey
+from rest_framework.authtoken.models import Token
 
 from esmond.api.models import *
 from esmond.util import max_datetime
@@ -209,19 +209,22 @@ def users_testdata(td):
                     codename="esmond_api.{0}_{1}".format(perm_name, resource))
             td.user_admin.user_permissions.add(perm)
 
+    for resource in ['device']:
+        for perm_name in ['add', 'change', 'delete']:
+            perm = Permission.objects.get(
+                    codename="{0}_{1}".format(perm_name, resource))
+            td.user_admin.user_permissions.add(perm)
+
     td.user_admin.save()
-    td.user_admin_apikey = ApiKey(user=td.user_admin)
-    td.user_admin_apikey.key = td.user_admin_apikey.generate_key()
-    td.user_admin_apikey.save()
-    td.user_admin.save()
+    
+    td.user_admin_apikey = Token.objects.create(user=td.user_admin)
 
     td.user_seeall = User(username="seeall", is_staff=False)
     td.user_seeall.save()
     td.user_seeall.user_permissions.add(seeall)
     td.user_seeall.save()
-    td.user_seeall_apikey = ApiKey(user=td.user_seeall)
-    td.user_seeall_apikey.key = td.user_seeall_apikey.generate_key()
-    td.user_seeall_apikey.save()
+
+    td.user_seeall_apikey = Token.objects.create(user=td.user_seeall)
 
 def build_rtr_d_metadata():
     """Creates rtr_d, to be used for larger dataset testing
@@ -327,3 +330,32 @@ def build_pdu_metadata():
     )
 
     return td
+
+def build_sample_inventory_from_metadata():
+    """
+    make sample inventory out of loaded metadata mostly for testing 
+    API endpoints
+    """
+
+    keys = list()
+
+    for d in Device.objects.all():
+        ifaces = [ i.ifName for i in d.ifref_set.all() ]
+        oid_set = list()
+        for os in d.oidsets.all():
+            for o in os.oids.all():
+                oid_set.append((os.name, o.name,))
+
+        for os in oid_set:
+            for i in ifaces:
+                keys.append('snmp:{0}:{1}:{2}:{3}:30000'.format(d.name, os[0], os[1], i))
+
+    for k in keys:
+        i = Inventory(
+            row_key=k,
+            frequency=30000,
+            end_time=make_aware(datetime.datetime.now(), utc),
+            start_time=make_aware(datetime.datetime.now() - datetime.timedelta(days=30), utc),
+        )
+        i.save()
+

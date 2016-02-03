@@ -11,6 +11,9 @@ import requests
 
 from ..util import add_apikey_header
 
+# URI prefix segment - to change during development
+PS_ROOT = 'perfsonar'
+
 MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
 MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())
 
@@ -792,9 +795,9 @@ class ApiConnect(object):
         """Return Metadata object(s) based on the query."""
 
         if self.script_alias:
-            archive_url = '{0}/{1}/perfsonar/archive/'.format(self.api_url, self.script_alias)
+            archive_url = '{0}/{1}/{2}/archive/'.format(self.api_url, self.script_alias, PS_ROOT)
         else:
-            archive_url = '{0}/perfsonar/archive/'.format(self.api_url)
+            archive_url = '{0}/{1}/archive/'.format(self.api_url, PS_ROOT)
 
         r = requests.get(
             archive_url,
@@ -814,7 +817,7 @@ class ApiConnect(object):
             else:
                 m_total = 0
 
-            # Check to see if we are geting paginated metadata, tastypie
+            # Check to see if we are geting paginated metadata, API V1
             # has a limit to how many results it will return even if
             # ?limit=0
             if len(data) < m_total:
@@ -822,7 +825,7 @@ class ApiConnect(object):
                 if self.filters.verbose:
                     print 'pagination - metadata_count_total: {0} got: {1}\n'.format(
                         m_total, len(data))
-                initial_offset = len(data)  # should be the tastypie internal limit of 1000
+                initial_offset = len(data) # should be the API V1 internal limit of 1000
                 offset = initial_offset
 
                 while offset < m_total:

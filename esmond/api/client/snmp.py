@@ -1,5 +1,5 @@
 """
-Library to fetch data from 'simplified' API /v1/snmp/ namespace.
+Library to fetch data from 'simplified' API /v2/snmp/ namespace.
 
 The class ApiConnect is the 'entry point' that the client uses, and
 the ApiFilters class is used to set time/device/etc filters, and is
@@ -114,6 +114,9 @@ class InterfaceNotFound(ApiNotFound):
 class EndpointNotFound(ApiNotFound):
     pass
 
+
+# The other moodules inherit from this "define".
+API_VERSION_PREFIX = 'v2'
 
 # - Encapsulation classes for nodes (device, interface, etc).
 
@@ -247,7 +250,7 @@ class Device(NodeInfo):
                 break
 
         if uri:
-            r = requests.get('{0}{1}/'.format(self.api_url, uri),
+            r = requests.get('{0}{1}'.format(self.api_url, uri),
                              params=self.filters.compose_filters(filters),
                              headers=self.request_headers)
 
@@ -310,11 +313,11 @@ class Device(NodeInfo):
             self.warn('Must supply username and api key args to alter oidsets for a device - aborting set_oidsets().')  # pylint: disable=line-too-long
             return
 
-        r = requests.get('{0}/v1/oidset/'.format(self.api_url),
+        r = requests.get('{0}/{1}/oidset/'.format(self.api_url, API_VERSION_PREFIX),
                          headers=self.request_headers)
         if r.status_code != 200:
-            self.warn('Could not get a list of valid oidsets from {0}/v1/oidset/ - aborting'.format(
-                self.api_url))
+            self.warn('Could not get list of valid oidsets from {0}/{1}/oidset/ - aborting'.format(
+                self.api_url, API_VERSION_PREFIX))
             return
         valid_oidsets = json.loads(r.content)
 
@@ -391,6 +394,10 @@ class Interface(NodeInfo):
     # yes, these property names violate PEP8 but they mirror the
     # the underlying keys which is what's important
     # pylint: disable=invalid-name
+
+    @property
+    def device_uri(self):
+        return self._data.get('device_uri', None)
 
     @property
     def ifAdminStatus(self):
@@ -760,7 +767,7 @@ class ApiConnect(AlertMixin, object):
                               self.filters.auth_apikey, self.request_headers)
 
     def get_devices(self, **filters):
-        r = requests.get('{0}/v1/device/'.format(self.api_url),
+        r = requests.get('{0}/{1}/device/'.format(self.api_url, API_VERSION_PREFIX),
                          params=self.filters.compose_filters(filters),
                          headers=self.request_headers)
 
@@ -807,7 +814,7 @@ class ApiConnect(AlertMixin, object):
             return device
 
     def get_interfaces(self, **filters):
-        r = requests.get('{0}/v1/interface/'.format(self.api_url),
+        r = requests.get('{0}/{1}/interface/'.format(self.api_url, API_VERSION_PREFIX),
                          params=self.filters.compose_filters(filters),
                          headers=self.request_headers)
 
@@ -852,7 +859,7 @@ class ApiConnect(AlertMixin, object):
 
         self.request_headers['content-type'] = 'application/json'
 
-        r = requests.post('{0}/v1/bulk/interface/'.format(self.api_url),
+        r = requests.post('{0}/{1}/bulk/interface/'.format(self.api_url, API_VERSION_PREFIX),
                           headers=self.request_headers, data=json.dumps(payload))
 
         self.inspect_request(r)
@@ -867,7 +874,7 @@ class ApiConnect(AlertMixin, object):
 
     def _check_endpoints(self):
         if not self._valid_endpoints:
-            r = requests.get('{0}/v1/oidsetmap/'.format(self.api_url),
+            r = requests.get('{0}/{1}/oidsetmap/'.format(self.api_url, API_VERSION_PREFIX),
                              headers=self.request_headers)
             if r.status_code != 200:
                 self.warn('Could not retrieve oid set map from REST api.')

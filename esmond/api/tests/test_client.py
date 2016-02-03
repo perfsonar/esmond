@@ -17,7 +17,7 @@ from esmond.config import get_config, get_config_path
 from esmond.persist import CassandraPollPersister
 from esmond.api import SNMP_NAMESPACE
 
-from esmond_client.snmp import ApiConnect, ApiFilters
+from esmond_client.snmp import ApiConnect, ApiFilters, API_VERSION_PREFIX 
 from esmond_client.timeseries import GetRawData, GetBaseRate, \
     GetBulkRawData, GetBulkBaseRate
 from esmond.api.tests.example_data import build_rtr_d_metadata, \
@@ -75,18 +75,25 @@ class TestClientLibs(LiveServerTestCase):
 
         interface = ifaces[0]
 
-        self.assertEquals(interface.device, '/v1/device/rtr_d/')
+        self.assertEquals(interface.device_uri, '/{0}/device/rtr_d/'.format(API_VERSION_PREFIX))
+        self.assertEquals(interface.device, 'rtr_d')
         self.assertEquals(interface.ifName, 'fxp0.0')
 
         endpoints = list(interface.get_endpoints())
         self.assertEquals(len(endpoints), 2)
-        self.assertEquals(endpoints[0].name, 'out')
-        self.assertEquals(endpoints[1].name, 'in')
+        # sort into dict since banking on array ordering is madness.
+        e_map = dict()
+        for e in endpoints:
+            e_map[e.name] = e
+        # make sure we have the right ones
+        self.assertEqual(set(e_map.keys()), set(['in', 'out']))
 
-        ep = interface.get_endpoint(endpoints[0].name)
+        # test fetching a single endpoint
+        ep = interface.get_endpoint('out')
         self.assertEquals(ep.name, 'out')
 
-        payload = endpoints[1].get_data()
+        # check the data
+        payload = e_map.get('in').get_data()
         self.assertTrue(payload.agg)
         self.assertTrue(payload.cf)
 
@@ -112,7 +119,8 @@ class TestClientLibs(LiveServerTestCase):
 
         interface = i[0]
 
-        self.assertEquals(interface.device, '/v1/device/rtr_d/')
+        self.assertEquals(interface.device_uri, '/{0}/device/rtr_d/'.format(API_VERSION_PREFIX))
+        self.assertEquals(interface.device, 'rtr_d')
         self.assertEquals(interface.ifName, 'fxp0.0')
 
         self.assertTrue(interface.device)
@@ -124,7 +132,7 @@ class TestClientLibs(LiveServerTestCase):
         self.assertTrue(interface.ifMtu)
         self.assertTrue(interface.ifOperStatus)
         self.assertTrue(interface.ifPhysAddress)
-        self.assertTrue(interface.ifSpeed)
+        self.assertTrue(isinstance(interface.ifSpeed, int))
         self.assertFalse(interface.ifType)
         self.assertTrue(interface.ipAddr)
         self.assertTrue(interface.uri)

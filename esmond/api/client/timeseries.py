@@ -77,7 +77,7 @@ import json
 
 import requests
 
-from .snmp import DataPayload
+from .snmp import DataPayload, API_VERSION_PREFIX
 from .util import add_apikey_header, atencode, AlertMixin
 
 # The class constructors in these classes upset pylint
@@ -86,7 +86,7 @@ from .util import add_apikey_header, atencode, AlertMixin
 
 class TimeseriesBase(AlertMixin, object):  # pylint: disable=too-many-instance-attributes
     """Base class for the GET and POST timeseries interaction objects."""
-    _schema_root = 'v1/timeseries'
+    _schema_root = '{0}/timeseries'.format(API_VERSION_PREFIX)
 
     def __init__(self, api_url='http://localhost/', path=[], freq=None,
                  username='', api_key=''):
@@ -381,7 +381,7 @@ class BulkException(Exception):
 class GetBulkData(AlertMixin, object):
     """Make request for bulk data."""
     wrn = GetBulkWarning
-    _schema_root = 'v1/bulk/timeseries'
+    _schema_root = '{0}/bulk/timeseries'.format(API_VERSION_PREFIX)
 
     def __init__(self, api_url='http://localhost', username='', api_key=''):
         super(GetBulkData, self).__init__()

@@ -106,10 +106,9 @@ Now that esmond is installed you will need to do some configuration of esmond an
 
     python esmond/manage.py syncdb
 
-#. Create a user that can write data to the MA. This may be used for things like the perfSONAR regular testing. Note the generated key (it will be the same for both)::
+#. Create a user that can write data to the MA. This may be used for things like the perfSONAR regular testing. Note the generated key::
 
-    python esmond/manage.py add_ps_metadata_post_user perfsonar
-    python esmond/manage.py add_timeseries_post_user perfsonar
+    python esmond/manage.py add_api_key_user perfsonar
 
 #. Finally, start cassandra and httpd::
 

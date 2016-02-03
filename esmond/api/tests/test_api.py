@@ -4,16 +4,24 @@ import calendar
 import datetime
 import os
 
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
+
 import mock 
 
 # This MUST be here in any testing modules that use cassandra!
 os.environ['ESMOND_UNIT_TESTS'] = 'True'
 
 from django.core.urlresolvers import reverse
-from tastypie.test import ResourceTestCase
+from django.test import TestCase
+from django.utils.timezone import make_aware, utc
+
+from rest_framework.test import APIClient
 
 from esmond.api.models import *
-from esmond.api.tests.example_data import build_default_metadata, build_pdu_metadata
+from esmond.api.tests.example_data import (build_default_metadata, 
+    build_pdu_metadata, build_sample_inventory_from_metadata)
 from esmond.cassandra import AGG_TYPES
 from esmond.api import SNMP_NAMESPACE, OIDSET_INTERFACE_ENDPOINTS
 from esmond.api.dataseries import QueryUtil
@@ -23,29 +31,41 @@ def datetime_to_timestamp(dt):
 
 from django.test import TestCase
 
-class DeviceAPITestsBase(ResourceTestCase):
+class DeviceAPITestsBase(TestCase):
     fixtures = ["oidsets.json"]
     def setUp(self):
         super(DeviceAPITestsBase, self).setUp()
 
+        self.client = APIClient()
+
         self.td = build_default_metadata()
+
+    def get_api_client(self, admin_auth=False):
+        client = APIClient()
+
+        if admin_auth:
+            client.credentials(HTTP_AUTHORIZATION='Token {0}'.format(self.td.user_admin_apikey.key))
+
+        return client
 
 
 class DeviceAPITests(DeviceAPITestsBase):
     def test_get_device_list(self):
-        url = '/v1/device/'
+        url = '/v2/device/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
-        # by default only currently active devices are returned
+        # by default only currently active devices are returned _a, _alu, _inf
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 3)
 
         # get all three devices, with date filters
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         response = self.client.get(url, dict(begin=begin))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 4)
 
         # exclude rtr_b by date
@@ -53,6 +73,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         begin = datetime_to_timestamp(self.td.rtr_a.begin_time)
         response = self.client.get(url, dict(begin=begin))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 3)
         for d in data:
             self.assertNotEqual(d['name'], 'rtr_b')
@@ -60,29 +81,32 @@ class DeviceAPITests(DeviceAPITestsBase):
         # exclude all routers with very old end date
         response = self.client.get(url, dict(end=0))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 0)
 
         # test for equal (gte/lte)
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         response = self.client.get(url, dict(begin=0, end=begin))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 1)
         self.assertEquals(data[0]['name'], 'rtr_b')
 
         end = datetime_to_timestamp(self.td.rtr_b.end_time)
         response = self.client.get(url, dict(begin=0, end=end))
         data = json.loads(response.content)
+        # print pp.pprint(data)
         self.assertEquals(len(data), 1)
         self.assertEquals(data[0]['name'], 'rtr_b')
 
     def test_get_device_detail(self):
-        url = '/v1/device/rtr_a/'
+        url = '/v2/device/rtr_a/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         data = json.loads(response.content)
-        #print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
         for field in [
             'active',
             'begin_time',
@@ -104,23 +128,24 @@ class DeviceAPITests(DeviceAPITestsBase):
         for child_name in ['all', 'interface', 'system']:
             self.assertIn(child_name, children)
             child = children[child_name]
-            self.assertEqual(child['uri'], url + child_name)
+            self.assertEqual(child['uri'], url + child_name + '/')
 
     def test_post_device_list_unauthenticated(self):
         # We don't allow POSTs at this time.  Once that capability is added
         # these tests will need to be expanded.
 
-        self.assertHttpMethodNotAllowed(
-                self.client.post('/v1/device/entries/', format='json',
-                    data=self.td.rtr_z_post_data))
+        r = self.client.post('/v2/device/entries/', format='json',
+                    data=self.td.rtr_z_post_data)
+        self.assertEqual(r.status_code, 401)
 
     def test_get_device_interface_list(self):
-        url = '/v1/device/rtr_a/interface/'
+        url = '/v2/device/rtr_a/interface/'
 
         # single interface at current time
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(len(data['children']), 1)
 
         # no interfaces if we are looking in the distant past
@@ -129,7 +154,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         data = json.loads(response.content)
         self.assertEquals(len(data['children']), 0)
 
-        url = '/v1/device/rtr_b/interface/'
+        url = '/v2/device/rtr_b/interface/'
 
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         end = datetime_to_timestamp(self.td.rtr_b.end_time)
@@ -149,7 +174,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(len(data['children']), 1)
         self.assertEquals(data['children'][0]['ifName'], 'xe-1/0/0')
 
-        url = '/v1/device/rtr_alu/interface/'
+        url = '/v2/device/rtr_alu/interface/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -168,13 +193,14 @@ class DeviceAPITests(DeviceAPITestsBase):
                 ('rtr_inf', 'xe-3/0/0'),
             ):
 
-            url = '/v1/device/{0}/interface/{1}/'.format(device,
+            url = '/v2/device/{0}/interface/{1}/'.format(device,
                     atencode(iface))
 
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
 
             data = json.loads(response.content)
+            # print json.dumps(data, indent=4)
             self.assertEquals(data['ifName'], iface.replace("_", "/"))
 
             for field in [
@@ -213,7 +239,7 @@ class DeviceAPITests(DeviceAPITestsBase):
 
     def test_get_device_interface_detail_with_multiple_ifrefs(self):
         iface = "xe-2/0/0"
-        url = '/v1/device/rtr_b/interface/{0}'.format(atencode(iface))
+        url = '/v2/device/rtr_b/interface/{0}/'.format(atencode(iface))
 
         # get the first xe-2/0/0 ifref
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
@@ -251,7 +277,7 @@ class DeviceAPITests(DeviceAPITestsBase):
         self.assertEquals(data['ipAddr'], "10.0.1.2")
 
     def test_get_device_interface_list_hidden(self):
-        url = '/v1/device/rtr_a/interface/'
+        url = '/v2/device/rtr_a/interface/'
 
         response = self.client.get(url)
         data = json.loads(response.content)
@@ -261,27 +287,40 @@ class DeviceAPITests(DeviceAPITestsBase):
         for child in data['children']:
             self.assertTrue(":hide:" not in child['ifAlias'])
 
-        authn = self.create_apikey(self.td.user_seeall.username,
-                self.td.user_seeall_apikey.key)
-
-        response = self.api_client.get(url, authentication=authn)
+        response = self.get_api_client(admin_auth=True).get(url)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(len(data['children']), 2)
 
     def test_get_device_interface_detail_hidden(self):
-        url = '/v1/device/rtr_a/interface/xe-1@2F0@2F0/'
+        url = '/v2/device/rtr_a/interface/xe-1@2F0@2F0/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 404)
 
-        authn = self.create_apikey(self.td.user_seeall.username,
-                self.td.user_seeall_apikey.key)
-
-        response = self.api_client.get(url, authentication=authn)
+        response = self.get_api_client(admin_auth=True).get(url)
         data = json.loads(response.content)
+        # print json.dumps(data, indent=4)
         self.assertEquals(response.status_code, 200)
         self.assertTrue(":hide:" in data['ifAlias'])
 
+    def test_inventory_endpoint(self):
+
+        build_sample_inventory_from_metadata()
+
+        url = '/v2/inventory/'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(len(data), 53)
+
+        url += '?row_key__contains=Errors'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEquals(len(data), 12)
 
 class MockCASSANDRA_DB(object):
     def __init__(self, config):
@@ -372,44 +411,41 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         # This form will patch a class when it is instantiated by the executed code:
         # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
         # This form will patch a module-level class instance:
-        self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
+        self.patcher = mock.patch("esmond.api.api_v2.db", MockCASSANDRA_DB(None))
         self.patcher.start()
-
-        self.authn = self.create_apikey(self.td.user_admin.username,
-                self.td.user_admin_apikey.key)
 
     def tearDown(self):
         self.patcher.stop()
 
     def test_bad_endpoints(self):
         # there is no router called nonexistent
-        url = '/v1/device/nonexistent/interface/xe-0@2F0@2F0/in'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/nonexistent/interface/xe-0@2F0@2F0/in'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # rtr_a does not have an nonexistent interface
-        url = '/v1/device/rtr_a/interface/nonexistent/in'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/rtr_a/interface/nonexistent/in'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # there is no nonexistent sub collection in traffic
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # there is no nonexistent collection 
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent/in'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/nonexistent/in'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
         # rtr_b has no traffic oidsets defined
-        url = '/v1/device/rtr_b/interface/xe-0@2F0@2F0/nonexistent/in'
-        response = self.client.get(url, authentication=self.authn)
+        url = '/v2/device/rtr_b/interface/xe-0@2F0@2F0/nonexistent/in'
+        response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
 
     def test_get_device_interface_data_detail(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -424,7 +460,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][1]['ts'], data['data'][0]['ts']+30)
         self.assertEquals(data['data'][1]['val'], 20)
 
-        url = '/v1/device/rtr_inf/interface/xe-3@2F0@2F0/out'
+        url = '/v2/device/rtr_inf/interface/xe-3@2F0@2F0/out'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -440,7 +476,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2]['val'], 40)
 
         # make sure it works with a trailing slash too
-        url = '/v1/device/rtr_inf/interface/xe-3@2F0@2F0/out/'
+        url = '/v2/device/rtr_inf/interface/xe-3@2F0@2F0/out/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -454,7 +490,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2]['val'], 40)
 
         # test for interfaces with multiple IfRefs
-        url = '/v1/device/rtr_b/interface/xe-2@2F0@2F0/in'
+        url = '/v2/device/rtr_b/interface/xe-2@2F0@2F0/in'
 
         begin = datetime_to_timestamp(self.td.rtr_b.begin_time)
         end = datetime_to_timestamp(self.td.rtr_b.end_time)
@@ -474,14 +510,11 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
 
     def test_get_device_interface_data_detail_hidden(self):
-        url = '/v1/device/rtr_a/interface/xe-1@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-1@2F0@2F0/in'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 400)
 
-        # authn = self.create_apikey(self.td.user_seeall.username,
-        #         self.td.user_seeall_apikey.key)
-
-        response = self.api_client.get(url, authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).get(url)
 
         self.assertEqual(response.status_code, 200)
 
@@ -489,7 +522,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertTrue(len(data['data']) > 0)
 
     def test_bad_aggregations(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         params = {'agg': '3601'} # this agg does not exist
 
@@ -503,7 +536,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
 
     def test_get_device_interface_data_aggs(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         ts = time.time()
 
@@ -551,7 +584,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2]['val'], 300)
 
     def test_get_device_errors(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/error/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/error/in'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -563,7 +596,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         # print json.dumps(data, indent=4)
 
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/discard/out'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/discard/out'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -574,7 +607,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['resource_uri'], url)
 
     def test_timerange_limiter(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         params = { 
             'begin': int(time.time() - datetime.timedelta(days=31).total_seconds())
@@ -583,7 +616,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/out'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/out'
 
         params = {
             'agg': '3600',
@@ -593,7 +626,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         params = {
             'agg': '86400',
@@ -604,7 +637,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 400)
 
     def test_float_timestamp_input(self):
-        url = '/v1/device/rtr_a/interface/xe-0@2F0@2F0/in'
+        url = '/v2/device/rtr_a/interface/xe-0@2F0@2F0/in'
 
         # pass in floats
         params = { 
@@ -629,30 +662,33 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
     def test_bad_timeseries_endpoints(self):
         # url = '/v1/timeseries/BaseRate/rtr_d/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
-        # all of these endpoints are incomplete
-        url = '/v1/timeseries/'
+        # all of these endpoints are incomplete and just 
+        # return 404 Not Found (changed from 404 Bad Request
+        # because re-writing a bunch of url patterns to parse 
+        # incomplete paths is silly).
+        url = '/v2/timeseries/'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
-        url = '/v1/timeseries/BaseRate/'
+        url = '/v2/timeseries/BaseRate/'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
-        url = '/v1/timeseries/BaseRate/snmp/'
+        url = '/v2/timeseries/BaseRate/snmp/'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
         # This does not end in a parsable frequency
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0'
         response = self.client.get(url)
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
 
-        # This type does not exist
-        url = '/v1/timeseries/BadType/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        # This type does not exist and is therefore 400 Bad Request.
+        url = '/v2/timeseries/BadType/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
         response = self.client.get(url)
         self.assertEquals(response.status_code, 400)
 
@@ -661,7 +697,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         agg = 30000
         params = APIDataTestResults.get_agg_range(agg, in_ms=True)
 
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
         response = self.client.get(url, params)
         data = json.loads(response.content)
@@ -677,7 +713,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         
         # make sure it works with a trailing slash too and check the 
         # padding/fill as well.
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}/'.format(agg)
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}/'.format(agg)
 
         params['begin'] -= agg*2
 
@@ -699,7 +735,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][-3]['val'], None)
 
         # Raw data as well.
-        url = '/v1/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+        url = '/v2/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
         response = self.client.get(url, params)
         data = json.loads(response.content)
@@ -718,7 +754,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         params = APIDataTestResults.get_agg_range(agg, in_ms=True)
 
-        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
+        url = '/v2/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/{0}'.format(agg)
 
         response = self.client.get(url, params)
         data = json.loads(response.content)
@@ -766,7 +802,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['data'][2]['val'], 300)
 
     def test_timeseries_bad_aggregations(self):
-        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
+        url = '/v2/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
 
         params = {'cf': 'bad'} # this cf does not exist
 
@@ -774,7 +810,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_timerange_limiter(self):
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
         params = { 
             'begin': int(time.time() - datetime.timedelta(days=31).total_seconds())
         }
@@ -782,7 +818,7 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
-        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
+        url = '/v2/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/3600000'
 
         params = {
             'begin': int(time.time() - datetime.timedelta(days=366).total_seconds())
@@ -795,19 +831,19 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
             'begin': int(time.time() - datetime.timedelta(days=366*10).total_seconds())
         }
 
-        url = '/v1/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/86400000'
+        url = '/v2/timeseries/Aggs/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/86400000'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
         # This is an invalid aggregation/frequency
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/31000'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/31000'
 
         response = self.client.get(url, params)
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_float_timestamp_input(self):
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
         # pass in floats
         params = { 
@@ -824,64 +860,61 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
         self.assertEquals(data['end_time'], int(params['end']))
 
     def test_bad_timeseries_post_requests(self):
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
         # permission denied
         response = self.client.post(url)
         self.assertEquals(response.status_code, 401)
 
-        # authn = self.create_apikey(self.td.user_admin.username,
-        #         self.td.user_admin_apikey.key)
-
         # incorrect header
-        response = self.api_client.post(url, authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).post(url)
         self.assertEquals(response.status_code, 400)
 
         # correct header but payload not serialized as json
-        response = self.api_client.post(url, data={},
-                format='json', authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).post(url, data={},
+                format='json')
         self.assertEquals(response.status_code, 400)
 
         # Below: correct header and json serialization, but incorrect
         # data structures and values being sent.
 
         # NOTE: CONTENT_TYPE and content_type kwargs do different 
-        # things!  Former just sets the header in the tastypie
+        # things!  Former just sets the header in the test
         # client and the latter is passed to the underlying django
         # client and impacts serialization (and header).
 
         payload = { 'bunk': 'data is not a list' }
 
-        response = self.api_client.post(url, data=payload,
-                format='json', authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload,
+                format='json')
         self.assertEquals(response.status_code, 400)
 
         payload = [
             ['this', 'should not be a list']
         ]
 
-        response = self.api_client.post(url, data=payload,
-                format='json', authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload,
+                format='json')
         self.assertEquals(response.status_code, 400)
 
         payload = [
             {'this': 'has', 'the': 'wrong key names'}
         ]
 
-        response = self.api_client.post(url, data=payload,
-                format='json', authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload,
+                format='json')
         self.assertEquals(response.status_code, 400)
 
         payload = [
             {'val': 'dict values', 'ts': 'should be numbers'}
         ]
 
-        response = self.api_client.post(url, data=payload,
-                format='json', authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload,
+                format='json')
         self.assertEquals(response.status_code, 400)
 
     def test_timeseries_post_requests(self):
-        url = '/v1/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v2/timeseries/BaseRate/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
         params = { 
             'ts': int(time.time()) * 1000, 
@@ -890,30 +923,26 @@ class DeviceAPIDataTests(DeviceAPITestsBase):
 
         # Params sent as json list and not post vars now.
         payload = [ params ]
-        # authn = self.create_apikey(self.td.user_admin.username,
-        #         self.td.user_admin_apikey.key)
 
-        response = self.api_client.post(url, data=payload, format='json',
-                authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload, format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
-        url = '/v1/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
+        url = '/v2/timeseries/RawData/snmp/rtr_a/FastPollHC/ifHCInOctets/fxp0.0/30000'
 
-        response = self.api_client.post(url, data=payload, format='json',
-                authentication=self.authn)
+        response = self.get_api_client(admin_auth=True).post(url, data=payload, format='json')
         self.assertEquals(response.status_code, 201) # not 200!
 
 
-class PDUAPITests(ResourceTestCase):
+class PDUAPITests(DeviceAPITestsBase):
     fixtures = ["oidsets.json"]
 
     def setUp(self):
         super(PDUAPITests, self).setUp()
 
-        self.td = build_pdu_metadata()
+        self.pdutd = build_pdu_metadata()
 
     def test_get_pdu_list(self):
-        url = '/v1/pdu/'
+        url = '/v2/pdu/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -924,14 +953,14 @@ class PDUAPITests(ResourceTestCase):
         self.assertEquals(data[0]["name"], "sentry_pdu")
 
     def test_get_pdu(self):
-        url = '/v1/pdu/sentry_pdu/'
+        url = '/v2/pdu/sentry_pdu/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         # by default only currently active devices are returned
         data = json.loads(response.content)
-        #print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
         children = {}
         for child in data['children']:
@@ -942,17 +971,17 @@ class PDUAPITests(ResourceTestCase):
         for child_name in ['outlet']:
             self.assertIn(child_name, children)
             child = children[child_name]
-            self.assertEqual(child['uri'], url + child_name)
+            self.assertEqual(child['uri'], url + child_name + '/')
 
     def test_get_pdu_outlet_list(self):
-        url = '/v1/pdu/sentry_pdu/outlet/'
+        url = '/v2/pdu/sentry_pdu/outlet/'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         # by default only currently active devices are returned
         data = json.loads(response.content)
-        #print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
         children = data['children']
         self.assertEqual(len(children), 1)
@@ -962,7 +991,7 @@ class PDUAPITests(ResourceTestCase):
         self.assertEqual(children[0]['children'][0]['name'], 'load')
 
     def test_search_outlet_names(self):
-        url = '/v1/outlet/?outletName__contains=rtr_a'
+        url = '/v2/outlet/?outletName__contains=rtr_a'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
@@ -976,14 +1005,14 @@ class PDUAPITests(ResourceTestCase):
         self.assertEqual(children[0]['outletID'], 'AA')
         self.assertEqual(children[0]['outletName'], 'rtr_a:PEM1:50A')
 
-        url = '/v1/outlet/?outletName__contains=not_valid_query_string'
+        url = '/v2/outlet/?outletName__contains=not_valid_query_string'
 
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
         # by default only currently active devices are returned
         data = json.loads(response.content)
-        #print json.dumps(data, indent=4)
+        # print json.dumps(data, indent=4)
 
         children = data['children']
         self.assertEqual(len(children), 0)
@@ -995,7 +1024,7 @@ class PDUAPIDataTests(DeviceAPITestsBase):
         # This form will patch a class when it is instantiated by the executed code:
         # self.patcher = mock.patch("esmond.api.api.CASSANDRA_DB", MockCASSANDRA_DB)
         # This form will patch a module-level class instance:
-        self.patcher = mock.patch("esmond.api.api.db", MockCASSANDRA_DB(None))
+        self.patcher = mock.patch("esmond.api.api_v2.db", MockCASSANDRA_DB(None))
         self.patcher.start()
         self.td = build_pdu_metadata()
 
@@ -1003,7 +1032,7 @@ class PDUAPIDataTests(DeviceAPITestsBase):
         self.patcher.stop()
 
     def test_get_load(self):
-        url = '/v1/pdu/sentry_pdu/outlet/AA/load/'
+        url = '/v2/pdu/sentry_pdu/outlet/AA/load'
 
         params = { }
 
@@ -1016,6 +1045,12 @@ class PDUAPIDataTests(DeviceAPITestsBase):
 
         self.assertEquals(data['resource_uri'], url)
         self.assertEquals(len(data['data']), 60)
+
+    def test_bogus_dataset(self):
+        url = '/v2/pdu/sentry_pdu/outlet/AA/bogus_dataset'
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 400)
 
 class QueryUtilTests(TestCase):
     def test_coerce_to_bins(self):
@@ -1035,9 +1070,9 @@ class QueryUtilTests(TestCase):
         ]
 
         data_out = [{ 'ts': 1391216160, 'val': 1100}, { 'ts': 1391216220, 'val': 1100}, { 'ts': 1391216280, 'val': 1100}]
-        data_check = QueryUtil.format_data_payload(data_in, coerce_to_bins=60000)
+        data_check = QueryUtil.format_cassandra_data_payload(data_in, coerce_to_bins=60000)
         self.assertEquals(data_check, data_out)
 
         data_out_nocoerce = [{ 'ts': 1391216201, 'val': 1100}, { 'ts': 1391216262, 'val': 1100}, { 'ts': 1391216323, 'val': 1100}]
-        data_check = QueryUtil.format_data_payload(data_in)
+        data_check = QueryUtil.format_cassandra_data_payload(data_in)
         self.assertEquals(data_check, data_out_nocoerce)
