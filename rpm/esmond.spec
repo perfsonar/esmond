@@ -97,7 +97,8 @@ rm -f .gitignore
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 . bin/activate
-pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
+#Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
+python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
 #not pretty but below is the best way I could find to remove references to buildroot
 find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
 find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
