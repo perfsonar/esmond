@@ -57,7 +57,8 @@ database for everything else. All data is available via a REST style interface
 %install
 # Copy and build in place so that we know what the path in the various files
 # will be
-rm -rf %{buildroot}/%{install_base}
+rm -rf %{buildroot}/*
+mkdir -p %{buildroot}/%{config_base}
 mkdir -p %{buildroot}/%{install_base}
 cp -Ra . %{buildroot}/%{install_base}
 cd %{buildroot}/%{install_base}
