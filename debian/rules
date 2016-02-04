@@ -15,5 +15,6 @@
 override_dh_install:
 	dh_install
 	chmod +x $(CURDIR)/debian/esmond/usr/share/esmond/util/nagios/check_espersistd_queues
+	chmod +x $(CURDIR)/debian/esmond/usr/share/esmond/util/esmond_manage
 
 override_dh_auto_test:
