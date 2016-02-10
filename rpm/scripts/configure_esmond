@@ -9,7 +9,7 @@ cd $ESMOND_ROOT
 
 #update DB tables if doing an upgrade
 if [ "$1" = "2" ]; then
-    python esmond/manage.py migrate &> /var/log/esmond/install.log
+    python esmond/manage.py migrate --fake-initial &> /var/log/esmond/install.log
     python util/migrate_tastypie_keys.py &>> /var/log/esmond/install.log
 fi
 
