@@ -63,7 +63,7 @@ SITE_ID = 1
 USE_I18N = True
 
 STATIC_URL = '/esmond-static/'
-STATIC_ROOT = '/opt/esmond/staticfiles'
+STATIC_ROOT = '/usr/lib/esmond/staticfiles'
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"

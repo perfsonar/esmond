@@ -89,7 +89,7 @@ Now that esmond is installed you will need to do some configuration of esmond an
 #. Restart postgresql with the following command::
     /sbin/service postgresql restart
 
-#. Open **/opt/esmond/esmond.conf** in a text editor and set *sql_db_password* to the postgresql password set previously. For example::
+#. Open **/etc/esmond/esmond.conf** in a text editor and set *sql_db_password* to the postgresql password set previously. For example::
 
     ...
     sql_db_password = changeit
@@ -97,7 +97,7 @@ Now that esmond is installed you will need to do some configuration of esmond an
 
 #. Python 2.7 is required for the remaining configuration commands. Initialize the Python 2.7 virtualenv with the commands below (*NOTE: the commands below must be run from a bash shell*)::
 
-    cd /opt/esmond
+    cd /usr/lib/esmond
     source /opt/rh/python27/enable
     /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
     . bin/activate
