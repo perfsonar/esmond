@@ -31,6 +31,7 @@ def main():
     options, args = parser.parse_args()
 
     config = get_config(get_config_path())
+    # config.cassandra_keyspace = 'test_esmond'
 
     db = CASSANDRA_DB(config)
 

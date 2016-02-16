@@ -3,9 +3,12 @@
 """
 esmond-ps-load-gridftp - process GridFTP logs and load into an Esmond MA.
 
-See further documention in README.rst or use the --help flag for a full 
+See further documention in README.rst or use the --help flag for a full
 list of arguments.
 """
+
+# doesn't like script name
+# pylint: disable=invalid-name
 
 import calendar
 import datetime
@@ -13,8 +16,8 @@ import json
 import logging
 import os
 import pickle
+import signal
 import socket
-import sys
 import time
 
 from optparse import OptionParser
@@ -24,8 +27,8 @@ from esmond_client.perfsonar.post import (
     EventTypeBulkPostException,
     EventTypePost,
     EventTypePostException,
-    MetadataPost, 
-    MetadataPostException, 
+    MetadataPost,
+    MetadataPostException,
 )
 
 # # # #
@@ -33,38 +36,42 @@ from esmond_client.perfsonar.post import (
 # # # #
 
 # snippet courtesy of gist: https://gist.github.com/nonZero/2907502
-import signal
- 
-class GracefulInterruptHandler(object):    
+
+
+class GracefulInterruptHandler(object):  # pylint: disable=too-few-public-methods
+    """Context manager to handle sigint nicely."""
+    # pylint: disable=attribute-defined-outside-init, unused-argument,
+    # pylint: disable=missing-docstring, invalid-name, redefined-builtin
     def __init__(self, sig=signal.SIGINT):
         self.sig = sig
-        
+
     def __enter__(self):
         self.interrupted = False
         self.released = False
-        
+
         self.original_handler = signal.getsignal(self.sig)
-        
+
         def handler(signum, frame):
             self.release()
             self.interrupted = True
-            
+
         signal.signal(self.sig, handler)
-        
+
         return self
-        
+
     def __exit__(self, type, value, tb):
         self.release()
-        
+
     def release(self):
         if self.released:
             return False
- 
+
         signal.signal(self.sig, self.original_handler)
-        
+
         self.released = True
-        
+
         return True
+
 
 def setup_log(log_path):
     """
@@ -72,34 +79,42 @@ def setup_log(log_path):
     _log('main.start', 'happy simple log event')
     _log('launch', 'more={0}, complex={1} log=event'.format(100, 200))
     """
+    # pylint: disable=redefined-variable-type
     log = logging.getLogger("esmond-ps-load-gridftp")
     if not log_path:
-        _h = logging.StreamHandler()
+        handle = logging.StreamHandler()
     else:
         logfile = '{0}/esmond-ps-load-gridftp.log'.format(log_path)
-        _h = logging.FileHandler(logfile)
-    _h.setFormatter(logging.Formatter('ts=%(asctime)s %(message)s'))
-    log.addHandler(_h)
+        handle = logging.FileHandler(logfile)
+    handle.setFormatter(logging.Formatter('ts=%(asctime)s %(message)s'))
+    log.addHandler(handle)
     log.setLevel(logging.INFO)
     return log
+
 
 class LogEntryBase(object):
     """
     Base class (a mixin really) for the log entry classes.
     """
-    def to_pickle(self, f):
-        fh = open(f, 'w')
+    def to_pickle(self, fpath):
+        """Dump internal payload to a pickle file."""
+        fh = open(fpath, 'w')
         pickle.dump(self.to_dict(), fh)
         fh.close()
 
-    def from_pickle(self, f):
-        fh = open(f, 'r')
-        d = pickle.load(fh)
+    def from_pickle(self, fpath):
+        """Load internal payload from a file."""
+        fh = open(fpath, 'r')
+        dct = pickle.load(fh)
         fh.close()
-        self.__dict__['_data'] = d
+        self.__dict__['_data'] = dct
 
     def to_dict(self):
+        """Return internal payload as a dict."""
+        # _data defined in subclasses that instantiate this mixin.
+        # pylint: disable=no-member
         return self._data
+
 
 FTP_CODES = {
     200: 'Command okay.',
@@ -139,14 +154,15 @@ FTP_CODES = {
     553: 'Requested action not taken.',
 }
 
-def _convert_host(dest, hn, convert=True):
+
+def _convert_host(dest, hname, convert=True):
     """
-    Convert host to a v4 or v6 ip address
+    Convert hostname to a v4 or v6 ip address
     """
 
     # if host is in ip form, then skip
     if not convert:
-        return hn
+        return hname
 
     version = None
 
@@ -157,27 +173,28 @@ def _convert_host(dest, hn, convert=True):
         pass
 
     try:
-        socket.inet_pton(socket.AF_INET6,dest)
+        socket.inet_pton(socket.AF_INET6, dest)
         version = 6
     except socket.error:
         pass
 
     if version == 4:
-        r =  socket.getaddrinfo(hn, None)
+        r = socket.getaddrinfo(hname, None)
     elif version == 6:
-        r = socket.getaddrinfo(hn, None, socket.AF_INET6)
+        r = socket.getaddrinfo(hname, None, socket.AF_INET6)
     else:
         r = None
-    
+
     return r[0][4][0]
+
 
 def _generate_metadata_args(host, dest, xfer_type, host_to_ip=True):
     """
-    Generate the args for the MetadataPost depending on the 
+    Generate the args for the MetadataPost depending on the
     xfer type - this is for the netlogger style log.
     """
 
-    args = { 'tool_name': 'gridftp', 'subject_type': 'point-to-point' }
+    args = {'tool_name': 'gridftp', 'subject_type': 'point-to-point'}
 
     if xfer_type == 'RETR':
         args['source'] = _convert_host(dest, host, host_to_ip)
@@ -194,16 +211,19 @@ def _generate_metadata_args(host, dest, xfer_type, host_to_ip=True):
 
     return args
 
-def _epoch(d):
-    return calendar.timegm(d.utctimetuple())
+
+def _epoch(dtime):
+    """datetime -> epoch"""
+    return calendar.timegm(dtime.utctimetuple())
 
 # # # #
 # Code/classes to handle the netlogger style logs
 # # # #
 
+
 class LogEntryDataObject(LogEntryBase):
     """
-    Encapsulation object to handle a line of netlogger 
+    Encapsulation object to handle a line of netlogger
     style GridFTP logs. Sanitizes the keys when need be.
     """
     def __init__(self, initial=None):
@@ -213,9 +233,9 @@ class LogEntryDataObject(LogEntryBase):
             self.__dict__['_data'] = initial
         elif isinstance(initial, list):
             for i in initial:
-                k,v = i.split('=')
+                k, v = i.split('=')
                 k = k.lower().replace('.', '_')
-                self.__setattr__(k,v)
+                self.__setattr__(k, v)
         else:
             pass
 
@@ -237,17 +257,18 @@ class LogEntryDataObject(LogEntryBase):
     def __setattr__(self, name, value):
         self.__dict__['_data'][name] = value
 
-    def _parse_date(self, d):
-        return datetime.datetime.strptime(d, '%Y%m%d%H%M%S.%f')
+    def _parse_date(self, dstring):  # pylint: disable=no-self-use
+        return datetime.datetime.strptime(dstring, '%Y%m%d%H%M%S.%f')
 
-def scan_and_load_netlogger(file_path, last_record, options, _log):
+
+def scan_and_load_netlogger(file_path, last_record, options, _log):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     """
-    Process the netlogger style logs.  If the metadata can not be 
+    Process the netlogger style logs.  If the metadata can not be
     created, the processing loop halts and returns None.
     """
     # Load the log
 
-    with open(file_path,'r') as fh:
+    with open(file_path, 'r') as fh:
         data = fh.read()
     data = data.split('\n')
 
@@ -256,121 +277,138 @@ def scan_and_load_netlogger(file_path, last_record, options, _log):
 
     scanning = False
 
-    o = None
+    obj = None
     count = 0
 
-    with GracefulInterruptHandler() as h:
+    with GracefulInterruptHandler() as handler:
         for row in data:
             row = row.strip()
-            if not row: continue
-            o = LogEntryDataObject(row.split())
-            if o.type != 'RETR' and o.type != 'STOR':
+            if not row:
+                continue
+            obj = LogEntryDataObject(row.split())
+            if obj.type != 'RETR' and obj.type != 'STOR':
                 continue
             if last_record and not scanning:
-                if o.to_dict() == last_record.to_dict():
+                if obj.to_dict() == last_record.to_dict():
                     scanning = True
                 continue
             count += 1
             if options.progress:
-                if count % 100 == 0: _log('scan_and_load_netlogger.info', '{0} records processed'.format(count))
+                if count % 100 == 0:
+                    _log('scan_and_load_netlogger.info', '{0} records processed'.format(count))
             try:
-                dest = o.dest.lstrip('[').rstrip(']')
-                mda = _generate_metadata_args(o.host, dest, o.type)
-            except Exception, e:
-                _log('scan_and_load_netlogger.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
+                dest = obj.dest.lstrip('[').rstrip(']')
+                mda = _generate_metadata_args(obj.host, dest, obj.type)
+            except Exception, ex:  # pylint: disable=broad-except
+                _log('scan_and_load_netlogger.error',
+                     'could not generate metadata args for row: {0} - exception: {1}'.format(
+                         row, str(ex)))
                 continue
-            mp = MetadataPost(options.api_url, username=options.user,
-                api_key=options.key, script_alias=options.script_alias, 
+
+            mpost = MetadataPost(
+                options.api_url, username=options.user,
+                api_key=options.key, script_alias=options.script_alias,
                 **mda)
-            mp.add_event_type('throughput')
-            mp.add_event_type('streams-packet-retransmits')
-            mp.add_event_type('failures')
+            mpost.add_event_type('throughput')
+            mpost.add_event_type('streams-packet-retransmits')
+            mpost.add_event_type('failures')
             # Additional/optional data
-            mp.add_freeform_key_value('bw-parallel-streams', o.streams)
-            mp.add_freeform_key_value('bw-stripes', o.stripes)
-            mp.add_freeform_key_value('gridftp-program', o.prog)
-            mp.add_freeform_key_value('gridftp-block-size', o.block)
-            mp.add_freeform_key_value('tcp-window-size', o.buffer)
-            mp.add_freeform_key_value('gridftp-bytes-transferred', o.nbytes)
-            # Optional vars - these must be enabled via boolean 
+            mpost.add_freeform_key_value('bw-parallel-streams', obj.streams)
+            mpost.add_freeform_key_value('bw-stripes', obj.stripes)
+            mpost.add_freeform_key_value('gridftp-program', obj.prog)
+            mpost.add_freeform_key_value('gridftp-block-size', obj.block)
+            mpost.add_freeform_key_value('tcp-window-size', obj.buffer)
+            mpost.add_freeform_key_value('gridftp-bytes-transferred', obj.nbytes)
+            # Optional vars - these must be enabled via boolean
             # command line args since these values might be sensitive.
             if options.file_attr:
-                mp.add_freeform_key_value('gridftp-file', o.file)
+                mpost.add_freeform_key_value('gridftp-file', obj.file)
             if options.name_attr:
-                mp.add_freeform_key_value('gridftp-user', o.user)
+                mpost.add_freeform_key_value('gridftp-user', obj.user)
             if options.volume_attr:
-                mp.add_freeform_key_value('gridftp-volume', o.volume)
-            
+                mpost.add_freeform_key_value('gridftp-volume', obj.volume)
+
             try:
-                metadata = mp.post_metadata()
-            except MetadataPostException as e:
-                _log('scan_and_load_netlogger.error', 'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(str(e)))
+                metadata = mpost.post_metadata()
+            except MetadataPostException as ex:
+                _log('scan_and_load_netlogger.error',
+                     'MetadataPost failed, abort processing, not updating state - ERR: {0}'.format(
+                         str(ex)))
                 return None
 
-            if o.code == 226:
+            if obj.code == 226:
                 # Set up bulk post object
-                etb = EventTypeBulkPost(options.api_url, username=options.user,
-                    api_key=options.key, script_alias=options.script_alias, 
+                etb = EventTypeBulkPost(
+                    options.api_url, username=options.user,
+                    api_key=options.key, script_alias=options.script_alias,
                     metadata_key=metadata.metadata_key)
                 # Calculate throughput
                 try:
-                    throughput = 8 * o.nbytes / (o.date - o.start).total_seconds()
-                    etb.add_data_point('throughput', _epoch(o.start), throughput)
+                    throughput = 8 * obj.nbytes / (obj.date - obj.start).total_seconds()
+                    etb.add_data_point('throughput', _epoch(obj.start), throughput)
                 except ZeroDivisionError:
                     # If there is a divide by zero issue calculating throughput
                     # (ie: same timestamps), then don't add the data point.
                     pass
 
                 # Add retransmits
-                etb.add_data_point('streams-packet-retransmits', _epoch(o.start), o.retrans)
+                etb.add_data_point('streams-packet-retransmits', _epoch(obj.start), obj.retrans)
 
                 try:
                     etb.post_data()
-                except EventTypeBulkPostException as e:
-                    _log('scan_and_load_json.warning', str(e))
+                except EventTypeBulkPostException as ex:
+                    _log('scan_and_load_json.warning', str(ex))
             else:
-                et = EventTypePost(options.api_url, username=options.user,
-                    api_key=options.key, script_alias=options.script_alias, 
+                etype = EventTypePost(
+                    options.api_url, username=options.user,
+                    api_key=options.key, script_alias=options.script_alias,
                     metadata_key=metadata.metadata_key,
                     event_type='failures')
-                et.add_data_point(_epoch(o.start), 
-                    { 'error': '{0} {1}'.format(o.code, FTP_CODES.get(o.code, None)) })
+                etype.add_data_point(
+                    _epoch(obj.start),
+                    {'error': '{0} {1}'.format(obj.code, FTP_CODES.get(obj.code, None))}
+                )
                 try:
-                    et.post_data()
-                except EventTypePostException as e:
-                    _log('scan_and_load_netlogger.warning', str(e))
+                    etype.post_data()
+                except EventTypePostException as ex:
+                    _log('scan_and_load_netlogger.warning', str(ex))
 
-            if options.single or h.interrupted:
-                if h.interrupted:
+            if options.single or handler.interrupted:
+                if handler.interrupted:
                     _log('scan_and_load_netlogger.info', 'Got SIGINT - exiting.')
                 break
 
     _log('scan_and_load_netlogger.end', 'Loaded {0} records'.format(count))
 
-    return o
+    return obj
 
 # # # #
 # Code/classes to handle the json style logs
 # # # #
+
 
 class JsonLogEntryDataObject(LogEntryBase):
     """
     Container for the "main" json log entries. Returns attributes
     or other wrapper containers.
     """
-    def __init__(self, data={}):
+    def __init__(self, data={}):  # pylint: disable=dangerous-default-value
         self._data = data
 
         # "initialize" nested documents in the EntryDataObject containers
         # to ensure that this class' to_dict() method properly
-        # return sanitized keys.  EntryDataObject._sanitize() changes 
+        # return sanitized keys.  EntryDataObject._sanitize() changes
         # the internal dicts, not merely changes the keys on the way out.
-        for s in ('getrusage', 'iostat', 'mpstat'):
-            getattr(self, s)
-        for s in self.streams:
-            s.tcpinfo
+        for section in ('getrusage', 'iostat', 'mpstat'):
+            getattr(self, section)
+        for section in self.streams:
+            # init property
+            # pylint: disable=pointless-statement
+            section.tcpinfo
 
     # attributes from the "top level/main" json doc
+    # these all don't need docstrings
+    # pylint: disable=missing-docstring
 
     @property
     def cmd_type(self):
@@ -390,7 +428,7 @@ class JsonLogEntryDataObject(LogEntryBase):
 
     @property
     def file(self):
-        return self._data('file') 
+        return self._data('file')
 
     @property
     def globus_blocksize(self):
@@ -398,7 +436,7 @@ class JsonLogEntryDataObject(LogEntryBase):
 
     @property
     def host(self):
-        # XXX(mmg) - bulletproof against spurious newline in log
+        # bulletproof against spurious newline in log
         return self._data.get('host').strip()
 
     @property
@@ -453,9 +491,10 @@ class JsonLogEntryDataObject(LogEntryBase):
 
     @property
     def streams(self):
-        """Return a list of stream objects - favor getting filtered data with 
+        """Return a list of stream objects - favor getting filtered data with
         the other properties."""
-        return [ JsonLogEntryStream(x) for x in self._data.get('streams', []) ]
+        return [JsonLogEntryStream(x) for x in self._data.get('streams', [])]
+
 
 class JsonLogEntryStream(object):
     """
@@ -463,6 +502,9 @@ class JsonLogEntryStream(object):
     """
     def __init__(self, data):
         self._data = data
+
+    # props, no docstrings
+    # pylint: disable=missing-docstring
 
     @property
     def stream(self):
@@ -479,10 +521,11 @@ class JsonLogEntryStream(object):
     def to_dict(self):
         return self._data
 
+
 class EntryDataObject(object):
     """
-    Wrapper for the actual data values in the iostat, getrusage, 
-    mpstat and tcpinfo dicts.  Typical encapsulation object and 
+    Wrapper for the actual data values in the iostat, getrusage,
+    mpstat and tcpinfo dicts.  Typical encapsulation object and
     also _sanitize() the keys of the incoming dicts.
     """
     def __init__(self, initial=None):
@@ -491,17 +534,16 @@ class EntryDataObject(object):
         if hasattr(initial, 'items'):
             self.__dict__['_data'] = initial
 
-            for k,v in self._data.items():
+            for k in self._data.keys():
                 if k != self._sanitize(k):
                     self._data[self._sanitize(k)] = self._data.pop(k)
 
-
-    def _sanitize(self, s):
+    def _sanitize(self, sstr):  # pylint: disable=no-self-use
         """
         Sanitize the keys of the incoming data.
         Change '/' -> '_' and '%' -> ''
         """
-        return s.lower().replace('/', '_').replace('%', '')
+        return sstr.lower().replace('/', '_').replace('%', '')
 
     def __getattr__(self, name):
         return self._data.get(name, None)
@@ -510,25 +552,28 @@ class EntryDataObject(object):
         self.__dict__['_data'][name] = value
 
     def __str__(self):
-        m = ''
-        for k,v in self._data.items():
-            m += ' {0} : {1}\n'.format(k,v)
-        return 'Contains: {0}'.format(m)
+        msg = ''
+        for k, v in self._data.items():
+            msg += ' {0} : {1}\n'.format(k, v)
+        return 'Contains: {0}'.format(msg)
 
     def get_members(self):
+        """Get the members/keys from the payload"""
         for k in self._data.keys():
             yield k
 
     def to_dict(self):
+        """Return payload as dict."""
         return self._data
 
-def scan_and_load_json(file_path, last_record, options, _log):
+
+def scan_and_load_json(file_path, last_record, options, _log):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     """
-    Process the json style logs.  If the metadata can not be 
+    Process the json style logs.  If the metadata can not be
     created, the processing loop halts and returns None.
     """
     # suck up the log
-    with open(file_path,'r') as fh:
+    with open(file_path, 'r') as fh:
         data = fh.read()
     data = data.split('\n')
 
@@ -537,78 +582,88 @@ def scan_and_load_json(file_path, last_record, options, _log):
 
     scanning = False
 
-    o = None
+    obj = None
     count = 0
 
-    with GracefulInterruptHandler() as h:
+    with GracefulInterruptHandler() as handler:
         for row in data:
             row = row.strip()
-            if not row: continue
+            if not row:
+                continue
             try:
-                o = JsonLogEntryDataObject(json.loads(row))
+                obj = JsonLogEntryDataObject(json.loads(row))
             except ValueError:
-                _log('scan_and_load_json.error', 'skipping - log line is not valid json: {0}'.format(row))
+                _log('scan_and_load_json.error',
+                     'skipping - log line is not valid json: {0}'.format(row))
                 continue
 
-            if o.event_type != 'Transfer-End':
+            if obj.event_type != 'Transfer-End':
                 continue
 
             if last_record and not scanning:
-                if o.to_dict() == last_record.to_dict():
+                if obj.to_dict() == last_record.to_dict():
                     scanning = True
                 continue
 
             count += 1
             if options.progress:
-                if count % 100 == 0: _log('scan_and_load_json.info', '{0} records processed'.format(count))
+                if count % 100 == 0:
+                    _log('scan_and_load_json.info', '{0} records processed'.format(count))
 
             try:
-                mda = _generate_metadata_args(o.host, o.dest, o.cmd_type, host_to_ip=False)
-            except Exception, e:
-                _log('scan_and_load_json.error', 'could not generate metadata args for row: {0} - exception: {1}'.format(row, str(e)))
+                mda = _generate_metadata_args(obj.host, obj.dest, obj.cmd_type, host_to_ip=False)
+            except Exception, ex:  # pylint: disable=broad-except
+                _log('scan_and_load_json.error',
+                     'could not generate metadata args for row: {0} - exception: {1}'.format(
+                         row, str(ex)))
                 continue
 
-            mp = MetadataPost(options.api_url, username=options.user,
-                api_key=options.key, script_alias=options.script_alias, 
+            mpost = MetadataPost(
+                options.api_url, username=options.user,
+                api_key=options.key, script_alias=options.script_alias,
                 **mda)
-            mp.add_event_type('throughput')
-            mp.add_event_type('streams-packet-retransmits')
+            mpost.add_event_type('throughput')
+            mpost.add_event_type('streams-packet-retransmits')
             # Additional/optional data
-            mp.add_freeform_key_value('bw-parallel-streams', o.nstreams)
+            mpost.add_freeform_key_value('bw-parallel-streams', obj.nstreams)
             # find largest stripe in streams array
             stripes = 0
-            for s in o.streams:
+            for s in obj.streams:
                 if s.stripe > stripes:
                     stripes = s.stripe
-            mp.add_freeform_key_value('bw-stripes', stripes+1)
-            mp.add_freeform_key_value('gridftp-program', o.prog)
-            mp.add_freeform_key_value('gridftp-block-size', o.globus_blocksize)
-            mp.add_freeform_key_value('tcp-window-size', o.tcp_bufsize)
-            mp.add_freeform_key_value('gridftp-bytes-transferred', o.nbytes)
-             # Optional vars - these must be enabled via boolean 
+            mpost.add_freeform_key_value('bw-stripes', stripes+1)
+            mpost.add_freeform_key_value('gridftp-program', obj.prog)
+            mpost.add_freeform_key_value('gridftp-block-size', obj.globus_blocksize)
+            mpost.add_freeform_key_value('tcp-window-size', obj.tcp_bufsize)
+            mpost.add_freeform_key_value('gridftp-bytes-transferred', obj.nbytes)
+            # Optional vars - these must be enabled via boolean
             # command line args since these values might be sensitive.
             if options.file_attr:
-                mp.add_freeform_key_value('gridftp-file', o.file)
+                mpost.add_freeform_key_value('gridftp-file', obj.file)
             if options.name_attr:
-                mp.add_freeform_key_value('gridftp-user', o.user)
+                mpost.add_freeform_key_value('gridftp-user', obj.user)
             if options.volume_attr:
-                mp.add_freeform_key_value('gridftp-volume', o.volume)
+                mpost.add_freeform_key_value('gridftp-volume', obj.volume)
 
             try:
-                metadata = mp.post_metadata()
-            except MetadataPostException as e:
-                _log('scan_and_load_json.error', 'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(str(e)))
+                metadata = mpost.post_metadata()
+            except MetadataPostException as ex:
+                _log('scan_and_load_json.error',
+                     'MetadataPost failed, abort processing, not updating state - ERR: {0}'.format(
+                         str(ex)))
                 return None
 
             # Set up event type bulk object
-            etb = EventTypeBulkPost(options.api_url, username=options.user,
-                    api_key=options.key, script_alias=options.script_alias, 
-                    metadata_key=metadata.metadata_key)
+            etb = EventTypeBulkPost(
+                options.api_url, username=options.user,
+                api_key=options.key, script_alias=options.script_alias,
+                metadata_key=metadata.metadata_key)
 
             # Calculate throughput
             try:
-                throughput = 8 * o.nbytes / (o.end_timestamp - o.start_timestamp).total_seconds()
-                etb.add_data_point('throughput', _epoch(o.start_timestamp), throughput)
+                throughput = 8 * obj.nbytes / (obj.end_timestamp -
+                                               obj.start_timestamp).total_seconds()
+                etb.add_data_point('throughput', _epoch(obj.start_timestamp), throughput)
             except ZeroDivisionError:
                 # If there is a divide by zero issue calculating throughput
                 # (ie: same timestamps), then don't add the data point.
@@ -616,49 +671,50 @@ def scan_and_load_json(file_path, last_record, options, _log):
 
             # # Calculate retransmits - a list of integers in this case
             retrans = list()
-            for s in o.streams:
-                retrans.append(s.tcpinfo.total_retrans)
+            for stream in obj.streams:
+                retrans.append(stream.tcpinfo.total_retrans)
 
-            etb.add_data_point('streams-packet-retransmits', _epoch(o.start_timestamp), retrans)
+            etb.add_data_point('streams-packet-retransmits', _epoch(obj.start_timestamp), retrans)
 
             # # these event types are added wholesale as json blobs.
             et_map = {
-                'iostat': o.iostat.to_dict(),
-                'mpstat': o.mpstat.to_dict(),
-                'rusage': o.getrusage.to_dict(),
-                'streams-tcpinfo': [ x.to_dict() for x in o.streams ]
+                'iostat': obj.iostat.to_dict(),
+                'mpstat': obj.mpstat.to_dict(),
+                'rusage': obj.getrusage.to_dict(),
+                'streams-tcpinfo': [x.to_dict() for x in obj.streams]
             }
 
-            for k,v in et_map.items():
-                etb.add_data_point(k, _epoch(o.start_timestamp), v)
+            for k, v in et_map.items():
+                etb.add_data_point(k, _epoch(obj.start_timestamp), v)
 
             try:
                 etb.post_data()
-            except EventTypeBulkPostException as e:
-                _log('scan_and_load_json.warning', str(e))
+            except EventTypeBulkPostException as ex:
+                _log('scan_and_load_json.warning', str(ex))
 
-            if options.single or h.interrupted:
-                if h.interrupted:
+            if options.single or handler.interrupted:
+                if handler.interrupted:
                     _log('scan_and_load_netlogger.info', 'Got SIGINT - exiting.')
                 break
 
     _log('scan_and_load_json.end', 'Loaded {0} records'.format(count))
 
-    return o
+    return obj
 
 # # # #
 # code to handle "standard vs. json" stuff for the main() code block
 # # # #
 
+
 def get_pickle_path(options):
     """
-    Hold two default pickle file names depending on what kind of 
+    Hold two default pickle file names depending on what kind of
     log we are processing. Having a single default in OptionParser or
     requiring a manual arg will doubtlessly cause problems.
     """
     json_or_not = {
         False: './load_grid_ftp.pickle',
-        True : './load_grid_ftp.json.pickle',
+        True: './load_grid_ftp.json.pickle',
     }
 
     if options.pickle:
@@ -666,9 +722,10 @@ def get_pickle_path(options):
     else:
         return os.path.normpath(json_or_not.get(options.json, False))
 
+
 def get_log_entry_container(options, log_line=None):
     """
-    Return the appropriate kind of log entry container class to 
+    Return the appropriate kind of log entry container class to
     logic in main() that doesn't need to care which type.
     """
     json_or_not = {
@@ -677,15 +734,15 @@ def get_log_entry_container(options, log_line=None):
     }
 
     def init_entry(options):
+        """Init from log line when re-starting."""
         if not options.json:
             return log_line.split()
         else:
             try:
                 return json.loads(log_line)
             except ValueError:
-                # XXX(mmg) this should go away after they take care
-                # of the errors in the logs - only gets called by the 
-                # code that looks for the last processed line, so an 
+                # bulletproof against log errors - only gets called by the
+                # code that looks for the last processed line, so an
                 # empty dict will do the trick.
                 return {}
 
@@ -695,9 +752,10 @@ def get_log_entry_container(options, log_line=None):
     else:
         return json_or_not.get(options.json, False)(init_entry(options))
 
+
 def scan_and_load(file_path, last_record, options, _log):
     """
-    This is an entry point called by main() to dispatch to the 
+    This is an entry point called by main() to dispatch to the
     appropriate file format handler.
     """
     if not options.json:
@@ -705,59 +763,62 @@ def scan_and_load(file_path, last_record, options, _log):
     else:
         return scan_and_load_json(file_path, last_record, options, _log)
 
-def main():
+
+def main():  # pylint: disable=too-many-locals, too-many-branches
+    """Parse args and process the logs."""
+    # pylint: disable=line-too-long
     usage = '%prog [ -f filename | -v ]'
     parser = OptionParser(usage=usage)
     parser.add_option('-f', '--file', metavar='FILE',
-            type='string', dest='filename', 
-            help='Input filename.')
+                      type='string', dest='filename',
+                      help='Input filename.')
     parser.add_option('-p', '--pickle_file', metavar='FILE',
-            type='string', dest='pickle', default='',
-            help='Path to pickle file (./load_grid_ftp.pickle or ./load_grid_ftp.json.pickle).')
+                      type='string', dest='pickle', default='',
+                      help='Path to pickle file (./load_grid_ftp.pickle or ./load_grid_ftp.json.pickle).')
     parser.add_option('-d', '--dont_write',
-            dest='write', action='store_false', default=True,
-            help='Do not write last position pickle file - can be used to process multiple files by hand, development, etc.')
+                      dest='write', action='store_false', default=True,
+                      help='Do not write last position pickle file - can be used to process multiple files by hand, development, etc.')
     parser.add_option('-S', '--single',
-            dest='single', action='store_true', default=False,
-            help='Only load a single record - used for development.')
+                      dest='single', action='store_true', default=False,
+                      help='Only load a single record - used for development.')
     parser.add_option('-D', '--delete_state',
-            dest='delete_state', action='store_true', default=False,
-            help='Delete state file from disc after concluding run.')
+                      dest='delete_state', action='store_true', default=False,
+                      help='Delete state file from disc after concluding run.')
     parser.add_option('-l', '--log_dir', metavar='DIR',
-            type='string', dest='logdir', default='',
-            help='Write log output to specified directory - if not set, log goes to stdout.')
+                      type='string', dest='logdir', default='',
+                      help='Write log output to specified directory - if not set, log goes to stdout.')
     parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
-            type='string', dest='api_url', 
-            help='URL for the REST API (default=%default) - required.',
-            default='http://localhost:8000')
+                      type='string', dest='api_url',
+                      help='URL for the REST API (default=%default) - required.',
+                      default='http://localhost:8000')
     parser.add_option('-u', '--user', metavar='USER',
-            type='string', dest='user', default='',
-            help='POST interface username.')
+                      type='string', dest='user', default='',
+                      help='POST interface username.')
     parser.add_option('-k', '--key', metavar='API_KEY',
-            type='string', dest='key', default='',
-            help='API key for POST operation.')
+                      type='string', dest='key', default='',
+                      help='API key for POST operation.')
     parser.add_option('-s', '--script_alias', metavar='URI_PREFIX',
-            type='string', dest='script_alias', default='/',
-            help='Set the script_alias arg if the perfsonar API is configured to use one (default=%default which means none set).')
+                      type='string', dest='script_alias', default='/',
+                      help='Set the script_alias arg if the perfsonar API is configured to use one (default=%default which means none set).')
     parser.add_option('-F', '--file_attr',
-            dest='file_attr', action='store_true', default=False,
-            help='Include the gridftp file information when sending data to esmond (default=%default since this might be sensitive data).')
+                      dest='file_attr', action='store_true', default=False,
+                      help='Include the gridftp file information when sending data to esmond (default=%default since this might be sensitive data).')
     parser.add_option('-N', '--name_attr',
-            dest='name_attr', action='store_true', default=False,
-            help='Include the gridftp user (name) information when sending data to esmond (default=%default since this might be sensitive data).')
+                      dest='name_attr', action='store_true', default=False,
+                      help='Include the gridftp user (name) information when sending data to esmond (default=%default since this might be sensitive data).')
     parser.add_option('-V', '--volume_attr',
-            dest='volume_attr', action='store_true', default=False,
-            help='Include the gridftp volume information when sending data to esmond (default=%default since this might be sensitive data).')
+                      dest='volume_attr', action='store_true', default=False,
+                      help='Include the gridftp volume information when sending data to esmond (default=%default since this might be sensitive data).')
     parser.add_option('-v', '--verbose',
-            dest='verbose', action='count', default=False,
-            help='Verbose output - -v, -vv, etc.')
+                      dest='verbose', action='count', default=False,
+                      help='Verbose output - -v, -vv, etc.')
     parser.add_option('-P', '--no-progress',
-            dest='progress', action='store_false', default=True,
-            help='Suppress processing progress messages to console (default: on).')
+                      dest='progress', action='store_false', default=True,
+                      help='Suppress processing progress messages to console (default: on).')
     parser.add_option('-J', '--json',
-            dest='json', action='store_true', default=False,
-            help='Read JSON formatted GridFTP logs.')
-    options, args = parser.parse_args()
+                      dest='json', action='store_true', default=False,
+                      help='Read JSON formatted GridFTP logs.')
+    options, _ = parser.parse_args()
 
     log_path = None
 
@@ -767,11 +828,13 @@ def main():
             parser.error('{0} log path does not exist.'.format(log_path))
 
     log = setup_log(log_path)
-    _log = lambda e, s: log.info('event={e} id={gid} {s}'.format(e=e, gid=int(time.time()), s=s))
+
+    def _log(event, msg):
+        log.info('event=%s id=%s %s', event, int(time.time()), msg)
 
     if not options.filename:
         parser.error('Filename is required.')
-    
+
     file_path = os.path.normpath(options.filename)
 
     if not os.path.exists(file_path):
@@ -790,24 +853,25 @@ def main():
     else:
         _log('main.start', 'no last record found')
 
-    # See if the currently indicated log contains the last record - 
-    # primarily a check to see if the log has been rotated and we 
+    # See if the currently indicated log contains the last record -
+    # primarily a check to see if the log has been rotated and we
     # need to look around for our last spot.
 
     last_record_check = False
 
     if last_record:
-        with open(file_path,'r') as fh:
+        with open(file_path, 'r') as fh:
             data = fh.read()
         data = data.split('\n')
         for row in data:
             row = row.strip()
-            if not row: continue
-            o = get_log_entry_container(options, row)
-            if o.to_dict() == last_record.to_dict():
+            if not row:
+                continue
+            obj = get_log_entry_container(options, row)
+            if obj.to_dict() == last_record.to_dict():
                 last_record_check = True
                 break
-    
+
     # Process the file
     if not last_record:
         # Probably a fresh run or manual loads with --dont_write, just do it.
@@ -819,8 +883,10 @@ def main():
         last_log_entry = scan_and_load(file_path, last_record, options, _log)
     else:
         # State not found so log a warning and assume rotation
-        _log('main.warn', 'File {0} does not contain last log entry. Maybe rotated?- proceeding'.format(file_path))
-        last_record=None
+        _log('main.warn',
+             'File {0} does not contain last log entry. Maybe rotated?- proceeding'.format(
+                 file_path))
+        last_record = None
         last_log_entry = scan_and_load(file_path, last_record, options, _log)
 
     if last_log_entry and options.write:
@@ -828,8 +894,7 @@ def main():
 
     if options.delete_state:
         os.unlink(pickle_path)
-    
-    pass
+
 
 if __name__ == '__main__':
     main()

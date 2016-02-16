@@ -1,10 +1,18 @@
 #!/bin/bash
 
 #set esmond env variables
-export ESMOND_ROOT=/opt/esmond
-export ESMOND_CONF=$ESMOND_ROOT/esmond.conf
+export ESMOND_ROOT=/usr/lib/esmond
+export ESMOND_CONF=/etc/esmond/esmond.conf
 export DJANGO_SETTINGS_MODULE=esmond.settings
 
-#build tables
-cd /opt/esmond
-python esmond/manage.py syncdb --noinput
+cd $ESMOND_ROOT
+
+#update DB tables if doing an upgrade
+if [ "$1" = "2" ]; then
+    python esmond/manage.py migrate --fake-initial &> /var/log/esmond/install.log
+    python util/migrate_tastypie_keys.py &>> /var/log/esmond/install.log
+fi
+
+#deploy static files
+mkdir -p ${ESMOND_ROOT}/staticfiles
+django-admin collectstatic --clear --noinput

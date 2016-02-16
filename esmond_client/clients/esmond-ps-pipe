@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
+# doesn't like script name, couple of long docstrings.
+# pylint: disable=invalid-name, line-too-long
+
 """
-esmond-ps-pipe - take piped json output from bwctl and load into an esmond 
+esmond-ps-pipe - take piped json output from bwctl and load into an esmond
 perfsonar MA. To wit:
 
 bwctl -c lbl-pt1.es.net -s llnl-pt1.es.net -T iperf3 --parsable --verbose |& esmond-ps-pipe -url http://ps-archive.es.net --user mgoode --key api_key_string
 
-See further documention in README.rst or use the --help flag for a full 
+See further documention in README.rst or use the --help flag for a full
 list of arguments.
 """
 
@@ -14,6 +17,7 @@ import datetime
 import json
 import logging
 import os
+import pprint
 import socket
 import sys
 import time
@@ -23,23 +27,27 @@ from optparse import OptionParser
 from esmond_client.perfsonar.post import (
     EventTypeBulkPost,
     EventTypeBulkPostException,
-    EventTypePost,
-    EventTypePostException, 
-    MetadataPost, 
-    MetadataPostException, 
+    MetadataPost,
+    MetadataPostException,
 )
-
-import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
+
 class EsmondPipeException(Exception):
+    """Custom EsmondPipe exception"""
     def __init__(self, value):
+        # pylint: disable=super-init-not-called
         self.value = value
+
     def __str__(self):
         return repr(self.value)
 
-class EsmondPipeWarning(Warning): pass
+
+class EsmondPipeWarning(Warning):
+    """Custom EsmondPipe warning"""
+    pass
+
 
 def setup_log(log_path=None):
     """
@@ -47,15 +55,16 @@ def setup_log(log_path=None):
     _log('main.start', 'happy simple log event')
     _log('launch', 'more={0}, complex={1} log=event'.format(100, 200))
     """
+    # pylint: disable=redefined-variable-type
     log = logging.getLogger("esmond-ps-pipe")
     if not log_path:
-        _h = logging.StreamHandler()
+        handle = logging.StreamHandler()
     else:
         # it's on you to make sure log_path is valid.
         logfile = '{0}/esmond-ps-pipe.log'.format(log_path)
-        _h = logging.FileHandler(logfile)
-    _h.setFormatter(logging.Formatter('ts=%(asctime)s %(message)s'))
-    log.addHandler(_h)
+        handle = logging.FileHandler(logfile)
+    handle.setFormatter(logging.Formatter('ts=%(asctime)s %(message)s'))
+    log.addHandler(handle)
     log.setLevel(logging.INFO)
     return log
 
@@ -63,7 +72,10 @@ def setup_log(log_path=None):
 # Data objects
 #
 
-class RecursiveDataObject(object):
+
+class RecursiveDataObject(object):  # pylint: disable=too-few-public-methods
+    """A recursive object to encapsulate the json output from the iperf3
+    test to give object-style access to the """
     def __init__(self, initial=None):
         self.__dict__['_data'] = {}
 
@@ -75,8 +87,8 @@ class RecursiveDataObject(object):
                 # the parse once.
                 for i in self._data.keys():
                     self._wrap(self._data.get(i), i)
-            except Exception as e:
-                raise EsmondPipeException(str(e))
+            except Exception as ex:
+                raise EsmondPipeException(str(ex))
 
     def _wrap(self, data, name):
         # print 'wrap', name
@@ -85,19 +97,19 @@ class RecursiveDataObject(object):
             return RecursiveDataObject(data)
         # list of dicts => list of wrapper objects
         elif isinstance(data, list):
-            return [ RecursiveDataObject(x) for x in data ]
+            return [RecursiveDataObject(x) for x in data]
         # modify outgoing named attributes
         elif name in ('time',):
             return self._to_datetime(data)
 
         return data
 
-    def _to_datetime(self, d):
-        if isinstance(d, int):
+    def _to_datetime(self, ts):  # pylint: disable=no-self-use
+        if isinstance(ts, int):
             # presume unixtime
-            return datetime.datetime.utcfromtimestamp(d)
+            return datetime.datetime.utcfromtimestamp(ts)
         else:
-            return datetime.datetime.strptime(d, '%a, %d %b %Y %X GMT')
+            return datetime.datetime.strptime(ts, '%a, %d %b %Y %X GMT')
 
     def __getattr__(self, name):
         return self._wrap(self._data.get(name, None), name)
@@ -109,9 +121,12 @@ class RecursiveDataObject(object):
         return pp.pformat(self.to_dict())
 
     def to_dict(self):
+        """Return internal payload as a dict."""
         return self._data
 
-class BwctlPayload(object):
+
+class BwctlPayload(object):  # pylint: disable=too-few-public-methods
+    """Class that holds the payload from a bwctl test."""
     def __init__(self):
         self.tool_name = None
         self.input_source = None
@@ -122,6 +137,7 @@ class BwctlPayload(object):
 
     @property
     def measurement_agent(self):
+        """Convert measurement agent address on the fly V4 vs. V6."""
         if self._measurement_agent:
             return self._measurement_agent
 
@@ -139,12 +155,12 @@ class BwctlPayload(object):
         except socket.gaierror:
             pass
 
-        sock_flags = { 4: socket.AF_INET, 6: socket.SOCK_DGRAM }
+        sock_flags = {4: socket.AF_INET, 6: socket.SOCK_DGRAM}
 
-        s = socket.socket(sock_flags.get(version), socket.SOCK_DGRAM)
-        s.connect((self.input_destination, 80))
-        self._measurement_agent = (s.getsockname()[0])
-        s.close()
+        sock = socket.socket(sock_flags.get(version), socket.SOCK_DGRAM)
+        sock.connect((self.input_destination, 80))
+        self._measurement_agent = (sock.getsockname()[0])
+        sock.close()
 
         return self._measurement_agent
 
@@ -152,7 +168,8 @@ class BwctlPayload(object):
 # Code for all tool types
 #
 
-def id_and_extract(data, _log):
+
+def id_and_extract(data, _log):  # pylint: disable=too-many-branches
     """
     Identify the piped input and isolate the json part.
     """
@@ -164,7 +181,7 @@ def id_and_extract(data, _log):
     scanning = False
 
     for i in data:
-        ## ignore
+        # # ignore
         # skip blank lines
         if not i.strip():
             continue
@@ -172,7 +189,7 @@ def id_and_extract(data, _log):
         if not scanning and not i.startswith('bwctl:'):
             continue
 
-        ## pull out metadata from the --verbose output
+        # # pull out metadata from the --verbose output
         if i.startswith('bwctl: Using tool:'):
             payload.tool_name = i.split()[3]
 
@@ -182,7 +199,7 @@ def id_and_extract(data, _log):
         if i.strip().endswith('as the address for remote receiver'):
             payload.input_destination = i.split()[2]
 
-        ## scanning logic
+        # # scanning logic
         # end scanning token
         if i.startswith('bwctl: stop_tool:'):
             break
@@ -195,17 +212,18 @@ def id_and_extract(data, _log):
 
     # did we find the scanning tokens?
     if not scanning:
-        _log('id_and_extract.error', 'did not find bwctl: start_tool token to extract JSON from output')
+        _log('id_and_extract.error',
+             'did not find bwctl: start_tool token to extract JSON from output')
         _log('id_and_extract.error', 'bwctl must be run with the --verbose flag')
 
     # check that appropriate metadata was extracted
     metadata_found = True
     fields = ('tool_name', 'input_source', 'input_destination',)
 
-    for f in fields:
-        if not getattr(payload, f):
+    for fld in fields:
+        if not getattr(payload, fld):
             metadata_found = False
-            _log('id_and_extract.error', 'could not extract {0}'.format(f))
+            _log('id_and_extract.error', 'could not extract {0}'.format(fld))
 
     # parse the json
     try:
@@ -219,62 +237,64 @@ def id_and_extract(data, _log):
     else:
         return payload
 
+
 class PostEvents(object):
+    """Wrapper around the EventTypeBulkPost class."""
     def __init__(self, metadata, ts, options, _log):
-        """
-        Wrapper around the EventTypeBulkPost class.
-        """
+
         self.metadata = metadata
-        self.ts = ts # one ts used for all of the events
-        self.options = options # option parser object
+        self.ts = ts  # one ts used for all of the events
+        self.options = options  # option parser object
         self._log = _log
 
-        self.etb = EventTypeBulkPost(options.api_url, username=options.user,
-                api_key=options.key, script_alias=options.script_alias, 
-                metadata_key=metadata.metadata_key)
+        self.etb = EventTypeBulkPost(
+            options.api_url, username=options.user,
+            api_key=options.key, script_alias=options.script_alias,
+            metadata_key=metadata.metadata_key)
 
     def process_event_type(self, event_type, val, ts):
+        """Put the event type into the payload"""
         if self.options.verbose:
             self._log('process_event_type.start', '{0}'.format(event_type))
 
         self.etb.add_data_point(event_type, ts, val)
 
     def write(self):
+        """Execute the POST after payload is done."""
         try:
             self.etb.post_data()
-        except EventTypeBulkPostException as e:
-            self._log('write.warning', str(e))
+        except EventTypeBulkPostException as ex:
+            self._log('write.warning', str(ex))
 
 #
 # Code to process the iperf3 data
 #
 
-def _iperf3_metadata_args(o, payload):
+
+def _iperf3_metadata_args(obj, payload):
     """
-    Assemble the metadata args and the event types for the 
+    Assemble the metadata args and the event types for the
     metadata depending on what kind of iperf3 input we got.
     """
     mda = dict(
         subject_type='point-to-point',
-        source=o.start.connected[0].local_host,
-        destination=o.start.connected[0].remote_host,
+        source=obj.start.connected[0].local_host,
+        destination=obj.start.connected[0].remote_host,
         tool_name='bwctl/{0}'.format(payload.tool_name),
         input_source=payload.input_source,
         input_destination=payload.input_destination,
         measurement_agent=payload.measurement_agent,
-        ip_transport_protocol=o.start.test_start.protocol,
-        time_duration=o.start.test_start.duration,
+        ip_transport_protocol=obj.start.test_start.protocol,
+        time_duration=obj.start.test_start.duration,
     )
 
-    
     event_types = [
         'throughput',
         'throughput-subintervals',
         'packet-retransmits-subintervals',
-        
     ]
 
-    if o.start.test_start.num_streams > 1:
+    if obj.start.test_start.num_streams > 1:
         event_types += [
             'streams-packet-retransmits',
             'streams-packet-retransmits-subintervals',
@@ -282,15 +302,16 @@ def _iperf3_metadata_args(o, payload):
             'streams-throughput-subintervals',
         ]
 
-    if o.start.test_start.protocol == 'TCP':
+    if obj.start.test_start.protocol == 'TCP':
         event_types += ['packet-retransmits']
 
-    if o.start.test_start.protocol == 'UDP':
+    if obj.start.test_start.protocol == 'UDP':
         event_types += ['packet-count-lost', 'packet-count-sent', 'packet-loss-rate']
 
     return mda, event_types
 
-def process_iperf3(o, payload, options, _log):
+
+def process_iperf3(obj, payload, options, _log):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     """
     Process iperf3 input.
     """
@@ -298,49 +319,51 @@ def process_iperf3(o, payload, options, _log):
 
     # metadata
 
-    mda, event_types = _iperf3_metadata_args(o, payload)
+    mda, event_types = _iperf3_metadata_args(obj, payload)
 
-    mp = MetadataPost(options.api_url, username=options.user,
-            api_key=options.key, script_alias=options.script_alias, 
-            **mda)
+    mpost = MetadataPost(options.api_url, username=options.user,
+                         api_key=options.key, script_alias=options.script_alias,
+                         **mda)
 
-    for et in event_types:
-        mp.add_event_type(et)
+    for etype in event_types:
+        mpost.add_event_type(etype)
 
-    mp.add_freeform_key_value('bw-parallel-streams', o.start.test_start.num_streams)
-    mp.add_freeform_key_value('bw_ignore_first_seconds', o.start.test_start.omit)
+    mpost.add_freeform_key_value('bw-parallel-streams', obj.start.test_start.num_streams)
+    mpost.add_freeform_key_value('bw_ignore_first_seconds', obj.start.test_start.omit)
 
     try:
-        metadata = mp.post_metadata()
-    except MetadataPostException as e:
-        _log('process_iperf3.error', 'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(str(e)))
+        metadata = mpost.post_metadata()
+    except MetadataPostException as ex:
+        _log('process_iperf3.error',
+             'MetadataPost failed, abort processing, not updating record state - ERROR: {0}'.format(
+                 str(ex)))
         return None
 
     # event type values
 
     # timestamp for all event type inserts
-    ts = o.start.timestamp.timesecs
+    ts = obj.start.timestamp.timesecs
 
     # Wrapper around event bulk post object
     post = PostEvents(metadata, ts, options, _log)
 
     # throughput
-    if o.start.test_start.protocol == 'TCP':
-        tp = o.end.sum_received.bits_per_second
-    elif o.start.test_start.protocol == 'UDP':
-        tp = o.end.sum.bits_per_second
+    if obj.start.test_start.protocol == 'TCP':
+        tput = obj.end.sum_received.bits_per_second
+    elif obj.start.test_start.protocol == 'UDP':
+        tput = obj.end.sum.bits_per_second
 
-    post.process_event_type('throughput', tp, ts)
+    post.process_event_type('throughput', tput, ts)
 
     # throughput-subintervals
     tp_subints = list()
-    for i in o.intervals:
-        d = dict(
-            start=i.sum.start, 
-            duration=i.sum.seconds, 
+    for i in obj.intervals:
+        dct = dict(
+            start=i.sum.start,
+            duration=i.sum.seconds,
             val=i.sum.bits_per_second
         )
-        tp_subints.append(d)
+        tp_subints.append(dct)
 
     post.process_event_type('throughput-subintervals', tp_subints, ts)
 
@@ -349,35 +372,35 @@ def process_iperf3(o, payload, options, _log):
     # packet-count-sent
     # and
     # packet-loss-rate
-    if o.start.test_start.protocol == 'UDP':
-        pl = ps = None
+    if obj.start.test_start.protocol == 'UDP':
+        plost = psent = None
         # lost
-        if o.end.sum.lost_packets is not None:
-            pl = o.end.sum.lost_packets
-            post.process_event_type('packet-count-lost', pl, ts)
+        if obj.end.sum.lost_packets is not None:
+            plost = obj.end.sum.lost_packets
+            post.process_event_type('packet-count-lost', plost, ts)
         # sent
-        if o.end.sum.packets is not None:
-            ps = o.end.sum.packets
-            post.process_event_type('packet-count-sent', ps, ts)
+        if obj.end.sum.packets is not None:
+            psent = obj.end.sum.packets
+            post.process_event_type('packet-count-sent', psent, ts)
         # loss rate
-        if pl is not None and ps is not None:
-            lr = dict(numerator=pl, denominator=ps)
-            post.process_event_type('packet-loss-rate', lr, ts)
+        if plost is not None and psent is not None:
+            lrate = dict(numerator=plost, denominator=psent)
+            post.process_event_type('packet-loss-rate', lrate, ts)
 
     # packet-retransmits
-    if o.start.test_start.protocol == 'TCP':
-        prt = o.end.sum_sent.retransmits
+    if obj.start.test_start.protocol == 'TCP':
+        prt = obj.end.sum_sent.retransmits
         post.process_event_type('packet-retransmits', prt, ts)
 
     # packet-retransmits-subintervals
     pr_subints = list()
-    for i in o.intervals:
-        d = dict(
-            start=i.sum.start, 
-            duration=i.sum.seconds, 
+    for i in obj.intervals:
+        dct = dict(
+            start=i.sum.start,
+            duration=i.sum.seconds,
             val=i.sum.retransmits
         )
-        pr_subints.append(d)
+        pr_subints.append(dct)
 
     post.process_event_type('packet-retransmits-subintervals', pr_subints, ts)
 
@@ -388,48 +411,48 @@ def process_iperf3(o, payload, options, _log):
     # streams-throughput
     # and
     # streams-throughput-subintervals
-    if o.start.test_start.num_streams > 1:
+    if obj.start.test_start.num_streams > 1:
         # retrans
         sp_retrans = list()
-        for i in o.end.streams:
+        for i in obj.end.streams:
             sp_retrans.append(i.sender.retransmits)
 
         post.process_event_type('streams-packet-retransmits', sp_retrans, ts)
 
         # retrans-subint
         sp_retrans_subint = list()
-        for i in o.intervals:
-            sl = list() # sub-list
+        for i in obj.intervals:
+            sublist = list()  # sub-list
             for ii in i.streams:
-                d = dict(
-                    start=ii.start, 
-                    duration=ii.seconds, 
+                dct = dict(
+                    start=ii.start,
+                    duration=ii.seconds,
                     retransmits=ii.retransmits
                 )
-                sl.append(d)
-            sp_retrans_subint.append(sl)
+                sublist.append(dct)
+            sp_retrans_subint.append(sublist)
 
         post.process_event_type('streams-packet-retransmits-subintervals', sp_retrans_subint, ts)
 
         # throughput
         s_throughput = list()
-        for i in o.end.streams:
+        for i in obj.end.streams:
             s_throughput.append(i.receiver.bits_per_second)
 
         post.process_event_type('streams-throughput', s_throughput, ts)
 
         # throughput-subint
         s_tput_subint = list()
-        for i in o.intervals:
-            sl = list()
+        for i in obj.intervals:
+            sublist = list()
             for ii in i.streams:
-                d = dict(
-                    start=ii.start, 
-                    duration=ii.seconds, 
+                dct = dict(
+                    start=ii.start,
+                    duration=ii.seconds,
                     throughput=ii.bits_per_second
                 )
-                sl.append(d)
-            s_tput_subint.append(sl)
+                sublist.append(dct)
+            s_tput_subint.append(sublist)
 
         post.process_event_type('streams-throughput-subintervals', s_tput_subint, ts)
 
@@ -438,43 +461,47 @@ def process_iperf3(o, payload, options, _log):
     _log('process_iperf3.end', 'finished')
 
 
-typemap = dict(
+TYPEMAP = dict(
     iperf3=process_iperf3,
 )
 
+
 def main():
+    """Parse args, read bwctl test data from stdin and insert into an esmond MA."""
     usage = ' bwctl ... |& %prog [ -u USER -k API_KEY | -U ESMOND_REST_URL | -v ]'
     parser = OptionParser(usage=usage)
     parser.add_option('-U', '--url', metavar='ESMOND_REST_URL',
-            type='string', dest='api_url', 
-            help='URL for the REST API (default=%default) - required.',
-            default='http://localhost:8000')
+                      type='string', dest='api_url',
+                      help='URL for the REST API (default=%default) - required.',
+                      default='http://localhost:8000')
     parser.add_option('-u', '--user', metavar='USER',
-            type='string', dest='user', default='',
-            help='POST interface username.')
+                      type='string', dest='user', default='',
+                      help='POST interface username.')
     parser.add_option('-k', '--key', metavar='API_KEY',
-            type='string', dest='key', default='',
-            help='API key for POST operation.')
+                      type='string', dest='key', default='',
+                      help='API key for POST operation.')
     parser.add_option('-s', '--script_alias', metavar='URI_PREFIX',
-            type='string', dest='script_alias', default='/',
-            help='Set the script_alias arg if the perfsonar API is configured to use one (default=%default which means none set).')
+                      type='string', dest='script_alias', default='/',
+                      help='Set the script_alias arg if the perfsonar API is configured to use one (default=%default which means none set).')
     parser.add_option('-v', '--verbose',
-        dest='verbose', action='store_true', default=False,
-        help='Verbose output.')
+                      dest='verbose', action='store_true', default=False,
+                      help='Verbose output.')
     parser.add_option('-l', '--log_dir', metavar='DIR',
-                type='string', dest='logdir', default='',
-                help='Write log output to specified directory - if not set, log goes to stdout.')
-    options, args = parser.parse_args()
+                      type='string', dest='logdir', default='',
+                      help='Write log output to specified directory - if not set, log goes to stdout.')
+    options, _ = parser.parse_args()
 
     log_path = None
-    
+
     if options.logdir:
         log_path = os.path.normpath(options.logdir)
         if not os.path.exists(log_path):
             parser.error('{0} log path does not exist.'.format(log_path))
-    
+
     log = setup_log(log_path)
-    _log = lambda e, s: log.info('event={e} id={gid} {s}'.format(e=e, gid=int(time.time()), s=s))
+
+    def _log(event, msg):
+        log.info('event=%s id=%s %s', event, int(time.time()), msg)
 
     if not options.user or not options.key:
         # this exits with error status 2 FYI
@@ -483,7 +510,7 @@ def main():
     _log('main.start', 'reading input')
 
     data = sys.stdin.readlines()
-    
+
     payload = id_and_extract(data, _log)
 
     if not payload:
@@ -494,20 +521,20 @@ def main():
         sys.exit(-1)
 
     try:
-        o = RecursiveDataObject(payload.payload)
-    except EsmondPipeException as e:
-        _log('main.fatal', 'error encapsulating json - ERROR: {0}'.format(str(e)))
+        obj = RecursiveDataObject(payload.payload)
+    except EsmondPipeException as ex:
+        _log('main.fatal', 'error encapsulating json - ERROR: {0}'.format(str(ex)))
         _log('main.fatal', 'exiting')
         sys.exit(-1)
 
     # process the encapsulated data
     try:
-        typemap[payload.tool_name](o, payload, options, _log)
+        TYPEMAP[payload.tool_name](obj, payload, options, _log)
     except KeyError:
-        _log('main.fatal', 'there is no handler for input type: {0}'.format(payload.input_type))
+        _log('main.fatal', 'there is no handler for input type: {0}'.format(payload.tool_name))
         _log('main.fatal', 'exiting')
-    except EsmondPipeException as e:
-        _log('main.error', 'unable to process input: {0}'.format(str(e)))
+    except EsmondPipeException as ex:
+        _log('main.error', 'unable to process input: {0}'.format(str(ex)))
 
     _log('main.exit', 'success')
 

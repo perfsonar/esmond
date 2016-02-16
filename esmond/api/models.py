@@ -8,12 +8,21 @@ from netfields import CidrAddressField, NetManager
 
 from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, atencode
 
+"""
+We historically laid the project out as 'esmond.api' when a much earlier 
+version of Django was being used. This layout strategy led to issues with
+later versions of Django, so the model Meta uses app_label = 'api' (rather
+than 'esmond.api'), so things load properly with modern versions of 
+django.
+"""
+
 class DeviceTag(models.Model):
     """A tag for a :py:class:`.Device.`"""
 
     name = models.CharField(max_length = 255, unique=True)
 
     class Meta:
+        app_label = 'api'
         db_table = "devicetag"
 
     def __unicode__(self):
@@ -21,7 +30,7 @@ class DeviceTag(models.Model):
 
 class DeviceManager(models.Manager):
     def active(self):
-        qs = super(DeviceManager, self).get_query_set()
+        qs = super(DeviceManager, self).get_queryset()
         qs = qs.filter(active=True, end_time__gt=now())
         return qs
 
@@ -50,6 +59,7 @@ class Device(models.Model):
     objects = DeviceManager()
 
     class Meta:
+        app_label = 'api'
         db_table = "device"
         ordering = ['name']
 
@@ -71,6 +81,7 @@ class DeviceTagMap(models.Model):
     device_tag = models.ForeignKey(DeviceTag, db_column="devicetagid")
 
     class Meta:
+        app_label = 'api'
         db_table = "devicetagmap"
 
 class OIDType(models.Model):
@@ -78,6 +89,7 @@ class OIDType(models.Model):
 
     name = models.CharField(max_length=256)
     class Meta:
+        app_label = 'api'
         db_table = "oidtype"
         ordering = ["name"]
 
@@ -90,6 +102,7 @@ class Poller(models.Model):
     name = models.CharField(max_length=256)
 
     class Meta:
+        app_label = 'api'
         db_table = "poller"
         ordering = ["name"]
 
@@ -110,6 +123,7 @@ class OID(models.Model):
         help_text="Optional endpoint alias (in, out, discard/out, etc)")
 
     class Meta:
+        app_label = 'api'
         db_table = "oid"
         ordering = ["name"]
 
@@ -129,6 +143,7 @@ class OIDSet(models.Model):
             help_text="List of OIDs in the OIDSet")
 
     class Meta:
+        app_label = 'api'
         db_table = "oidset"
         ordering = ["name"]
 
@@ -180,6 +195,7 @@ class OIDSetMember(models.Model):
     oid_set = models.ForeignKey(OIDSet,db_column="oidsetid")
 
     class Meta:
+        app_label = 'api'
         db_table = "oidsetmember"
         ordering = ["oid_set", "oid"]
 
@@ -190,12 +206,13 @@ class DeviceOIDSetMap(models.Model):
     oid_set = models.ForeignKey(OIDSet,db_column="oidsetid")
 
     class Meta:
+        app_label = 'api'
         db_table = "deviceoidsetmap"
         ordering = ["device", "oid_set"]
 
 class IfRefManager(models.Manager):
     def active(self):
-        qs = super(IfRefManager, self).get_query_set()
+        qs = super(IfRefManager, self).get_queryset()
         qs = qs.filter(end_time__gt=now())
         return qs
 
@@ -232,6 +249,7 @@ class IfRef(models.Model):
     objects = IfRefManager()
 
     class Meta:
+        app_label = 'api'
         db_table = "ifref"
         ordering = ["device__name", "ifName"]
         permissions = (
@@ -271,7 +289,7 @@ class IfRef(models.Model):
 
 class ALUSAPRefManager(models.Manager):
     def active(self):
-        qs = super(ALUSAPRefManager, self).get_query_set()
+        qs = super(ALUSAPRefManager, self).get_queryset()
         qs = qs.filter(end_time__gt=now())
         return qs
 
@@ -293,6 +311,7 @@ class ALUSAPRef(models.Model):
     objects = ALUSAPRefManager()
 
     class Meta:
+        app_label = 'api'
         db_table = "alusapref"
         ordering = ["device__name", "name"]
 
@@ -310,7 +329,7 @@ class ALUSAPRef(models.Model):
 
 class HistoryTableManager(models.Manager):
     def active(self):
-        qs = super(HistoryTableManager, self).get_query_set()
+        qs = super(HistoryTableManager, self).get_queryset()
         qs = qs.filter(end_time__gt=now())
         return qs
 
@@ -327,6 +346,7 @@ class OutletRef(models.Model):
     objects = HistoryTableManager()
 
     class Meta:
+        app_label = 'api'
         db_table = "outletref"
         ordering = ["device__name", "outletID"]
 
@@ -352,6 +372,7 @@ class LSPOpStatus(models.Model):
     end_time = models.DateTimeField(default=max_datetime)
 
     class Meta:
+        app_label = 'api'
         db_table = "lspopstatus"
         ordering = ["device__name", "name"]
 
@@ -361,7 +382,7 @@ class LSPOpStatus(models.Model):
 class APIPermissionManager(models.Manager):
     def get_query_set(self):
         return super(APIPermissionManager, self).\
-            get_query_set().filter(content_type__name='api_permission')
+            get_queryset().filter(content_type__name='api_permission')
 
 
 class APIPermission(Permission):
@@ -370,6 +391,7 @@ class APIPermission(Permission):
     objects = APIPermissionManager()
 
     class Meta:
+        app_label = 'api'
         proxy = True
         permissions = (
             ("esmond_api.view_timeseries", "View timseries data"),
@@ -414,6 +436,7 @@ class Inventory(models.Model):
     issues = models.CharField(max_length=128, null=True, blank=True)
 
     class Meta:
+        app_label = 'api'
         db_table = 'inventory'
         ordering = ['row_key']
         # This constraint will only work in a "real" db engine like
@@ -439,6 +462,7 @@ class GapInventory(models.Model):
     issues = models.CharField(max_length=128, null=True, blank=True)
 
     class Meta:
+        app_label = 'api'
         db_table = 'gap_inventory'
         ordering = ['row__row_key']
 
@@ -464,6 +488,7 @@ class PSMetadata(models.Model):
     objects = PSMetadataManager()
     
     class Meta:
+        app_label = 'api'
         db_table = "ps_metadata"
         ordering = ["metadata_key"] #gives consistent ordering
         
@@ -480,6 +505,7 @@ class PSPointToPointSubject(models.Model):
     input_destination = models.CharField(max_length=128)
     
     class Meta:
+        app_label = 'api'
         db_table = "ps_p2p_subject"
         ordering = ["source","destination"]
     
@@ -494,6 +520,7 @@ class PSNetworkElementSubject(models.Model):
     input_source = models.CharField(max_length=128)
     
     class Meta:
+        app_label = 'api'
         db_table = "ps_networkelement_subject"
         ordering = ["source","tool_name"]
     
@@ -508,6 +535,7 @@ class PSEventTypes(models.Model):
     time_updated = models.DateTimeField(null=True)
     
     class Meta:
+        app_label = 'api'
         db_table = "ps_event_types"
         ordering = ["metadata","event_type", "summary_type", "summary_window"]
     
@@ -526,6 +554,7 @@ class PSMetadataParameters(models.Model):
     parameter_value = models.TextField()
     
     class Meta:
+        app_label = 'api'
         db_table = "ps_metadata_parameters"
     
     def __unicode__(self):
@@ -537,6 +566,7 @@ class UserIpAddress(models.Model):
     objects = NetManager()
     
     class Meta:
+        app_label = 'api'
         db_table = "useripaddress"
         verbose_name = "User IP Address"
         verbose_name_plural = "User IP Addresses"

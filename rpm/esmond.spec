@@ -4,18 +4,16 @@
 # Don't create a debug package
 %define debug_package %{nil}
 
-%define install_base /opt/esmond
-
-%define init_script_1 espolld
-%define init_script_2 espersistd
+%define install_base /usr/lib/esmond
+%define config_base /etc/esmond
  
 Name:           esmond
-Version:        1.0       
-Release:        16%{?dist}
+Version:        2.0       
+Release:        0.2.rc1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
-URL:            http://REPLACE
+URL:            http://software.es.net/esmond
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:	no
@@ -59,7 +57,8 @@ database for everything else. All data is available via a REST style interface
 %install
 # Copy and build in place so that we know what the path in the various files
 # will be
-rm -rf %{buildroot}/%{install_base}
+rm -rf %{buildroot}/*
+mkdir -p %{buildroot}/%{config_base}
 mkdir -p %{buildroot}/%{install_base}
 cp -Ra . %{buildroot}/%{install_base}
 cd %{buildroot}/%{install_base}
@@ -71,18 +70,13 @@ find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 mkdir -p %{buildroot}/%{install_base}/bin/
 
 # Move the default RPM esmond.conf into place
-mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{install_base}/esmond.conf
+mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{config_base}/esmond.conf
 
 # Move the config script into place
 mv %{buildroot}/%{install_base}/rpm/scripts/configure_esmond %{buildroot}/%{install_base}/configure_esmond
 
 # Move the default settings.py into place
 mv %{buildroot}/%{install_base}/rpm/config_files/settings.py %{buildroot}/%{install_base}/esmond/settings.py
-
-# Move the init scripts into place
-mkdir -p %{buildroot}/etc/init.d
-mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_1} %{buildroot}/etc/init.d/%{init_script_1}
-mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_2} %{buildroot}/etc/init.d/%{init_script_2}
 
 # Move the apache configuration into place
 mkdir -p %{buildroot}/etc/httpd/conf.d/
@@ -103,7 +97,10 @@ rm -f .gitignore
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 . bin/activate
-pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
+#Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
+python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
+# Need this for the 1.0->2.0 API key migration script
+python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" django-tastypie
 #not pretty but below is the best way I could find to remove references to buildroot
 find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
 find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
@@ -117,15 +114,6 @@ source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 . bin/activate
 
-#handle database updates
-if [ "$1" = "2" ]; then
-    chmod 755 configure_esmond
-    ./configure_esmond
-fi
-
-mkdir -p tsdb-data
-touch tsdb-data/TSDB
-
 #generate secret key
 grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.py >> esmond/settings.py
 
@@ -134,7 +122,27 @@ mkdir -p /var/log/esmond
 mkdir -p /var/log/esmond/crashlog
 touch /var/log/esmond/esmond.log
 touch /var/log/esmond/django.log
+touch /var/log/esmond/install.log
 chown -R apache:apache /var/log/esmond
+
+#handle updates
+if [ "$1" = "2" ]; then
+    #migrate pre-2.0 files
+    if [ -e "/opt/esmond/esmond.conf" ]; then
+        mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
+        mv /opt/esmond/esmond.conf %{config_base}/esmond.conf
+    elif [ -e "/opt/esmond/esmond.conf.rpmsave" ]; then
+        mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
+        mv /opt/esmond/esmond.conf.rpmsave %{config_base}/esmond.conf
+    fi
+fi
+
+#run config script
+chmod 755 configure_esmond
+./configure_esmond $1
+
+mkdir -p tsdb-data
+touch tsdb-data/TSDB
 
 # Create the TSDB directory
 mkdir -p /var/lib/esmond
@@ -145,14 +153,17 @@ chown -R esmond:esmond /var/lib/esmond
 mkdir -p /var/run/esmond
 chown -R esmond:esmond /var/run/esmond
 
+%postun
+if [ "$1" != "0" ]; then
+    # An RPM upgrade
+    /etc/init.d/httpd restart
+fi
 
 %files
 %defattr(-,root,root,-)
-%config(noreplace) %{install_base}/esmond.conf
-%config(noreplace) %{install_base}/esmond/settings.py
+%config(noreplace) %{config_base}/esmond.conf
+%config %{install_base}/esmond/settings.py
 %{install_base}/*
-/etc/init.d/%{init_script_1}
-/etc/init.d/%{init_script_2}
 /etc/httpd/conf.d/apache-esmond.conf
 /etc/profile.d/esmond.csh
 /etc/profile.d/esmond.sh

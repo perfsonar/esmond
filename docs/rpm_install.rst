@@ -89,7 +89,7 @@ Now that esmond is installed you will need to do some configuration of esmond an
 #. Restart postgresql with the following command::
     /sbin/service postgresql restart
 
-#. Open **/opt/esmond/esmond.conf** in a text editor and set *sql_db_password* to the postgresql password set previously. For example::
+#. Open **/etc/esmond/esmond.conf** in a text editor and set *sql_db_password* to the postgresql password set previously. For example::
 
     ...
     sql_db_password = changeit
@@ -97,7 +97,7 @@ Now that esmond is installed you will need to do some configuration of esmond an
 
 #. Python 2.7 is required for the remaining configuration commands. Initialize the Python 2.7 virtualenv with the commands below (*NOTE: the commands below must be run from a bash shell*)::
 
-    cd /opt/esmond
+    cd /usr/lib/esmond
     source /opt/rh/python27/enable
     /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
     . bin/activate
@@ -106,10 +106,9 @@ Now that esmond is installed you will need to do some configuration of esmond an
 
     python esmond/manage.py syncdb
 
-#. Create a user that can write data to the MA. This may be used for things like the perfSONAR regular testing. Note the generated key (it will be the same for both)::
+#. Create a user that can write data to the MA. This may be used for things like the perfSONAR regular testing. Note the generated key::
 
-    python esmond/manage.py add_ps_metadata_post_user perfsonar
-    python esmond/manage.py add_timeseries_post_user perfsonar
+    python esmond/manage.py add_api_key_user perfsonar
 
 #. Finally, start cassandra and httpd::
 

@@ -951,7 +951,7 @@ The measurement archive defines a REST API for publishing data via HTTP POST req
 A quick example demonstrates this process. First we post a description of our measurement, called the measurement *metadata* with the following request:
 ::
 
-    curl -X POST --dump-header - -H "Content-Type: application/json" -H "Authorization: ApiKey perfsonar:b3ba46b99e2ed8a267a409f3c4379238305ccaf2" --data '{"subject-type": "point-to-point", "source": "10.1.1.1", "destination": "10.1.1.2", "tool-name": "bwctl/iperf3", "measurement-agent": "110.1.1.1", "input-source": "host1.example.net","input-destination": "host2.example.net","time-duration": 30,"ip-transport-protocol": "tcp","event-types": [{"event-type": "throughput","summaries":[{"summary-type": "aggregation","summary-window": 3600},{"summary-type": "aggregation","summary-window": 86400}]},{"event-type": "packet-retransmits","summaries":[]}]}' http://archive.example.net/esmond/perfsonar/archive/
+    curl -X POST --dump-header - -H "Content-Type: application/json" -H "Authorization: Token b3ba46b99e2ed8a267a409f3c4379238305ccaf2" --data '{"subject-type": "point-to-point", "source": "10.1.1.1", "destination": "10.1.1.2", "tool-name": "bwctl/iperf3", "measurement-agent": "110.1.1.1", "input-source": "host1.example.net","input-destination": "host2.example.net","time-duration": 30,"ip-transport-protocol": "tcp","event-types": [{"event-type": "throughput","summaries":[{"summary-type": "aggregation","summary-window": 3600},{"summary-type": "aggregation","summary-window": 86400}]},{"event-type": "packet-retransmits","summaries":[]}]}' http://archive.example.net/esmond/perfsonar/archive/
 
 Notice we set the HTTP Authorization header since writing data generally will require some sort of authentication. See :ref:`psclient-rest-authn` for more details. The body is a JSON object describing the metadata. The result back is our metadata object with additional information such as the URIs where we can publish/retrieve information on the measurement and its results:
 ::
@@ -1003,13 +1003,13 @@ Notice we set the HTTP Authorization header since writing data generally will re
 We can now publish a single data point to one of the URIs defined by a *base-uri* field (*NOTE: We can NOT publish to a summary URL as all summaries are performed by the server*). We send a simple time-series object with a UNIX timestamp indicating when the measurement was run and the value of the result:
 ::
 
-    curl -X POST --dump-header - -H "Content-Type: application/json" -H "Authorization: ApiKey perfsonar:b3ba46b99e2ed8a267a409f3c4379238305ccaf2" --data '{"ts": "1392238294", "val": "1000000000"}' http://archive.example.net/esmond/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/throughput/base
+    curl -X POST --dump-header - -H "Content-Type: application/json" -H "Authorization: Token b3ba46b99e2ed8a267a409f3c4379238305ccaf2" --data '{"ts": "1392238294", "val": "1000000000"}' http://archive.example.net/esmond/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/throughput/base
 
 
 Alternatively, we can publish measurement results from multiple times and with multiple event-types in the following bulk request:
 ::
 
-    curl -X POST --dump-header - -H "Content-Type: application/json" -H "Authorization: ApiKey perfsonar:b3ba46b99e2ed8a267a409f3c4379238305ccaf2" --data '{"data": [{"ts": 1392238390, "val": [{"event-type": "throughput","val": 1000000000}, {"event-type": "packet-retransmits","val": 10}]}, {"ts": 1392238390, "val": [{"event-type": "throughput","val": 900000000}, {"event-type": "packet-retransmits","val": 5}]}]}' http://esmond-dev/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/
+    curl -X PUT --dump-header - -H "Content-Type: application/json" -H "Authorization: Token b3ba46b99e2ed8a267a409f3c4379238305ccaf2" --data '{"data": [{"ts": 1392238390, "val": [{"event-type": "throughput","val": 1000000000}, {"event-type": "packet-retransmits","val": 10}]}, {"ts": 1392238390, "val": [{"event-type": "throughput","val": 900000000}, {"event-type": "packet-retransmits","val": 5}]}]}' http://esmond-dev/perfsonar/archive/2ba58a26aee64a1e94cd2b5bacbb2cc6/
 
 See the remainder of this section for more details one each of these steps.
 
@@ -1017,7 +1017,7 @@ See the remainder of this section for more details one each of these steps.
 
 Authentication and Authorization 
 --------------------------------- 
-Writing data generally requires some form of authentication and authorization. Currently the measurement archive supports the use of the HTTP Authorization header with an authorization string the form of ``ApiKey <username>:<api-key>`` where ``<username>`` and ``<api-key>`` are the authentication credentials. It is also recommended all requests be sent over HTTPS since otherwise these credentials will be sent in plain text.
+Writing data generally requires some form of authentication and authorization. Currently the measurement archive supports the use of the HTTP Authorization header with an authorization string the form of ``Token <api-key>`` where ``<api-key>`` is the authentication credential. It is also recommended all requests be sent over HTTPS since otherwise these credentials will be sent in plain text.
 
 Publishing the Measurement Description 
 --------------------------------------- 

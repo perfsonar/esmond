@@ -5,17 +5,14 @@ import os
 import site
 import sys
 
+from django.core.wsgi import get_wsgi_application
+
 # ESMOND_ROOT should be defined via SetEnv in your Apache configuration.
 # It needs to point to the directory esmond is installed in.
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esmond.settings'
 
 print >>sys.stderr, "path=", sys.path
-try:
-    import django.core.handlers.wsgi
-    _application = django.core.handlers.wsgi.WSGIHandler()
-except Exception, e:
-    print >>sys.stderr,"exception:",e
 
 # This fixes the hitch that mod_wsgi does not pass Apache SetEnv 
 # directives into os.environ.
@@ -28,11 +25,11 @@ def application(environ, start_response):
     os.environ['ESMOND_ROOT'] = esmond_root
     if environ.has_key('ESMOND_CONF'):
         os.environ['ESMOND_CONF'] = environ['ESMOND_CONF']
-    return _application(environ, start_response)
+    return get_wsgi_application()(environ, start_response)
 
 """
 Example apache httpd.conf directives:
-Make sure that WSGIPassAuthorization is on when using the tastypie/django 
+Make sure that WSGIPassAuthorization is on when using the REST framework/django 
 level auth or mod_wsgi will munch the auth headers.
 
 WSGIScriptAlias / /services/esmond/esmond/wsgi.py

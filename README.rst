@@ -8,6 +8,9 @@
 esmond: ESnet Monitoring Daemon
 *******************************
 
+At this time esmond is only supported as part of the perfSONAR toolkit.
+-----------------------------------------------------------------------
+
 esmond is a system for collecting, storing, visualizing and analyzing large
 sets of timeseries data. It was driven by the needs of the ESnet engineering team
 but is likely useful to a much wider audience. esmond has a RESTful API which

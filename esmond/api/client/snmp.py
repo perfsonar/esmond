@@ -1,18 +1,8 @@
-import calendar
-import datetime
-import json
-import pprint
-import requests
-import time
-import warnings
-
-from .util import add_apikey_header, AlertMixin
-
 """
-Library to fetch data from 'simplified' API /v1/snmp/ namespace.
+Library to fetch data from 'simplified' API /v2/snmp/ namespace.
 
-The class ApiConnect is the 'entry point' that the client uses, and 
-the ApiFilters class is used to set time/device/etc filters, and is 
+The class ApiConnect is the 'entry point' that the client uses, and
+the ApiFilters class is used to set time/device/etc filters, and is
 passed to the ApiConnect class as an argument.
 
 Example:
@@ -27,9 +17,9 @@ Example:
 
     conn = ApiConnect(options.api_url, filters)
 
-After the entry point is set up, it returns device objects, which in 
-turn return associated interface objects, endpoint objects and data 
-point objects.  
+After the entry point is set up, it returns device objects, which in
+turn return associated interface objects, endpoint objects and data
+point objects.
 
 Traversing down through hierarchy of objects:
 
@@ -43,39 +33,98 @@ Traversing down through hierarchy of objects:
 
 Where timestamp values are returned, they are python datetime objects.
 
-NOTE: actually executing that example w/out filtering/limiting the 
-devices being polled will grab a lot of data from the API so proceed 
+NOTE: actually executing that example w/out filtering/limiting the
+devices being polled will grab a lot of data from the API so proceed
 with caution!
 
 The objects that encapsulate the device/interface/etc data that are
-returned from the api follow the general pattern where information in 
-a given object are accessed by properties, and when acutal 'work' is 
+returned from the api follow the general pattern where information in
+a given object are accessed by properties, and when acutal 'work' is
 being done (hitting the api), that is done by a method prefixed with
 get_ (ex: get_interfaces()).
 """
 
+import calendar
+import datetime
+import json
+import pprint
+import time
+
+import requests
+
+from .util import add_apikey_header, AlertMixin
+
+# all the properties don't need docstrings, etc.
+# seed some recursive args with empty lists and enacapsulation
+# classes with empty dicts
+# pylint: disable=missing-docstring, dangerous-default-value
+
 MAX_DATETIME = datetime.datetime.max - datetime.timedelta(2)
 MAX_EPOCH = calendar.timegm(MAX_DATETIME.utctimetuple())
 
-class NodeInfoWarning(Warning): pass
-class DeviceWarning(NodeInfoWarning): pass
-class InterfaceWarning(NodeInfoWarning): pass
-class EndpointWarning(NodeInfoWarning): pass
-class DataPayloadWarning(NodeInfoWarning): pass
-class BulkDataPayloadWarning(NodeInfoWarning): pass
-class ApiFiltersWarning(Warning): pass
-class ApiConnectWarning(Warning): pass
-class ApiNotFound(Exception): pass
-class DeviceNotFound(ApiNotFound): pass
-class DeviceCollectionNotFound(ApiNotFound): pass
-class InterfaceNotFound(ApiNotFound): pass
-class EndpointNotFound(ApiNotFound): pass
+
+class NodeInfoWarning(Warning):
+    pass
+
+
+class DeviceWarning(NodeInfoWarning):
+    pass
+
+
+class InterfaceWarning(NodeInfoWarning):
+    pass
+
+
+class EndpointWarning(NodeInfoWarning):
+    pass
+
+
+class DataPayloadWarning(NodeInfoWarning):
+    pass
+
+
+class BulkDataPayloadWarning(NodeInfoWarning):
+    pass
+
+
+class ApiFiltersWarning(Warning):
+    pass
+
+
+class ApiConnectWarning(Warning):
+    pass
+
+
+class ApiNotFound(Exception):
+    pass
+
+
+class DeviceNotFound(ApiNotFound):
+    pass
+
+
+class DeviceCollectionNotFound(ApiNotFound):
+    pass
+
+
+class InterfaceNotFound(ApiNotFound):
+    pass
+
+
+class EndpointNotFound(ApiNotFound):
+    pass
+
+
+# The other moodules inherit from this "define".
+API_VERSION_PREFIX = 'v2'
 
 # - Encapsulation classes for nodes (device, interface, etc).
 
+
 class NodeInfo(AlertMixin, object):
-    wrn = NodeInfoWarning
     """Base class for encapsulation objects"""
+    wrn = NodeInfoWarning
+
     def __init__(self, data, api_url, filters):
         super(NodeInfo, self).__init__()
         self._data = data
@@ -90,32 +139,32 @@ class NodeInfo(AlertMixin, object):
         if self.filters:
             self._default_filters = self.filters.default_filters
             if self.filters.auth_username and self.filters.auth_apikey:
-                add_apikey_header(self.filters.auth_username, 
-                    self.filters.auth_apikey, self.request_headers)
+                add_apikey_header(self.filters.auth_username,
+                                  self.filters.auth_apikey, self.request_headers)
 
         self.pp = pprint.PrettyPrinter(indent=4)
 
-    def _convert_to_datetime(self, d):
+    def _convert_to_datetime(self, dstr):  # pylint: disable=no-self-use
         """API returns both unix timestamps and ISO time so
         normalize to datetime objects transparently"""
-        t = None
-        
+        ts = None
+
         try:
-            i = int(d)
+            i = int(dstr)
             if i > MAX_EPOCH:
                 # bullet proof against out of range datetime errors
-                t = max_datetime
+                ts = MAX_DATETIME
             else:
-                t = datetime.datetime.utcfromtimestamp(i)
+                ts = datetime.datetime.utcfromtimestamp(i)
         except ValueError:
             # Not an epoch timestamp
             pass
 
-        if not t:
+        if not ts:
             # Presume this is ISO time
-            t = datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%S.%f")
+            ts = datetime.datetime.strptime(dstr, "%Y-%m-%dT%H:%M:%S.%f")
 
-        return t
+        return ts
 
     # Properties for most subclasses
     @property
@@ -133,7 +182,7 @@ class NodeInfo(AlertMixin, object):
             return None
 
     @property
-    def id(self):
+    def id(self):  # pylint: disable=invalid-name
         return self._data.get('id', None)
 
     @property
@@ -148,7 +197,13 @@ class NodeInfo(AlertMixin, object):
     def children(self):
         children = []
         for child in self._data.get('children'):
-            children.append(dict(name=child.get('name'), label=child.get('name'), leaf=child.get('leaf')))
+            children.append(
+                dict(
+                    name=child.get('name'),
+                    label=child.get('name'),
+                    leaf=child.get('leaf')
+                )
+            )
 
         return children
 
@@ -157,9 +212,9 @@ class NodeInfo(AlertMixin, object):
     def dump(self):
         return self.pp.pformat(self._data)
 
-    def inspect_request(self, r):
+    def inspect_request(self, req):
         if self.filters.verbose:
-            print '[url: {0}]'.format(r.url)
+            print '[url: {0}]'.format(req.url)
 
 
 class Device(NodeInfo):
@@ -185,37 +240,37 @@ class Device(NodeInfo):
 
     def get_interfaces(self, **filters):
         """
-        Issue a call to the API to get a list of interfaces (via a 
+        Issue a call to the API to get a list of interfaces (via a
         generator) associated with the device this object refers to.
         """
         uri = None
-        for c in self._data['children']:
-            if c['name'] == 'interface':
-                uri = c['uri']
+        for chl in self._data['children']:
+            if chl['name'] == 'interface':
+                uri = chl['uri']
                 break
 
         if uri:
-            r = requests.get('{0}{1}/'.format(self.api_url, uri),
-                params=self.filters.compose_filters(filters),
-                headers=self.request_headers)
+            r = requests.get('{0}{1}'.format(self.api_url, uri),
+                             params=self.filters.compose_filters(filters),
+                             headers=self.request_headers)
 
             self.inspect_request(r)
 
             if r.status_code == 200 and \
-                r.headers['content-type'] == 'application/json':
+                    r.headers['content-type'] == 'application/json':
                 data = json.loads(r.text)
                 for i in data['children']:
                     yield Interface(i, self.api_url, self.filters)
             else:
                 self.http_alert(r)
-                return
-                yield
+                raise StopIteration()
+                yield  # pylint: disable=unreachable
 
-    def get_interface(self, ifName):
-        ifaces = list(self.get_interfaces(ifName=ifName))
+    def get_interface(self, ifname):
+        ifaces = list(self.get_interfaces(ifName=ifname))
         if len(ifaces) == 0:
             if self.filters.verbose > 1:
-                print "[bad interface: {0}]".format(ifName)
+                print "[bad interface: {0}]".format(ifname)
             raise InterfaceNotFound()
 
         return ifaces[0]
@@ -255,35 +310,35 @@ class Device(NodeInfo):
             return
 
         if not self.filters.auth_username or not self.filters.auth_apikey:
-            self.warn('Must supply username and api key args to alter oidsets for a device - aborting set_oidsets().')
+            self.warn('Must supply username and api key args to alter oidsets for a device - aborting set_oidsets().')  # pylint: disable=line-too-long
             return
 
-        r = requests.get('{0}/v1/oidset/'.format(self.api_url),
-            headers=self.request_headers)
+        r = requests.get('{0}/{1}/oidset/'.format(self.api_url, API_VERSION_PREFIX),
+                         headers=self.request_headers)
         if r.status_code != 200:
-            self.warn('Could not get a list of valid oidsets from {0}/v1/oidset/ - aborting'.format(self.api_url) )
+            self.warn('Could not get list of valid oidsets from {0}/{1}/oidset/ - aborting'.format(
+                self.api_url, API_VERSION_PREFIX))
             return
         valid_oidsets = json.loads(r.content)
 
-        for o in oidsets:
-            if o not in valid_oidsets:
-                self.warn('{0} is not a valid oidset - aborting oidset update.')
+        for oset in oidsets:
+            if oset not in valid_oidsets:
+                self.warn('{0} is not a valid oidset - aborting oidset update.'.format(oset))
 
         self._data['oidsets'] = oidsets
 
         self.request_headers['content-type'] = 'application/json'
 
-        p = requests.put('{0}{1}'.format(self.api_url, self.resource_uri), 
-            data=json.dumps(self._data), headers=self.request_headers)
+        r = requests.put('{0}{1}'.format(self.api_url, self.resource_uri),
+                         data=json.dumps(self._data), headers=self.request_headers)
 
-        if p.status_code != 204:
+        if r.status_code != 204:
             self.warn('Did not successfully change oidsets - might be an auth problem.')
-            self.http_alert(p)
-
-
+            self.http_alert(r)
 
     def __repr__(self):
         return '<Device/{0}: uri:{1}>'.format(self.name, self.resource_uri)
+
 
 class DeviceCollection(object):
     def __init__(self, device, name, filters):
@@ -298,7 +353,11 @@ class DeviceCollection(object):
     @property
     def children(self):
         if self.name == "interface":
-            return [ dict(path="", name=i.ifName, label="%s %s" % (i.ifName, i.ifAlias)) for i in self.device.get_interfaces() ]
+            return [
+                dict(
+                    path="", name=i.ifName, label="%s %s" % (i.ifName, i.ifAlias)
+                ) for i in self.device.get_interfaces()
+            ]
         else:
             return []
 
@@ -320,6 +379,7 @@ class DeviceCollection(object):
         else:
             return interface
 
+
 class Interface(NodeInfo):
     wrn = InterfaceWarning
     """Class to encapsulate interface information"""
@@ -330,6 +390,14 @@ class Interface(NodeInfo):
     @property
     def device(self):
         return self._data.get('device', None)
+
+    # yes, these property names violate PEP8 but they mirror the
+    # the underlying keys which is what's important
+    # pylint: disable=invalid-name
+
+    @property
+    def device_uri(self):
+        return self._data.get('device_uri', None)
 
     @property
     def ifAdminStatus(self):
@@ -393,10 +461,10 @@ class Interface(NodeInfo):
             yield Endpoint(i, self.api_url, self.filters)
 
     def get_endpoint(self, name):
-        endpoints = filter(lambda x: x.name == name, self.get_endpoints())
+        endpoints = filter(lambda x: x.name == name, self.get_endpoints())  # pylint: disable=bad-builtin, deprecated-lambda
 
         if len(endpoints) == 0:
-            return EndpointNotFound()
+            raise EndpointNotFound()
         elif len(endpoints) > 1:
             self.warn('Multiple endpoints found')
 
@@ -414,11 +482,12 @@ class Interface(NodeInfo):
         except EndpointNotFound:
             return None
 
-        endpoint._data['leaf'] = True
+        endpoint._data['leaf'] = True  # pylint: disable=protected-access
         return endpoint
 
     def __repr__(self):
         return '<Interface/{0}: uri:{1}>'.format(self.ifName, self.resource_uri)
+
 
 class Endpoint(NodeInfo):
     wrn = EndpointWarning
@@ -436,33 +505,35 @@ class Endpoint(NodeInfo):
 
     def get_data(self, **filters):
         """
-        Retrieve the traffic data and return the json response in 
-        a DataPayload object.  If there is something wrong with the 
-        response (status/content) then issue a warning and return an 
+        Retrieve the traffic data and return the json response in
+        a DataPayload object.  If there is something wrong with the
+        response (status/content) then issue a warning and return an
         empty object.
         """
 
         r = requests.get('{0}{1}'.format(self.api_url, self.uri),
-            params=self.filters.compose_filters(filters),
-            headers=self.request_headers)
+                         params=self.filters.compose_filters(filters),
+                         headers=self.request_headers)
 
         self.inspect_request(r)
 
         if r.status_code == 200 and \
-            r.headers['content-type'] == 'application/json':
+                r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             return DataPayload(data)
         else:
             self.http_alert(r)
             return DataPayload()
-        
+
     def __repr__(self):
         return '<Endpoint/{0}: uri:{1}>'.format(self.name, self.uri)
 
+
 class DataPayload(NodeInfo):
-    wrn = DataPayloadWarning
     """Class to encapsulate data payload"""
-    def __init__(self, data={'data':[]}):
+    wrn = DataPayloadWarning
+
+    def __init__(self, data={'data': []}):
         super(DataPayload, self).__init__(data, None, None)
 
     @property
@@ -470,7 +541,7 @@ class DataPayload(NodeInfo):
         return self._data.get('agg', None)
 
     @property
-    def cf(self):
+    def cf(self):  # pylint: disable=invalid-name
         return self._data.get('cf', None)
 
     @property
@@ -486,7 +557,8 @@ class DataPayload(NodeInfo):
         return '<DataPayload: len:{0} b:{1} e:{2}>'.format(
             len(self.data), self.begin_time, self.end_time)
 
-class DataPoint(object):
+
+class DataPoint(object):  # pylint: disable=too-few-public-methods
     __slots__ = ['ts', 'val', 'm_ts']
     """Class to encapsulate the returned data points."""
     def __init__(self, ts, val, m_ts=None):
@@ -502,10 +574,11 @@ class DataPoint(object):
     def __repr__(self):
         return '<DataPoint: ts:{0} val:{1}>'.format(self.ts, self.val)
 
+
 class BulkDataPayload(DataPayload):
     wrn = BulkDataPayloadWarning
     """Class to encapsulate bulk data payload"""
-    def __init__(self, data={'data':[]}):
+    def __init__(self, data={'data': []}):
         super(BulkDataPayload, self).__init__(data)
 
     @property
@@ -520,9 +593,10 @@ class BulkDataPayload(DataPayload):
         return '<BulkDataPayload: len:{0} devs:{1} b:{2} e:{3}>'.format(
             len(self._data.get('data', [])), len(self.device_names), self.begin_time, self.end_time)
 
+
 class BulkDataRow(object):
     """Class to encapsulate and differentiate data from different devices,
-    interfaces and direction/traffic endpoints when getting data back from 
+    interfaces and direction/traffic endpoints when getting data back from
     a bulk request for interface data."""
     def __init__(self, row={}):
         super(BulkDataRow, self).__init__()
@@ -547,13 +621,14 @@ class BulkDataRow(object):
 
     def __repr__(self):
         return '<BulkDataRow: dev:{0} iface:{1} endpoint:{2} len:{3}>'.format(
-            self.device, self.interface, self.endpoint,len(self._data))
+            self.device, self.interface, self.endpoint, len(self._data))
 
 # - Query entry point and filtering.
 
-class ApiFilters(AlertMixin, object):
+
+class ApiFilters(AlertMixin, object):  # pylint: disable=too-many-instance-attributes
     wrn = ApiFiltersWarning
-    """Class to hold filtering/query options.  This will be used by 
+    """Class to hold filtering/query options.  This will be used by
     ApiConnect and also passed to all the encapsulation objects."""
     def __init__(self):
         super(ApiFilters, self).__init__()
@@ -561,7 +636,7 @@ class ApiFilters(AlertMixin, object):
         self._begin_time = datetime.datetime.utcfromtimestamp(int(time.time() - 3600))
         self._end_time = datetime.datetime.utcfromtimestamp(int(time.time()))
 
-        # Values to use in GET requests - they are combined with a 
+        # Values to use in GET requests - they are combined with a
         # user defined dict of filtering args (agg, cf) and django
         # filtering options and passed as args to the GET query.
         self._default_filters = {
@@ -570,7 +645,7 @@ class ApiFilters(AlertMixin, object):
 
         # Values to use in POST requests, verbose flag, etc.
         self.verbose = False
-        self.cf = 'average'
+        self.cf = 'average'  # pylint: disable=invalid-name
         self.agg = None
         # This needs to be checked via property.
         self._endpoint = ['in']
@@ -579,7 +654,7 @@ class ApiFilters(AlertMixin, object):
         self.auth_apikey = ''
 
     def ts_epoch(self, time_prop):
-        """Convert named property back to epoch.  Generally just for 
+        """Convert named property back to epoch.  Generally just for
         sending cgi params to the api."""
         return int(calendar.timegm(getattr(self, time_prop).utctimetuple()))
 
@@ -592,62 +667,75 @@ class ApiFilters(AlertMixin, object):
         else:
             return datetime.datetime.utcfromtimestamp(int(ts))
 
+    # pylint doesn't like these properties generated by sublime text
+    # pylint: disable=no-method-argument, unused-variable, protected-access
+
     def begin_time():
-        doc = "The begin_time property."
+        "The begin_time property."
         def fget(self):
             return self._begin_time
+
         def fset(self, value):
             self._begin_time = self._convert_ts(value)
             self._default_filters['begin'] = self.ts_epoch('begin_time')
-        def fdel(self):
+
+        def fdel(self):  # pylint: disable=unused-argument
             pass
         return locals()
     begin_time = property(**begin_time())
 
     def end_time():
-        doc = "The end_time property."
+        "The end_time property."
         def fget(self):
             return self._end_time
+
         def fset(self, value):
             self._end_time = self._convert_ts(value)
             self._default_filters['end'] = self.ts_epoch('end_time')
-        def fdel(self):
+
+        def fdel(self):  # pylint: disable=unused-argument
             pass
         return locals()
     end_time = property(**end_time())
 
     def limit():
-        doc = "The limit property."
+        "The limit property."
         def fget(self):
             return self._limit
+
         def fset(self, value):
             self._limit = int(value)
             self._default_filters['limit'] = self._limit
+
         def fdel(self):
             del self._limit
         return locals()
     limit = property(**limit())
 
     def default_filters():
-        doc = "The default_filters property."
+        "The default_filters property."
         def fget(self):
             return self._default_filters
+
         def fset(self, value):
             self._default_filters = value
+
         def fdel(self):
             del self._default_filters
         return locals()
     default_filters = property(**default_filters())
 
     def endpoint():
-        doc = "The endpoint property."
+        "The endpoint property."
         def fget(self):
             return self._endpoint
+
         def fset(self, value):
             if not value or not isinstance(value, list):
-                self.warn('The endpoint filter must be set to a non-empty list ("{0}" given), retaining current values {1}'.format(value,self.endpoint))
+                self.warn('The endpoint filter must be set to a non-empty list ("{0}" given), retaining current values {1}'.format(value, self.endpoint))  # pylint: disable=line-too-long
                 return
             self._endpoint = value
+
         def fdel(self):
             del self._endpoint
         return locals()
@@ -675,25 +763,25 @@ class ApiConnect(AlertMixin, object):
 
         self.request_headers = {}
         if self.filters.auth_username and self.filters.auth_apikey:
-            add_apikey_header(self.filters.auth_username, 
-                self.filters.auth_apikey, self.request_headers)
+            add_apikey_header(self.filters.auth_username,
+                              self.filters.auth_apikey, self.request_headers)
 
     def get_devices(self, **filters):
-        r = requests.get('{0}/v1/device/'.format(self.api_url),
-            params=self.filters.compose_filters(filters),
-            headers=self.request_headers)
+        r = requests.get('{0}/{1}/device/'.format(self.api_url, API_VERSION_PREFIX),
+                         params=self.filters.compose_filters(filters),
+                         headers=self.request_headers)
 
         self.inspect_request(r)
-        
+
         if r.status_code == 200 and \
-            r.headers['content-type'] == 'application/json':
+                r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             for i in data:
                 yield Device(i, self.api_url, self.filters)
         else:
             self.http_alert(r)
-            return
-            yield
+            raise StopIteration()
+            yield  # pylint: disable=unreachable
 
     def get_device(self, name):
         devices = list(self.get_devices(name=name))
@@ -702,10 +790,10 @@ class ApiConnect(AlertMixin, object):
             raise DeviceNotFound()
 
         return devices[0]
-        
+
     @property
     def children(self):
-        return [ device.name for device in self.get_devices() ]
+        return [device.name for device in self.get_devices()]
 
     def get_child(self, args, path=[]):
         name = args[0]
@@ -726,57 +814,59 @@ class ApiConnect(AlertMixin, object):
             return device
 
     def get_interfaces(self, **filters):
-        r = requests.get('{0}/v1/interface/'.format(self.api_url),
-                params=self.filters.compose_filters(filters),
-                headers=self.request_headers)
+        r = requests.get('{0}/{1}/interface/'.format(self.api_url, API_VERSION_PREFIX),
+                         params=self.filters.compose_filters(filters),
+                         headers=self.request_headers)
 
         self.inspect_request(r)
 
         if r.status_code == 200 and \
-            r.headers['content-type'] == 'application/json':
+                r.headers['content-type'] == 'application/json':
             data = json.loads(r.text)
             for i in data['children']:
                 yield Interface(i, self.api_url, self.filters)
         else:
             self.http_alert(r)
-            return
-            yield
+            raise StopIteration()
+            yield  # pylint: disable=unreachable
 
     def get_interface_bulk_data(self, **filters):
         interfaces = []
 
         for i in self.get_interfaces(**filters):
-            if self.filters.verbose > 1: print i
+            if self.filters.verbose > 1:
+                print i
             interfaces.append({'device': i.device, 'iface': i.ifName})
             # if self.filters.verbose > 1: print i.dump
 
         return self._execute_get_interface_bulk_data(interfaces)
 
-    def _execute_get_interface_bulk_data(self, interfaces=[]):
+    def _execute_get_interface_bulk_data(self, interfaces=[]):  # pylint: disable=invalid-name
 
         if not self._check_endpoints():
             return BulkDataPayload()
 
-        payload = { 
-            'interfaces': interfaces, 
+        payload = {
+            'interfaces': interfaces,
             'endpoint': self.filters.endpoint,
             'cf': self.filters.cf,
             'begin': self.filters.ts_epoch('begin_time'),
             'end': self.filters.ts_epoch('end_time'),
         }
 
-        if self.filters.agg: payload['agg'] = self.filters.agg
+        if self.filters.agg:
+            payload['agg'] = self.filters.agg
 
         self.request_headers['content-type'] = 'application/json'
 
-        r = requests.post('{0}/v1/bulk/interface/'.format(self.api_url), 
-            headers=self.request_headers, data=json.dumps(payload))
+        r = requests.post('{0}/{1}/bulk/interface/'.format(self.api_url, API_VERSION_PREFIX),
+                          headers=self.request_headers, data=json.dumps(payload))
 
         self.inspect_request(r)
         self.inspect_payload(payload)
 
         if r.status_code == 201 and \
-            r.headers['content-type'] == 'application/json':
+                r.headers['content-type'] == 'application/json':
             return BulkDataPayload(json.loads(r.text))
         else:
             self.http_alert(r)
@@ -784,9 +874,9 @@ class ApiConnect(AlertMixin, object):
 
     def _check_endpoints(self):
         if not self._valid_endpoints:
-            r = requests.get('{0}/v1/oidsetmap/'.format(self.api_url),
-                headers=self.request_headers)
-            if not r.status_code == 200:
+            r = requests.get('{0}/{1}/oidsetmap/'.format(self.api_url, API_VERSION_PREFIX),
+                             headers=self.request_headers)
+            if r.status_code != 200:
                 self.warn('Could not retrieve oid set map from REST api.')
                 return False
             data = json.loads(r.content)
@@ -795,9 +885,10 @@ class ApiConnect(AlertMixin, object):
                     if ii not in self._valid_endpoints:
                         self._valid_endpoints.append(ii)
 
-        for ep in self.filters.endpoint:
-            if ep not in self._valid_endpoints:
-                self.warn('{0} is not a valid endpoint type - must be of the form {1} - cancelling query'.format(ep, self._valid_endpoints))
+        for ept in self.filters.endpoint:
+            if ept not in self._valid_endpoints:
+                self.warn('{0} is not a valid endpoint type - must be of the form {1} - cancelling query'.format(  # pylint: disable=line-too-long
+                    ept, self._valid_endpoints))
                 return False
 
         return True
@@ -806,12 +897,6 @@ class ApiConnect(AlertMixin, object):
         if self.filters.verbose:
             print '[url: {0}]'.format(r.url)
 
-    def inspect_payload(self, p):
+    def inspect_payload(self, pload):
         if self.filters.verbose > 1:
-            print '[POST payload: {0}]'.format(json.dumps(p, indent=4))
-
-
-
-
-
-
+            print '[POST payload: {0}]'.format(json.dumps(pload, indent=4))
