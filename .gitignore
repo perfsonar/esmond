@@ -30,5 +30,5 @@ pysqlite2-doc/install-source.txt
 *.sublime-project
 *.sublime-workspace
 pip-selfcheck.json
-# Quilt cache directory
-.pc/
+# Ignore quilt patch cache
+.pc

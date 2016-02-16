@@ -52,23 +52,35 @@ case "$1" in
         chmod 640 /etc/esmond/esmond.conf
 
         # update django secret key
-	if ! grep '^SECRET_KEY *=' /etc/esmond/settings.py >> ${tmp_settings_py} 2>/dev/null; then
+        if ! grep '^SECRET_KEY *=' /etc/esmond/settings.py >> ${tmp_settings_py} 2>/dev/null; then
             python /usr/share/esmond/util/gen_django_secret_key.py >> ${tmp_settings_py}
         fi
         ucf --debconf-ok ${tmp_settings_py} /etc/esmond/settings.py
         chgrp www-data /etc/esmond/settings.py
         chmod 640 /etc/esmond/settings.py
-        ln -sf /etc/esmond/settings.py /usr/share/pyshared/esmond/settings.py
+
+        # create the TSDB directory
+        mkdir -p /var/lib/esmond
+        touch /var/lib/esmond/TSDB
+        chown -R esmond:esmond /var/lib/esmond
 
         # setup database
         (
             . /etc/default/esmond
             export ESMOND_ROOT ESMOND_CONF
-            python /usr/lib/python2.7/dist-packages/esmond/manage.py syncdb --noinput
-        )
+            export DJANGO_SETTINGS_MODULE=esmond.settings
+
+            python /usr/lib/python2.7/dist-packages/esmond/manage.py migrate
+            python /usr/share/esmond/util/migrate_tastypie_keys.py
+
+            mkdir -p /var/lib/esmond/staticfiles
+            django-admin collectstatic --clear --noinput
+        ) &> /var/log/esmond/install.log
+
+        # fix perms after django runs
+        chown -R www-data:www-data /var/log/esmond
 
         # setup apache
-        chown -R www-data:www-data /var/log/esmond
         if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
             invoke-rc.d apache2 reload || true
         fi

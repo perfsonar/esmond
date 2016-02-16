@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Valentin Vidic <Valentin.Vidic@CARNet.hr>
 Build-Depends: debhelper (>= 8.0.0), python | python-all | python-dev | python-all-dev,
- python-setuptools, dh-python
+ dh-python
 X-Python-Version: >= 2.7
 Standards-Version: 3.9.3
 Homepage: http://software.es.net/esmond/
@@ -12,14 +12,15 @@ Vcs-Browser: https://github.com/esnet/esmond.git
 
 Package: esmond
 Architecture: all
-Depends: apache2-mpm-worker | httpd, libapache2-mod-wsgi, postgresql,
+Depends: apache2 | httpd, libapache2-mod-wsgi, postgresql,
  memcached, cassandra, ucf (>= 0.28), python-pkg-resources, python-support,
  python-nagiosplugin, python-requests, python-mimeparse, python-psycopg2,
  python-pycassa, python-memcache, python-webpy, python-mock, python-dlnetsnmp,
- python-pynetsnmp, adduser, dbconfig-common, libsnmp-base, python-django (>= 1.5.1),
- python-django (<< 1.6), python-django-discover-runner,
- python-django-netfields (= 0.3.1), python-django-tastypie (>= 0.12.0),
- ${misc:Depends}
+ adduser, dbconfig-common, libsnmp-base, python-django (>= 1.8),
+ python-django-discover-runner, python-django-netfields,
+ python-django-tastypie (>= 0.12.2), python-djangorestframework (>= 3),
+ python-djangorestframework-filters (>= 0.6.0),
+ python-djangorestframework-extensions (>= 0.2.8), libjs-jquery, ${misc:Depends}
 Description: ESnet Monitoring Daemon
  Esmond is a system for collecting and storing large sets of time-series data.
  Esmond uses a hybrid model for storing data using TSDB for time series data and
