@@ -85,6 +85,20 @@ POLICY_MATCH_FIELD_DEFS = [
 POLICY_ACTION_DEFS = [
     {'name': 'expire', 'type': int, 'special_vals': ['never']},
 ]
+#Event types known to be large that need to be chunked when querying
+BIG_DATASETS = [
+    "histogram-owdelay", 
+    "histogram-ttl", 
+    "packet-count-lost", 
+    "packet-count-sent", 
+    "packet-loss-rate", 
+    "packet-duplicates",
+    "time-error-estimates"
+    ]
+#The size of the time chunks (in seconds) to grab for big datasets
+MAX_TIME_CHUNK = 3600*12
+#The number of empty chunks before assuming a dataset has no data
+MAX_MISSES = 50
 
 def query_data( db, metadata_key, event_type, summary_type, freq, begin_time, end_time):
     """Grabs cassandra data"""
@@ -200,17 +214,45 @@ def main():
         if (et.time_updated is None) or (datetime_to_ts(et.time_updated) <= expire_time):
             metadata_counts[md_key]['expired'] += 1
          
-        #query data
-        (expired_data, cf, datapath) = query_data(db, et.metadata.metadata_key, et.event_type, et.summary_type, et.summary_window, 0, expire_time)
+        #Some datasets timeout if dataset is too large. in this case grab chunks
+        begin_time = 0
+        if et.event_type in BIG_DATASETS and et.summary_window == 0:
+            begin_time = expire_time - MAX_TIME_CHUNK
         
-        if len(expired_data) == 0:
-            continue
-        for expired_col in expired_data:
-            year = datetime.utcfromtimestamp(float(expired_col['ts'])/1000.0).year    
-            cf.remove(get_rowkey(datapath, et.summary_window, year), [expired_col['ts']])
-        cf.send()
-        print "Deleted %d rows for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s" % (len(expired_data), md_key, et.event_type, et.summary_type, et.summary_window)
-    
+        misses = 0
+        while misses < MAX_MISSES:
+            if begin_time == 0:
+                #only run one time after seeing begin_time of 0
+                misses = MAX_MISSES
+            elif begin_time < 0:
+                #make sure begin_time is not below 0
+                begin_time = 0
+                misses = MAX_MISSES
+                
+            print "Querying metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s, begin_time=%s, expire_time=%s" % (md_key, et.event_type, et.summary_type, et.summary_window, begin_time, expire_time)
+            try:
+                (expired_data, cf, datapath) = query_data(db, et.metadata.metadata_key, et.event_type, et.summary_type, et.summary_window, begin_time, expire_time)
+            except Exception:
+                print "Query error. Moving on to other data."
+                break
+            print "Query done."
+            
+            #adjust begin_time
+            begin_time = begin_time - MAX_TIME_CHUNK
+            
+            #check if we got any data
+            if len(expired_data) == 0:
+                misses += 1
+                continue
+            
+            #delete data    
+            for expired_col in expired_data:
+                year = datetime.utcfromtimestamp(float(expired_col['ts'])/1000.0).year    
+                cf.remove(get_rowkey(datapath, et.summary_window, year), [expired_col['ts']])
+            print "Sending request to delete %d rows for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s" % (len(expired_data), md_key, et.event_type, et.summary_type, et.summary_window)
+            cf.send()
+            print "Deleted %d rows for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s" % (len(expired_data), md_key, et.event_type, et.summary_type, et.summary_window)
+        
     #Clean out metadata from relational database
     for md_key in metadata_counts:
         if  metadata_counts[md_key]['total'] == metadata_counts[md_key]['expired']:
