@@ -228,14 +228,13 @@ def main():
                 #make sure begin_time is not below 0
                 begin_time = 0
                 misses = MAX_MISSES
-                
-            print "Querying metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s, begin_time=%s, expire_time=%s" % (md_key, et.event_type, et.summary_type, et.summary_window, begin_time, expire_time)
+            
+            #query data to delete
             try:
                 (expired_data, cf, datapath) = query_data(db, et.metadata.metadata_key, et.event_type, et.summary_type, et.summary_window, begin_time, expire_time)
             except Exception:
-                print "Query error. Moving on to other data."
+                print "Query error for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s, begin_time=%s, expire_time=%s" % (md_key, et.event_type, et.summary_type, et.summary_window, begin_time, expire_time)
                 break
-            print "Query done."
             
             #adjust begin_time
             begin_time = begin_time - MAX_TIME_CHUNK
