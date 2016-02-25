@@ -1,15 +1,15 @@
-esmond (2.0~3.beta-1~bpo70+1) perfsonar-wheezy-staging; urgency=medium
+esmond (2.0~4.beta-1~bpo70+1) perfsonar-wheezy-staging; urgency=low
 
-  * Backporting to Wheezy.
+  * Backport to Wheezy.
 
- -- Antoine Delvaux <adelvaux@man.poznan.pl>  Tue, 23 Feb 2016 18:32:01 +0000
+ -- Antoine Delvaux <adelvaux@man.poznan.pl>  Thu, 25 Feb 2016 10:31:55 +0000
 
-esmond (2.0~3.beta-1) perfsonar-jessie-staging; urgency=medium
+esmond (2.0~4.beta-1) perfsonar-jessie-staging; urgency=low
 
   * New upstream version.
   * Beta release.
 
- -- Valentin Vidic <Valentin.Vidic@CARNet.hr>  Tue, 23 Feb 2016 18:25:24 +0000
+ -- Valentin Vidic <Valentin.Vidic@CARNet.hr>  Thu, 25 Feb 2016 10:27:34 +0000
 
 esmond (1.0.16-1) unstable; urgency=low
 
