@@ -205,11 +205,10 @@
 <div class="highlight-python"><div class="highlight"><pre>cd /opt/esmond
 source /opt/rh/python27/enable
 . bin/activate
-python esmond/manage.py add_ps_metadata_post_user gridftp
-python esmond/manage.py add_timeseries_post_user gridftp
+python esmond/manage.py add_api_key_user gridftp
 </pre></div>
 </div>
-<p><strong>IMPORTANT: The last two commands will output an API key that should be noted for later configuration steps.</strong></p>
+<p><strong>IMPORTANT: The last command will output an API key that should be noted for later configuration steps.</strong></p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">You may re-run the commands in this section at any time if you forget the API key and they will output the existing key.</p>

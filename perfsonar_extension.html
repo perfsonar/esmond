@@ -380,13 +380,6 @@ average</td>
 </pre></div>
 </div>
 </li>
-<li><p class="first">Finally we want to be sure a user has permissions to post to the new subject. Open <em>esmond/api/management/commands/add_ps_metadata_post_user.py</em> and add the name of the the <tt class="docutils literal"><span class="pre">django.db.models.Model</span></tt> in all lowercase letters (same as we entered in SUBJECT_MODEL_MAP previously) to the array on line 34:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="s">&#39;Setting metadata POST permissions.&#39;</span>
-<span class="k">for</span> <span class="n">model_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;psmetadata&#39;</span><span class="p">,</span> <span class="s">&#39;pspointtopointsubject&#39;</span><span class="p">,</span> <span class="s">&#39;pseventtypes&#39;</span><span class="p">,</span> <span class="s">&#39;psmetadataparameters&#39;</span><span class="p">,</span> <span class="s">&#39;psnetworkelementsubject&#39;</span><span class="p">,</span> <span class="s">&#39;pscarsubject&#39;</span><span class="p">]:</span>
-       <span class="o">...</span>
-</pre></div>
-</div>
-</li>
 </ol>
 <p>That completes the basic process. A few additional notes worth considering:</p>
 <ul class="simple">
