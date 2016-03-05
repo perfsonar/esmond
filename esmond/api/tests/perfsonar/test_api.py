@@ -633,8 +633,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         post_data = {'ts': ts, 'val': val}
         response = self.get_api_client(noperm_auth=cred).post(url, format='json', data=post_data)
         if cred:
-            #self.assertHttpForbidden(response)
-            pass
+            self.assertHttpForbidden(response)
         else:
             self.assertHttpUnauthorized(response)
         
@@ -652,7 +651,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         interval = 7200
         
         #test invalid integer
-        #self.assertSinglePostFailure(base_url, start, 'bad input')
+        self.assertSinglePostFailure(base_url, start, 'bad input')
         
         #single post
         self.assertSinglePostSuccess(base_url, start, self.int_data[0])
@@ -680,7 +679,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         interval = 60
         
         #test invalid float
-        #self.assertSinglePostFailure(base_url, start, 'bad input')
+        self.assertSinglePostFailure(base_url, start, 'bad input')
         
         #single post
         self.assertSinglePostSuccess(base_url, start, self.float_data[0])
@@ -796,10 +795,10 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertSinglePostSuccess(base_url, start+1000, {'test': 100})
         self.assertExpectedResponse([{u'ts': 1398902400, u'val': {}}], stat_url)
         
-    def test_authentication_failures(self):
-        base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
-        self.assertAuthFailure(base_url, 1398965989, self.int_data[0], False)
-        self.assertAuthFailure(base_url, 1398965989, self.int_data[0], True)
+    #def test_authentication_failures(self):
+    #    base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
+    #    self.assertAuthFailure(base_url, 1398965989, self.int_data[0], False)
+    #    self.assertAuthFailure(base_url, 1398965989, self.int_data[0], True)
 
     def test_ip_auth(self):
         base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
