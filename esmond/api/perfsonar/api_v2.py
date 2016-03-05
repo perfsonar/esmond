@@ -330,7 +330,7 @@ class IpAuth(BaseAuthentication):
 
 class ViewsetBase(viewsets.GenericViewSet):
     authentication_classes = (TokenAuthentication, IpAuth,)
-    permission_classes = (IsAuthenticatedOrReadOnly, DjangoModelPerm,)# lack of comma == error
+    permission_classes = (IsAuthenticatedOrReadOnly,)# lack of comma == error
     pagination_class = PSPaginator
 
 class PSTimeSeriesObject(object):
