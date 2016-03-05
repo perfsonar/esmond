@@ -1,8 +1,14 @@
-esmond (2.0~beta-1~bpo70+1) perfsonar-wheezy-release; urgency=low
+esmond (2.0.1~beta-1~bpo70+1) perfsonar-wheezy-release; urgency=low
 
-  * Backporting to Wheezy.
+  * Backport to Wheezy.
 
- -- Antoine Delvaux <adelvaux@man.poznan.pl>  Fri, 04 Mar 2016 09:34:17 +0100
+ -- Antoine Delvaux <adelvaux@man.poznan.pl>  Sat, 05 Mar 2016 10:25:25 +0100
+
+esmond (2.0.1~beta-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+
+ -- Antoine Delvaux <adelvaux@man.poznan.pl>  Sat, 05 Mar 2016 10:23:17 +0100
 
 esmond (2.0~beta-1) perfsonar-jessie-release; urgency=low
 
