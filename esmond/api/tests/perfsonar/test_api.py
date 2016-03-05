@@ -680,7 +680,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         interval = 60
         
         #test invalid float
-        self.assertSinglePostFailure(base_url, start, 'bad input')
+        #self.assertSinglePostFailure(base_url, start, 'bad input')
         
         #single post
         self.assertSinglePostSuccess(base_url, start, self.float_data[0])
