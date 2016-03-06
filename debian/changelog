@@ -1,3 +1,9 @@
+esmond (2.0.2~beta-1) UNRELEASED; urgency=low
+
+  * New upstream version.
+
+ -- Antoine Delvaux <adelvaux@man.poznan.pl>  Sun, 06 Mar 2016 13:21:56 +0100
+
 esmond (2.0.1~beta-1) perfsonar-jessie-release; urgency=low
 
   * New upstream version.
