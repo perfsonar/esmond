@@ -65,11 +65,13 @@ A policy that expires any summary with a window of 1 day after 5 years (1825 day
 """
 
 import argparse
+import calendar
+import django
 import json
 import sys
 from datetime import datetime, timedelta
 from esmond.api.models import PSMetadata, PSPointToPointSubject, PSEventTypes, PSMetadataParameters
-from esmond.api.perfsonar.api import EVENT_TYPE_CF_MAP, row_prefix, datetime_to_ts
+from esmond.api.perfsonar.api_v2 import EVENT_TYPE_CF_MAP
 from esmond.api.perfsonar.types import *
 from esmond.cassandra import CASSANDRA_DB, get_rowkey
 from esmond.config import get_config,get_config_path
@@ -100,6 +102,14 @@ MAX_TIME_CHUNK = 3600*12
 #The number of empty chunks before assuming a dataset has no data
 MAX_MISSES = 50
 
+def datetime_to_ts(dt):
+    """Convert internal DB timestamp to unixtime."""
+    if dt:
+        return calendar.timegm(dt.utctimetuple())
+
+def row_prefix(event_type):
+    return ['ps', event_type.replace('-', '_') ]
+        
 def query_data( db, metadata_key, event_type, summary_type, freq, begin_time, end_time):
     """Grabs cassandra data"""
     results = []
@@ -166,6 +176,9 @@ def main():
             dest='config',  default=DEFAULT_CONFIG_FILE,
             help='Configuration file location(default=%default).')
     args = parser.parse_args()
+    
+    #init django
+    django.setup()
     
     #Connect to DB
     db = CASSANDRA_DB(get_config(get_config_path()))
