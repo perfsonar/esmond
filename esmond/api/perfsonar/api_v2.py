@@ -267,7 +267,7 @@ class PSPaginator(pagination.LimitOffsetPagination):
     General paginator that defaults to a set number of items and returns an
     unmodified response.
     """
-    default_limit = 1000
+    default_limit = 1500
     
     ## I actually kinda like the default pagination better
     ## but sticking with backward compatibility here
