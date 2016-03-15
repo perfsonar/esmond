@@ -8,7 +8,7 @@
 %define config_base /etc/esmond
  
 Name:           esmond
-Version:        2.0.1       
+Version:        2.0.2       
 Release:        1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries

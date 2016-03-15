@@ -440,7 +440,7 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         self.assertHttpUnauthorized(self.get_api_client().post(url, format='json', data=self.post_data))
         
         #test with credentials with no permissions
-        self.assertHttpForbidden(self.get_api_client(noperm_auth=True).post(url, format='json', data=self.post_data))
+        #self.assertHttpForbidden(self.get_api_client(noperm_auth=True).post(url, format='json', data=self.post_data))
         
         #test with credentials with permissions
         response = self.get_api_client(admin_auth=True).post(url, format='json', data=self.post_data)
@@ -797,8 +797,9 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         
     def test_authentication_failures(self):
         base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
-        self.assertAuthFailure(base_url, 1398965989, self.int_data[0], False)
-        self.assertAuthFailure(base_url, 1398965989, self.int_data[0], True)
+        self.assertAuthFailure(base_url, 1398965990, self.int_data[0], False)
+        #No longer use Django permissions so deactivated below
+        #self.assertAuthFailure(base_url, 1398965990, self.int_data[0], True)
 
     def test_ip_auth(self):
         base_url = '/{0}/archive/f6b732e9f351487a96126f0c25e5e546/throughput/base/'.format(PS_ROOT)
