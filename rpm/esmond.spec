@@ -104,8 +104,6 @@ python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" dj
 #not pretty but below is the best way I could find to remove references to buildroot
 find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
 find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
-#fix any file permissions the pip packages mess-up 
-find lib -type f -perm 0666 -exec chmod 644 {} \;
 
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
@@ -162,13 +160,18 @@ if [ "$1" != "0" ]; then
 fi
 
 %files
-%defattr(-,root,root,-)
+%defattr(0644,esmond,esmond,0755)
 %config(noreplace) %{config_base}/esmond.conf
 %config %{install_base}/esmond/settings.py
+%attr(0755,esmond,esmond) %{install_base}/bin/*
+%attr(0755,esmond,esmond) %{install_base}/util/*
+%attr(0755,esmond,esmond) %{install_base}/esmond_client/clients/*
+%attr(0755,esmond,esmond) %{install_base}/mkdevenv
+%attr(0755,esmond,esmond) %{install_base}/configure_esmond
 %{install_base}/*
 /etc/httpd/conf.d/apache-esmond.conf
-/etc/profile.d/esmond.csh
-/etc/profile.d/esmond.sh
+%attr(0755,esmond,esmond) /etc/profile.d/esmond.csh
+%attr(0755,esmond,esmond) /etc/profile.d/esmond.sh
  
 %changelog
 * Wed Mar 5 2014 Monte Goode <mmgoode@lbl.gov> .99-1
