@@ -8,7 +8,7 @@
 %define config_base /etc/esmond
  
 Name:           esmond
-Version:        2.0.2       
+Version:        2.0.3       
 Release:        1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
@@ -104,6 +104,8 @@ python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" dj
 #not pretty but below is the best way I could find to remove references to buildroot
 find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
 find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
+#fix any file permissions the pip packages mess-up 
+find lib -type f -perm 0666 -exec chmod 644 {} \;
 
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
