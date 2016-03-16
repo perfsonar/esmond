@@ -8,8 +8,8 @@
 %define config_base /etc/esmond
  
 Name:           esmond
-Version:        2.0.3       
-Release:        1%{?dist}
+Version:        2.0.2       
+Release:        2%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -153,6 +153,9 @@ chown -R esmond:esmond /var/lib/esmond
 mkdir -p /var/run/esmond
 chown -R esmond:esmond /var/run/esmond
 
+#fix any file permissions the pip packages mess-up 
+find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
+ 
 %postun
 if [ "$1" != "0" ]; then
     # An RPM upgrade
