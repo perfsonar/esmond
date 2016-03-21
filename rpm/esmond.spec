@@ -9,7 +9,7 @@
  
 Name:           esmond
 Version:        2.0.2       
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
