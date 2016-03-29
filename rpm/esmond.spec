@@ -9,7 +9,7 @@
  
 Name:           esmond
 Version:        2.0.2       
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -153,6 +153,9 @@ chown -R esmond:esmond /var/lib/esmond
 mkdir -p /var/run/esmond
 chown -R esmond:esmond /var/run/esmond
 
+#fix any file permissions the pip packages mess-up 
+find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
+ 
 %postun
 if [ "$1" != "0" ]; then
     # An RPM upgrade
@@ -160,13 +163,18 @@ if [ "$1" != "0" ]; then
 fi
 
 %files
-%defattr(-,root,root,-)
+%defattr(0644,esmond,esmond,0755)
 %config(noreplace) %{config_base}/esmond.conf
 %config %{install_base}/esmond/settings.py
+%attr(0755,esmond,esmond) %{install_base}/bin/*
+%attr(0755,esmond,esmond) %{install_base}/util/*
+%attr(0755,esmond,esmond) %{install_base}/esmond_client/clients/*
+%attr(0755,esmond,esmond) %{install_base}/mkdevenv
+%attr(0755,esmond,esmond) %{install_base}/configure_esmond
 %{install_base}/*
 /etc/httpd/conf.d/apache-esmond.conf
-/etc/profile.d/esmond.csh
-/etc/profile.d/esmond.sh
+%attr(0755,esmond,esmond) /etc/profile.d/esmond.csh
+%attr(0755,esmond,esmond) /etc/profile.d/esmond.sh
  
 %changelog
 * Wed Mar 5 2014 Monte Goode <mmgoode@lbl.gov> .99-1
