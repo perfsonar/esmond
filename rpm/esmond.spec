@@ -18,14 +18,25 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:	no
  
+%if 0%{?el7}
+BuildRequires:  python
+BuildRequires:  python-virtualenv
+%else
 BuildRequires:  python27
+%endif
 BuildRequires:  httpd
 BuildRequires:  postgresql-devel
 BuildRequires:  mercurial
 BuildRequires:  gcc
 
+%if 0%{?el7}
+Requires:       python
+Requires:       python-virtualenv
+Requires:       mod_wsgi
+%else
 Requires:       python27
 Requires:       python27-mod_wsgi
+%endif
 Requires:       cassandra20
 Requires:       httpd
 Requires:       postgresql
@@ -94,8 +105,12 @@ rm -rf %{buildroot}/%{install_base}/rpm
 # NOTE: This part is why its not noarch
 cd %{buildroot}/%{install_base}
 rm -f .gitignore
+%if 0%{?el7}
+virtualenv --prompt="(esmond)" .
+%else
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
+%endif
 . bin/activate
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
 python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
