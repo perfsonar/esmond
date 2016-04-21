@@ -38,7 +38,7 @@ Configuring the perfSONAR Yum repository
 ----------------------------------------
 The final repo you need to configure is the repository containing the perfSONAR packages. Esmond currently lives in a pre-release yum repository. It also contains Python 2.7 packages for i386/i686 architectures. You can configure that repository with the following:
 
-#. Download the architecture independent RPM `here <http://software.internet2.edu/branches/release-3.4/rpms/el6/x86_64/RPMS.main/Internet2-repo-0.5-2.noarch.rpm>`_
+#. Download the architecture independent RPM `here <http://downloads.perfsonar.net/redhat/main/rpms/el6/i386/main/RPMS/Internet2-repo-0.6-1.noarch.rpm>`_
 #. Run the following command::
     
     yum localinstall Internet2-repo-0.5-2.noarch.rpm
