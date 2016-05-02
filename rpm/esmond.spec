@@ -32,6 +32,7 @@ BuildRequires:  gcc
 %if 0%{?el7}
 Requires:       python
 Requires:       python-virtualenv
+Requires:       python2-mock
 Requires:       mod_wsgi
 %else
 Requires:       python27
