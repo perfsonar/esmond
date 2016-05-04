@@ -19,8 +19,8 @@ License:        New BSD License
 URL:            http://software.es.net/esmond
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-AutoReqProv:	no
- 
+AutoReqProv:    no
+
 %if 0%{?el7}
 BuildRequires:  python
 BuildRequires:  python-virtualenv
