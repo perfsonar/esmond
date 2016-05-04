@@ -1,6 +1,9 @@
 # Make sure that unpackaged files are noticed
 %define _unpackaged_files_terminate_build      1
 
+# Skip over compile errors in python3 files
+%global _python_bytecompile_errors_terminate_build 0
+
 # Don't create a debug package
 %define debug_package %{nil}
 
@@ -37,6 +40,7 @@ Requires:       mod_wsgi
 %else
 Requires:       python27
 Requires:       python27-mod_wsgi
+Requires:       python-mock
 %endif
 Requires:       cassandra20
 Requires:       httpd
@@ -126,8 +130,11 @@ find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" 
 
 %post
 cd %{install_base}
+%if 0%{?el7}
+%else
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
+%endif
 . bin/activate
 
 #generate secret key
@@ -140,6 +147,10 @@ touch /var/log/esmond/esmond.log
 touch /var/log/esmond/django.log
 touch /var/log/esmond/install.log
 chown -R apache:apache /var/log/esmond
+%if 0%{?el7}
+chcon -R system_u:object_r:httpd_log_t:s0 /var/log/esmond
+setsebool -P httpd_can_network_connect on
+%endif
 
 #handle updates
 if [ "$1" = "2" ]; then
