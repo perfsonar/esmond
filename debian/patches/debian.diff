@@ -9,7 +9,7 @@
  sql_db_password = changeit
 --- a/rpm/config_files/apache-esmond.conf
 +++ b/rpm/config_files/apache-esmond.conf
-@@ -1,25 +1,20 @@
+@@ -1,15 +1,12 @@
 -WSGIScriptAlias /esmond /usr/lib/esmond/esmond/wsgi.py
 -WSGIPythonPath /usr/lib/esmond/esmond:/usr/lib/esmond/lib/python2.7:/usr/lib/esmond/lib/python2.7/site-packages
 -WSGIPythonHome /usr/lib/esmond 
@@ -28,9 +28,8 @@
 +SetEnv ESMOND_ROOT /usr/lib/python2.7/dist-packages/esmond
  SetEnv ESMOND_CONF /etc/esmond/esmond.conf
  AuthType None
--Order deny,allow
--Allow from all
-+Require all granted
+ <IfVersion >= 2.4>
+@@ -22,8 +19,8 @@
  </Files>
  </Directory>
  
@@ -39,10 +38,8 @@
 +Alias /esmond-static /var/lib/esmond/staticfiles
 +<Directory "/var/lib/esmond/staticfiles">
  AllowOverride None
--Order allow,deny
--Allow from all
-+Require all granted
- </Directory>
+ <IfVersion >= 2.4>
+   Require all granted
 --- a/rpm/config_files/settings.py
 +++ b/rpm/config_files/settings.py
 @@ -63,7 +63,7 @@
