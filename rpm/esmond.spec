@@ -1,6 +1,9 @@
 # Make sure that unpackaged files are noticed
 %define _unpackaged_files_terminate_build      1
 
+# Skip over compile errors in python3 files
+%global _python_bytecompile_errors_terminate_build 0
+
 # Don't create a debug package
 %define debug_package %{nil}
 
@@ -16,16 +19,29 @@ License:        New BSD License
 URL:            http://software.es.net/esmond
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-AutoReqProv:	no
- 
+AutoReqProv:    no
+
+%if 0%{?el7}
+BuildRequires:  python
+BuildRequires:  python-virtualenv
+%else
 BuildRequires:  python27
+%endif
 BuildRequires:  httpd
 BuildRequires:  postgresql-devel
 BuildRequires:  mercurial
 BuildRequires:  gcc
 
+%if 0%{?el7}
+Requires:       python
+Requires:       python-virtualenv
+Requires:       python2-mock
+Requires:       mod_wsgi
+%else
 Requires:       python27
 Requires:       python27-mod_wsgi
+Requires:       python-mock
+%endif
 Requires:       cassandra20
 Requires:       httpd
 Requires:       postgresql
@@ -94,8 +110,12 @@ rm -rf %{buildroot}/%{install_base}/rpm
 # NOTE: This part is why its not noarch
 cd %{buildroot}/%{install_base}
 rm -f .gitignore
+%if 0%{?el7}
+virtualenv --prompt="(esmond)" .
+%else
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
+%endif
 . bin/activate
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
 python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
@@ -110,8 +130,11 @@ find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" 
 
 %post
 cd %{install_base}
+%if 0%{?el7}
+%else
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
+%endif
 . bin/activate
 
 #generate secret key
@@ -124,6 +147,10 @@ touch /var/log/esmond/esmond.log
 touch /var/log/esmond/django.log
 touch /var/log/esmond/install.log
 chown -R apache:apache /var/log/esmond
+%if 0%{?el7}
+chcon -R system_u:object_r:httpd_log_t:s0 /var/log/esmond
+setsebool -P httpd_can_network_connect on
+%endif
 
 #handle updates
 if [ "$1" = "2" ]; then
