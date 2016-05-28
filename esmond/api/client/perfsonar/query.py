@@ -67,12 +67,7 @@ class ApiConnectWarning(Warning):
 
 class QueryLimitException(Exception):
     """Custom QueryLimit exception"""
-    def __init__(self, value):
-        # pylint: disable=super-init-not-called
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
+    pass
 
 
 class QueryLimitWarning(Warning):
