@@ -965,6 +965,8 @@ def espoll():
 
     device_name, oidset_name = args[1:]
 
+    django.setup()
+
     try:
         config = get_config(opts.config_file, opts)
     except ConfigError, e:
@@ -1026,6 +1028,8 @@ def espolld():
     argv = sys.argv
     oparse = get_opt_parser(default_config_file=get_config_path())
     (opts, args) = oparse.parse_args(args=argv)
+
+    django.setup()
 
     try:
         config = get_config(opts.config_file, opts)
