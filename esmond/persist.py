@@ -1356,6 +1356,8 @@ def espersistd():
     worker sub-processes.
 
     """
+    django.setup()
+
     argv = sys.argv
     oparse = get_opt_parser(default_config_file=get_config_path())
     oparse.add_option("-r", "--role", dest="role", default="manager")
