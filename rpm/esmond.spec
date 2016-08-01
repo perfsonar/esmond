@@ -14,7 +14,7 @@
  
 Name:           esmond
 Version:        2.0.4       
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
