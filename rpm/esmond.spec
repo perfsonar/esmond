@@ -40,8 +40,25 @@ Requires:       python-virtualenv
 Requires:       python2-mock
 Requires:       mod_wsgi
 %else
-Requires:       python27  >= 1.1
-Requires:       python27-mod_wsgi  >= 3.4
+#make sure we grab SCL versions
+Requires:       python27                    >= 1.1
+Requires:       python27-mod_wsgi           >= 3.4
+Requires:       python27-python             >= 2.7.8 
+Requires:       python27-python-babel       >= 0.9.6 
+Requires:       python27-python-devel       >= 2.7.8 
+Requires:       python27-python-docutils    >= 0.11 
+Requires:       python27-python-jinja2      >= 2.6-10
+Requires:       python27-python-libs        >= 2.7.8 
+Requires:       python27-python-markupsafe  >= 0.11 
+Requires:       python27-python-nose        >= 1.3.0 
+Requires:       python27-python-pygments    >= 1.5 
+Requires:       python27-python-setuptools  >= 0.9.8 
+Requires:       python27-python-simplejson  >= 3.2.0 
+Requires:       python27-python-sphinx      >= 1.1.3 
+Requires:       python27-python-sqlalchemy  >= 0.7.9-3
+Requires:       python27-python-virtualenv  >= 13.1.0
+Requires:       python27-python-werkzeug    >= 0.8.3
+Requires:       python27-runtime            >= 1.1
 Requires:       python-mock
 Requires:       httpd24-httpd
 %endif
