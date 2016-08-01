@@ -14,7 +14,7 @@
  
 Name:           esmond
 Version:        2.0.4       
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -110,11 +110,11 @@ mkdir -p %{buildroot}/etc/httpd/conf.d/
 %if 0%{?el7}
 mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}/etc/httpd/conf.d/apache-esmond.conf
 %else
-mkdir -p %{buildroot}/opt/rh/httpd24/root/etc/httpd/
+mkdir -p %{buildroot}/opt/rh/httpd24/root/etc/httpd/conf.d/
 echo "" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
 echo "#Setting local listen port" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
 echo "Listen 127.0.0.1:11413" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
-mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}/opt/rh/httpd24/root/etc/httpd/apache-esmond.conf
+mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}/opt/rh/httpd24/root/etc/httpd/conf.d/apache-esmond.conf
 mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond-proxy.conf %{buildroot}/etc/httpd/conf.d/apache-esmond-proxy.conf
 %endif
 
@@ -238,7 +238,7 @@ fi
 %attr(0755,esmond,esmond) /etc/init.d/%{init_script_1}
 %attr(0755,esmond,esmond) /etc/init.d/%{init_script_2}
 /etc/httpd/conf.d/apache-esmond-proxy.conf
-/opt/rh/httpd24/root/etc/httpd/apache-esmond.conf
+/opt/rh/httpd24/root/etc/httpd/conf.d/apache-esmond.conf
 %endif
 %changelog
 * Wed Mar 5 2014 Monte Goode <mmgoode@lbl.gov> .99-1
