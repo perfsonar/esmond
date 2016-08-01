@@ -43,6 +43,7 @@ Requires:       mod_wsgi
 Requires:       python27
 Requires:       python27-mod_wsgi
 Requires:       python-mock
+Requires:       httpd24-httpd
 %endif
 Requires:       cassandra20
 Requires:       httpd
@@ -106,7 +107,16 @@ mv %{buildroot}/%{install_base}/rpm/config_files/settings.py %{buildroot}/%{inst
 
 # Move the apache configuration into place
 mkdir -p %{buildroot}/etc/httpd/conf.d/
+%if 0%{?el7}
 mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}/etc/httpd/conf.d/apache-esmond.conf
+%else
+mkdir -p %{buildroot}/opt/rh/httpd24/root/etc/httpd/
+echo "" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
+echo "#Setting local listen port" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
+echo "Listen 127.0.0.1:11413" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
+mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}/opt/rh/httpd24/root/etc/httpd/apache-esmond.conf
+mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond-proxy.conf %{buildroot}/etc/httpd/conf.d/apache-esmond-proxy.conf
+%endif
 
 # ENV files
 mkdir -p %{buildroot}/etc/profile.d
@@ -162,6 +172,13 @@ chcon -R system_u:object_r:httpd_log_t:s0 /var/log/esmond
 setsebool -P httpd_can_network_connect on
 %endif
 
+#On centos6, force httpd24 on local port
+%if 0%{?el7}
+%else
+    #stop from listening on any ports set in main file
+    sed -i -e s/^Listen/#Listen/g /opt/rh/httpd24/root/etc/httpd/conf/httpd.conf 
+%endif
+
 #handle updates
 if [ "$1" = "2" ]; then
     #migrate pre-2.0 files
@@ -197,6 +214,10 @@ find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
 if [ "$1" != "0" ]; then
     # An RPM upgrade
     /etc/init.d/httpd restart
+    %if 0%{?el7}
+    %else
+        /etc/init.d/httpd24-httpd restart
+    %endif
 fi
 
 %files
@@ -209,13 +230,15 @@ fi
 %attr(0755,esmond,esmond) %{install_base}/mkdevenv
 %attr(0755,esmond,esmond) %{install_base}/configure_esmond
 %{install_base}/*
-/etc/httpd/conf.d/apache-esmond.conf
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.csh
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.sh
 %if 0%{?el7}
+/etc/httpd/conf.d/apache-esmond.conf
 %else
 %attr(0755,esmond,esmond) /etc/init.d/%{init_script_1}
 %attr(0755,esmond,esmond) /etc/init.d/%{init_script_2}
+/etc/httpd/conf.d/apache-esmond-proxy.conf
+/opt/rh/httpd24/root/etc/httpd/apache-esmond.conf
 %endif
 %changelog
 * Wed Mar 5 2014 Monte Goode <mmgoode@lbl.gov> .99-1
