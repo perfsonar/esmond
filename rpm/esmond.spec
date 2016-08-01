@@ -14,7 +14,7 @@
  
 Name:           esmond
 Version:        2.0.4       
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -27,7 +27,7 @@ AutoReqProv:    no
 BuildRequires:  python
 BuildRequires:  python-virtualenv
 %else
-BuildRequires:  python27
+BuildRequires:  python27 >= 1.1
 %endif
 BuildRequires:  httpd
 BuildRequires:  postgresql-devel
@@ -40,8 +40,8 @@ Requires:       python-virtualenv
 Requires:       python2-mock
 Requires:       mod_wsgi
 %else
-Requires:       python27
-Requires:       python27-mod_wsgi
+Requires:       python27  >= 1.1
+Requires:       python27-mod_wsgi  >= 3.4
 Requires:       python-mock
 Requires:       httpd24-httpd
 %endif
@@ -209,7 +209,16 @@ chown -R esmond:esmond /var/run/esmond
 
 #fix any file permissions the pip packages mess-up 
 find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
- 
+
+#restart if not running (i.e. first update since this was added)
+%if 0%{?el7}
+%else
+    /etc/init.d/httpd24-httpd status
+    if [ $? -ne 0 ]; then
+        /etc/init.d/httpd24-httpd start
+    fi
+%endif
+
 %postun
 if [ "$1" != "0" ]; then
     # An RPM upgrade
