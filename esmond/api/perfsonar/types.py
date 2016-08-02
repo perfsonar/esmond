@@ -80,6 +80,9 @@ EVENT_TYPE_CONFIG = {
     "packet-trace": {
         "type": "json",
     },
+    "packet-trace-multi": {
+        "type": "json",
+    },
     "packet-count-lost": {
         "type": "integer"
     },
@@ -103,6 +106,9 @@ EVENT_TYPE_CONFIG = {
     },
     "path-mtu": {
         "type": "integer",
+    },
+    "pscheduler-raw": {
+        "type": "json",
     },
     "rusage": {
         "type": "json",

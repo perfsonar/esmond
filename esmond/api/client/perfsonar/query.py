@@ -67,12 +67,7 @@ class ApiConnectWarning(Warning):
 
 class QueryLimitException(Exception):
     """Custom QueryLimit exception"""
-    def __init__(self, value):
-        # pylint: disable=super-init-not-called
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
+    pass
 
 
 class QueryLimitWarning(Warning):
@@ -181,7 +176,8 @@ class NodeInfo(object):
 
                 # sanity check - this should not happen other than the unlikely
                 # scenario where the final request results is exactly == LIMIT
-                if q_params['time-start'] >= q_params['time-end']:
+                if 'time-end' in q_params and \
+                        q_params['time-start'] >= q_params['time-end']:
                     self.warn('time start >= time end - exiting query loop')
                     break
             else:
