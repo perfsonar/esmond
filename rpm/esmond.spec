@@ -14,7 +14,7 @@
  
 Name:           esmond
 Version:        2.1      
-Release:        0.1rc1%{?dist}
+Release:        0.2rc1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -236,6 +236,8 @@ setsebool -P httpd_can_network_connect on
 %else
     #stop from listening on any ports set in main file
     sed -i -e s/^Listen/#Listen/g /opt/rh/httpd24/root/etc/httpd/conf/httpd.conf 
+    #make sure we have httpd24 enabled in chkconfig
+    chkconfig httpd24-httpd on
 %endif
 
 #handle updates
