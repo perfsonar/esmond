@@ -14,7 +14,7 @@
  
 Name:           esmond
 Version:        2.0.4       
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -64,9 +64,7 @@ Requires:       httpd24-httpd
 %endif
 Requires:       cassandra20
 Requires:       httpd
-Requires:       postgresql
-Requires:       postgresql-server
-Requires:       postgresql-devel
+Requires:       esmond-database
 Requires:       sqlite
 Requires:       sqlite-devel
 Requires:       memcached
@@ -79,6 +77,37 @@ Esmond is a system for collecting and storing large sets of time-series data. Es
 uses a hybrid model for storing data using TSDB for time series data and an SQL
 database for everything else. All data is available via a REST style interface
 (as JSON) allowing for easy integration with other tools.
+
+%package database-postgresql
+Summary:        Esmond Postgresql Database Plugin
+Group:          Development/Tools
+Requires:       postgresql
+Requires:       postgresql-server
+Requires:       postgresql-devel
+Provides:       esmond-database
+
+%description database-postgresql
+Installs OS yum repo's standard Postgresql implementation. This is often an older version
+of postgresql. Depending on the requirements of applications running on the same server as
+esmond or potential performance gains present in new postgresql, it may be desirable to 
+choose a package tied to a specific version instead of this package. 
+
+%package database-postgresql95
+Summary:        Esmond Postgresql 9.5 Database Plugin
+Group:          Development/Tools
+Requires:       postgresql95
+Requires:       postgresql95-server
+Requires:       postgresql95-devel
+Requires(post): postgresql95
+Requires(post): postgresql95-server
+Requires(post): postgresql95-devel
+Provides:       esmond-database
+
+%description database-postgresql95
+Installs Postgresql 9.5 using one of the vendor's RPMs. It will also try to migrate an
+older version of the database to Postgresql 9.5 if it finds one present and there is not
+already data .
+
 
 %pre
 # Create the 'esmond' user
@@ -118,6 +147,10 @@ mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{conf
 
 # Move the config script into place
 mv %{buildroot}/%{install_base}/rpm/scripts/configure_esmond %{buildroot}/%{install_base}/configure_esmond
+
+#install database scripts
+%{buildroot}/%{install_base}/db-scripts/
+mv %{buildroot}/%{install_base}/rpm/scripts/db/* %{buildroot}/%{install_base}/db-scripts/
 
 # Move the default settings.py into place
 mv %{buildroot}/%{install_base}/rpm/config_files/settings.py %{buildroot}/%{install_base}/esmond/settings.py
@@ -236,6 +269,12 @@ find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
     fi
 %endif
 
+%post database-postgresql95
+#try to update the database if this is a clean install
+if [ "$1" = "1" ]; then
+    %{install_base}/db-scripts/upgrade-pgsql95.sh
+fi
+
 %postun
 if [ "$1" != "0" ]; then
     # An RPM upgrade
@@ -266,6 +305,11 @@ fi
 /etc/httpd/conf.d/apache-esmond-proxy.conf
 /opt/rh/httpd24/root/etc/httpd/conf.d/apache-esmond.conf
 %endif
+
+%files database-postgresql95
+%defattr(0644,esmond,esmond,0755)
+%attr(0755,esmond,esmond) %{install_base}/db-scripts/upgrade-pgsql95.sh
+
 %changelog
 * Wed Mar 5 2014 Monte Goode <mmgoode@lbl.gov> .99-1
 - Initial Esmond Spec File including perfsonar support
