@@ -1,14 +1,14 @@
-esmond (2.0.2.1w~beta-1~bpo70+1~0) UNRELEASED; urgency=low
-
-  * TO BE FILLED IN ...
-
- -- Antoine Delvaux <adelvaux@man.poznan.pl>  Sun, 15 May 2016 16:43:35 +0000
-
-esmond (2.0.2~beta-1~bpo70+1) perfsonar-wheezy-release; urgency=low
+esmond (2.0.4~beta-1~bpo70+1) perfsonar-wheezy-release; urgency=low
 
   * Backport to Wheezy.
 
- -- Antoine Delvaux <adelvaux@man.poznan.pl>  Tue, 15 Mar 2016 09:20:53 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 02 Aug 2016 15:07:11 +0000
+
+esmond (2.0.4~beta-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 02 Aug 2016 15:03:10 +0000
 
 esmond (2.0.2~beta-1) perfsonar-jessie-release; urgency=low
 
