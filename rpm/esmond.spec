@@ -9,12 +9,13 @@
 
 %define install_base /usr/lib/esmond
 %define config_base /etc/esmond
+%define dbscript_base /usr/lib/esmond-database
 %define init_script_1 espolld
 %define init_script_2 espersistd
  
 Name:           esmond
 Version:        2.1      
-Release:        0.2rc1%{?dist}
+Release:        0.3rc1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -158,8 +159,8 @@ mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{conf
 mv %{buildroot}/%{install_base}/rpm/scripts/configure_esmond %{buildroot}/%{install_base}/configure_esmond
 
 #install database scripts
-mkdir -p %{buildroot}/%{install_base}/db-scripts/
-mv %{buildroot}/%{install_base}/rpm/scripts/db/* %{buildroot}/%{install_base}/db-scripts/
+mkdir -p %{buildroot}/%{dbscript_base}/
+mv %{buildroot}/%{install_base}/rpm/scripts/db/* %{buildroot}/%{dbscript_base}/
 
 # Move the default settings.py into place
 mv %{buildroot}/%{install_base}/rpm/config_files/settings.py %{buildroot}/%{install_base}/esmond/settings.py
@@ -283,7 +284,7 @@ find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
 %post database-postgresql95
 #try to update the database if this is a clean install
 if [ "$1" = "1" ]; then
-    %{install_base}/db-scripts/upgrade-pgsql95.sh
+    %{dbscript_base}/upgrade-pgsql95.sh
 fi
 
 %postun
@@ -321,7 +322,7 @@ fi
 
 %files database-postgresql95
 %defattr(0644,esmond,esmond,0755)
-%attr(0755,esmond,esmond) %{install_base}/db-scripts/upgrade-pgsql95.sh
+%attr(0755,esmond,esmond) %{dbscript_base}/upgrade-pgsql95.sh
 
 %files compat
 

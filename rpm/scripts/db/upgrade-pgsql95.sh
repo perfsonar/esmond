@@ -16,6 +16,12 @@ if [ "$(ls -A ${NEW_DATADIR})" ]; then
     exit 0
 fi
 
+#Make sure there is something to migrate
+if [ ! -d "$OLD_DATADIR" ] || [ ! "$(ls -A ${OLD_DATADIR})" ]; then
+    echo "Database directory at ${OLD_DATADIR} is empty, so nothing to do. "
+    exit 0
+fi
+
 ##
 # Init the new database with matching settings of old
 su -l postgres -c "${NEW_BINDIR}/initdb  --locale='C' --encoding='sql_ascii' --pgdata='${NEW_DATADIR}' --auth='trust'"
