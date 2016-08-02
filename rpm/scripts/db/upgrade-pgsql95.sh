@@ -18,7 +18,11 @@ fi
 
 #Make sure there is something to migrate
 if [ ! -d "$OLD_DATADIR" ] || [ ! "$(ls -A ${OLD_DATADIR})" ]; then
-    echo "Database directory at ${OLD_DATADIR} is empty, so nothing to do. "
+    echo "No old data to migrate in ${OLD_DATADIR}, init ${NEW_DATADIR}. "
+    su -l postgres -c "${NEW_BINDIR}/initdb --pgdata='${NEW_DATADIR}' --auth='trust'"
+    if [ $? != 0 ]; then
+        exit 1
+    fi
     exit 0
 fi
 
