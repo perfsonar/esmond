@@ -28,7 +28,6 @@ fi
 /etc/init.d/postgresql stop
 /etc/init.d/postgresql-9.5 stop
 sleep 3
-pkill -9 -f postgres
 
 ##
 # Temporarily update auth on old DB to allow upgrade to proceed

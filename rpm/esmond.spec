@@ -13,8 +13,8 @@
 %define init_script_2 espersistd
  
 Name:           esmond
-Version:        2.0.4       
-Release:        5%{?dist}
+Version:        2.1      
+Release:        0.1rc1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -108,6 +108,15 @@ Installs Postgresql 9.5 using one of the vendor's RPMs. It will also try to migr
 older version of the database to Postgresql 9.5 if it finds one present and there is not
 already data .
 
+%package compat
+Summary:        Esmond Backward Compatibility
+Group:          Development/Tools
+Requires:       esmond >= 2.1
+Requires:       esmond-database-postgresql
+Obsoletes:      esmond < 2.1
+
+%description compat
+Transitions esmond instances prior to the split of database modules to new version
 
 %pre
 # Create the 'esmond' user
@@ -149,7 +158,7 @@ mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{conf
 mv %{buildroot}/%{install_base}/rpm/scripts/configure_esmond %{buildroot}/%{install_base}/configure_esmond
 
 #install database scripts
-%{buildroot}/%{install_base}/db-scripts/
+mkdir -p %{buildroot}/%{install_base}/db-scripts/
 mv %{buildroot}/%{install_base}/rpm/scripts/db/* %{buildroot}/%{install_base}/db-scripts/
 
 # Move the default settings.py into place
@@ -306,9 +315,13 @@ fi
 /opt/rh/httpd24/root/etc/httpd/conf.d/apache-esmond.conf
 %endif
 
+%files database-postgresql
+
 %files database-postgresql95
 %defattr(0644,esmond,esmond,0755)
 %attr(0755,esmond,esmond) %{install_base}/db-scripts/upgrade-pgsql95.sh
+
+%files compat
 
 %changelog
 * Wed Mar 5 2014 Monte Goode <mmgoode@lbl.gov> .99-1
