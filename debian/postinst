@@ -59,6 +59,9 @@ case "$1" in
         chgrp www-data /etc/esmond/settings.py
         chmod 640 /etc/esmond/settings.py
 
+        # release debconf descriptor
+        db_stop
+
         # create the TSDB directory
         mkdir -p /var/lib/esmond
         touch /var/lib/esmond/TSDB
@@ -81,8 +84,9 @@ case "$1" in
         chown -R www-data:www-data /var/log/esmond
 
         # setup apache
+        a2enmod headers
         if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
-            invoke-rc.d apache2 reload || true
+            invoke-rc.d apache2 restart || true
         fi
     ;;
 
