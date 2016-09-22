@@ -9,17 +9,17 @@
  sql_db_password = changeit
 --- a/rpm/config_files/apache-esmond.conf
 +++ b/rpm/config_files/apache-esmond.conf
-@@ -1,16 +1,13 @@
+@@ -1,16 +1,15 @@
 -WSGIScriptAlias /esmond /usr/lib/esmond/esmond/wsgi.py
--WSGIPythonPath /usr/lib/esmond/esmond:/usr/lib/esmond/lib/python2.7:/usr/lib/esmond/lib/python2.7/site-packages
--WSGIPythonHome /usr/lib/esmond 
-+WSGIScriptAlias /esmond /usr/lib/python2.7/dist-packages/esmond/wsgi.py
- WSGIPassAuthorization On
 -WSGISocketPrefix run/wsgi
- 
--WSGIDaemonProcess apache python-path=/usr/lib/esmond/esmond:/usr/lib/esmond/lib/python2.7:/usr/lib/esmond/lib/python2.7/site-packages home=/usr/lib/esmond processes=10 threads=5
+-WSGIDaemonProcess esmond python-path=/usr/lib/esmond/esmond:/usr/lib/esmond/lib/python2.7:/usr/lib/esmond/lib/python2.7/site-packages home=/usr/lib/esmond processes=10 threads=5
++WSGIScriptAlias /esmond /usr/lib/python2.7/dist-packages/esmond/wsgi.py
 +WSGIDaemonProcess apache processes=10 threads=5
- WSGIProcessGroup apache
+ 
+ <Location /esmond>
+     WSGIProcessGroup esmond
+     WSGIPassAuthorization On
+ </Location>
  
 -<Directory /usr/lib/esmond/esmond>
 +<Directory /usr/lib/python2.7/dist-packages/esmond>
@@ -30,7 +30,7 @@
  SetEnv ESMOND_CONF /etc/esmond/esmond.conf
  AuthType None
  <IfVersion >= 2.4>
-@@ -23,8 +20,8 @@
+@@ -23,8 +22,8 @@
  </Files>
  </Directory>
  
