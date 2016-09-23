@@ -17,7 +17,8 @@
 +WSGIDaemonProcess apache processes=10 threads=5
  
  <Location /esmond>
-     WSGIProcessGroup esmond
+-    WSGIProcessGroup esmond
++    WSGIProcessGroup apache
      WSGIPassAuthorization On
  </Location>
  
