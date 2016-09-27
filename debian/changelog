@@ -1,15 +1,15 @@
-esmond (2.1~5.rc1-1~bpo70+1) UNRELEASED; urgency=low
+esmond (2.1~5.rc1-1~bpo70+1) perfsonar-wheezy-staging; urgency=low
 
   * Backport to Wheezy.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 27 Sep 2016 10:37:52 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 27 Sep 2016 17:36:03 +0000
 
-esmond (2.1~5.rc1-1) UNRELEASED; urgency=low
+esmond (2.1~5.rc1-1) perfsonar-jessie-staging; urgency=low
 
   * New upstream version.
   * We now enable the apache headers module.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Thu, 22 Sep 2016 13:08:46 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 27 Sep 2016 17:33:07 +0000
 
 esmond (2.0.4~beta-1) perfsonar-jessie-release; urgency=low
 
