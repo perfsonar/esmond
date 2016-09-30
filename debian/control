@@ -12,7 +12,7 @@ Vcs-Browser: https://github.com/esnet/esmond.git
 
 Package: esmond
 Architecture: all
-Depends: apache2 | httpd, libapache2-mod-wsgi, postgresql (>= 165+deb8u1~bpo7+1),
+Depends: apache2 | httpd, libapache2-mod-wsgi, postgresql (>= 9.4),
  memcached, cassandra, ucf (>= 0.28), python-pkg-resources, python-support,
  python-nagiosplugin, python-requests, python-mimeparse, python-psycopg2,
  python-pycassa, python-memcache, python-webpy, python-mock, python-dlnetsnmp,
