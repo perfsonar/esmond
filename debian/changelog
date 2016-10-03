@@ -1,21 +1,16 @@
-esmond (2.1~5.rc1-1~bpo70+3) perfsonar-wheezy-staging; urgency=low
-
-  * Increasing postgresl-common dependency to 9.4
-
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Fri, 30 Sep 2016 15:23:06 +0000
-
-esmond (2.1~5.rc1-1~bpo70+1) perfsonar-wheezy-staging; urgency=low
+esmond (2.1~5.rc1-2~bpo70+1) perfsonar-wheezy-staging; urgency=low
 
   * Backport to Wheezy.
+  * Increasing postgresl-common dependency to 9.4
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 27 Sep 2016 17:36:03 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Mon, 03 Oct 2016 14:11:37 +0000
 
-esmond (2.1~5.rc1-1) perfsonar-jessie-staging; urgency=low
+esmond (2.1~5.rc1-2) perfsonar-jessie-staging; urgency=low
 
   * New upstream version.
   * We now enable the apache headers module.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 27 Sep 2016 17:33:07 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Mon, 03 Oct 2016 14:06:50 +0000
 
 esmond (2.0.4~beta-1) perfsonar-jessie-release; urgency=low
 
