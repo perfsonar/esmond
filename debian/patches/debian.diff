@@ -14,11 +14,10 @@
 -WSGISocketPrefix run/wsgi
 -WSGIDaemonProcess esmond python-path=/usr/lib/esmond/esmond:/usr/lib/esmond/lib/python2.7:/usr/lib/esmond/lib/python2.7/site-packages home=/usr/lib/esmond processes=10 threads=5
 +WSGIScriptAlias /esmond /usr/lib/python2.7/dist-packages/esmond/wsgi.py
-+WSGIDaemonProcess apache processes=10 threads=5
++WSGIDaemonProcess esmond processes=10 threads=5
  
  <Location /esmond>
--    WSGIProcessGroup esmond
-+    WSGIProcessGroup apache
+     WSGIProcessGroup esmond
      WSGIPassAuthorization On
  </Location>
  
