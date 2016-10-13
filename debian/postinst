@@ -90,7 +90,7 @@ case "$1" in
             apache2_invoke enconf apache-esmond
         else
             a2enmod headers
-            a2enmod version
+            [ -e /etc/apache2/mods-available/version.load ] && a2enmod version
             ln -sf /etc/apache2/conf-available/apache-esmond.conf /etc/apache2/conf.d/
             if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
                 invoke-rc.d apache2 restart || true
