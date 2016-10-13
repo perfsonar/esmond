@@ -1,16 +1,16 @@
-esmond (2.1~5.rc1-2~bpo70+1) perfsonar-wheezy-staging; urgency=low
+esmond (2.1~5.rc1-3~bpo70+1) perfsonar-wheezy-staging; urgency=low
 
-  * Backport to Wheezy.
-  * Increasing postgresl-common dependency to 9.4
+  * Backport to Wheezy, Ubuntu Precise Pangolin and Trusty Tahr.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Mon, 03 Oct 2016 14:11:37 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Thu, 13 Oct 2016 17:18:56 +0000
 
-esmond (2.1~5.rc1-2) perfsonar-jessie-staging; urgency=low
+esmond (2.1~5.rc1-3) perfsonar-jessie-staging; urgency=low
 
   * New upstream version.
   * We now enable the apache headers module.
+  * Adding autopkgtest tests.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Mon, 03 Oct 2016 14:06:50 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Thu, 13 Oct 2016 15:58:56 +0000
 
 esmond (2.0.4~beta-1) perfsonar-jessie-release; urgency=low
 
