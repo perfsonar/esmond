@@ -25,8 +25,15 @@ case "$1" in
             dbc_go esmond $@
         fi
 
-        if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
-            invoke-rc.d apache2 reload || true
+        if [ -e /usr/share/apache2/apache2-maintscript-helper ]; then
+            . /usr/share/apache2/apache2-maintscript-helper
+            apache2_invoke disconf apache-esmond
+            apache2_invoke dismod headers
+        else
+            rm -f /etc/apache2/conf.d/apache-esmond.conf
+            if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
+                invoke-rc.d apache2 reload || true
+            fi
         fi
     ;;
 

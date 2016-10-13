@@ -5,14 +5,14 @@ Maintainer: Valentin Vidic <Valentin.Vidic@CARNet.hr>
 Build-Depends: debhelper (>= 8.0.0), python | python-all | python-dev | python-all-dev,
  dh-python
 X-Python-Version: >= 2.7
-Standards-Version: 3.9.3
+Standards-Version: 3.9.6
 Homepage: http://software.es.net/esmond/
 Vcs-Git: git://github.com/esnet/esmond.git
 Vcs-Browser: https://github.com/esnet/esmond.git
 
 Package: esmond
 Architecture: all
-Depends: apache2 | httpd, libapache2-mod-wsgi, postgresql (>= 9.4),
+Depends: apache2, libapache2-mod-wsgi, postgresql,
  memcached, cassandra, ucf (>= 0.28), python-pkg-resources, python-support,
  python-nagiosplugin, python-requests, python-mimeparse, python-psycopg2,
  python-pycassa, python-memcache, python-webpy, python-mock, python-dlnetsnmp,
