@@ -85,6 +85,7 @@ case "$1" in
 
         # setup apache
         a2enmod headers
+        a2enmod version
         if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
             invoke-rc.d apache2 restart || true
         fi
