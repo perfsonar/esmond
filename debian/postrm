@@ -23,12 +23,6 @@ case "$1" in
     purge)
         deluser --system --quiet esmond || true
 
-        . /usr/share/debconf/confmodule
-        if [ -f /usr/share/dbconfig-common/dpkg/postrm.pgsql ]; then
-            . /usr/share/dbconfig-common/dpkg/postrm.pgsql 
-            dbc_go esmond $@
-        fi
-
         ucf --purge /etc/esmond/esmond.conf
         rm -f /etc/esmond/esmond.conf
 
@@ -37,6 +31,12 @@ case "$1" in
 
         rm -rf /var/log/esmond
         rm -rf /var/lib/esmond
+
+        . /usr/share/debconf/confmodule
+        if [ -f /usr/share/dbconfig-common/dpkg/postrm.pgsql ]; then
+            . /usr/share/dbconfig-common/dpkg/postrm.pgsql
+            dbc_go esmond $@
+        fi
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
