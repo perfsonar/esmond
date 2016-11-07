@@ -19,16 +19,16 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-        . /usr/share/debconf/confmodule
-        if [ -f /usr/share/dbconfig-common/dpkg/prerm.pgsql ]; then
-            . /usr/share/dbconfig-common/dpkg/prerm.pgsql
-            dbc_go esmond $@
-        fi
-
         if [ -e /usr/share/apache2/apache2-maintscript-helper ]; then
             . /usr/share/apache2/apache2-maintscript-helper
             apache2_invoke disconf apache-esmond
             apache2_invoke dismod headers
+        fi
+
+        . /usr/share/debconf/confmodule
+        if [ -f /usr/share/dbconfig-common/dpkg/prerm.pgsql ]; then
+            . /usr/share/dbconfig-common/dpkg/prerm.pgsql
+            dbc_go esmond $@
         fi
     ;;
 
