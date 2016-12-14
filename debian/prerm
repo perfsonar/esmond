@@ -21,6 +21,11 @@ case "$1" in
     remove|upgrade|deconfigure)
         # load debconf first or apache output will break it
         . /usr/share/debconf/confmodule
+        if [ -f /usr/share/dbconfig-common/dpkg/prerm.pgsql ]; then
+            . /usr/share/dbconfig-common/dpkg/prerm.pgsql
+            dbc_go esmond $@
+        fi
+        db_stop
 
         if [ -e /usr/share/apache2/apache2-maintscript-helper ]; then
             . /usr/share/apache2/apache2-maintscript-helper
@@ -31,11 +36,6 @@ case "$1" in
             if which invoke-rc.d > /dev/null && [ -x /etc/init.d/apache2 ]; then
                 invoke-rc.d apache2 reload || true
             fi
-        fi
-
-        if [ -f /usr/share/dbconfig-common/dpkg/prerm.pgsql ]; then
-            . /usr/share/dbconfig-common/dpkg/prerm.pgsql
-            dbc_go esmond $@
         fi
     ;;
 
