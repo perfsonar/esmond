@@ -27,6 +27,7 @@ AutoReqProv:    no
 %if 0%{?el7}
 BuildRequires:  python
 BuildRequires:  python-virtualenv
+BuildRequires: systemd
 %else
 BuildRequires:  python27 >= 1.1
 %endif
@@ -40,6 +41,7 @@ Requires:       python
 Requires:       python-virtualenv
 Requires:       python2-mock
 Requires:       mod_wsgi
+%{?systemd_requires: %systemd_requires}
 %else
 #make sure we grab SCL versions
 Requires:       python27                    >= 1.1
@@ -295,9 +297,10 @@ fi
 %postun
 if [ "$1" != "0" ]; then
     # An RPM upgrade
-    /etc/init.d/httpd restart
     %if 0%{?el7}
+        systemctl restart httpd
     %else
+        /etc/init.d/httpd restart
         /etc/init.d/httpd24-httpd restart
     %endif
 fi
