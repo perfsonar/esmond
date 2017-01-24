@@ -17,7 +17,7 @@ setup(
         'djangorestframework==3.1.3', 'drf-extensions==0.2.7',
         'djangorestframework-filters==0.3.0', 'python-memcached==1.57',
         'pycassa==1.11.1', 'psycopg2==2.6.1', 'python-mimeparse==0.1.4',
-        'requests', 'nagiosplugin==1.2.2', 'pandokia==1.3.10'
+        'requests', 'nagiosplugin==1.2.2', 'pandokia==1.3.10', 'thrift==0.9.3'
     ],
     entry_points={
         'console_scripts': [
