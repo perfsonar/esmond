@@ -1,11 +1,11 @@
-esmond (2.1~6.rc1-2) perfsonar-jessie-staging; urgency=low
+esmond (2.1~7.rc3-1) perfsonar-jessie-staging; urgency=low
 
   * New upstream version.
   * We now enable the apache headers module.
   * Adding autopkgtest tests.
   * Removing Tastypie migration script from postinst.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Thu, 15 Dec 2016 15:42:34 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Fri, 17 Feb 2017 17:08:42 +0100
 
 esmond (2.0.4~beta-1) perfsonar-jessie-release; urgency=low
 
