@@ -27,13 +27,6 @@ if [ ! -d "$OLD_DATADIR" ] || [ ! "$(ls -A ${OLD_DATADIR})" ]; then
 fi
 
 ##
-# Init the new database with matching settings of old
-su -l postgres -c "${NEW_BINDIR}/initdb  --locale='C' --encoding='sql_ascii' --pgdata='${NEW_DATADIR}' --auth='trust'"
-if [ $? != 0 ]; then
-    exit 1
-fi
-
-##
 # Make sure both old and new are stopped
 /etc/init.d/postgresql stop
 /etc/init.d/postgresql-9.5 stop
@@ -52,6 +45,26 @@ local   all         all                               trust
 host    all         all         127.0.0.1/32          trust
 host    all         all         ::1/128               trust
 EOL
+if [ $? != 0 ]; then
+    exit 1
+fi
+
+#Get encoding and locale
+/etc/init.d/postgresql start
+ENCODING=`su -l postgres -c "psql -wAt -c 'SHOW SERVER_ENCODING'"`
+if [ $? != 0 ]; then
+    ENCODING="sql_ascii"
+fi
+LOCALE=`su -l postgres -c "psql -wAt -c 'SHOW LC_COLLATE'"`
+if [ $? != 0 ]; then
+    LOCALE="C"
+fi
+echo "Using encoding $ENCODING and locale $LOCALE"
+/etc/init.d/postgresql stop
+
+##
+# Init the new database with matching settings of old
+su -l postgres -c "${NEW_BINDIR}/initdb  --locale='${LOCALE}' --encoding='${ENCODING}' --pgdata='${NEW_DATADIR}' --auth='trust'"
 if [ $? != 0 ]; then
     exit 1
 fi
