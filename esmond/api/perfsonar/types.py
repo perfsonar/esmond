@@ -110,6 +110,9 @@ EVENT_TYPE_CONFIG = {
     "pscheduler-raw": {
         "type": "json",
     },
+    "pscheduler-run-href": {
+        "type": "json",
+    },
     "rusage": {
         "type": "json",
     },
