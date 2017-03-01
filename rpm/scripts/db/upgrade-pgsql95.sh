@@ -77,8 +77,7 @@ if [ $? != 0 ]; then
 fi
 
 ##
-# Restore auth to md5 on both
+# Restore old config file
 mv $OLD_HBA_BAK ${OLD_DATADIR}/pg_hba.conf
 chown postgres:postgres ${OLD_DATADIR}/pg_hba.conf
 chmod 600 ${OLD_DATADIR}/pg_hba.conf
-sed -i -e s/trust$/md5/g ${NEW_DATADIR}/pg_hba.conf
