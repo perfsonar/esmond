@@ -5,6 +5,10 @@ set -e
 . /usr/share/debconf/confmodule
 
 if [ -f /usr/share/dbconfig-common/dpkg/config.pgsql ]; then
-    . /usr/share/dbconfig-common/dpkg/config.pgsql 
+    . /usr/share/dbconfig-common/dpkg/config.pgsql
+
+    dbc_dbuser=esmond
+    dbc_dbname=esmond
+    dbc_authmethod_user=password
     dbc_go esmond $@
 fi
