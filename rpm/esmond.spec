@@ -15,7 +15,7 @@
  
 Name:           esmond
 Version:        2.1      
-Release:        0.7.rc3%{?dist}
+Release:        0.8.rc3%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
