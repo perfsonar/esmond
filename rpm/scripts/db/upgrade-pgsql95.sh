@@ -53,11 +53,19 @@ fi
 /etc/init.d/postgresql start
 ENCODING=`su -l postgres -c "psql -wAt -c 'SHOW SERVER_ENCODING'"`
 if [ $? != 0 ]; then
-    ENCODING="sql_ascii"
+    #try again on 127.0.0.1
+    ENCODING=`su -l postgres -c "psql -h 127.0.0.1 -wAt -c 'SHOW SERVER_ENCODING'"`
+    if [ $? != 0 ]; then
+        ENCODING="sql_ascii"
+    fi
 fi
 LOCALE=`su -l postgres -c "psql -wAt -c 'SHOW LC_COLLATE'"`
 if [ $? != 0 ]; then
-    LOCALE="C"
+    #try again on 127.0.0.1
+    LOCALE=`su -l postgres -c "psql -h 127.0.0.1 -wAt -c 'SHOW LC_COLLATE'"`
+    if [ $? != 0 ]; then
+        LOCALE="C"
+    fi
 fi
 echo "Using encoding $ENCODING and locale $LOCALE"
 /etc/init.d/postgresql stop
@@ -77,8 +85,7 @@ if [ $? != 0 ]; then
 fi
 
 ##
-# Restore auth to md5 on both
+# Restore old config file
 mv $OLD_HBA_BAK ${OLD_DATADIR}/pg_hba.conf
 chown postgres:postgres ${OLD_DATADIR}/pg_hba.conf
 chmod 600 ${OLD_DATADIR}/pg_hba.conf
-sed -i -e s/trust$/md5/g ${NEW_DATADIR}/pg_hba.conf
