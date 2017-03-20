@@ -15,7 +15,7 @@
  
 Name:           esmond
 Version:        2.1      
-Release:        0.7.rc3%{?dist}
+Release:        0.8.rc3%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -153,6 +153,9 @@ mkdir -p %{buildroot}/%{install_base}/bin/
 
 #Move the init scripts into place
 %if 0%{?el7}
+#create systemd-tmpfiles config for cassandra since it doesn't do this right
+mkdir -p %{buildroot}/%{_tmpfilesdir}
+mv %{buildroot}/%{install_base}/rpm/config_files/tmpfiles.conf %{buildroot}/%{_tmpfilesdir}/esmond.conf
 %else
 mkdir -p %{buildroot}/etc/init.d
 mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_1} %{buildroot}/etc/init.d/%{init_script_1}
@@ -319,6 +322,7 @@ fi
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.sh
 %if 0%{?el7}
 /etc/httpd/conf.d/apache-esmond.conf
+%{_tmpfilesdir}/esmond.conf
 %else
 %attr(0755,esmond,esmond) /etc/init.d/%{init_script_1}
 %attr(0755,esmond,esmond) /etc/init.d/%{init_script_2}
