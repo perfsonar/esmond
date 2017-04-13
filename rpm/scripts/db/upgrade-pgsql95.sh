@@ -35,7 +35,8 @@ sleep 1
 pkill -9 -f httpd 
 /etc/init.d/postgresql stop
 /etc/init.d/postgresql-9.5 stop
-sleep 3
+sleep 5
+pkill -9 -f postgres
 
 ##
 # Temporarily update auth on old DB to allow upgrade to proceed
@@ -56,6 +57,7 @@ fi
 
 #Get encoding and locale
 /etc/init.d/postgresql start
+sleep 10
 ENCODING=`su -l postgres -c "psql -wAt -c 'SHOW SERVER_ENCODING'"`
 if [ $? != 0 ]; then
     #try again on 127.0.0.1
@@ -74,6 +76,8 @@ if [ $? != 0 ]; then
 fi
 echo "Using encoding $ENCODING and locale $LOCALE"
 /etc/init.d/postgresql stop
+sleep 5
+pkill -9 -f postgres
 
 ##
 # Init the new database with matching settings of old
