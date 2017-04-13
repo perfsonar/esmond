@@ -28,6 +28,11 @@ fi
 
 ##
 # Make sure both old and new are stopped
+/etc/init.d/httpd stop 2> /dev/null
+/etc/init.d/httpd24-httpd stop 2> /dev/null
+sleep 1
+#make sure httpd is really dead
+pkill -9 -f httpd 
 /etc/init.d/postgresql stop
 /etc/init.d/postgresql-9.5 stop
 sleep 3
