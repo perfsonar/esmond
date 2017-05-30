@@ -1,0 +1,63 @@
+Django-1.10: Fix template configuration
+
+2017-05-30 09:24:26,767 [ERROR] /usr/lib/python2.7/dist-packages/django/core/handlers/exception.py: Internal Server Error: /esmond/perfsonar/
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/django/core/handlers/exception.py", line 42, in inner
+    response = get_response(request)
+  File "/usr/lib/python2.7/dist-packages/django/core/handlers/base.py", line 249, in _legacy_get_response
+    response = self._get_response(request)
+  File "/usr/lib/python2.7/dist-packages/django/core/handlers/base.py", line 217, in _get_response
+    response = self.process_exception_by_middleware(e, request)
+  File "/usr/lib/python2.7/dist-packages/django/core/handlers/base.py", line 215, in _get_response
+    response = response.render()
+  File "/usr/lib/python2.7/dist-packages/django/template/response.py", line 109, in render
+    self.content = self.rendered_content
+  File "/usr/lib/python2.7/dist-packages/rest_framework/response.py", line 70, in rendered_content
+    ret = renderer.render(self.data, media_type, context)
+  File "/usr/lib/python2.7/dist-packages/rest_framework/renderers.py", line 681, in render
+    template = loader.get_template(self.template)
+  File "/usr/lib/python2.7/dist-packages/django/template/loader.py", line 25, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+TemplateDoesNotExist: rest_framework/api.html
+
+--- a/rpm/config_files/settings.py
++++ b/rpm/config_files/settings.py
+@@ -75,10 +75,21 @@
+ MEDIA_URL = ''
+ 
+ # List of callables that know how to import templates from various sources.
+-TEMPLATE_LOADERS = (
+-    'django.template.loaders.filesystem.Loader',
+-    'django.template.loaders.app_directories.Loader',
+-)
++TEMPLATES = [ 
++    { 
++        'BACKEND': 'django.template.backends.django.DjangoTemplates', 
++        'DIRS': [], 
++        'APP_DIRS': True, 
++        'OPTIONS': { 
++            'context_processors': [ 
++                'django.template.context_processors.debug', 
++                'django.template.context_processors.request', 
++                'django.contrib.auth.context_processors.auth', 
++                'django.contrib.messages.context_processors.messages', 
++            ], 
++        }, 
++    }, 
++]
+ 
+ MIDDLEWARE_CLASSES = (
+     'django.middleware.common.CommonMiddleware',
+@@ -89,12 +100,6 @@
+ 
+ ROOT_URLCONF = 'esmond.urls'
+ 
+-TEMPLATE_DIRS = (
+-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+-    # Always use forward slashes, even on Windows.
+-    # Don't forget to use absolute paths, not relative paths.
+-)
+-
+ INSTALLED_APPS = (
+     'django.contrib.auth',
+     'django.contrib.contenttypes',

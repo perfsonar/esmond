@@ -1,0 +1,95 @@
+Django-1.10: Fix urlpatterns list
+
+# esmond_manage migrate
+Traceback (most recent call last):
+  File "esmond/manage.py", line 14, in <module>
+    execute_from_command_line(sys.argv)
+  File "/usr/lib/python2.7/dist-packages/django/core/management/__init__.py", line 367, in execute_from_command_line
+    utility.execute()
+  File "/usr/lib/python2.7/dist-packages/django/core/management/__init__.py", line 359, in execute
+    self.fetch_command(subcommand).run_from_argv(self.argv)
+  File "/usr/lib/python2.7/dist-packages/django/core/management/base.py", line 294, in run_from_argv
+    self.execute(*args, **cmd_options)
+  File "/usr/lib/python2.7/dist-packages/django/core/management/base.py", line 342, in execute
+    self.check()
+  File "/usr/lib/python2.7/dist-packages/django/core/management/base.py", line 374, in check
+    include_deployment_checks=include_deployment_checks,
+  File "/usr/lib/python2.7/dist-packages/django/core/management/commands/migrate.py", line 62, in _run_checks
+    issues.extend(super(Command, self)._run_checks(**kwargs))
+  File "/usr/lib/python2.7/dist-packages/django/core/management/base.py", line 361, in _run_checks
+    return checks.run_checks(**kwargs)
+  File "/usr/lib/python2.7/dist-packages/django/core/checks/registry.py", line 81, in run_checks
+    new_errors = check(app_configs=app_configs)
+  File "/usr/lib/python2.7/dist-packages/django/core/checks/urls.py", line 14, in check_url_config
+    return check_resolver(resolver)
+  File "/usr/lib/python2.7/dist-packages/django/core/checks/urls.py", line 24, in check_resolver
+    for pattern in resolver.url_patterns:
+  File "/usr/lib/python2.7/dist-packages/django/utils/functional.py", line 35, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+  File "/usr/lib/python2.7/dist-packages/django/urls/resolvers.py", line 313, in url_patterns
+    patterns = getattr(self.urlconf_module, "urlpatterns", self.urlconf_module)
+  File "/usr/lib/python2.7/dist-packages/django/utils/functional.py", line 35, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+  File "/usr/lib/python2.7/dist-packages/django/urls/resolvers.py", line 306, in urlconf_module
+    return import_module(self.urlconf_name)
+  File "/usr/lib/python2.7/importlib/__init__.py", line 37, in import_module
+    __import__(name)
+  File "/usr/lib/python2.7/dist-packages/esmond/urls.py", line 1, in <module>
+    from django.conf.urls import url, patterns, include
+ImportError: cannot import name patterns
+
+--- a/esmond/urls.py
++++ b/esmond/urls.py
+@@ -1,4 +1,4 @@
+-from django.conf.urls import url, patterns, include
++from django.conf.urls import url, include
+ 
+ # Uncomment the next two lines to enable the admin:
+ from django.contrib import admin
+@@ -81,20 +81,19 @@
+ # when you need to look at the view names for reverse(), etc.
+ # print extended_router.urls
+ 
+-urlpatterns = patterns(
+-    '',
++urlpatterns = [
+     # Original urls - built in the original api.py files and attached here.
+-    (r'^admin/', include(admin.site.urls)),
++    url(r'^admin/', include(admin.site.urls)),
+     # (r'', include(perfsonar_api.urls)), # old ps api
+     # (r'', include(v1_api.urls)), # old snmp api
+     # # URL definitions for V2 esmond API.
+     # standard root level urls
+-    (r'v2/', include(router.urls)),
++    url(r'v2/', include(router.urls)),
+     # nested urls for main API
+-    (r'v2/', include(extended_router.urls)),
++    url(r'v2/', include(extended_router.urls)),
+     # "nested" urls that fetch interface data for main API
+-    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/?$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+-    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)/?$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
++    url(r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/?$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
++    url(r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)/?$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+     # bulk data retrieval endpoints
+     url(r'v2/bulk/interface/', BulkInterfaceRequestViewset.as_view({'post': 'create'}), name='bulk-interface'),
+     url(r'v2/bulk/timeseries/', BulkTimeseriesViewset.as_view({'post': 'create'}), name='bulk-timeseries'),
+@@ -103,13 +102,13 @@
+     url(r'v2/timeseries/(?P<ts_type>[^/]+)/(?P<ts_ns>[^/]+)/(?P<ts_device>[^/]+)/(?P<ts_oidset>[^/]+)/(?P<ts_oid>[^/]+)/(?P<ts_iface>[^/]+)/(?P<ts_frequency>[^/]+)/?$',
+         TimeseriesRequestViewset.as_view({'post': 'create', 'get': 'retrieve'}), name='timeseries'),
+     # nested uri for pdu/outlet data endpoint
+-    (r'v2/pdu/(?P<name>[^/]+)/outlet/(?P<outletID>[^/]+)/(?P<outlet_dataset>[^/]+)/?$', OutletDataViewset.as_view({'get': 'retrieve'})),
++    url(r'v2/pdu/(?P<name>[^/]+)/outlet/(?P<outletID>[^/]+)/(?P<outlet_dataset>[^/]+)/?$', OutletDataViewset.as_view({'get': 'retrieve'})),
+     ## URL definitions for V2 Perfsonar API
+     # main archive/metadata endpoint.
+-    (r'{0}/'.format(PS_ROOT), include(ps_router.urls)),
++    url(r'{0}/'.format(PS_ROOT), include(ps_router.urls)),
+     # event type detail endpoint.
+-    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/?$'.format(PS_ROOT), EventTypeDetailViewset.as_view({'post': 'create', 'get': 'retrieve'})),
++    url(r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/?$'.format(PS_ROOT), EventTypeDetailViewset.as_view({'post': 'create', 'get': 'retrieve'})),
+     # timeseries data endpoint.
+-    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
+-    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/(?P<summary_window>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
+-)
++    url(r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
++    url(r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/(?P<summary_window>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
++]
