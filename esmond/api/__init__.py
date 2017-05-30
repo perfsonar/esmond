@@ -4,7 +4,6 @@ other modules.  Reduces the overhead/etc of importing api.py itself.
 """
 
 from esmond.config import get_config_path, get_config
-from esmond.api.models import OIDSet
 
 # Prefix used in all the snmp data cassandra keys
 SNMP_NAMESPACE = 'snmp'
@@ -28,6 +27,7 @@ class EndpointMap(object):
 
     def generate_endpoint_map(self):
         payload = {}
+        from esmond.api.models import OIDSet
         for oidset in OIDSet.objects.all().order_by('name'):
             for oid in oidset.oids.all().order_by('name'):
                 if oid.endpoint_alias:
