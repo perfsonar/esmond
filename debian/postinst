@@ -67,6 +67,14 @@ case "$1" in
         touch /var/lib/esmond/TSDB
         chown -R esmond:esmond /var/lib/esmond
 
+        # wait for cassandra to start before creating the database
+        for i in {1..10}; do
+            if ss -lnpt | grep -q :9160; then
+                break
+            fi
+            sleep 1
+        done
+
         # setup database
         (
             . /etc/default/esmond
