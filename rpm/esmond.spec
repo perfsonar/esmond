@@ -175,6 +175,10 @@ mv %{buildroot}/%{install_base}/rpm/scripts/db/* %{buildroot}/%{dbscript_base}/
 # Move the default settings.py into place
 mv %{buildroot}/%{install_base}/rpm/config_files/settings.py %{buildroot}/%{install_base}/esmond/settings.py
 
+# Link the management script
+mkdir -p %{buildroot}/usr/sbin
+ln -s %{install_base}/util/esmond_manage %{buildroot}/usr/sbin
+
 # Move the apache configuration into place
 mkdir -p %{buildroot}/etc/httpd/conf.d/
 %if 0%{?el7}
@@ -318,6 +322,8 @@ fi
 %attr(0755,esmond,esmond) %{install_base}/mkdevenv
 %attr(0755,esmond,esmond) %{install_base}/configure_esmond
 %{install_base}/*
+/usr/sbin/esmond_manage
+/etc/httpd/conf.d/apache-esmond.conf
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.csh
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.sh
 %if 0%{?el7}
