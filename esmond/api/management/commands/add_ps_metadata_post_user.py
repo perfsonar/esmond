@@ -8,17 +8,13 @@ from django.contrib.auth.models import User, Group, Permission
 from .add_api_key_user import generate_api_key_for_user
 
 class Command(BaseCommand):
-    args = 'username'
     help = 'Add a user for POST access to perfSONAR metdata'
 
+    def add_arguments(self, parser):
+        parser.add_argument('username')
+
     def handle(self, *args, **options):
-        self.options = options
-
-        if len(args) < 1 or len(args) > 1:
-            print >>sys.stderr, "takes one argument: %s" % self.args
-            return
-
-        user = args[0]
+        user = options['username']
 
         u = None
 
@@ -38,7 +34,5 @@ class Command(BaseCommand):
                 u.user_permissions.add(perm)
 
         u.save()
-            
-        generate_api_key_for_user(u)
 
-        
+        generate_api_key_for_user(u)
