@@ -3,4 +3,3 @@ debian.diff
 02-esmond-urls.diff
 03-IPAddressField.diff
 04-templates.diff
-05-manage.diff
