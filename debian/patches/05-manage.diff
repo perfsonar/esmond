@@ -1,0 +1,280 @@
+--- a/esmond/api/management/commands/add_api_key_user.py
++++ b/esmond/api/management/commands/add_api_key_user.py
+@@ -18,17 +18,13 @@
+     print 'Key: {0}'.format(tok.key)
+ 
+ class Command(BaseCommand):
+-    args = 'username'
+     help = 'Add a user with just an api key - no extended permissions.'
+ 
+-    def handle(self, *args, **options):
+-        self.options = options
+-
+-        if len(args) < 1 or len(args) > 1:
+-            print >>sys.stderr, "takes one argument: %s" % self.args
+-            return
++    def add_arguments(self, parser):
++        parser.add_argument('username')
+ 
+-        user = args[0]
++    def handle(self, *args, **options):
++        user = options['username']
+ 
+         u = None
+ 
+@@ -41,5 +37,3 @@
+             u.save()
+ 
+         generate_api_key_for_user(u)
+-
+-        
+\ No newline at end of file
+--- a/esmond/api/management/commands/add_device.py
++++ b/esmond/api/management/commands/add_device.py
+@@ -7,17 +7,16 @@
+ from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
+ 
+ class Command(BaseCommand):
+-    args = 'name community [oidset ...]'
+     help = 'Add a device'
+ 
+-    def handle(self, *args, **options):
+-        self.options = options
+-
+-        if len(args) < 2:
+-            print >>sys.stderr, "takes at least 2 arguments: %s" % self.args
+-            return
++    def add_arguments(self, parser):
++        parser.add_argument('name')
++        parser.add_argument('community')
++        parser.add_argument('oidset', nargs='*')
+ 
+-        name, community = args[:2]
++    def handle(self, *args, **options):
++        name = options['name']
++        community = options['community']
+ 
+         try:
+             device = Device.objects.get(name=name)
+@@ -34,7 +33,7 @@
+         device.save()
+ 
+         oidsets = []
+-        for oidset_name in args[2:]:
++        for oidset_name in options['oidset']:
+             try:
+                 oidset = OIDSet.objects.get(name=oidset_name)
+                 oidsets.append(oidset)
+--- a/esmond/api/management/commands/add_device_put_user.py
++++ b/esmond/api/management/commands/add_device_put_user.py
+@@ -9,17 +9,13 @@
+ from .add_api_key_user import generate_api_key_for_user
+ 
+ class Command(BaseCommand):
+-    args = 'username'
+     help = 'Add a user for POST access'
+ 
+-    def handle(self, *args, **options):
+-        self.options = options
+-
+-        if len(args) < 1 or len(args) > 1:
+-            print >>sys.stderr, "takes one argument: %s" % self.args
+-            return
++    def add_arguments(self, parser):
++        parser.add_argument('username')
+ 
+-        user = args[0]
++    def handle(self, *args, **options):
++        user = options['username']
+ 
+         u = None
+ 
+@@ -41,5 +37,3 @@
+         u.save()
+             
+         generate_api_key_for_user(u)
+-
+-        
+\ No newline at end of file
+--- a/esmond/api/management/commands/add_ps_metadata_post_user.py
++++ b/esmond/api/management/commands/add_ps_metadata_post_user.py
+@@ -8,17 +8,13 @@
+ from .add_api_key_user import generate_api_key_for_user
+ 
+ class Command(BaseCommand):
+-    args = 'username'
+     help = 'Add a user for POST access to perfSONAR metdata'
+ 
+-    def handle(self, *args, **options):
+-        self.options = options
+-
+-        if len(args) < 1 or len(args) > 1:
+-            print >>sys.stderr, "takes one argument: %s" % self.args
+-            return
++    def add_arguments(self, parser):
++        parser.add_argument('username')
+ 
+-        user = args[0]
++    def handle(self, *args, **options):
++        user = options['username']
+ 
+         u = None
+ 
+@@ -38,7 +34,5 @@
+                 u.user_permissions.add(perm)
+ 
+         u.save()
+-            
+-        generate_api_key_for_user(u)
+ 
+-        
+\ No newline at end of file
++        generate_api_key_for_user(u)
+--- a/esmond/api/management/commands/add_timeseries_post_user.py
++++ b/esmond/api/management/commands/add_timeseries_post_user.py
+@@ -10,17 +10,13 @@
+ from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
+ 
+ class Command(BaseCommand):
+-    args = 'username'
+     help = 'Add a user for POST access'
+ 
+-    def handle(self, *args, **options):
+-        self.options = options
+-
+-        if len(args) < 1 or len(args) > 1:
+-            print >>sys.stderr, "takes one argument: %s" % self.args
+-            return
++    def add_arguments(self, parser):
++        parser.add_argument('username')
+ 
+-        user = args[0]
++    def handle(self, *args, **options):
++        user = options['username']
+ 
+         u = None
+ 
+@@ -40,6 +36,5 @@
+                 u.user_permissions.add(perm)
+ 
+         u.save()
+-            
++
+         generate_api_key_for_user(u)
+-        
+\ No newline at end of file
+--- a/esmond/api/management/commands/add_user_ip_address.py
++++ b/esmond/api/management/commands/add_user_ip_address.py
+@@ -8,17 +8,14 @@
+ from esmond.api.models import UserIpAddress
+ 
+ class Command(BaseCommand):
+-    args = 'user ip1 [ip2...]'
+     help = 'Associate IP subnet(s) with a user account'
+ 
+-    def handle(self, *args, **options):
+-        self.options = options
+-
+-        if len(args) < 2:
+-            print >>sys.stderr, "takes at least two arguments: %s" % self.args
+-            return
++    def add_arguments(self, parser):
++        parser.add_argument('username')
++        parser.add_argument('ip', nargs='+')
+ 
+-        user = args[0]
++    def handle(self, *args, **options):
++        user = options['username']
+ 
+         u = None
+ 
+@@ -46,7 +43,7 @@
+                 
+         u.save()
+         
+-        for ip_addr in args[1:]:
++        for ip_addr in options['ip']:
+             try:
+                 userip = UserIpAddress.objects.get(ip=ip_addr)
+                 print 'IP {0} already assigned to {1}, skipping creation'.format(userip.ip, userip.user)
+@@ -54,6 +51,3 @@
+                 print 'Creating entry for IP {0} belonging to {1}'.format(ip_addr, user)
+                 userip = UserIpAddress(ip=ip_addr, user=u)
+                 userip.save()
+-        
+-
+-        
+\ No newline at end of file
+--- a/esmond/api/management/commands/cassandra_clear_and_init.py
++++ b/esmond/api/management/commands/cassandra_clear_and_init.py
+@@ -7,7 +7,6 @@
+ from esmond.config import get_config, get_config_path
+ 
+ class Command(BaseCommand):
+-    args = ''
+     help = 'Drop esmond keyspace in cassandra and re-initialize. Will blow away all existing data.'
+ 
+     def handle(self, *args, **options):
+@@ -15,4 +14,3 @@
+         config = get_config(get_config_path())
+         config.db_clear_on_testing = True
+         db = CASSANDRA_DB(config)
+-        
+--- a/esmond/api/management/commands/cassandra_init.py
++++ b/esmond/api/management/commands/cassandra_init.py
+@@ -7,11 +7,9 @@
+ from esmond.config import get_config, get_config_path
+ 
+ class Command(BaseCommand):
+-    args = ''
+     help = 'Initialize cassandra esmond keyspace/column families.'
+ 
+     def handle(self, *args, **options):
+         print 'Initializing cassandra esmond keyspace'
+         config = get_config(get_config_path())
+         db = CASSANDRA_DB(config)
+-        
+--- a/esmond/api/management/commands/device_add_oidset.py
++++ b/esmond/api/management/commands/device_add_oidset.py
+@@ -6,17 +6,14 @@
+ from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
+ 
+ class Command(BaseCommand):
+-    args = 'device_name oidset_name [oidset_name ..]'
+     help = 'Add an OIDSet to a Device'
+ 
+-    def handle(self, *args, **options):
+-        self.options = options
+-
+-        if len(args) < 2:
+-            print >>sys.stderr, "need more args: %s" % self.args
+-            return
++    def add_arguments(self, parser):
++        parser.add_argument('device_name')
++        parser.add_argument('oidset_name', nargs='+')
+ 
+-        device_name = args[0]
++    def handle(self, *args, **options):
++        device_name = options['device_name']
+ 
+         try:
+             device = Device.objects.get(name=device_name)
+@@ -25,7 +22,7 @@
+             return
+ 
+         oidsets = []
+-        for oidset_name in args[1:]:
++        for oidset_name in options['oidset_name']:
+             try:
+                 oidset = OIDSet.objects.get(name=oidset_name)
+                 oidsets.append(oidset)
+--- a/esmond/api/management/commands/list.py
++++ b/esmond/api/management/commands/list.py
+@@ -7,7 +7,6 @@
+ from esmond.api.models import Device
+ 
+ class Command(BaseCommand):
+-    args = ''
+     help = 'List Devices and associated OIDSets'
+ 
+     def handle(self, *args, **options):
