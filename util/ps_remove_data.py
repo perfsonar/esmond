@@ -78,7 +78,7 @@ from esmond.config import get_config,get_config_path
 
 
 #globals
-DEFAULT_CONFIG_FILE = 'ps_remove_data.conf'
+DEFAULT_CONFIG_FILE = ['ps_remove_data.conf']
 POLICY_MATCH_FIELD_DEFS = [
     {'name': 'event_type', 'type': str, 'special_vals': ['*'], 'valid_vals': [k for k in EVENT_TYPE_CONFIG]},
     {'name': 'summary_type', 'type': str, 'special_vals': ['*'], 'valid_vals': [k for k in INVERSE_SUMMARY_TYPES]},
