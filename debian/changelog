@@ -1,8 +1,16 @@
-esmond (2.1-1~bpo70+1) perfsonar-wheezy-release; urgency=low
+esmond (2.1.1~1.rc1-1~bpo70+1) perfsonar-wheezy-staging; urgency=low
 
   * Backport to Wheezy.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Thu, 13 Apr 2017 16:54:48 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Wed, 26 Jul 2017 13:52:02 +0200
+
+esmond (2.1.1~1.rc1-1) perfsonar-jessie-staging; urgency=low
+
+  * New upstream version.
+  * Adding patches to support Django 1.10
+  * Removing python-support dependency.
+
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Wed, 26 Jul 2017 13:47:54 +0200
 
 esmond (2.1-1) perfsonar-jessie-release; urgency=low
 
