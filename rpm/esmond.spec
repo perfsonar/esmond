@@ -14,8 +14,8 @@
 %define init_script_2 espersistd
  
 Name:           esmond
-Version:        2.1      
-Release:        1%{?dist}
+Version:        2.1.1      
+Release:        0.1.rc1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -221,6 +221,8 @@ find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" 
 %post
 cd %{install_base}
 %if 0%{?el7}
+    #create cassandra's pid directory since it doesn't do so on its own
+    mkdir -p /var/run/cassandra/
 %else
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .

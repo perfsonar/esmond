@@ -104,6 +104,18 @@ EVENT_TYPE_CONFIG = {
     "packet-retransmits-subintervals": {
         "type": "subinterval",
     },
+    "packet-rtt": {
+        "type": "integer",
+    },
+    "packet-rtt-subintervals": {
+        "type": "subinterval",
+    },
+    "tcp-windowsize": {
+        "type": "integer",
+    },
+    "tcp-windowsize-subintervals": {
+        "type": "subinterval",
+    },
     "path-mtu": {
         "type": "integer",
     },
@@ -120,6 +132,18 @@ EVENT_TYPE_CONFIG = {
         "type": "json",
     },
     "streams-packet-retransmits-subintervals": {
+        "type": "json",
+    },
+    "streams-packet-rtt": {
+        "type": "json",
+    },
+    "streams-packet-rtt-subintervals": {
+        "type": "json",
+    },
+    "streams-tcp-windowsize": {
+        "type": "json",
+    },
+    "streams-tcp-windowsize-subintervals": {
         "type": "json",
     },
     "streams-tcpinfo": {
