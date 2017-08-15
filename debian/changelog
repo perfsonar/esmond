@@ -1,10 +1,10 @@
-esmond (2.1.1~1.rc1-1) perfsonar-jessie-staging; urgency=low
+esmond (2.1.1-1) perfsonar-jessie-release; urgency=low
 
   * New upstream version.
   * Adding patches to support Django 1.10
   * Removing python-support dependency.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Wed, 26 Jul 2017 13:47:54 +0200
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 15 Aug 2017 10:10:56 +0100
 
 esmond (2.1-1) perfsonar-jessie-release; urgency=low
 
