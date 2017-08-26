@@ -313,9 +313,7 @@ class IpAuth(BaseAuthentication):
             remoteip = x_forwarded_for
         else:
             remoteip = request.META['REMOTE_ADDR']
-        #convert to unicode to make TravisCI env happy
-        remoteip = unicode(remoteip)
-          
+            
         #sort so that most specific subnet is at top of list
         userip = []
         
