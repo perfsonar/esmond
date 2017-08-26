@@ -307,7 +307,13 @@ class PSMetadataPaginator(PSPaginator):
 
 class IpAuth(BaseAuthentication):
     def authenticate(self, request):
-        remoteip = request.META['REMOTE_ADDR']
+        #if using proxy use X_FORWARDED_FOR header, else get remote IP
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', None)
+        if x_forwarded_for:
+            remoteip = x_forwarded_for
+        else:
+            remoteip = request.META['REMOTE_ADDR']
+            
         #sort so that most specific subnet is at top of list
         userip = []
         
