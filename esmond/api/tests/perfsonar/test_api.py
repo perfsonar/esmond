@@ -809,7 +809,7 @@ class PSArchiveResourceDataTest(PSAPIBaseTest):
         self.assertEquals(response.status_code, 401)
 
         # Associate localhost ip address with the admin user and try again.
-        UserIpAddress.objects.create(ip=u'127.0.0.1', user=self.admin_user)
+        UserIpAddress.objects.create(ip='127.0.0.1', user=self.admin_user)
 
         response = self.get_api_client().post(base_url, format='json', data=post_data)
         self.assertEquals(response.status_code, 201)
