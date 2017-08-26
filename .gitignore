@@ -30,3 +30,9 @@ pysqlite2-doc/install-source.txt
 *.sublime-project
 *.sublime-workspace
 pip-selfcheck.json
+# Ignore vagrant files
+.vagrant
+vagrant-data
+lib64
+build
+staticfiles
