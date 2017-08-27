@@ -32,7 +32,7 @@ BuildRequires: systemd
 BuildRequires:  python27 >= 1.1
 %endif
 BuildRequires:  httpd
-BuildRequires:  postgresql-devel
+BuildRequires:  postgresql95-devel
 BuildRequires:  mercurial
 BuildRequires:  gcc
 
