@@ -10,10 +10,10 @@ from esmond.config import get_config
 TESTING = os.environ.get("ESMOND_TESTING", False)
 ESMOND_CONF = os.environ.get("ESMOND_CONF")
 ESMOND_ROOT = os.environ.get("ESMOND_ROOT")
-
+ALLOWED_HOSTS = [ '*' ]
 
 if not ESMOND_ROOT:
-    raise Exception("ESMOND_ROOT not definied in environemnt")
+    raise Error("ESMOND_ROOT not defined in environment")
 
 if not ESMOND_CONF:
     ESMOND_CONF = os.path.join(ESMOND_ROOT, "esmond.conf")
@@ -62,7 +62,8 @@ SITE_ID = 1
 # to load the internationalization machinery.
 USE_I18N = True
 
-STATIC_URL = '/static/'
+STATIC_URL = '/esmond-static/'
+STATIC_ROOT = '/usr/lib/esmond/staticfiles'
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
@@ -73,15 +74,22 @@ MEDIA_ROOT = ''
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
 MEDIA_URL = ''
 
-
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = '%!=ok&32r5%ztl*^zqkm5++j)3crj64rf$=v)1mb^2i*%6ob41'
-
 # List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ]
+        },
+    },
+]
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
@@ -91,12 +99,6 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URLCONF = 'esmond.urls'
-
-TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-)
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -148,26 +150,51 @@ REST_FRAMEWORK = {
         # throttling.
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ),
+}
 
-    # These stanzas put general anonymous client throttling on all 
-    # endpoints. The bulk retrieval classes have their own custom 
-    # throttling classes.
-    'DEFAULT_THROTTLE_CLASSES': (
-        'rest_framework.throttling.AnonRateThrottle',
-        # 'rest_framework.throttling.UserRateThrottle'
-    ),
-
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '150/hour',
-        # 'user': '1000/day'
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(pathname)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'django_handler': {
+            'level':'INFO',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/esmond/django.log',
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        },
+        'esmond_handler': {
+            'level':'INFO',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/esmond/esmond.log',
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        }
+    },
+    'loggers': {
+        'django.request': { 
+            'handlers': ['django_handler'],
+            'level': 'INFO',
+            'propagate': True
+        },
+        'esmond': { 
+            'handlers': ['esmond_handler'],
+            'level': 'INFO',
+            'propagate': True
+        },
+        'espersistd.perfsonar.cass_db': { 
+            'handlers': ['esmond_handler'],
+            'level': 'INFO',
+            'propagate': True
+        },
     }
 }
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-if ESMOND_SETTINGS.allowed_hosts:
-    ALLOWED_HOSTS.extend(ESMOND_SETTINGS.allowed_hosts)
-else:
-    import socket
-    hostname = socket.gethostname()
-    ALLOWED_HOSTS.append(hostname)
-    ALLOWED_HOSTS.append(hostname.split(".")[0])
+SECRET_KEY = ')_qnbxf!*0=ap%3oppzd8%000mf(yx)849x7ww+0j-d6va_7et'

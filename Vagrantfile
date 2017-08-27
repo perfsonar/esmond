@@ -98,6 +98,7 @@ Vagrant.configure("2") do |config|
         chmod 644 
         ln -fs /vagrant/rpm/config_files/esmond.csh /etc/profile.d/esmond.csh
         ln -fs /vagrant/rpm/config_files/esmond.sh /etc/profile.d/esmond.sh
+        ln -fs /usr/pgsql-9.5/bin/pg_config /usr/sbin/pg_config
         
         ## Setup python environment
         virtualenv --prompt="(esmond)" .
@@ -150,6 +151,9 @@ Vagrant.configure("2") do |config|
         local     test_esmond     esmond                            md5
         host      test_esmond     esmond     127.0.0.1/32           md5
         host      test_esmond     esmond     ::1/128                md5
+        local     postgres        esmond                            md5
+        host      postgres        esmond     127.0.0.1/32           md5
+        host      postgres        esmond     ::1/128                md5
 EOF
         fi
         

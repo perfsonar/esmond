@@ -132,7 +132,6 @@ rate_data = [
 ]
 
 class DataTest(TestCase):
-    fixtures = ['perfsonar_metadata.json']
 
     def setUp(self):
         self.tr = TestResults()
