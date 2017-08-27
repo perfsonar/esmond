@@ -17,7 +17,8 @@ env:
   - VENV_ROOT=`pwd` ESMOND_ROOT=${VENV_ROOT}/devel ESMOND_CONF=${ESMOND_ROOT}/esmond-devel.conf DJANGO_SETTINGS_MODULE=esmond.settings
 before_script:
   - psql -c 'create database esmond;' -U postgres
-  - python esmond/manage.py syncdb --noinput
+  - python esmond/manage.py makemigrations --noinput
+  - python esmond/manage.py migrate --noinput 
   - python esmond/manage.py loaddata oidsets.json
 script:
   # Run each test seperately but append to same coverage report.

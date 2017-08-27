@@ -166,7 +166,8 @@ EOF
         systemctl restart httpd
         
         #build database
-        python esmond/manage.py syncdb --noinput
+        python esmond/manage.py makemigrations --noinput
+        python esmond/manage.py migrate --noinput
     SHELL
   end
   
