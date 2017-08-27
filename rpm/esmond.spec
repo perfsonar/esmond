@@ -325,7 +325,6 @@ fi
 %attr(0755,esmond,esmond) %{install_base}/configure_esmond
 %{install_base}/*
 /usr/sbin/esmond_manage
-/etc/httpd/conf.d/apache-esmond.conf
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.csh
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.sh
 %if 0%{?el7}
