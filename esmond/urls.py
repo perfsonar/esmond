@@ -1,4 +1,4 @@
-from django.conf.urls import url, patterns, include
+from django.conf.urls import url, include
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -81,20 +81,19 @@ ps_router.register('archive', ArchiveViewset, base_name='archive')
 # when you need to look at the view names for reverse(), etc.
 # print extended_router.urls
 
-urlpatterns = patterns(
-    '',
+urlpatterns = [
     # Original urls - built in the original api.py files and attached here.
-    (r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', include(admin.site.urls)),
     # (r'', include(perfsonar_api.urls)), # old ps api
     # (r'', include(v1_api.urls)), # old snmp api
     # # URL definitions for V2 esmond API.
     # standard root level urls
-    (r'v2/', include(router.urls)),
+    url(r'v2/', include(router.urls)),
     # nested urls for main API
-    (r'v2/', include(extended_router.urls)),
+    url(r'v2/', include(extended_router.urls)),
     # "nested" urls that fetch interface data for main API
-    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/?$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
-    (r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)/?$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+    url(r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/?$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
+    url(r'v2/device/(?P<name>[^/]+)/interface/(?P<ifName>[^/]+)/(?P<type>[^/]+)/(?P<subtype>.+)/?$', InterfaceDataViewset.as_view({'get': 'retrieve'})),
     # bulk data retrieval endpoints
     url(r'v2/bulk/interface/', BulkInterfaceRequestViewset.as_view({'post': 'create'}), name='bulk-interface'),
     url(r'v2/bulk/timeseries/', BulkTimeseriesViewset.as_view({'post': 'create'}), name='bulk-timeseries'),
@@ -103,13 +102,13 @@ urlpatterns = patterns(
     url(r'v2/timeseries/(?P<ts_type>[^/]+)/(?P<ts_ns>[^/]+)/(?P<ts_device>[^/]+)/(?P<ts_oidset>[^/]+)/(?P<ts_oid>[^/]+)/(?P<ts_iface>[^/]+)/(?P<ts_frequency>[^/]+)/?$',
         TimeseriesRequestViewset.as_view({'post': 'create', 'get': 'retrieve'}), name='timeseries'),
     # nested uri for pdu/outlet data endpoint
-    (r'v2/pdu/(?P<name>[^/]+)/outlet/(?P<outletID>[^/]+)/(?P<outlet_dataset>[^/]+)/?$', OutletDataViewset.as_view({'get': 'retrieve'})),
+    url(r'v2/pdu/(?P<name>[^/]+)/outlet/(?P<outletID>[^/]+)/(?P<outlet_dataset>[^/]+)/?$', OutletDataViewset.as_view({'get': 'retrieve'})),
     ## URL definitions for V2 Perfsonar API
     # main archive/metadata endpoint.
-    (r'{0}/'.format(PS_ROOT), include(ps_router.urls)),
+    url(r'{0}/'.format(PS_ROOT), include(ps_router.urls)),
     # event type detail endpoint.
-    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/?$'.format(PS_ROOT), EventTypeDetailViewset.as_view({'post': 'create', 'get': 'retrieve'})),
+    url(r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/?$'.format(PS_ROOT), EventTypeDetailViewset.as_view({'post': 'create', 'get': 'retrieve'})),
     # timeseries data endpoint.
-    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
-    (r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/(?P<summary_window>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
-)
+    url(r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
+    url(r'{0}/archive/(?P<metadata_key>[\w\d_.-]+)/(?P<event_type>[\w\d_.-]+)/(?P<summary_type>[\w\d_.\-@]+)/(?P<summary_window>[\w\d_.\-@]+)/?$'.format(PS_ROOT), TimeSeriesViewset.as_view({'post': 'create', 'get': 'retrieve'})),
+]

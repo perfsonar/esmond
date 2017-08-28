@@ -214,7 +214,7 @@ class TestClientLibs(LiveServerTestCase):
         iface_filt = {'ifName__contains': 'xe-'}
 
         data = conn.get_interface_bulk_data(**iface_filt)
-        self.assertEquals(len(data.data), 24)
+        self.assertEquals(len(data.data), 20)
 
         for d in data.data:
             self.assertEquals(d.interface[0:3], 'xe-')

@@ -3,6 +3,9 @@ python:
   - "2.7"
 services:
   - cassandra
+  - postgresql
+addons:
+  postgresql: "9.5"
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y libsnmp-base libsnmp-dev libsnmp-python
@@ -13,7 +16,9 @@ install:
 env:
   - VENV_ROOT=`pwd` ESMOND_ROOT=${VENV_ROOT}/devel ESMOND_CONF=${ESMOND_ROOT}/esmond-devel.conf DJANGO_SETTINGS_MODULE=esmond.settings
 before_script:
-  - python esmond/manage.py syncdb --noinput
+  - psql -c 'create database esmond;' -U postgres
+  - python esmond/manage.py makemigrations --noinput
+  - python esmond/manage.py migrate --noinput 
   - python esmond/manage.py loaddata oidsets.json
 script:
   # Run each test seperately but append to same coverage report.

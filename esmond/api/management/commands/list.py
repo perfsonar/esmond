@@ -7,7 +7,6 @@ from django.core.management.base import BaseCommand, CommandError
 from esmond.api.models import Device
 
 class Command(BaseCommand):
-    args = ''
     help = 'List Devices and associated OIDSets'
 
     def handle(self, *args, **options):
