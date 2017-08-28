@@ -7,17 +7,16 @@ from django.core.management.base import BaseCommand, CommandError
 from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
 
 class Command(BaseCommand):
-    args = 'name community [oidset ...]'
     help = 'Add a device'
 
+    def add_arguments(self, parser):
+        parser.add_argument('name')
+        parser.add_argument('community')
+        parser.add_argument('oidset', nargs='*')
+
     def handle(self, *args, **options):
-        self.options = options
-
-        if len(args) < 2:
-            print >>sys.stderr, "takes at least 2 arguments: %s" % self.args
-            return
-
-        name, community = args[:2]
+        name = options['name']
+        community = options['community']
 
         try:
             device = Device.objects.get(name=name)
@@ -34,7 +33,7 @@ class Command(BaseCommand):
         device.save()
 
         oidsets = []
-        for oidset_name in args[2:]:
+        for oidset_name in options['oidset']:
             try:
                 oidset = OIDSet.objects.get(name=oidset_name)
                 oidsets.append(oidset)

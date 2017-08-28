@@ -6,17 +6,14 @@ from django.core.management.base import BaseCommand, CommandError
 from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
 
 class Command(BaseCommand):
-    args = 'device_name oidset_name [oidset_name ..]'
     help = 'Add an OIDSet to a Device'
 
+    def add_arguments(self, parser):
+        parser.add_argument('device_name')
+        parser.add_argument('oidset_name', nargs='+')
+
     def handle(self, *args, **options):
-        self.options = options
-
-        if len(args) < 2:
-            print >>sys.stderr, "need more args: %s" % self.args
-            return
-
-        device_name = args[0]
+        device_name = options['device_name']
 
         try:
             device = Device.objects.get(name=device_name)
@@ -25,7 +22,7 @@ class Command(BaseCommand):
             return
 
         oidsets = []
-        for oidset_name in args[1:]:
+        for oidset_name in options['oidset_name']:
             try:
                 oidset = OIDSet.objects.get(name=oidset_name)
                 oidsets.append(oidset)

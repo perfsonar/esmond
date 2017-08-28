@@ -231,7 +231,7 @@ class IfRef(models.Model):
     ifName = models.CharField(max_length=512, db_column="ifname")
     ifAlias = models.CharField(max_length=512, db_column="ifalias", blank=True,
             null=True)
-    ipAddr = models.IPAddressField(blank=True, db_column="ipaddr", null=True)
+    ipAddr = models.GenericIPAddressField(blank=True, db_column="ipaddr", null=True)
     ifSpeed = models.BigIntegerField(db_column="ifspeed", blank=True, null=True)
     ifHighSpeed = models.BigIntegerField(db_column="ifhighspeed", blank=True,
             null=True)
@@ -364,8 +364,8 @@ class LSPOpStatus(models.Model):
     """Metadata about MPLS LSPs."""
     device = models.ForeignKey(Device, db_column="deviceid")
     name = models.CharField(max_length=128)
-    srcAddr = models.IPAddressField()
-    dstAddr = models.IPAddressField()
+    srcAddr = models.GenericIPAddressField()
+    dstAddr = models.GenericIPAddressField()
     state = models.IntegerField()
 
     begin_time = models.DateTimeField()

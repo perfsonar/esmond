@@ -8,17 +8,14 @@ from django.contrib.auth.models import User, Group, Permission
 from esmond.api.models import UserIpAddress
 
 class Command(BaseCommand):
-    args = 'user ip1 [ip2...]'
     help = 'Associate IP subnet(s) with a user account'
 
+    def add_arguments(self, parser):
+        parser.add_argument('username')
+        parser.add_argument('ip', nargs='+')
+
     def handle(self, *args, **options):
-        self.options = options
-
-        if len(args) < 2:
-            print >>sys.stderr, "takes at least two arguments: %s" % self.args
-            return
-
-        user = args[0]
+        user = options['username']
 
         u = None
 
@@ -46,7 +43,7 @@ class Command(BaseCommand):
                 
         u.save()
         
-        for ip_addr in args[1:]:
+        for ip_addr in options['ip']:
             try:
                 userip = UserIpAddress.objects.get(ip=ip_addr)
                 print 'IP {0} already assigned to {1}, skipping creation'.format(userip.ip, userip.user)
@@ -54,6 +51,3 @@ class Command(BaseCommand):
                 print 'Creating entry for IP {0} belonging to {1}'.format(ip_addr, user)
                 userip = UserIpAddress(ip=ip_addr, user=u)
                 userip.save()
-        
-
-        
