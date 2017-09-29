@@ -88,7 +88,7 @@ class CASSANDRA_DB(object):
     
     _queue_size = 200
     
-    def __init__(self, config, qname=None):
+    def __init__(self, config, qname=None, timeout=30):
         """
         Class contains all the relevent cassandra logic.  This includes:
         
@@ -220,7 +220,7 @@ class CASSANDRA_DB(object):
                 pool_size=10,
                 max_overflow=5,
                 max_retries=10,
-                timeout=30,
+                timeout=timeout,
                 credentials=_creds)
         except AllServersUnavailable, e:
             raise ConnectionException("Couldn't connect to any Cassandra "
