@@ -81,9 +81,13 @@ cqlsh -k esmond -e "ALTER TABLE raw_data WITH GC_GRACE_SECONDS = 0"
 
 """
 
+#init django -must happen before other imports
+import django
+django.setup()
+
+#imports
 import argparse
 import calendar
-import django
 import json
 import sys
 from datetime import datetime, timedelta
@@ -93,7 +97,6 @@ from esmond.api.perfsonar.api_v2 import EVENT_TYPE_CF_MAP
 from esmond.api.perfsonar.types import *
 from esmond.cassandra import CASSANDRA_DB, get_rowkey
 from esmond.config import get_config,get_config_path
-
 
 #globals
 DEFAULT_CONFIG_FILE = ['ps_remove_data.conf']
