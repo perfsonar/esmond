@@ -1,10 +1,10 @@
-esmond (2.1.2~1.b1-1) perfsonar-jessie-staging; urgency=low
+esmond (2.1.2.1-1) perfsonar-jessie-release; urgency=low
 
   * New upstream version.
   * Remove Django-1.10 patches pushed upstream.
   * Add call to makemigrations in postinst script.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Fri, 29 Sep 2017 08:01:19 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Thu, 02 Nov 2017 12:19:57 +0000
 
 esmond (2.1.1-1) perfsonar-jessie-release; urgency=low
 
