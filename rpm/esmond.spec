@@ -15,7 +15,7 @@
  
 Name:           esmond
 Version:        2.1.2.1     
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -228,6 +228,12 @@ cd %{install_base}
     #create cassandra's pid directory since it doesn't do so on its own
     mkdir -p /var/run/cassandra/
 %else
+### START HACK
+#this is ugly. need to do because python27 versions from SCL don't always like 
+# the binaries from the build. CentOS 6 only issue.
+find %{install_base} -name \*.pyc -delete
+find %{install_base} -name \*.pyo -delete
+### END HACK
 source /opt/rh/python27/enable
 /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
 %endif
