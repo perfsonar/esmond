@@ -1,7 +1,7 @@
 Index: esmond/rpm/config_files/esmond.conf
 ===================================================================
---- esmond.orig/rpm/config_files/esmond.conf	2017-11-02 12:17:58.000000000 +0000
-+++ esmond/rpm/config_files/esmond.conf	2017-11-02 12:19:57.000000000 +0000
+--- esmond.orig/rpm/config_files/esmond.conf	2017-12-19 16:34:46.000000000 +0000
++++ esmond/rpm/config_files/esmond.conf	2017-12-19 16:36:58.000000000 +0000
 @@ -1,5 +1,6 @@
  [main]
  sql_db_engine = django.db.backends.postgresql_psycopg2
@@ -11,8 +11,8 @@ Index: esmond/rpm/config_files/esmond.conf
  sql_db_password = changeit
 Index: esmond/rpm/config_files/apache-esmond.conf
 ===================================================================
---- esmond.orig/rpm/config_files/apache-esmond.conf	2017-11-02 12:17:58.000000000 +0000
-+++ esmond/rpm/config_files/apache-esmond.conf	2017-11-02 12:19:57.000000000 +0000
+--- esmond.orig/rpm/config_files/apache-esmond.conf	2017-12-19 16:34:46.000000000 +0000
++++ esmond/rpm/config_files/apache-esmond.conf	2017-12-19 16:36:58.000000000 +0000
 @@ -1,16 +1,15 @@
 -WSGIScriptAlias /esmond /usr/lib/esmond/esmond/wsgi.py
 -WSGISocketPrefix run/wsgi
@@ -47,8 +47,8 @@ Index: esmond/rpm/config_files/apache-esmond.conf
  <IfVersion >= 2.4>
 Index: esmond/rpm/config_files/settings.py
 ===================================================================
---- esmond.orig/rpm/config_files/settings.py	2017-11-02 12:17:58.000000000 +0000
-+++ esmond/rpm/config_files/settings.py	2017-11-02 12:19:57.000000000 +0000
+--- esmond.orig/rpm/config_files/settings.py	2017-12-19 16:34:46.000000000 +0000
++++ esmond/rpm/config_files/settings.py	2017-12-19 16:36:58.000000000 +0000
 @@ -63,7 +63,7 @@
  USE_I18N = True
  
@@ -60,8 +60,8 @@ Index: esmond/rpm/config_files/settings.py
  # Example: "/home/media/media.lawrence.com/"
 Index: esmond/setup.py
 ===================================================================
---- esmond.orig/setup.py	2017-11-02 12:17:58.000000000 +0000
-+++ esmond/setup.py	2017-11-02 12:19:57.000000000 +0000
+--- esmond.orig/setup.py	2017-12-19 16:34:46.000000000 +0000
++++ esmond/setup.py	2017-12-19 16:36:58.000000000 +0000
 @@ -11,7 +11,10 @@
      author='Jon M. Dugan',
      author_email='jdugan@es.net',
