@@ -20,6 +20,7 @@ before_script:
   - python esmond/manage.py makemigrations --noinput
   - python esmond/manage.py migrate --noinput 
   - python esmond/manage.py loaddata oidsets.json
+  - sleep 30
 script:
   # Run each test seperately but append to same coverage report.
   - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_api

@@ -42,20 +42,12 @@ from esmond.config import get_config_path, get_config
 try:
     db = CASSANDRA_DB(get_config(get_config_path()))
 except ConnectionException, e:
-    # Check the stack before raising an error - if test_api is 
-    # the calling code, we won't need a running db instance.
-    mod = inspect.getmodule(inspect.stack()[1][0])
-    if mod and mod.__name__ in ['api.tests.test_api', 'sphinx.ext.autodoc']:
-        print '\nUnable to connect - presuming stand-alone testing mode...'
-        db = None
-    else:
-        raise ConnectionException(str(e))
+    #try to get a cassandra connection but don't sweat if cant get one now
+    #corrects race condition with cassandra boot and esmond boot
+    db = None
 
 def check_connection():
-    """Called by testing suite to produce consistent errors.  If no 
-    cassandra instance is available, test_api might silently hide that 
-    fact with mock.patch causing unclear errors in other modules 
-    like test_persist."""
+    """Verify we have a cassandra connection"""
     global db
     if not db:
         db = CASSANDRA_DB(get_config(get_config_path()))
@@ -516,6 +508,9 @@ class CassandraQueryLogic(QueryBase):
         aggregation was requested and checks/limits the time range), and
         then make calls to cassandra backend.
         """
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
+        
         # If no aggregate level defined in request, set to the frequency, 
         # otherwise, check if the requested aggregate level is valid.
         if not obj.agg:
@@ -554,6 +549,9 @@ class CassandraQueryLogic(QueryBase):
         Sanity check the requested timerange, and then make the appropriate
         method call to the cassandra backend.
         """
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
+        
         # Make sure we're not exceeding allowable time range.
         if not QueryUtil.valid_timerange(obj, in_ms=True) and \
             not obj.user.username:
@@ -595,6 +593,9 @@ class CassandraQueryLogic(QueryBase):
 
         snmp:rtr_test:FastPollHC:ifHCInOctets:30000:2015
         """
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
+        
         for obj in objs:
             if obj.r_type == 'BaseRate':
                 rate_bin = BaseRateBin(path=obj.datapath, ts=obj.ts, 
@@ -618,6 +619,9 @@ class CassandraQueryLogic(QueryBase):
         """
         Query to get outlet data.
         """
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
+        
         obj.data = db.query_raw_data(obj.datapath, oidset.frequency*1000,
                                  obj.begin_time*1000, obj.end_time*1000)
 
