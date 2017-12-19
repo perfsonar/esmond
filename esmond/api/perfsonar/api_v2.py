@@ -57,24 +57,36 @@ log = get_logger(__name__)
 # Cassandra db connection
 #
 try:
-    db = CASSANDRA_DB(get_config(get_config_path()), qname='perfsonar')
+    db = CASSANDRA_DB(get_config(get_config_path()))
+    EVENT_TYPE_CF_MAP = {
+            'histogram': db.raw_cf,
+            'integer': db.rate_cf,
+            'json': db.raw_cf,
+            'percentage': db.agg_cf,
+            'subinterval': db.raw_cf,
+            'float': db.agg_cf
+        }
 except ConnectionException, e:
-    error_msg = "Unable to connect to cassandra. Please verify cassandra is running."
-    log.error(error_msg)
-    log.debug(str(e))
-    raise ConnectionException(error_msg)
+    #try to get a cassandra connection but don't sweat if cant get one now
+    #corrects race condition with cassandra boot and esmond boot
+    db = None
 
-#
-# Column families
-#
-EVENT_TYPE_CF_MAP = {
-    'histogram': db.raw_cf,
-    'integer': db.rate_cf,
-    'json': db.raw_cf,
-    'percentage': db.agg_cf,
-    'subinterval': db.raw_cf,
-    'float': db.agg_cf
-}
+def check_connection():
+    global db
+    global EVENT_TYPE_CF_MAP;
+    if not db:
+        db = CASSANDRA_DB(get_config(get_config_path()))
+        #
+        # Column families
+        #
+        EVENT_TYPE_CF_MAP = {
+            'histogram': db.raw_cf,
+            'integer': db.rate_cf,
+            'json': db.raw_cf,
+            'percentage': db.agg_cf,
+            'subinterval': db.raw_cf,
+            'float': db.agg_cf
+        }
 
 #
 # Bases, etc
@@ -388,6 +400,8 @@ class PSTimeSeriesObject(object):
         return datetime.datetime.utcfromtimestamp(float(self.time))
     
     def save(self):
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
         #verify object does not already exist
         if EVENT_TYPE_CF_MAP[EVENT_TYPE_CONFIG[self.event_type]["type"]] != db.raw_cf:
             existing = PSTimeSeriesObject.query_database(self.metadata_key, self.event_type, 'base', None, int(self.time), int(self.time), 1)
@@ -423,6 +437,9 @@ class PSTimeSeriesObject(object):
     
     @staticmethod
     def query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results):
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
+        
         results = []
         datapath = PSTimeSeriesObject.row_prefix(event_type)
         datapath.append(metadata_key)
@@ -467,6 +484,9 @@ class PSTimeSeriesObject(object):
         return results
 
     def database_write(self, ts_obj, local_cache):
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
+        
         data_type = EVENT_TYPE_CONFIG[ts_obj.event_type]["type"]
         validator = TYPE_VALIDATOR_MAP[data_type]
         
@@ -863,6 +883,9 @@ class ArchiveViewset(mixins.CreateModelMixin,
 
         'metadata_key' will be in kwargs
         """
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
+        
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
             raise ParseError(detail='Must post content-type: application/json header and json-formatted payload.')
@@ -1109,6 +1132,9 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
 
         depending on the request.
         """
+        # make sure we have a DB connection, throw exception otherwise
+        check_connection()
+        
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
             raise ParseError(detail='Must post content-type: application/json header and json-formatted payload.')
