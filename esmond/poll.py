@@ -357,7 +357,8 @@ class PersistThread(threading.Thread):
         self.state = self.RUN
         while self.state == self.RUN:
             try:
-                task = self.persistq.get(block=True)
+                # timeout blocking read to allow for thread stop
+                task = self.persistq.get(block=True, timeout=1)
             except Queue.Empty:
                 pass
             else:
@@ -1054,10 +1055,26 @@ def espolld():
 
     os.umask(0022)
 
-    try:
-        poller = PollManager(name, opts, args, config)
+    poller = PollManager(name, opts, args, config)
 
-        poller.start_polling()
-    except Exception, e:
-        log.error("Problem with poller: %s" % e)
-        sys.exit(1)
+    while True:
+        try:
+            poller.start_polling()
+
+            # normal exit
+            sys.exit(0)
+        except django.db.utils.OperationalError as e:
+            log.error("Problem with database: %s" % e)
+
+            # cleaup databases state to prevent exception
+            # after restart: connection already closed
+            django.db.connections.close_all()
+
+            # prevent thread leak on restart
+            poller.threads['persist_thread'].stop()
+        except Exception as e:
+            log.error("Problem with poller: %s" % e)
+            sys.exit(1)
+
+        log.info("restarting poller")
+        time.sleep(5)
