@@ -39,8 +39,8 @@ This repository allows you to use Vagrant_ to create a VM on VirtualBox_ with th
 
 Installation
 =============
-#. Install VirtualBox_ according the the instructions on their site for your system. 
-#. Install Vagrant_ according the the instructions on their site for your system. 
+#. Install VirtualBox_ according to the instructions on their site for your system. 
+#. Install Vagrant_ according to the instructions on their site for your system. 
 #. Install the vagrant-vbguest and vagrant-reload plugins with the following commands::
 
     vagrant plugin install vagrant-vbguest
