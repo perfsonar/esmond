@@ -70,6 +70,10 @@ def main():  # pylint: disable=too-many-locals
         else:
             event_type = [x.event_type for x in meta.get_all_event_types()]
 
+        # Skip non-registered event_type
+        if 'pscheduler-run-href' in event_type:
+            event_type.remove('pscheduler-run-href')
+
         # Loop through the event types
         for etype in event_type:
             print '\n  * processing {0}'.format(etype)
