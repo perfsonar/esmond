@@ -41,6 +41,7 @@ Requires:       python
 Requires:       python-virtualenv
 Requires:       python2-mock
 Requires:       mod_wsgi
+Requires:       policycoreutils-python
 %{?systemd_requires: %systemd_requires}
 %else
 #make sure we grab SCL versions
@@ -250,7 +251,8 @@ touch /var/log/esmond/django.log
 touch /var/log/esmond/install.log
 chown -R apache:apache /var/log/esmond
 %if 0%{?el7}
-chcon -R system_u:object_r:httpd_log_t:s0 /var/log/esmond
+semanage fcontext -a -t httpd_log_t '/var/log/esmond(/.*)?'
+restorecon -R /var/log/esmond
 setsebool -P httpd_can_network_connect on
 %endif
 
