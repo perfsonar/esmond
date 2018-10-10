@@ -41,6 +41,7 @@ Requires:       python
 Requires:       python-virtualenv
 Requires:       python2-mock
 Requires:       mod_wsgi
+Requires:       policycoreutils-python
 %{?systemd_requires: %systemd_requires}
 %else
 #make sure we grab SCL versions
