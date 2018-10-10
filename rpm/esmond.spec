@@ -252,7 +252,7 @@ touch /var/log/esmond/install.log
 chown -R apache:apache /var/log/esmond
 %if 0%{?el7}
 semanage fcontext -a -t httpd_log_t '/var/log/esmond(/.*)?'
-restorecon -R -v /var/log/esmond
+restorecon -R /var/log/esmond
 setsebool -P httpd_can_network_connect on
 %endif
 
