@@ -14,7 +14,7 @@
 %define init_script_2 espersistd
  
 Name:           esmond
-Version:        2.1.2.2     
+Version:        2.1.3     
 Release:        1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
