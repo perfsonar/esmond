@@ -1,9 +1,3 @@
-.. image:: https://travis-ci.org/esnet/esmond.svg?branch=develop
-    :target: https://travis-ci.org/esnet/esmond
-
-.. image:: https://coveralls.io/repos/esnet/esmond/badge.png?branch=develop
-   :target: https://coveralls.io/r/esnet/esmond?branch=develop
-
 *******************************
 esmond: ESnet Monitoring Daemon
 *******************************
