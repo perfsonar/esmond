@@ -35,14 +35,13 @@ from rest_framework.authentication import BaseAuthentication, TokenAuthenticatio
 import rest_framework_filters as filters
 
 from esmond.api.models import (PSMetadata, PSPointToPointSubject, PSEventTypes, 
-    PSMetadataParameters, PSNetworkElementSubject, UserIpAddress)
+    PSMetadataParameters, PSNetworkElementSubject, PSDataJson, PSDataInt, 
+    PSDataFraction, UserIpAddress)
 
 from esmond.api.api_v2 import (DataObject, _get_ersatz_esmond_api_queryset,
     DjangoModelPerm)
 
 from esmond.api.perfsonar.types import *
-
-from esmond.cassandra import KEY_DELIMITER, CASSANDRA_DB, AGG_TYPES, ConnectionException, RawRateData, BaseRateBin, RawData, AggregationBin
 
 from esmond.config import get_config_path, get_config
 
@@ -54,39 +53,16 @@ from esmond.util import get_logger
 log = get_logger(__name__)
 
 #
-# Cassandra db connection
+# Postgresql globals
 #
-try:
-    db = CASSANDRA_DB(get_config(get_config_path()))
-    EVENT_TYPE_CF_MAP = {
-            'histogram': db.raw_cf,
-            'integer': db.rate_cf,
-            'json': db.raw_cf,
-            'percentage': db.agg_cf,
-            'subinterval': db.raw_cf,
-            'float': db.agg_cf
-        }
-except ConnectionException, e:
-    #try to get a cassandra connection but don't sweat if cant get one now
-    #corrects race condition with cassandra boot and esmond boot
-    db = None
-
-def check_connection():
-    global db
-    global EVENT_TYPE_CF_MAP;
-    if not db:
-        db = CASSANDRA_DB(get_config(get_config_path()))
-        #
-        # Column families
-        #
-        EVENT_TYPE_CF_MAP = {
-            'histogram': db.raw_cf,
-            'integer': db.rate_cf,
-            'json': db.raw_cf,
-            'percentage': db.agg_cf,
-            'subinterval': db.raw_cf,
-            'float': db.agg_cf
-        }
+EVENT_TYPE_TABLE_MAP = {
+        'histogram': { "default": "json" },
+        'integer': { "default": "int", "average": "fraction" },
+        'json':  { "default": "json" },
+        'percentage':  { "default": "fraction" },
+        'subinterval':  { "default": "json" },
+        'float': { "default": "fraction" }
+    }
 
 #
 # Bases, etc
@@ -215,7 +191,7 @@ class FilterUtilMixin(object):
             addr6 = self.lookup_hostname(host, AF_INET6)
             addr4 = self.lookup_hostname(host, AF_INET)
         else:
-            raise ParseError(detail="Invalid %s parameter %s" % (DNS_MATCH_RULE_FILTER, dns_match_rule))
+            raise ParseError(detail="Invalid {0} parameter %s" % (DNS_MATCH_RULE_FILTER, dns_match_rule))
         
         #add results to list
         if addr4: addrs.append(addr4)
@@ -353,23 +329,15 @@ class ViewsetBase(viewsets.GenericViewSet):
     pagination_class = PSPaginator
 
 class PSTimeSeriesObject(object):
-    def __init__(self, ts, value, metadata_key, event_type=None, summary_type='base', summary_window=0):
+    def __init__(self, ts, value, metadata_key, event_type=None, summary_type='base', summary_window=0, db_event_type=None):
         self._time = ts
         self.value = value
         self.metadata_key = metadata_key
         self.event_type = event_type
         self.summary_type = summary_type
         self.summary_window = summary_window
-    
-    @property
-    def datapath(self):
-        datapath = PSTimeSeriesObject.row_prefix(self.event_type)
-        datapath.append(self.metadata_key)
-        if self.summary_type != "base":
-            datapath.append(self.summary_type)
+        self.db_event_type = db_event_type
         
-        return datapath
-    
     @property
     def freq(self):
         freq = None
@@ -397,134 +365,144 @@ class PSTimeSeriesObject(object):
         return ts
     
     def get_datetime(self):
-        return datetime.datetime.utcfromtimestamp(float(self.time))
+        return datetime.datetime.utcfromtimestamp(float(self.time)).replace(tzinfo=utc)
     
     def save(self):
-        # make sure we have a DB connection, throw exception otherwise
-        check_connection()
-        #verify object does not already exist
-        if EVENT_TYPE_CF_MAP[EVENT_TYPE_CONFIG[self.event_type]["type"]] != db.raw_cf:
-            existing = PSTimeSeriesObject.query_database(self.metadata_key, self.event_type, 'base', None, int(self.time), int(self.time), 1)
-            if(len(existing) > 0):
-                raise ConflictException(detail="Time series value already exists with event type %s at time %d" % (self.event_type, int(self.time)))
-
-        #Insert into cassandra
+        #Insert into database
         local_cache = {}
         #NOTE: Ordering in model allows statistics to go last. If this ever changes may need to update code here.
         #check that this event_type is defined
-        rawsql_cursor = connection.cursor()
         with transaction.atomic():
-            rawsql_cursor.execute("SELECT summary_type, summary_window FROM ps_event_types WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s) ORDER BY summary_type", [self.event_type, self.metadata_key])
-            for et in rawsql_cursor.fetchall():
+            matching_event_types = PSEventTypes.objects.filter(event_type=self.event_type).filter(metadata__metadata_key=self.metadata_key)
+            for matching_event_type in matching_event_types:
                 ts_obj = PSTimeSeriesObject(self.time,
                                                 self.value,
                                                 self.metadata_key,
                                                 event_type=self.event_type,
-                                                summary_type=et[0],
-                                                summary_window=et[1]
+                                                summary_type=matching_event_type.summary_type,
+                                                summary_window=matching_event_type.summary_window,
+                                                db_event_type=matching_event_type
                                                 )
-                self.database_write(ts_obj, local_cache)
-            #make sqlite happy (mainly for unit tests not configured to use postgres)
-            if connection.vendor.startswith('sqlite'):
-                rawsql_cursor.execute("UPDATE ps_event_types SET time_updated='now' WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [self.event_type, self.metadata_key])
-            else:
-                #update time. clear out microseconds since timestamp filters are only seconds and we want to allow exact matches
-                rawsql_cursor.execute("UPDATE ps_event_types SET time_updated=now() WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [self.event_type, self.metadata_key])
+                self.database_write(matching_event_type, ts_obj, local_cache)
+            #update time. clear out microseconds since timestamp filters are only seconds and we want to allow exact matches
+            #todo: convert to trigger?
+            rawsql_cursor = connection.cursor()
+            rawsql_cursor.execute("UPDATE ps_event_types SET time_updated=now() WHERE event_type=%s AND metadata_id=(SELECT id FROM ps_metadata WHERE metadata_key=%s)", [self.event_type, self.metadata_key])
     
     @staticmethod
-    def row_prefix(event_type):
-        return ['ps', event_type.replace('-', '_') ]
-    
+    def find_table(event_type, summary_type, inverse_summary_type=False):
+        #check event type
+        if event_type is None or event_type not in EVENT_TYPE_CONFIG:
+            raise ParseError(detail="Invalid 'event_type' %s" % event_type)
+        
+        # check summary type. writes use inverse so handle that here
+        if inverse_summary_type:
+            if summary_type is None or summary_type not in INVERSE_SUMMARY_TYPES:
+                 raise ParseError(detail="Invalid 'summary_type(inverse)' %s" % summary_type)
+            summary_type = INVERSE_SUMMARY_TYPES[summary_type]
+        else:
+            if summary_type is None or summary_type not in SUMMARY_TYPES:
+                raise ParseError(detail="Invalid 'summary_type' %s" % summary_type)
+        
+        #Get the data type
+        query_type = EVENT_TYPE_CONFIG[event_type]["type"]
+        if query_type not in EVENT_TYPE_TABLE_MAP:
+             raise ParseError(detail="Misconfigured event type on server side. Invalid 'type' %s" % query_type)
+        
+        #convert the data type to a table
+        table = EVENT_TYPE_TABLE_MAP[query_type]["default"]
+        if summary_type in EVENT_TYPE_TABLE_MAP[query_type]:
+            table = EVENT_TYPE_TABLE_MAP[query_type][summary_type]
+            
+        return table
+        
     @staticmethod
     def query_database(metadata_key, event_type, summary_type, freq, begin_time, end_time, max_results):
-        # make sure we have a DB connection, throw exception otherwise
-        check_connection()
         
-        results = []
-        datapath = PSTimeSeriesObject.row_prefix(event_type)
-        datapath.append(metadata_key)
-        if(summary_type != 'base'):
-            datapath.append(SUMMARY_TYPES[summary_type])
+        #determine the table
+        table = PSTimeSeriesObject.find_table(event_type, summary_type)
         
-        query_type = EVENT_TYPE_CONFIG[event_type]["type"]
-        if query_type not in EVENT_TYPE_CF_MAP:
-            raise ParseError(detail="Misconfigured event type on server side. Invalid 'type' %s" % query_type)
-        col_fam = TYPE_VALIDATOR_MAP[query_type].summary_cf(db, SUMMARY_TYPES[summary_type])
-        if col_fam is None:
-            col_fam = EVENT_TYPE_CF_MAP[query_type]
-            
-        #prep times
+        #normalize summary_type since URL value can be slightly different
+        summary_type = SUMMARY_TYPES[summary_type]
+        
+        #prep summary_window
+        summary_window = 0
         if freq:
-            freq = int(freq)
-        begin_millis = begin_time*1000
-        end_millis = None
+            summary_window = int(freq)
+        
+        #prep times
         if end_time is None:
-            # we need a value here so we know what years to look at when we get row keys
             # add a 3600 second buffer to capture results that may have been updated after we 
             # calculate this timestamp.
-            end_millis = (int(time.time()) + 3600) * 1000
-        else:
-            end_millis = end_time*1000
-        log.debug("action=query_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s start=%s end=%s start_millis=%s end_millis=%s cf=%s datapath=%s" %
-                  (metadata_key, event_type, summary_type, freq, begin_time, end_time, begin_millis, end_millis, col_fam, datapath))
-
-        if col_fam == db.agg_cf:
-            results = db.query_aggregation_timerange(path=datapath, freq=freq,
-                   cf='average', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
-        elif col_fam == db.rate_cf:
-            results = db.query_baserate_timerange(path=datapath, freq=freq,
-                    cf='delta', ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
-        elif col_fam == db.raw_cf:
-            results = db.query_raw_data(path=datapath, freq=freq,
-                   ts_min=begin_millis, ts_max=end_millis, column_count=max_results)
+            end_time = int(time.time()) + 3600
+        begin_datetime = datetime.datetime.utcfromtimestamp(float(begin_time)).replace(tzinfo=utc)
+        end_datetime = datetime.datetime.utcfromtimestamp(float(end_time)).replace(tzinfo=utc)
+        log.debug("action=query_timeseries.start md_key={0} event_type={1} summ_type={2} summ_win={3} start={4} end={5} begin_datetime={6} end_datetime={7} table={8}".format(metadata_key, event_type, summary_type, summary_window, begin_time, end_time, begin_datetime, end_datetime, table))
+        print "action=query_timeseries.start md_key={0} event_type={1} summ_type={2} summ_win={3} start={4} end={5} begin_datetime={6} end_datetime={7} table={8}".format(metadata_key, event_type, summary_type, summary_window, begin_time, end_time, begin_datetime, end_datetime, table)
+        
+        #query database
+        data = []
+        if table == "int":
+            data = PSDataInt.objects.filter(event_type__event_type=event_type, event_type__summary_type=summary_type, event_type__summary_window=summary_window).filter(time__gte=begin_datetime).filter(time__lte=end_datetime)[:max_results]
+        elif table == "fraction":
+            data = PSDataFraction.objects.filter(event_type__event_type=event_type, event_type__summary_type=summary_type, event_type__summary_window=summary_window).filter(time__gte=begin_datetime).filter(time__lte=end_datetime)[:max_results]
+        elif table == "json":
+            data = PSDataJson.objects.filter(event_type__event_type=event_type, event_type__summary_type=summary_type, event_type__summary_window=summary_window).filter(time__gte=begin_datetime).filter(time__lte=end_datetime)[:max_results]
         else:
             log.debug("action=query_timeseries.end status=-1")
-            raise ParseError(detail="Requested data does not map to a known column-family")
-
-        return results
-
-    def database_write(self, ts_obj, local_cache):
-        # make sure we have a DB connection, throw exception otherwise
-        check_connection()
+            raise ParseError(detail="Requested data does not map to a known table")
         
+        return data
+
+    def database_write(self, matching_event_type, ts_obj, local_cache):
+        if ts_obj.event_type not in EVENT_TYPE_CONFIG:
+            log.debug("Invalid event_type {0}".format(ts_obj.event_type))
+            return
         data_type = EVENT_TYPE_CONFIG[ts_obj.event_type]["type"]
         validator = TYPE_VALIDATOR_MAP[data_type]
         
         #Determine if we can do the summary
         if ts_obj.summary_type != "base" and ts_obj.summary_type not in ALLOWED_SUMMARIES[data_type]:
             #skip invalid summary. should do logging here
+            print "Invalid summary {0}".format(ts_obj.summary_type)
             return
         
         #validate data
         ts_obj.value = validator.validate(ts_obj)
         
-        #Determine column family
-        col_family = validator.summary_cf(db, ts_obj.summary_type)
-        if col_family is None:
-            col_family = EVENT_TYPE_CF_MAP[data_type]
+        #Determine database table
+        table = ""
+        try:
+            table = PSTimeSeriesObject.find_table(ts_obj.event_type, ts_obj.summary_type, inverse_summary_type=True)
+        except ParseError:
+            #don't short circuit all writes if one fails
+            log.debug("Unable to find table for event_type={0} and summary_type={1}".format(ts_obj.event_type, ts_obj.summary_type))
+            print "Unable to find table for event_type={0} and summary_type={1}".format(ts_obj.event_type, ts_obj.summary_type)
+            return
         
         #perform initial summarization
+        #todo: update all validators to save results. int seems to be working but need to check other types
+        log.debug("action=create_timeseries.start md_key={0} event_type={1} summ_type={2} summ_win={3} ts={4} val={5} table={6} freq={7} base_freq={8}".format(ts_obj.metadata_key, ts_obj.event_type, ts_obj.summary_type, ts_obj.summary_window, str(ts_obj.get_datetime()), str(ts_obj.value), table, ts_obj.freq, ts_obj.base_freq ))
+        print "action=create_timeseries.start md_key={0} event_type={1} summ_type={2} summ_win={3} ts={4} val={5} table={6} freq={7} base_freq={8}".format(ts_obj.metadata_key, ts_obj.event_type, ts_obj.summary_type, ts_obj.summary_window, str(ts_obj.get_datetime()), str(ts_obj.value), table, ts_obj.freq, ts_obj.base_freq )
+        #todo: if base is duplicate. make sure summaries don't still get updated. maybe catch postgres conflict?
         if  ts_obj.summary_type== "aggregation":
-            validator.aggregation(db, ts_obj, local_cache)
+            validator.aggregation(ts_obj, local_cache)
         elif ts_obj.summary_type == "average":
-            validator.average(db, ts_obj)
+            validator.average(ts_obj)
         elif ts_obj.summary_type == "statistics":
-            validator.statistics(db, ts_obj, local_cache)
+            validator.statistics(ts_obj, local_cache)
+        else:
+            #insert the data in the target column-family
+            if table == "int":
+                data = PSDataInt(event_type=matching_event_type, time=ts_obj.get_datetime(), value=ts_obj.value)
+                data.save()
+            elif table == "fraction":
+                data = PSDataFraction(event_type=matching_event_type, time=ts_obj.get_datetime(), numer=ts_obj.value["numerator"], denom=ts_obj.value["denominator"])
+                data.save()
+            elif table == "json":
+                data = PSDataJson(event_type=matching_event_type, time=ts_obj.get_datetime(), value=ts_obj.value)
+                data.save()
         
-        #insert the data in the target column-family
-        log.debug("action=create_timeseries.start md_key=%s event_type=%s summ_type=%s summ_win=%s ts=%s val=%s cf=%s datapath=%s freq=%s base_freq=%s" %
-                  (ts_obj.metadata_key, ts_obj.event_type, ts_obj.summary_type, ts_obj.summary_window, str(ts_obj.get_datetime()), str(ts_obj.value), col_family, ts_obj.datapath, ts_obj.freq, ts_obj.base_freq ))
-        if col_family == db.rate_cf:
-            ratebin = BaseRateBin(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
-            db.update_rate_bin(ratebin)
-        elif col_family == db.agg_cf:
-            agg = AggregationBin(path=ts_obj.datapath,
-                    ts=ts_obj.get_datetime(), val=ts_obj.value["numerator"],
-                    freq=ts_obj.freq, base_freq=ts_obj.base_freq, count=ts_obj.value["denominator"])
-            db.aggs.insert(agg.get_key(), {agg.ts_to_jstime(): {'val': agg.val, str(agg.base_freq): agg.count}})
-        elif col_family == db.raw_cf:
-            rawdata = RawRateData(path=ts_obj.datapath, ts=ts_obj.get_datetime(), val=ts_obj.value, freq=ts_obj.freq)
-            db.set_raw_data(rawdata)
         log.debug("action=create_timeseries.end status=0")
 
 #
@@ -883,9 +861,6 @@ class ArchiveViewset(mixins.CreateModelMixin,
 
         'metadata_key' will be in kwargs
         """
-        # make sure we have a DB connection, throw exception otherwise
-        check_connection()
-        
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):
             raise ParseError(detail='Must post content-type: application/json header and json-formatted payload.')
@@ -930,9 +905,6 @@ class ArchiveViewset(mixins.CreateModelMixin,
                 obj = PSTimeSeriesObject(ts, val_item[DATA_KEY_VALUE], kwargs["metadata_key"])
                 obj.event_type =  val_item['event-type']
                 obj.save()
-                
-        #everything succeeded so save to database
-        db.flush()
 
         return Response('', status.HTTP_201_CREATED)
 
@@ -1030,17 +1002,15 @@ class EventTypeDetailViewset(UtilMixin, ViewsetBase):
 # (GET and POST) /archive/$METADATA_KEY/$EVENT_TYPE/$SUMMARY_TYPE/$SUMMARY_WINDOW
 # 
 
-class TimeSeriesSerializer(serializers.Serializer):
+class TimeSeriesSerializer(serializers.Serializer, UtilMixin):
     
     def to_representation(self, obj):
-        if obj.has_key('ts'):
-            obj['ts'] = int( obj['ts'] / 1e3 )
-        if obj.has_key('is_valid'):
-            del obj['is_valid']
-        if obj.has_key('cf'):
-            del obj['cf']
+        new_obj={
+            'ts': self.datetime_to_ts(obj.time),
+            'val': obj.value
+        }
             
-        return obj
+        return new_obj
 
 class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
     """
@@ -1090,7 +1060,7 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
             freq = self.valid_summary_window(kwargs['summary_window'])
         elif summary_type != 'base':
            return self.summary_details(request, metadata_key, event_type, summary_type)
-            
+        
         #Handle time filters
         time_result = self.handle_time_filters(request.query_params)
         begin_time = time_result['begin']
@@ -1132,8 +1102,7 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
 
         depending on the request.
         """
-        # make sure we have a DB connection, throw exception otherwise
-        check_connection()
+
         
         # validate the incoming json and data contained therein.
         if not request.content_type.startswith('application/json'):

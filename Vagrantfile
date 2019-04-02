@@ -2,9 +2,15 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
+  
+  #For virtualbox set the memory
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 1024
+  end
 
   # Build an el7 machine as the default
   config.vm.define "esmond-el7", primary: true, autostart: true do |el7|
+    
     # set box to official CentOS 7 image
     el7.vm.box = "centos/7"
     # explcitly set shared folder to virtualbox type. If not set will choose rsync 
@@ -37,6 +43,9 @@ Vagrant.configure("2") do |config|
     
     #Install all requirements and perform initial setup
     el7.vm.provision "shell", inline: <<-SHELL
+        # Create user and group
+        /usr/sbin/groupadd esmond 2> /dev/null || :
+        /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 
         #env variables
         export ESMOND_ROOT=/usr/lib/esmond
@@ -48,6 +57,7 @@ Vagrant.configure("2") do |config|
         yum install -y  http://software.internet2.edu/rpms/el7/x86_64/RPMS.main/perfSONAR-repo-0.8-1.noarch.rpm
         yum clean all
         yum install -y perfSONAR-repo-staging perfSONAR-repo-nightly
+        yum install -y https://yum.postgresql.org/9.6/redhat/rhel-7.6-x86_64/pgdg-redhat96-9.6-3.noarch.rpm
         yum clean all
         yum install -y gcc\
             kernel-devel\
@@ -68,10 +78,13 @@ Vagrant.configure("2") do |config|
             sqlite-devel\
             memcached\
             java-1.7.0-openjdk\
-            postgresql95\
-            postgresql95-server\
-            postgresql95-devel
-        
+            postgresql96\
+            postgresql96-server\
+            postgresql96-devel\
+            postgresql96-contrib\
+            postgresql96-plpython\
+            https://timescalereleases.blob.core.windows.net/rpm/timescaledb-1.0.0-postgresql-9.6-0.x86_64.rpm
+            
         ## setup shared folders and files
         if ! [ -d /vagrant/vagrant-data/esmond-el7/etc/esmond ]; then
             rm -rf /vagrant/vagrant-data/esmond-el7/etc/esmond
@@ -95,10 +108,10 @@ Vagrant.configure("2") do |config|
         ln -fs /vagrant/util/esmond_manage /usr/sbin
         #have to copy so apache starts on boot
         cp -f /vagrant/rpm/config_files/apache-esmond.conf /etc/httpd/conf.d/apache-esmond.conf
-        chmod 644 
+        chmod 644 /etc/httpd/conf.d/apache-esmond.conf
         ln -fs /vagrant/rpm/config_files/esmond.csh /etc/profile.d/esmond.csh
         ln -fs /vagrant/rpm/config_files/esmond.sh /etc/profile.d/esmond.sh
-        ln -fs /usr/pgsql-9.5/bin/pg_config /usr/sbin/pg_config
+        ln -fs /usr/pgsql-9.6/bin/pg_config /usr/sbin/pg_config
         
         ## Setup python environment
         virtualenv --prompt="(esmond)" .
@@ -116,6 +129,33 @@ Vagrant.configure("2") do |config|
         touch /var/log/esmond/django.log
         touch /var/log/esmond/install.log
         chown -R apache:apache /var/log/esmond
+        
+        # initdb
+        # Note: pscheduler inits postgresql-95. need to migrate to 9.6
+        /usr/pgsql-9.6/bin/postgresql96-setup initdb
+        # Check if upgrade possible
+        su -l postgres -c "/usr/pgsql-9.6/bin/pg_upgrade --old-bindir=/usr/pgsql-9.5/bin/ --new-bindir=/usr/pgsql-9.6/bin/ --old-datadir=/var/lib/pgsql/9.5/data/ --new-datadir=/var/lib/pgsql/9.6/data/ --check"
+        systemctl stop postgresql-9.5
+        su -l postgres -c "/usr/pgsql-9.6/bin/pg_upgrade --old-bindir=/usr/pgsql-9.5/bin/ --new-bindir=/usr/pgsql-9.6/bin/ --old-datadir=/var/lib/pgsql/9.5/data/ --new-datadir=/var/lib/pgsql/9.6/data/"
+        cp -f /var/lib/pgsql/9.5/data/pg_hba.conf /var/lib/pgsql/9.6/data/pg_hba.conf
+        # add this to match with pscheduler-server.spec does anyways
+        drop-in -n pscheduler - "/var/lib/pgsql/9.6/data/postgresql.conf" <<EOF
+#
+# pScheduler
+#
+max_connections = 500
+EOF
+        # Setup timescale
+        drop-in -n esmond - "/var/lib/pgsql/9.6/data/postgresql.conf" <<EOF
+#
+# esmond
+#
+shared_preload_libraries = 'timescaledb'
+timescaledb.telemetry_level=off
+EOF
+        # Start database so django can do its thing
+        systemctl disable postgresql-9.5
+        systemctl restart postgresql-9.6
         
         ## Finish Django setup
         #TODO: Handle this better
@@ -138,7 +178,7 @@ Vagrant.configure("2") do |config|
             sed -i "s/sql_db_name = .*/sql_db_name = esmond/g" /etc/esmond/esmond.conf
             sed -i "s/sql_db_user = .*/sql_db_user = esmond/g" /etc/esmond/esmond.conf
             sed -i "s/sql_db_password = .*/sql_db_password = ${DB_PASSWORD}/g" /etc/esmond/esmond.conf
-            drop-in -n -t esmond - /var/lib/pgsql/9.5/data/pg_hba.conf <<EOF
+            drop-in -n -t esmond - /var/lib/pgsql/9.6/data/pg_hba.conf <<EOF
         #
         # esmond
         #
@@ -151,15 +191,12 @@ Vagrant.configure("2") do |config|
         local     test_esmond     esmond                            md5
         host      test_esmond     esmond     127.0.0.1/32           md5
         host      test_esmond     esmond     ::1/128                md5
-        local     postgres        esmond                            md5
-        host      postgres        esmond     127.0.0.1/32           md5
-        host      postgres        esmond     ::1/128                md5
 EOF
         fi
         
         ## Restart remaining services
-        systemctl enable postgresql-9.5
-        systemctl restart postgresql-9.5
+        systemctl enable postgresql-9.6
+        systemctl restart postgresql-9.6
         systemctl enable cassandra
         systemctl restart cassandra
         systemctl enable httpd
@@ -168,12 +205,19 @@ EOF
         #build database
         python esmond/manage.py makemigrations --noinput
         python esmond/manage.py migrate --noinput
+        
+        # Create API key for testing
+        KEY=`python esmond/manage.py add_api_key_user perfsonar 2> /dev/null | grep "Key:" | cut -f2 -d " "`
+        mkdir -p /usr/share/pscheduler
+        cat >/usr/share/pscheduler/psc-archiver-esmond.json <<EOF
+{
+    "archiver": "esmond",
+    "data": {
+        "url": "https://localhost/esmond/perfsonar/archive/",
+        "_auth-token": "${KEY}"
+    }
+}
+EOF
     SHELL
   end
-  
-  # Runs on all hosts before they are provisioned independent of OS
-  config.vm.provision "shell", inline: <<-SHELL
-    /usr/sbin/groupadd esmond 2> /dev/null || :
-    /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
-  SHELL
 end

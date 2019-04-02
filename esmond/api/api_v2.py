@@ -39,12 +39,13 @@ from esmond.config import get_config_path, get_config
 # Cassandra connection
 # 
 
-try:
-    db = CASSANDRA_DB(get_config(get_config_path()))
-except ConnectionException, e:
-    #try to get a cassandra connection but don't sweat if cant get one now
-    #corrects race condition with cassandra boot and esmond boot
-    db = None
+# try:
+#     db = CASSANDRA_DB(get_config(get_config_path()))
+# except ConnectionException, e:
+#     #try to get a cassandra connection but don't sweat if cant get one now
+#     #corrects race condition with cassandra boot and esmond boot
+#     db = None
+db = None
 
 def check_connection():
     """Verify we have a cassandra connection"""

@@ -1,27 +1,24 @@
 import json
 import math
 from rest_framework.exceptions import ParseError
-
+from esmond.api.models import ( PSDataJson, PSDataInt, PSDataFraction )
 '''
 DataValidator: Base validator class. Subclasses should override vaildate class
 '''
 class DataValidator(object):
     def validate(self, obj):
         return obj.value
-    
-    def summary_cf(self, db, summary_type):
-        return None
         
-    def base(self, db, obj):
+    def base(self, obj):
         return
     
-    def average(self, db, obj):
+    def average(self, obj):
         raise NotImplementedError()
     
-    def aggregation(self, db, obj, cache):
+    def aggregation(self, obj, cache):
         raise NotImplementedError()
     
-    def statistics(self, db, obj, cache):
+    def statistics(self, obj, cache):
         raise NotImplementedError()
 
 '''
@@ -40,14 +37,21 @@ class FloatValidator(DataValidator):
         
         return formatted_value
     
-    def average(self, db, obj):
+    def average(self, obj):
+        results = PSDataFraction.objects.filter(event_type=obj.db_event_type).filter(time=obj.get_datetime())
+        if len(results) > 0:
+            result = results[0] #UNIQUE so should only be one
+            result.numerator += obj.value["numerator"]
+            result.denominator += 1
+            result.save()
         return
     
-    def aggregation(self, db, obj, cache):
-        results = db.query_aggregation_timerange(path=obj.datapath, freq=obj.freq,
-                   cf='average', ts_min=obj.time*1000, ts_max=obj.time*1000)
+    def aggregation(self, obj, cache):
+        results = PSDataFraction.objects.filter(event_type=obj.db_event_type).filter(time=obj.get_datetime())
         if len(results) > 0:
-            obj.value["denominator"] = 0 #don't increase the count
+            result = results[0] #UNIQUE so should only be one
+            result.numerator += obj.value["numerator"]
+            result.save()
         return
 '''
 Percentile: Used by histogram class to calculate percentiles using the NIST
@@ -101,18 +105,14 @@ class HistogramValidator(DataValidator):
         
         return obj.value
     
-    def _get_histogram(self, db, obj, datapath=None):
-        if datapath is None:
-            datapath = obj.datapath
-            
+    def _get_histogram(self, obj):    
         #query current histogram
-        results = db.query_raw_data(path=datapath, freq=obj.freq,
-                   ts_min=obj.time*1000, ts_max=obj.time*1000, column_count=1)
+        results = PSDataJson.objects.filter(event_type=obj.db_event_type).filter(time=obj.get_datetime())
         #if no results then this is the first histogram
         if len(results) == 0:
             return None
         
-        return results[0]['val']
+        return results[0]
         
     def _aggregation(self, curr_hist, agg_hist):
         for k in curr_hist:
@@ -123,15 +123,16 @@ class HistogramValidator(DataValidator):
                 
         return agg_hist
     
-    def aggregation(self, db, obj, cache):
+    def aggregation(self, obj, cache):
         #combine and set as value
-        agg_hist = self._get_histogram(db, obj)
-        if agg_hist is None:
+        curr_hist = self._get_histogram(obj)
+        if curr_hist is None:
             return None
-        obj.value = self._aggregation(obj.value, agg_hist)
-        cache[obj.freq] = obj.value
+        curr_hist.value = self._aggregation(curr_hist.value, obj.value)
+        cache[obj.freq] = curr_hist.value
+        curr_hist.save()
         
-    def statistics(self, db, obj, cache):
+    def statistics(self, obj, cache):
         #get aggregated histogram
         agg_hist = obj.value
         if obj.summary_window != 0:
@@ -201,8 +202,11 @@ class HistogramValidator(DataValidator):
         stats['standard-deviation'] = math.sqrt(stats['variance'])
         
         #set value
-        obj.value = stats
-  
+        results = PSDataJson.objects.filter(event_type=obj.db_event_type).filter(time=obj.get_datetime())
+        if len(results) > 0:
+            result = results[0] #UNIQUE so should only be one
+            result.value = stats
+            result.save()
 
 '''
 IntegerValidator: Simple validator for integers
@@ -214,18 +218,21 @@ class IntegerValidator(DataValidator):
         except ValueError:
             raise ParseError(detail="Value must be an integer")
     
-    def summary_cf(self, db, summary_type):
-        if summary_type == 'average':
-            return db.agg_cf
-        return None
+    def average(self, obj):
+        results = PSDataFraction.objects.filter(event_type=obj.db_event_type).filter(time=obj.get_datetime())
+        if len(results) > 0:
+            result = results[0] #UNIQUE so should only be one
+            result.numerator += obj.value["numerator"]
+            result.denominator += 1
+            result.save()
+        return
     
-    def average(self, db, obj):
-        obj.value = {
-            'numerator': obj.value,
-            'denominator': 1
-        }
-    
-    def aggregation(self, db, obj, cache):
+    def aggregation(self, obj, cache):
+        results = PSDataInt.objects.filter(event_type=obj.db_event_type).filter(time=obj.get_datetime())
+        if len(results) > 0:
+            result = results[0] #UNIQUE so should only be one
+            result.value += obj.value
+            result.save()
         return
 
 '''
@@ -266,7 +273,13 @@ class PercentageValidator(DataValidator):
         
         return obj.value
     
-    def aggregation(self, db, obj, cache):
+    def aggregation(self, obj, cache):
+        results = PSDataFraction.objects.filter(event_type=obj.db_event_type).filter(time=obj.get_datetime())
+        if len(results) > 0:
+            result = results[0] #UNIQUE so should only be one
+            result.numerator += obj.value["numerator"]
+            result.denominator += obj.value["denominator"]
+            result.save()
         return
 
 '''

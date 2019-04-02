@@ -4,6 +4,7 @@ import datetime
 
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.fields import JSONField
 from netfields import CidrAddressField, NetManager
 
 from esmond.util import datetime_to_unixtime, remove_metachars, max_datetime, atencode
@@ -559,6 +560,56 @@ class PSMetadataParameters(models.Model):
     
     def __unicode__(self):
         return "%s" % (self.parameter_key)
+
+class PSDataJson(models.Model):
+    event_type = models.ForeignKey(PSEventTypes, related_name='psdatajson')
+    time = models.DateTimeField()
+    value = JSONField();
+    
+    class Meta:
+        app_label = 'api'
+        db_table = "ps_data_json"
+        ordering = ["time","event_type"]
+        #needs a primary key on the time field
+        managed = False
+    
+    def __unicode__(self):
+        return "%s:%s:%s" % (self.event_type, self.time, self.value)
+        
+class PSDataInt(models.Model):
+    event_type = models.ForeignKey(PSEventTypes, related_name='psdataint')
+    time = models.DateTimeField()
+    value = models.BigIntegerField();
+    
+    class Meta:
+        app_label = 'api'
+        db_table = "ps_data_int"
+        ordering = ["time","event_type"]
+        #needs a primary key on the time and event_type field
+        managed = False
+    
+    def __unicode__(self):
+        return "%s:%s:%s" % (self.event_type, self.time, self.value)
+        
+class PSDataFraction(models.Model):
+    event_type = models.ForeignKey(PSEventTypes, related_name='psdatafraction')
+    time = models.DateTimeField()
+    numer = models.BigIntegerField();
+    denom = models.BigIntegerField();
+    
+    class Meta:
+        app_label = 'api'
+        db_table = "ps_data_fraction"
+        ordering = ["time","event_type"]
+        #needs a primary key on the time and event_type field
+        managed = False
+    
+    def __unicode__(self):
+        return "%s:%s:%d/%d" % (self.event_type, self.time, self.numer, self.denom)
+    
+    @property
+    def value(self):
+        return self.numer/float(self.denom)
 
 class UserIpAddress(models.Model):
     ip = CidrAddressField(unique=True, db_index=True)
