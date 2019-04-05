@@ -17,4 +17,4 @@ fi
 
 #deploy static files
 mkdir -p ${ESMOND_ROOT}/staticfiles
-django-admin collectstatic --clear --noinput
+django-admin collectstatic --clear --noinput &>> /var/log/esmond/install.log
