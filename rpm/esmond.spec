@@ -14,8 +14,8 @@
 %define init_script_2 espersistd
  
 Name:           esmond
-Version:        2.1.3     
-Release:        1%{?dist}
+Version:        4.2.0    
+Release:        0.0.a1%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
@@ -42,6 +42,7 @@ Requires:       cassandra20
 Requires:       httpd
 Requires:       mod_ssl
 Requires:       esmond-database
+Requires(post): esmond-database
 Requires:       sqlite
 Requires:       sqlite-devel
 Requires:       memcached
@@ -214,6 +215,11 @@ chown -R esmond:esmond /var/run/esmond
 #fix any file permissions the pip packages mess-up 
 find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
 
+#run database configuration scripts (dependent on esmond-database package installed)
+for script in %{dbscript_base}/configure-*; do
+    $script $1
+done
+
 #enable and start httpd and cassandra on fresh install
 if [ "$1" = "1" ]; then
     systemctl enable cassandra
@@ -226,8 +232,6 @@ fi
 #try to update the database if this is a clean install
 if [ "$1" = "1" ]; then
     %{dbscript_base}/upgrade-pgsql95.sh
-    %{dbscript_base}/configure-pgsql95.sh
-    systemctl restart httpd
 fi
 
 %postun

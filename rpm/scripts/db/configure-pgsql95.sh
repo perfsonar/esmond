@@ -74,10 +74,6 @@ export DJANGO_SETTINGS_MODULE=esmond.settings
 
 #initialize python
 cd $ESMOND_ROOT
-if [ -e /opt/rh/python27/enable ]; then
-    source /opt/rh/python27/enable
-    /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
-fi
 . bin/activate
 
 #build esmond tables
