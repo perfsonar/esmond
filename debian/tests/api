@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e
+
+esmond_manage add_api_key_user autopkgtest 2>&1 | grep -C 20 ^Key

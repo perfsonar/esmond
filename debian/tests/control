@@ -1,0 +1,3 @@
+Depends: @, curl
+Tests: perfsonar, archive, api
+Restrictions: needs-root
