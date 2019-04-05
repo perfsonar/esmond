@@ -24,50 +24,23 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:    no
 
-%if 0%{?el7}
 BuildRequires:  python
 BuildRequires:  python-virtualenv
-BuildRequires: systemd
-%else
-BuildRequires:  python27 >= 1.1
-%endif
+BuildRequires:  systemd
 BuildRequires:  httpd
 BuildRequires:  postgresql95-devel
 BuildRequires:  mercurial
 BuildRequires:  gcc
 
-%if 0%{?el7}
 Requires:       python
 Requires:       python-virtualenv
 Requires:       python2-mock
 Requires:       mod_wsgi
 Requires:       policycoreutils-python
 %{?systemd_requires: %systemd_requires}
-%else
-#make sure we grab SCL versions
-Requires:       python27                    >= 1.1
-Requires:       python27-mod_wsgi           >= 3.4
-Requires:       python27-python             >= 2.7.8 
-Requires:       python27-python-babel       >= 0.9.6 
-Requires:       python27-python-devel       >= 2.7.8 
-Requires:       python27-python-docutils    >= 0.11 
-Requires:       python27-python-jinja2      >= 2.6-10
-Requires:       python27-python-libs        >= 2.7.8 
-Requires:       python27-python-markupsafe  >= 0.11 
-Requires:       python27-python-nose        >= 1.3.0 
-Requires:       python27-python-pygments    >= 1.5 
-Requires:       python27-python-setuptools  >= 0.9.8 
-Requires:       python27-python-simplejson  >= 3.2.0 
-Requires:       python27-python-sphinx      >= 1.1.3 
-Requires:       python27-python-sqlalchemy  >= 0.7.9-3
-Requires:       python27-python-virtualenv  >= 13.1.0
-Requires:       python27-python-werkzeug    >= 0.8.3
-Requires:       python27-runtime            >= 1.1
-Requires:       python-mock
-Requires:       httpd24-httpd
-%endif
 Requires:       cassandra20
 Requires:       httpd
+Requires:       mod_ssl
 Requires:       esmond-database
 Requires:       sqlite
 Requires:       sqlite-devel
@@ -82,20 +55,6 @@ uses a hybrid model for storing data using TSDB for time series data and an SQL
 database for everything else. All data is available via a REST style interface
 (as JSON) allowing for easy integration with other tools.
 
-%package database-postgresql
-Summary:        Esmond Postgresql Database Plugin
-Group:          Development/Tools
-Requires:       postgresql
-Requires:       postgresql-server
-Requires:       postgresql-devel
-Provides:       esmond-database
-
-%description database-postgresql
-Installs OS yum repo's standard Postgresql implementation. This is often an older version
-of postgresql. Depending on the requirements of applications running on the same server as
-esmond or potential performance gains present in new postgresql, it may be desirable to 
-choose a package tied to a specific version instead of this package. 
-
 %package database-postgresql95
 Summary:        Esmond Postgresql 9.5 Database Plugin
 Group:          Development/Tools
@@ -105,6 +64,7 @@ Requires:       postgresql95-devel
 Requires(post): postgresql95
 Requires(post): postgresql95-server
 Requires(post): postgresql95-devel
+Requires(post): drop-in
 Provides:       esmond-database
 
 %description database-postgresql95
@@ -116,7 +76,7 @@ already data .
 Summary:        Esmond Backward Compatibility
 Group:          Development/Tools
 Requires:       esmond >= 2.1
-Requires:       esmond-database-postgresql
+Requires:       esmond-database-postgresql95
 Obsoletes:      esmond < 2.1
 
 %description compat
@@ -153,15 +113,9 @@ find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 mkdir -p %{buildroot}/%{install_base}/bin/
 
 #Move the init scripts into place
-%if 0%{?el7}
 #create systemd-tmpfiles config for cassandra since it doesn't do this right
 mkdir -p %{buildroot}/%{_tmpfilesdir}
 mv %{buildroot}/%{install_base}/rpm/config_files/tmpfiles.conf %{buildroot}/%{_tmpfilesdir}/esmond.conf
-%else
-mkdir -p %{buildroot}/etc/init.d
-mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_1} %{buildroot}/etc/init.d/%{init_script_1}
-mv %{buildroot}/%{install_base}/rpm/init_scripts/%{init_script_2} %{buildroot}/etc/init.d/%{init_script_2}
-%endif
 
 # Move the default RPM esmond.conf into place
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.conf %{buildroot}/%{config_base}/esmond.conf
@@ -182,16 +136,7 @@ ln -s %{install_base}/util/esmond_manage %{buildroot}/usr/sbin
 
 # Move the apache configuration into place
 mkdir -p %{buildroot}/etc/httpd/conf.d/
-%if 0%{?el7}
 mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}/etc/httpd/conf.d/apache-esmond.conf
-%else
-mkdir -p %{buildroot}/opt/rh/httpd24/root/etc/httpd/conf.d/
-echo "" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
-echo "#Setting local listen port" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
-echo "Listen 127.0.0.1:11413" >> %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf
-mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond.conf %{buildroot}/opt/rh/httpd24/root/etc/httpd/conf.d/apache-esmond.conf
-mv %{buildroot}/%{install_base}/rpm/config_files/apache-esmond-proxy.conf %{buildroot}/etc/httpd/conf.d/apache-esmond-proxy.conf
-%endif
 
 # ENV files
 mkdir -p %{buildroot}/etc/profile.d
@@ -205,12 +150,7 @@ rm -rf %{buildroot}/%{install_base}/rpm
 # NOTE: This part is why its not noarch
 cd %{buildroot}/%{install_base}
 rm -f .gitignore
-%if 0%{?el7}
 virtualenv --prompt="(esmond)" .
-%else
-source /opt/rh/python27/enable
-/opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
-%endif
 . bin/activate
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
 python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
@@ -225,19 +165,8 @@ find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" 
 
 %post
 cd %{install_base}
-%if 0%{?el7}
-    #create cassandra's pid directory since it doesn't do so on its own
-    mkdir -p /var/run/cassandra/
-%else
-### START HACK
-#this is ugly. need to do because python27 versions from SCL don't always like 
-# the binaries from the build. CentOS 6 only issue.
-find %{install_base} -name \*.pyc -delete
-find %{install_base} -name \*.pyo -delete
-### END HACK
-source /opt/rh/python27/enable
-/opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
-%endif
+#create cassandra's pid directory since it doesn't do so on its own
+mkdir -p /var/run/cassandra/
 . bin/activate
 
 #generate secret key
@@ -250,20 +179,9 @@ touch /var/log/esmond/esmond.log
 touch /var/log/esmond/django.log
 touch /var/log/esmond/install.log
 chown -R apache:apache /var/log/esmond
-%if 0%{?el7}
 semanage fcontext -a -t httpd_log_t '/var/log/esmond(/.*)?'
 restorecon -R /var/log/esmond
 setsebool -P httpd_can_network_connect on
-%endif
-
-#On centos6, force httpd24 on local port
-%if 0%{?el7}
-%else
-    #stop from listening on any ports set in main file
-    sed -i -e s/^Listen/#Listen/g /opt/rh/httpd24/root/etc/httpd/conf/httpd.conf 
-    #make sure we have httpd24 enabled in chkconfig
-    chkconfig httpd24-httpd on
-%endif
 
 #handle updates
 if [ "$1" = "2" ]; then
@@ -296,30 +214,26 @@ chown -R esmond:esmond /var/run/esmond
 #fix any file permissions the pip packages mess-up 
 find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
 
-#restart if not running (i.e. first update since this was added)
-%if 0%{?el7}
-%else
-    /etc/init.d/httpd24-httpd status
-    if [ $? -ne 0 ]; then
-        /etc/init.d/httpd24-httpd start
-    fi
-%endif
+#enable and start httpd and cassandra on fresh install
+if [ "$1" = "1" ]; then
+    systemctl enable cassandra
+    systemctl restart cassandra
+    systemctl enable httpd
+    systemctl restart httpd
+fi
 
 %post database-postgresql95
 #try to update the database if this is a clean install
 if [ "$1" = "1" ]; then
     %{dbscript_base}/upgrade-pgsql95.sh
+    %{dbscript_base}/configure-pgsql95.sh
+    systemctl restart httpd
 fi
 
 %postun
 if [ "$1" != "0" ]; then
     # An RPM upgrade
-    %if 0%{?el7}
-        systemctl restart httpd
-    %else
-        /etc/init.d/httpd restart
-        /etc/init.d/httpd24-httpd restart
-    %endif
+    systemctl restart httpd
 fi
 
 %files
@@ -335,21 +249,13 @@ fi
 /usr/sbin/esmond_manage
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.csh
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.sh
-%if 0%{?el7}
 /etc/httpd/conf.d/apache-esmond.conf
 %{_tmpfilesdir}/esmond.conf
-%else
-%attr(0755,esmond,esmond) /etc/init.d/%{init_script_1}
-%attr(0755,esmond,esmond) /etc/init.d/%{init_script_2}
-/etc/httpd/conf.d/apache-esmond-proxy.conf
-/opt/rh/httpd24/root/etc/httpd/conf.d/apache-esmond.conf
-%endif
-
-%files database-postgresql
 
 %files database-postgresql95
 %defattr(0644,esmond,esmond,0755)
 %attr(0755,esmond,esmond) %{dbscript_base}/upgrade-pgsql95.sh
+%attr(0755,esmond,esmond) %{dbscript_base}/configure-pgsql95.sh
 
 %files compat
 
