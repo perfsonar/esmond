@@ -1,7 +1,5 @@
-Index: esmond/rpm/config_files/esmond.conf
-===================================================================
---- esmond.orig/rpm/config_files/esmond.conf	2018-10-13 22:17:03.257724513 +0000
-+++ esmond/rpm/config_files/esmond.conf	2018-10-13 22:19:58.688381333 +0000
+--- esmond.orig/rpm/config_files/esmond.conf	2018-10-31 14:14:35.000000000 +0000
++++ esmond/rpm/config_files/esmond.conf	2019-04-07 16:43:39.867410053 +0000
 @@ -1,5 +1,6 @@
  [main]
  sql_db_engine = django.db.backends.postgresql_psycopg2
@@ -9,10 +7,8 @@ Index: esmond/rpm/config_files/esmond.conf
  sql_db_name = esmond
  sql_db_user = esmond
  sql_db_password = changeit
-Index: esmond/rpm/config_files/apache-esmond.conf
-===================================================================
---- esmond.orig/rpm/config_files/apache-esmond.conf	2018-10-13 22:17:03.257300571 +0000
-+++ esmond/rpm/config_files/apache-esmond.conf	2018-10-13 22:19:58.689518956 +0000
+--- esmond.orig/rpm/config_files/apache-esmond.conf	2018-10-31 14:14:35.000000000 +0000
++++ esmond/rpm/config_files/apache-esmond.conf	2019-04-07 16:43:39.868300788 +0000
 @@ -1,16 +1,15 @@
 -WSGIScriptAlias /esmond /usr/lib/esmond/esmond/wsgi.py
 -WSGISocketPrefix run/wsgi
@@ -45,10 +41,8 @@ Index: esmond/rpm/config_files/apache-esmond.conf
  Header set Access-Control-Allow-Origin "*"
  AllowOverride None
  <IfVersion >= 2.4>
-Index: esmond/rpm/config_files/settings.py
-===================================================================
---- esmond.orig/rpm/config_files/settings.py	2018-10-13 22:17:03.258873240 +0000
-+++ esmond/rpm/config_files/settings.py	2018-10-13 22:19:58.690119313 +0000
+--- esmond.orig/rpm/config_files/settings.py	2019-04-07 16:41:20.623061969 +0000
++++ esmond/rpm/config_files/settings.py	2019-04-07 16:43:39.868727350 +0000
 @@ -63,7 +63,7 @@
  USE_I18N = True
  
@@ -58,10 +52,8 @@ Index: esmond/rpm/config_files/settings.py
  
  # Absolute path to the directory that holds media.
  # Example: "/home/media/media.lawrence.com/"
-Index: esmond/setup.py
-===================================================================
---- esmond.orig/setup.py	2018-10-13 22:17:03.267591928 +0000
-+++ esmond/setup.py	2018-10-13 22:19:58.692341219 +0000
+--- esmond.orig/setup.py	2019-04-07 16:41:20.624218277 +0000
++++ esmond/setup.py	2019-04-07 16:43:39.869226093 +0000
 @@ -11,7 +11,10 @@
      author='Jon M. Dugan',
      author_email='jdugan@es.net',
@@ -72,5 +64,5 @@ Index: esmond/setup.py
 +        'esmond.api.client.perfsonar', 'esmond.api.management', 'esmond.api.migrations',
 +        'esmond.api.management.commands', 'esmond_client', 'test_data'],
      install_requires=[
-         'Django==1.10.7', 'web.py',
+         'Django==1.11.20', 'web.py',
          'djangorestframework==3.6.4', 'drf-extensions==0.3.1',
