@@ -1,7 +1,9 @@
 Source: esmond
 Section: net
 Priority: optional
-Maintainer: Valentin Vidic <Valentin.Vidic@CARNet.hr>
+Maintainer: perfSONAR developers <debian@perfsonar.net>
+Uploaders: Antoine Delvaux <antoine.delvaux@man.poznan.pl>,
+ Valentin Vidic <Valentin.Vidic@CARNet.hr>
 Build-Depends: debhelper (>= 8.0.0), python | python-all | python-dev | python-all-dev,
  dh-python
 X-Python-Version: >= 2.7
