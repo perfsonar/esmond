@@ -150,7 +150,8 @@ rm -rf %{buildroot}/%{install_base}/rpm
 # Install python libs so don't rely on pip connectivity during RPM install
 # NOTE: This part is why its not noarch
 cd %{buildroot}/%{install_base}
-rm -f .gitignore
+rm -rf .git
+rm -f .git*
 virtualenv --prompt="(esmond)" .
 . bin/activate
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
