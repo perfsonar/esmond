@@ -3,3 +3,4 @@
 set -e
 
 curl -s http://localhost/esmond/perfsonar/ | grep archive
+curl -k -s https://localhost/esmond/perfsonar/ | grep archive
