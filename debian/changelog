@@ -4,6 +4,7 @@ esmond (4.2.0~0-1) perfsonar-minor-snapshot; urgency=low
   * Correctly removing temporary files after install
   * Upgrading python-django dependency to 1.11.20
   * Upgrading python-django-netfields dependency to 0.7.2
+  * Upgrading python-djangorestframework dependency to 3.4.0
   * Upgrading python-djangorestframework-filters dependency to 0.10.1
   * Upgrading python-djangorestframework-extensions dependency to 0.3.1
 
