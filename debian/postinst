@@ -34,7 +34,7 @@ case "$1" in
         # prepare configurations
         tmp_esmond_conf="$(mktemp -t esmond.conf.XXXXXXXXXX)"
         tmp_settings_py="$(mktemp -t settings.py.XXXXXXXXXX)"
-        trap "rm -f ${tmp_esmond_conf} ${tmp_tmp_settings_py}" EXIT
+        trap "rm -f ${tmp_esmond_conf} ${tmp_settings_py}" EXIT
         cp /usr/share/esmond/esmond.conf ${tmp_esmond_conf}
         cp /usr/share/esmond/settings.py ${tmp_settings_py}
 
@@ -77,13 +77,8 @@ case "$1" in
 
         # setup database
         (
-            . /etc/default/esmond
-            export ESMOND_ROOT ESMOND_CONF
-            export DJANGO_SETTINGS_MODULE=esmond.settings
-
-            python /usr/lib/python2.7/dist-packages/esmond/manage.py makemigrations --noinput
-            python /usr/lib/python2.7/dist-packages/esmond/manage.py migrate --noinput
-
+            /usr/share/esmond/util/esmond_manage makemigrations --noinput
+            /usr/share/esmond/util/esmond_manage migrate --noinput
             mkdir -p /var/lib/esmond/staticfiles
             django-admin collectstatic --clear --noinput
         ) &> /var/log/esmond/install.log
