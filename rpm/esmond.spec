@@ -124,12 +124,12 @@ Transitions esmond instances prior to the split of database modules to new versi
 
 %pre
 # Create the 'esmond' user
-/usr/sbin/groupadd esmond 2> /dev/null || :
+/usr/sbin/groupadd -r esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 
 %pre database-postgresql95
 # Create the 'esmond' user
-/usr/sbin/groupadd esmond 2> /dev/null || :
+/usr/sbin/groupadd -r esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 
 %prep

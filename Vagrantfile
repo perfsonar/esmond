@@ -173,7 +173,7 @@ EOF
   
   # Runs on all hosts before they are provisioned independent of OS
   config.vm.provision "shell", inline: <<-SHELL
-    /usr/sbin/groupadd esmond 2> /dev/null || :
+    /usr/sbin/groupadd -r esmond 2> /dev/null || :
     /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
   SHELL
 end
