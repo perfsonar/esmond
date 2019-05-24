@@ -11,6 +11,9 @@ import requests
 
 from ..util import add_apikey_header
 
+import urllib3
+urllib3.disable_warnings() #disable warnings when ssl verification disabled
+
 # URI prefix segment - to change during development
 PS_ROOT = 'perfsonar'
 
@@ -79,13 +82,14 @@ class NodeInfo(object):
     """Base class for encapsulation objects"""
     wrn = NodeInfoWarning
 
-    def __init__(self, data, api_url, filters):
+    def __init__(self, data, api_url, filters, ssl_verify=True):
         super(NodeInfo, self).__init__()
         self._data = data
         self.api_url = api_url
         if self.api_url:
             self.api_url = api_url.rstrip('/')
         self.filters = filters
+        self.ssl_verify=ssl_verify
 
         self.request_headers = {}
 
@@ -154,7 +158,8 @@ class NodeInfo(object):
             # pylint: disable=no-member
             r = requests.get('{0}{1}'.format(self.api_url, self.query_uri),
                              params=q_params,
-                             headers=self.request_headers)
+                             headers=self.request_headers,
+                             verify=self.ssl_verify)
 
             self.inspect_request(r)
 
@@ -199,8 +204,8 @@ class Metadata(NodeInfo):
     objects."""
     wrn = MetadataWarning
 
-    def __init__(self, data, api_url, filters):
-        super(Metadata, self).__init__(data, api_url, filters)
+    def __init__(self, data, api_url, filters, ssl_verify=True):
+        super(Metadata, self).__init__(data, api_url, filters, ssl_verify=ssl_verify)
 
     # mostly properties to fetch values from the metadata payload
     # so they don't need docstrings
@@ -288,7 +293,7 @@ class Metadata(NodeInfo):
         """Generator returning all the event-types from the metadata
         json payload wrapped in EventType objects."""
         for etype in self._data.get('event-types', []):
-            yield EventType(etype, self.api_url, self.filters)
+            yield EventType(etype, self.api_url, self.filters, ssl_verify=self.ssl_verify)
 
     def get_event_type(self, event_type):
         """Returns a single named event-type (as specified by the arg
@@ -296,7 +301,7 @@ class Metadata(NodeInfo):
         EventType object."""
         for etype in self._data.get('event-types', []):
             if etype['event-type'] == event_type:
-                return EventType(etype, self.api_url, self.filters)
+                return EventType(etype, self.api_url, self.filters, ssl_verify=self.ssl_verify)
         return None
 
     def __repr__(self):
@@ -314,8 +319,8 @@ class EventType(NodeInfo):
     Will also return related summaries as a Summary object."""
     wrn = EventTypeWarning
 
-    def __init__(self, data, api_url, filters):
-        super(EventType, self).__init__(data, api_url, filters)
+    def __init__(self, data, api_url, filters, ssl_verify=True):
+        super(EventType, self).__init__(data, api_url, filters, ssl_verify=ssl_verify)
 
     @property
     def base_uri(self):  # pylint: disable=missing-docstring
@@ -353,7 +358,7 @@ class EventType(NodeInfo):
         """Generator returning all the summaries from the event-type
         json payload wrapped in Summary objects."""
         for summ in self._data.get('summaries', []):
-            yield Summary(summ, self.api_url, self.filters, self.data_type)
+            yield Summary(summ, self.api_url, self.filters, self.data_type, ssl_verify=self.ssl_verify)
 
     def get_summary(self, s_type, s_window):
         """Returns a single named summary (as specified by the arg
@@ -362,7 +367,7 @@ class EventType(NodeInfo):
         for summ in self._data.get('summaries', []):
             if summ['summary-type'] == s_type and \
                     summ['summary-window'] == str(s_window):
-                return Summary(summ, self.api_url, self.filters, self.data_type)
+                return Summary(summ, self.api_url, self.filters, self.data_type, ssl_verify=self.ssl_verify)
         return None
 
     def get_data(self):
@@ -370,9 +375,9 @@ class EventType(NodeInfo):
         from the API.  Returns a DataPayload object to calling code."""
 
         try:
-            return DataPayload(self._query_with_limit(), self.data_type)
+            return DataPayload(self._query_with_limit(), self.data_type, ssl_verify=self.ssl_verify)
         except QueryLimitException:
-            return DataPayload([], self.data_type)
+            return DataPayload([], self.data_type, ssl_verify=self.ssl_verify)
 
     def __repr__(self):
         return '<EventType/{0}: uri:{1}>'.format(self.event_type, self.base_uri)
@@ -385,8 +390,8 @@ class Summary(NodeInfo):
     Is also used to fetch the actual summary data from the API."""
     wrn = SummaryWarning
 
-    def __init__(self, data, api_url, filters, data_type):
-        super(Summary, self).__init__(data, api_url, filters)
+    def __init__(self, data, api_url, filters, data_type, ssl_verify=True):
+        super(Summary, self).__init__(data, api_url, filters, ssl_verify=ssl_verify)
         self._data_type = data_type
 
     # Properties to fetch values from payload don't need docs
@@ -417,9 +422,9 @@ class Summary(NodeInfo):
         """Void method to pull the data associated with this event-type
         from the API.  Returns a DataPayload object to calling code."""
         try:
-            return DataPayload(self._query_with_limit(), self.data_type)
+            return DataPayload(self._query_with_limit(), self.data_type, ssl_verify=self.ssl_verify)
         except QueryLimitException:
-            return DataPayload([], self.data_type)
+            return DataPayload([], self.data_type, ssl_verify=self.ssl_verify)
 
     def __repr__(self):
         return '<Summary/{0}: window:{1}>'.format(self.summary_type, self.summary_window)
@@ -432,8 +437,8 @@ class DataPayload(NodeInfo):
     as is appropriate."""
     wrn = DataPayloadWarning
 
-    def __init__(self, data=[], data_type=None):  # pylint: disable=dangerous-default-value
-        super(DataPayload, self).__init__(data, None, None)
+    def __init__(self, data=[], data_type=None, ssl_verify=True):  # pylint: disable=dangerous-default-value
+        super(DataPayload, self).__init__(data, None, None, ssl_verify=ssl_verify)
         self._data_type = data_type
 
     @property
@@ -445,9 +450,9 @@ class DataPayload(NodeInfo):
     def data(self):
         """Return a list of the datapoints based on type."""
         if self.data_type == 'histogram':
-            return [DataHistogram(x) for x in self._data]
+            return [DataHistogram(x, ssl_verify=self.ssl_verify) for x in self._data]
         else:
-            return [DataPoint(x) for x in self._data]
+            return [DataPoint(x, ssl_verify=self.ssl_verify) for x in self._data]
 
     @property
     def dump(self):
@@ -463,8 +468,8 @@ class DataPoint(NodeInfo):
     __slots__ = ['ts', 'val']
     wrn = DataPointWarning
 
-    def __init__(self, data={}):  # pylint: disable=dangerous-default-value
-        super(DataPoint, self).__init__(data, None, None)
+    def __init__(self, data={}, ssl_verify=True):  # pylint: disable=dangerous-default-value
+        super(DataPoint, self).__init__(data, None, None, ssl_verify=ssl_verify)
         self.ts = self._convert_to_datetime(data.get('ts', None))
         self.val = data.get('val', None)
 
@@ -483,8 +488,8 @@ class DataHistogram(NodeInfo):
     __slots__ = ['ts', 'val']
     wrn = DataHistogramWarning
 
-    def __init__(self, data={}):  # pylint: disable=dangerous-default-value
-        super(DataHistogram, self).__init__(data, None, None)
+    def __init__(self, data={}, ssl_verify=True):  # pylint: disable=dangerous-default-value
+        super(DataHistogram, self).__init__(data, None, None, ssl_verify=ssl_verify)
         self.ts = self._convert_to_datetime(data.get('ts', None))
         self.val = data.get('val', {})
 
@@ -770,13 +775,14 @@ class ApiConnect(object):
     wrn = ApiConnectWarning
 
     def __init__(self, api_url, filters=ApiFilters(), username='', api_key='',  # pylint: disable=too-many-arguments
-                 script_alias='esmond'):
+                 script_alias='esmond', ssl_verify=True):
         super(ApiConnect, self).__init__()
         self.api_url = api_url.rstrip("/")
         self.filters = filters
         self.filters.auth_username = username
         self.filters.auth_apikey = api_key
         self.script_alias = script_alias
+        self.ssl_verify = ssl_verify
 
         if self.script_alias:
             self.script_alias = script_alias.rstrip('/')
@@ -798,7 +804,8 @@ class ApiConnect(object):
         r = requests.get(
             archive_url,
             params=dict(self.filters.metadata_filters, **self.filters.time_filters),
-            headers=self.request_headers)
+            headers=self.request_headers,
+            verify=self.ssl_verify)
 
         self.inspect_request(r)
 
@@ -809,7 +816,7 @@ class ApiConnect(object):
             data = json.loads(r.text)
 
             if data:
-                m_total = Metadata(data[0], self.api_url, self.filters).metadata_count_total
+                m_total = Metadata(data[0], self.api_url, self.filters, ssl_verify=self.ssl_verify).metadata_count_total
             else:
                 m_total = 0
 
@@ -833,7 +840,8 @@ class ApiConnect(object):
                         archive_url,
                         params=dict(self.filters.metadata_filters, offset=offset,
                                     **self.filters.time_filters),
-                        headers=self.request_headers)
+                        headers=self.request_headers,
+                        verify=self.ssl_verify)
                     self.inspect_request(r)
 
                     if r.status_code != 200:
@@ -854,7 +862,7 @@ class ApiConnect(object):
                 print 'final result count: {0}\n'.format(len(data))
 
             for i in data:
-                yield Metadata(i, self.api_url, self.filters)
+                yield Metadata(i, self.api_url, self.filters, ssl_verify=self.ssl_verify)
         else:
             self.http_alert(r)
             raise StopIteration()
