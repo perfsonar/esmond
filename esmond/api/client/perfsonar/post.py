@@ -60,7 +60,7 @@ class PostBase(AlertMixin, object):
     """
     _schema_root = '{0}/archive'.format(PS_ROOT)
 
-    def __init__(self, api_url, username, api_key, script_alias, ssl_verify=True):
+    def __init__(self, api_url, username, api_key, script_alias, ssl_verify=True, timeout=20):
         """
         The api_url, username and api_key args all have their usual usages.
 
@@ -92,6 +92,7 @@ class PostBase(AlertMixin, object):
         self.script_alias = script_alias
         self.headers = {'content-type': 'application/json'}
         self.ssl_verify=ssl_verify
+        self.timeout=timeout
         if self.username and self.api_key:
             add_apikey_header(self.username, self.api_key, self.headers)
         else:
@@ -139,8 +140,8 @@ class MetadataPost(PostBase):  # pylint: disable=too-many-instance-attributes
                  subject_type=None, source=None, destination=None,
                  tool_name=None, measurement_agent=None, input_source=None,
                  input_destination=None, time_duration=None,
-                 ip_transport_protocol=None, script_alias='esmond', ssl_verify=True):
-        super(MetadataPost, self).__init__(api_url, username, api_key, script_alias, ssl_verify=ssl_verify)
+                 ip_transport_protocol=None, script_alias='esmond', ssl_verify=True, timeout=20):
+        super(MetadataPost, self).__init__(api_url, username, api_key, script_alias, ssl_verify=ssl_verify, timeout=timeout)
         # required
         self.subject_type = subject_type
         self.source = source
@@ -243,7 +244,11 @@ class MetadataPost(PostBase):  # pylint: disable=too-many-instance-attributes
         url = '{0}/{1}/'.format(self.api_url, self._schema_root)
 
         try:
-            r = requests.post(url, data=self.json_payload(), headers=self.headers, verify=self.ssl_verify)
+            r = requests.post(url, data=self.json_payload(), 
+                                headers=self.headers, 
+                                verify=self.ssl_verify, 
+                                timeout=self.timeout
+                             )
         except ConnectionError, ex:
             self.ex('POST connection error: {0}'.format(str(ex)))
             return None
@@ -286,7 +291,7 @@ class EventTypePost(PostBase):
     wrn = EventTypePostWarning
 
     def __init__(self, api_url, username='', api_key='', metadata_key=None,  # pylint: disable=too-many-arguments
-                 event_type=None, script_alias='esmond', ssl_verify=True):
+                 event_type=None, script_alias='esmond', ssl_verify=True, timeout=20):
         """
         The api_url, username and api_key args have their usual uses.  The
         event_type arg is outlined in the base class.
@@ -294,7 +299,7 @@ class EventTypePost(PostBase):
         The metadata_key and event_type args are the associated metadata
         / event-type new data is being added to.
         """
-        super(EventTypePost, self).__init__(api_url, username, api_key, script_alias, ssl_verify=ssl_verify)
+        super(EventTypePost, self).__init__(api_url, username, api_key, script_alias, ssl_verify=ssl_verify, timeout=timeout)
 
         self.metadata_key = metadata_key
         self.event_type = event_type
@@ -324,7 +329,7 @@ class EventTypePost(PostBase):
 
         for dpay in self._payload:
             try:
-                r = requests.post(url, data=json.dumps(dpay), headers=self.headers, verify=self.ssl_verify)
+                r = requests.post(url, data=json.dumps(dpay), headers=self.headers, verify=self.ssl_verify, timeout=self.timeout)
             except ConnectionError, ex:
                 self.ex('POST connection error: {0}'.format(str(ex)))
 
@@ -350,13 +355,13 @@ class EventTypeBulkPost(PostBase):
     wrn = EventTypePostWarning
 
     def __init__(self, api_url, username='', api_key='', metadata_key=None,  # pylint: disable=too-many-arguments
-                 script_alias='esmond', ssl_verify=True):
+                 script_alias='esmond', ssl_verify=True, timeout=20):
         """
         The api_url, username and api_key args have their usual uses.  The
         event_type arg is outlined in the base class.  The metadata_key arg
         is the string for the metadata being written to.
         """
-        super(EventTypeBulkPost, self).__init__(api_url, username, api_key, script_alias, ssl_verify=ssl_verify)
+        super(EventTypeBulkPost, self).__init__(api_url, username, api_key, script_alias, ssl_verify=ssl_verify, timeout=timeout)
 
         self.metadata_key = metadata_key
 
@@ -398,7 +403,7 @@ class EventTypeBulkPost(PostBase):
                                     self.metadata_key)
 
         try:
-            r = requests.put(url, data=self.json_payload(), headers=self.headers, verify=self.ssl_verify)
+            r = requests.put(url, data=self.json_payload(), headers=self.headers, verify=self.ssl_verify, timeout=self.timeout)
         except ConnectionError, ex:
             self.ex('POST connection error: {0}'.format(str(ex)))
 

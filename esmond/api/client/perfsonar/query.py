@@ -158,7 +158,8 @@ class NodeInfo(object):
             r = requests.get('{0}{1}'.format(self.api_url, self.query_uri),
                              params=q_params,
                              headers=self.request_headers,
-                             verify=self.filters.ssl_verify)
+                             verify=self.filters.ssl_verify,
+                             timeout=self.filters.timeout)
 
             self.inspect_request(r)
 
@@ -530,6 +531,7 @@ class ApiFilters(object):
         self.auth_username = ''
         self.auth_apikey = ''
         self.ssl_verify = True
+        self.timeout = 20 #this is timeout without seeing data, not download time
         
     # Metadata level search filters
 
@@ -804,7 +806,8 @@ class ApiConnect(object):
             archive_url,
             params=dict(self.filters.metadata_filters, **self.filters.time_filters),
             headers=self.request_headers,
-            verify=self.filters.ssl_verify)
+            verify=self.filters.ssl_verify,
+            timeout=self.filters.timeout)
 
         self.inspect_request(r)
 
@@ -840,7 +843,8 @@ class ApiConnect(object):
                         params=dict(self.filters.metadata_filters, offset=offset,
                                     **self.filters.time_filters),
                         headers=self.request_headers,
-                        verify=self.filters.ssl_verify)
+                        verify=self.filters.ssl_verify,
+                        timeout=self.filters.timeout)
                     self.inspect_request(r)
 
                     if r.status_code != 200:
