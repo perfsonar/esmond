@@ -12,10 +12,12 @@
 %define dbscript_base /usr/lib/esmond-database
 %define init_script_1 espolld
 %define init_script_2 espersistd
+%define perfsonar_auto_version 4.2.0
+%define perfsonar_auto_relnum 0.0.a1
  
 Name:           esmond
-Version:        4.2.0    
-Release:        0.0.a1%{?dist}
+Version:        %{perfsonar_auto_version}
+Release:        %{perfsonar_auto_relnum}%{?dist}
 Summary:        esmond
 Group:          Development/Libraries
 License:        New BSD License 
