@@ -1,4 +1,4 @@
-esmond (4.2.0~0-1) perfsonar-minor-snapshot; urgency=low
+esmond (4.2.0~1.b1-1) perfsonar-minor-staging; urgency=low
 
   * New upstream version.
   * Correctly removing temporary files after install
@@ -8,7 +8,7 @@ esmond (4.2.0~0-1) perfsonar-minor-snapshot; urgency=low
   * Upgrading python-djangorestframework-filters dependency to 0.10.1
   * Upgrading python-djangorestframework-extensions dependency to 0.3.1
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Wed, 08 May 2019 17:33:21 +0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Fri, 19 Jul 2019 17:32:05 +0000
 
 esmond (2.1.3-1) perfsonar-jessie-release; urgency=low
 
