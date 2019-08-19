@@ -11,6 +11,9 @@ import requests
 
 from ..util import add_apikey_header
 
+import urllib3
+urllib3.disable_warnings() #disable warnings when ssl verification disabled
+
 # URI prefix segment - to change during development
 PS_ROOT = 'perfsonar'
 
@@ -154,7 +157,9 @@ class NodeInfo(object):
             # pylint: disable=no-member
             r = requests.get('{0}{1}'.format(self.api_url, self.query_uri),
                              params=q_params,
-                             headers=self.request_headers)
+                             headers=self.request_headers,
+                             verify=self.filters.ssl_verify,
+                             timeout=self.filters.timeout)
 
             self.inspect_request(r)
 
@@ -525,7 +530,9 @@ class ApiFilters(object):
         # Other stuff
         self.auth_username = ''
         self.auth_apikey = ''
-
+        self.ssl_verify = True
+        self.timeout = 20 #this is timeout without seeing data, not download time
+        
     # Metadata level search filters
 
     @property
@@ -798,7 +805,9 @@ class ApiConnect(object):
         r = requests.get(
             archive_url,
             params=dict(self.filters.metadata_filters, **self.filters.time_filters),
-            headers=self.request_headers)
+            headers=self.request_headers,
+            verify=self.filters.ssl_verify,
+            timeout=self.filters.timeout)
 
         self.inspect_request(r)
 
@@ -833,7 +842,9 @@ class ApiConnect(object):
                         archive_url,
                         params=dict(self.filters.metadata_filters, offset=offset,
                                     **self.filters.time_filters),
-                        headers=self.request_headers)
+                        headers=self.request_headers,
+                        verify=self.filters.ssl_verify,
+                        timeout=self.filters.timeout)
                     self.inspect_request(r)
 
                     if r.status_code != 200:

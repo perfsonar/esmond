@@ -19,7 +19,7 @@ def read(*paths):
 
 setup(
     name='esmond_client',
-    version='2.0',
+    version='4.2.1',
     description='API client libraries and command line tools for the ESnet Monitoring Daemon (esmond).',  # pylint: disable=line-too-long
     long_description=(read('README.rst')),
     author='Monte M. Goode',

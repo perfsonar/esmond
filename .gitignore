@@ -1,3 +1,5 @@
+# Debian quilt directory
+.pc
 # ignore standard python junk
 *.pyc
 *.egg-info

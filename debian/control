@@ -1,0 +1,30 @@
+Source: esmond
+Section: net
+Priority: optional
+Maintainer: perfSONAR developers <debian@perfsonar.net>
+Uploaders: Antoine Delvaux <antoine.delvaux@man.poznan.pl>,
+ Valentin Vidic <Valentin.Vidic@CARNet.hr>
+Build-Depends: debhelper (>= 10), python | python-all | python-dev | python-all-dev,
+ dh-python
+X-Python-Version: >= 2.7
+Standards-Version: 3.9.8
+Homepage: http://software.es.net/esmond/
+Vcs-Git: git://github.com/esnet/esmond.git
+Vcs-Browser: https://github.com/esnet/esmond.git
+
+Package: esmond
+Architecture: all
+Depends: apache2, libapache2-mod-wsgi, ssl-cert, postgresql,
+ memcached, cassandra, ucf (>= 0.28), python-pkg-resources,
+ python-nagiosplugin, python-requests, python-mimeparse, python-psycopg2,
+ python-pycassa, python-memcache, python-webpy, python-mock, python-dlnetsnmp,
+ adduser, dbconfig-common, libsnmp-base, python-django (>= 1.11.20),
+ python-django-discover-runner, python-django-netfields (>= 0.7.2),
+ python-django-tastypie (>= 0.12.2), python-djangorestframework (>= 3.4.0),
+ python-djangorestframework-filters (>= 0.10.1),
+ python-djangorestframework-extensions (>= 0.3.1), libjs-jquery, ${misc:Depends}
+Description: ESnet Monitoring Daemon
+ Esmond is a system for collecting and storing large sets of time-series data.
+ Esmond uses a hybrid model for storing data using TSDB for time series data and
+ an SQL database for everything else. All data is available via a REST style
+ interface (as JSON) allowing for easy integration with other tools.

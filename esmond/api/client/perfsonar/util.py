@@ -652,12 +652,6 @@ def check_url(options, parser):
         options.url = url.replace(upar.path, '')
         print '\n not necessary to add /esmond/perfsonar/archive to --url arg - trimming'
 
-    try:
-        urllib.urlopen(options.url)
-    except Exception, ex:  # pylint: disable=broad-except
-        print 'Could not open --url {0} - error: {1}'.format(options.url, ex)
-
-
 def check_valid_hostnames(options, parser, hn_args=[]):  # pylint: disable=dangerous-default-value, unused-argument
     """Validate hostnames in cmd line args."""
     try:
@@ -832,6 +826,12 @@ def perfsonar_client_opts(require_src_dest=False, require_event=False,
     parser.add_option('-v', '--verbose',
                       dest='verbose', action='store_true', default=False,
                       help='Verbose output.')
+    parser.add_option('--ssl-verify',
+                      dest='ssl_verify', action='store_true', default=False,
+                      help='Verify SSL certificate (default: %default)')
+    parser.add_option('--timeout', metavar='SECONDS',
+                      type='int', dest='timeout',
+                      help='Timeout (in seconds) client will wait without receiveing data before exiting')
     options, args = parser.parse_args()
 
     if options.list_event:
@@ -877,7 +877,9 @@ def perfsonar_client_filters(options):
     if options.summary_window:
         filters.summary_window = options.summary_window
     filters.verbose = options.verbose
-
+    filters.ssl_verify = options.ssl_verify
+    filters.timeout = options.timeout
+    
     if options.filter:
         # Apply arbritrary metadata filters
         for flt in options.filter:

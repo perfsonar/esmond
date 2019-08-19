@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -e
+
+curl -s http://localhost/esmond/perfsonar/archive/ | grep  '^\['
+curl -k -s https://localhost/esmond/perfsonar/archive/ | grep  '^\['
