@@ -1,17 +1,20 @@
-esmond (4.2.1-1) perfsonar-patch-snapshot; urgency=low
+esmond (4.2.1~a1.0-1) perfsonar-4.2-snapshot; urgency=low
 
   * New upstream version.
 
- -- perfSONAR developers <debian@perfsonar.net>  \Thu, \15 \Aug \2019 :22:13 \+0000
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Sun, 25 Aug 2019 17:48:53 +0000
+
 esmond (4.2.0-1) perfsonar-minor-staging; urgency=low
 
   * New upstream version.
   * Correctly removing temporary files after install
+  * Adding dependency to ssl-cert
   * Upgrading python-django dependency to 1.11.20
   * Upgrading python-django-netfields dependency to 0.7.2
   * Upgrading python-djangorestframework dependency to 3.4.0
   * Upgrading python-djangorestframework-filters dependency to 0.10.1
   * Upgrading python-djangorestframework-extensions dependency to 0.3.1
+  * Building on Stretch.
 
  -- Andy Lake <andy@es.net>  Thu, 15 Aug 2019 01:11:47 +0000
 
