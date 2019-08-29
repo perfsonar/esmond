@@ -149,8 +149,8 @@
     "fields": {
         "input_destination": "bost-pt1.es.net", 
         "destination": "198.124.238.66", 
-        "source": "198.129.254.187", 
-        "input_source": "ps-lat.es.net", 
+        "source": "198.129.254.38", 
+        "input_source": "sacr-pt1.es.net", 
         "metadata": 32, 
         "tool_name": "bwctl/ping", 
         "measurement_agent": "198.129.254.30"
@@ -162,8 +162,8 @@
     "fields": {
         "input_destination": "bois-pt1-v6.es.net", 
         "destination": "2001:400:1601:1150::3", 
-        "source": "2001:400:201:11ff::87", 
-        "input_source": "ps-lat.es.net", 
+        "source": "2001:400:501:1150::3", 
+        "input_source": "sacr-pt1.es.net", 
         "metadata": 33, 
         "tool_name": "bwctl/ping", 
         "measurement_agent": "198.129.254.30"

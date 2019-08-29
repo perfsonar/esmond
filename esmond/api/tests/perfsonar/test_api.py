@@ -131,9 +131,9 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         self.v4_name = 'lbl-pt1.es.net'
         self.v6_ip = '2001:400:201:1150::3'
         self.v6_name = 'lbl-pt1-v6.es.net'
-        self.v4v6_ipv4 = '198.129.254.187'
-        self.v4v6_ipv6 = '2001:400:201:11ff::87'
-        self.v4v6_name = 'ps-lat.es.net'
+        self.v4v6_ipv4 = '198.129.254.38'
+        self.v4v6_ipv6 = '2001:400:501:1150::3'
+        self.v4v6_name = 'sacr-pt1.es.net'
         self.dest = 'bost-pt1.es.net'
         
         #metadata detail test object
