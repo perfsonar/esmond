@@ -2,7 +2,10 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-
+  #Disable audio
+  config.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--audio", "none"]
+  end
   # Build an el7 machine as the default
   config.vm.define "esmond-el7", primary: true, autostart: true do |el7|
     # set box to official CentOS 7 image
@@ -45,9 +48,8 @@ Vagrant.configure("2") do |config|
 
         ## install yum dependencies
         yum install -y epel-release
-        yum install -y  http://software.internet2.edu/rpms/el7/x86_64/RPMS.main/perfSONAR-repo-0.8-1.noarch.rpm
+        yum install -y  http://software.internet2.edu/rpms/el7/x86_64/RPMS.main/perfSONAR-repo-nightly-minor-0.9-1.noarch.rpm
         yum clean all
-        yum install -y perfSONAR-repo-staging perfSONAR-repo-nightly
         yum clean all
         yum install -y gcc\
             kernel-devel\
