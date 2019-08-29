@@ -104,66 +104,6 @@ def get_summary_name(filterdict):
     return type_map[django_query_filter][filter_criteria]
 
 # -- aggregation functions
-
-
-def aggregate_to_ts_and_endpoint(data, verbosity=False):
-    """Aggregate/sum the returned data by timestamp and endpoint alias."""
-    aggs = {}
-
-    # Aggregate/sum the returned data by timestamp and endpoint alias.
-    for row in data.data:
-        if verbosity:
-            print ' *', row
-        for data in row.data:
-            if verbosity > 1:
-                print '  *', data
-            # if not aggs.has_key(data.ts_epoch):
-            if data.ts_epoch not in aggs:
-                aggs[data.ts_epoch] = {}
-            # if not aggs[data.ts_epoch].has_key(row.endpoint):
-            if row.endpoint not in aggs[data.ts_epoch]:
-                aggs[data.ts_epoch][row.endpoint] = 0
-            if data.val is not None:
-                aggs[data.ts_epoch][row.endpoint] += data.val
-
-    return aggs
-
-
-def aggregate_to_device_interface_endpoint(data, verbosity=False):  # pylint: disable=invalid-name
-    """Aggregate/sum the returned data to device/interface/endpoint alias."""
-    aggs = {}
-
-    # Aggregate/sum the returned data to device/interface/endpoint alias.
-    for row in data.data:
-        if verbosity:
-            print ' *', row
-
-        if row.device not in aggs:
-            aggs[row.device] = {}
-
-        if row.interface not in aggs[row.device]:
-            aggs[row.device][row.interface] = {}
-
-        if row.endpoint not in aggs[row.device][row.interface]:
-            aggs[row.device][row.interface][row.endpoint] = 0
-
-        for data in row.data:
-            if verbosity > 1:
-                print '  *', data
-            if data.val is not None:
-                aggs[row.device][row.interface][row.endpoint] += data.val
-
-    return aggs
-
-
-def iterate_device_interface_endpoint(aggs):  # pylint: disable=invalid-name
-    """Iterate over aggs down to dev/ifact/endpoint/val."""
-    for device in aggs.keys():
-        for interface in aggs[device].keys():
-            for endpoint, val in aggs[device][interface].items():
-                yield device, interface, endpoint, val
-
-
 # -- timehandling code for summary scripts
 
 # pylint doesn't like these constant names

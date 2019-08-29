@@ -10,8 +10,6 @@
 %define install_base /usr/lib/esmond
 %define config_base /etc/esmond
 %define dbscript_base /usr/lib/esmond-database
-%define init_script_1 espolld
-%define init_script_2 espersistd
 %define perfsonar_auto_version 4.3.0
 %define perfsonar_auto_relnum 0.a1.0
  
@@ -31,7 +29,6 @@ BuildRequires:  python-virtualenv
 BuildRequires:  systemd
 BuildRequires:  httpd
 BuildRequires:  postgresql95-devel
-BuildRequires:  mercurial
 BuildRequires:  gcc
 
 Requires:       python
@@ -115,7 +112,6 @@ find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 #Create bin directory. virtualenv files will leave here.
 mkdir -p %{buildroot}/%{install_base}/bin/
 
-#Move the init scripts into place
 #create systemd-tmpfiles config for cassandra since it doesn't do this right
 mkdir -p %{buildroot}/%{_tmpfilesdir}
 mv %{buildroot}/%{install_base}/rpm/config_files/tmpfiles.conf %{buildroot}/%{_tmpfilesdir}/esmond.conf

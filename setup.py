@@ -21,13 +21,6 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'espolld = esmond.poll:espolld',
-            'espoll = esmond.poll:espoll',
-            'espersistd = esmond.persist:espersistd',
-            'espersistq = esmond.persist:espersistq',
-            'esfetch = esmond.fetch:esfetch',
-            'esdbd = esmond.newdb:esdb_standalone',
-            'gen_ma_storefile = esmond.perfsonar:gen_ma_storefile',
             'esmanage = esmond.manage:esmanage',
         ]
     },

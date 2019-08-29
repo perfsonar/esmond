@@ -29,16 +29,13 @@ from rest_framework import (viewsets, serializers, status,
 from rest_framework.exceptions import (ParseError, NotFound, MethodNotAllowed, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (DjangoModelPermissions, IsAuthenticatedOrReadOnly)
 from rest_framework.authentication import BaseAuthentication, TokenAuthentication
 
 import rest_framework_filters as filters
 
 from esmond.api.models import (PSMetadata, PSPointToPointSubject, PSEventTypes, 
     PSMetadataParameters, PSNetworkElementSubject, UserIpAddress)
-
-from esmond.api.api_v2 import (DataObject, _get_ersatz_esmond_api_queryset,
-    DjangoModelPerm)
 
 from esmond.api.perfsonar.types import *
 
@@ -87,11 +84,48 @@ def check_connection():
             'subinterval': db.raw_cf,
             'float': db.agg_cf
         }
-
+    
 #
 # Bases, etc
 #
+def _get_ersatz_esmond_api_queryset(ersatz_device):
+    """
+    We have a custom set of django.contrib.auth permissions (see 
+    models.APIPermission) for non-model API resources. This function 
+    generates a fake queryset that can be put on these non-model resources 
+    so that they can use the (above) standard DjangoModelPermissions as 
+    a permissions class instead of needing to roll a new custom 
+    permission class up to deal with these resources.
+    """
+    class ErsatzValues(object):
+        model_name = ersatz_device
+        app_label = 'auth.esmond_api'
+    class ErsatzModel(object):
+        _meta = ErsatzValues
+    class ErsatzQueryset(object):
+        model = ErsatzModel
 
+    return ErsatzQueryset
+    
+class DataObject(object):
+    def __init__(self, initial=None):
+        self.__dict__['_data'] = collections.OrderedDict()
+
+    def __getattr__(self, name):
+        return self._data.get(name, None)
+
+    def __setattr__(self, name, value):
+        self.__dict__['_data'][name] = value
+
+    def to_dict(self):
+        return self._data
+
+class DjangoModelPerm(DjangoModelPermissions):
+    """
+    Just allowing unauth for read ops
+    """
+    authenticated_users_only = False
+        
 class UtilMixin(object):
     def undash_dict(self, d):
         """Dict key dash => underscore conversion."""
