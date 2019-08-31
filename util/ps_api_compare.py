@@ -60,32 +60,32 @@ def main():
     selected = 0
     selection = None
 
-    for i in uri_map.keys():
+    for i in list(uri_map.keys()):
         if getattr(options, i): 
             selected += 1
             selection = i
 
     if selected == 0:
-        print 'no option selected'
+        print('no option selected')
         parser.print_help()
         return -1
     elif selected > 1:
-        print 'select only one option'
+        print('select only one option')
         parser.print_help()
         return -1
 
-    print 'calling:', uri_map.get(selection)
+    print('calling:', uri_map.get(selection))
 
     r = requests.get(options.url + uri_map.get(selection).format('perfsonar'))
-    print pp.pprint(json.loads(r.content))
+    print(pp.pprint(json.loads(r.content)))
 
-    print '=+=+=+='
+    print('=+=+=+=')
     if options.legacy: return
 
     r = requests.get(options.url + uri_map.get(selection).format('perfsonar2'))
     if options.verbose or r.status_code != 200:
-        print r.content
-    print pp.pprint(json.loads(r.content))
+        print(r.content)
+    print(pp.pprint(json.loads(r.content)))
 
     if options.post_back:
         got = json.loads(r.content)
@@ -98,7 +98,7 @@ def main():
 
         p = getattr(requests, method)(options.url + uri_map.get(selection).format('perfsonar2'),
             data=json.dumps(send), headers={ 'content-type': 'application/json' })
-        print p.content
+        print(p.content)
 
 if __name__ == '__main__':
     main()

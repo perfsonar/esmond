@@ -13,65 +13,65 @@ import sys
 
 def throughtput(md):
     """Get throughput data."""
-    print 'throughput'
-    print md.time_interval
-    print md.time_duration
+    print('throughput')
+    print(md.time_interval)
+    print(md.time_duration)
     et = md.get_event_type('throughput')
     payload = et.get_data()
     for dp in payload.data:
-        print dp.ts, dp.val
-    print '+++'
+        print(dp.ts, dp.val)
+    print('+++')
 
 def packet_retransmits(md):
     """Get retransmit data"""
-    print 'retransmits'
-    print md.time_interval
-    print md.time_duration
+    print('retransmits')
+    print(md.time_interval)
+    print(md.time_duration)
     et = md.get_event_type('packet-retransmits')
     payload = et.get_data()
     for dp in payload.data:
-        print dp.ts, dp.val
-    print '+++'
+        print(dp.ts, dp.val)
+    print('+++')
 
 def histograms(md):
     """Histograms - base, and hourly/daily summaries"""
-    print 'histograms'
+    print('histograms')
 
     # Base
-    print 'base'
+    print('base')
     md.filters.time_range = 600
     
     et = md.get_event_type('histogram-owdelay')
     payload = et.get_data()
     for dp in payload.data:
-        print dp.ts, dp.val
+        print(dp.ts, dp.val)
 
     del md.filters.time_range
 
     # Hourly 
-    print 'hourly'
+    print('hourly')
     summ = et.get_summary('aggregation', 3600)
     payload = summ.get_data()
-    print payload
+    print(payload)
     for dp in payload.data:
         pass # etc
 
     # Daily
-    print 'daily'
+    print('daily')
     summ = et.get_summary('aggregation', 86400)
     payload = summ.get_data()
-    print payload
+    print(payload)
     for dp in payload.data:
         pass # etc
 
-    print '+++'
+    print('+++')
 
 def statistics(md):
     """Statistics - base, and hourly/daily summaries"""
-    print 'statistics'
+    print('statistics')
 
     # Base
-    print 'base'
+    print('base')
     md.filters.time_range = 600
     
     et = md.get_event_type('histogram-owdelay')
@@ -79,88 +79,88 @@ def statistics(md):
     summ = et.get_summary('statistics', 0)
     payload = summ.get_data()
     for dp in payload.data:
-        print dp.ts, dp.val['standard-deviation'], dp.val['median'], \
-            dp.val['variance'] # etc
+        print(dp.ts, dp.val['standard-deviation'], dp.val['median'], \
+            dp.val['variance']) # etc
 
     del md.filters.time_range
 
     # Hourly 
-    print 'hourly'
+    print('hourly')
     summ = et.get_summary('statistics', 3600)
     payload = summ.get_data()
-    print payload
+    print(payload)
     for dp in payload.data:
         pass # etc
 
     # Daily
-    print 'daily'
+    print('daily')
     summ = et.get_summary('statistics', 86400)
     payload = summ.get_data()
-    print payload
+    print(payload)
     for dp in payload.data:
         pass # etc
 
-    print '+++'
+    print('+++')
 
 def packet_loss(md):
     """Packet loss rate - base, and hourly/daily summaries"""
-    print 'packet loss'
+    print('packet loss')
 
     # Base
-    print 'base'
+    print('base')
     md.filters.time_range = 600
     
     et = md.get_event_type('packet-loss-rate')
     payload = et.get_data()
     for dp in payload.data:
-        print dp.ts, dp.val
+        print(dp.ts, dp.val)
 
     del md.filters.time_range
 
     # Hourly 
-    print 'hourly'
+    print('hourly')
     summ = et.get_summary('aggregation', 3600)
     payload = summ.get_data()
-    print payload
+    print(payload)
     for dp in payload.data:
         pass
 
     # Daily
-    print 'daily'
+    print('daily')
     summ = et.get_summary('aggregation', 86400)
     payload = summ.get_data()
-    print payload
+    print(payload)
     for dp in payload.data:
         pass
 
-    print '+++'
+    print('+++')
 
 def packet_trace(md):
     """Packet trace data"""
-    print 'packet trace'
+    print('packet trace')
     md.filters.time_range = 600
 
     et = md.get_event_type('packet-trace')
     payload = et.get_data()
     for dp in payload.data:
         for i in dp.val:
-            print i['ip'], i['rtt'] # etc
+            print(i['ip'], i['rtt']) # etc
 
     del md.filters.time_range
 
-    print '+++'
+    print('+++')
 
 def path_mtu(md):
     """Path mtu data"""
-    print 'path mtu'
+    print('path mtu')
     md.filters.time_range = 1800
 
     et = md.get_event_type('path-mtu')
     payload = et.get_data()
     for dp in payload.data:
-        print dp.ts, dp.val
+        print(dp.ts, dp.val)
 
-    print '+++'
+    print('+++')
 
 def main():
 
@@ -175,7 +175,7 @@ def main():
     conn = ApiConnect('http://lbl-pt1.es.net:9085', filters)
 
     if len(list(conn.get_metadata())) > 1:
-        print 'Got more than one md object - fix query'
+        print('Got more than one md object - fix query')
         return -1
 
     metadata = list(conn.get_metadata())[0]

@@ -58,7 +58,7 @@ class CassandraTester:
                 while(sample > 0):
                     bucket = random.randint(bucket_min, bucket_max)
                     val = random.randint(1,sample)
-                    if not histogram.has_key(str(bucket)):
+                    if str(bucket) not in histogram:
                         histogram[str(bucket)] = val
                     else:
                         histogram[str(bucket)] += val
@@ -80,10 +80,10 @@ class CassandraTester:
     
     def dump_json(self, db_result):
         time_series = []
-        for row in db_result.keys():
-            for ts in db_result[row].keys():
+        for row in list(db_result.keys()):
+            for ts in list(db_result[row].keys()):
                 time_series.append({'time': ts, 'value': db_result[row][ts]})
-        print json.dumps(time_series)
+        print(json.dumps(time_series))
     
     def gen_key(self, key, ts):
         year = datetime.datetime.utcfromtimestamp(ts).year
@@ -94,7 +94,7 @@ class CassandraTester:
         key_range = []
         start_year = datetime.datetime.utcfromtimestamp(start_time).year
         end_year = datetime.datetime.utcfromtimestamp(end_time).year
-        year_range = range(start_year, end_year+1)
+        year_range = list(range(start_year, end_year+1))
         for year in year_range:
             key_range.append("%s:%d" % (key,year))
         return key_range
@@ -129,7 +129,7 @@ if((args.metadata_key is not None) and args.num_rows > 1):
 #generate data
 end_time= int(time.time())
 gen_interval = args.time_range
-print "Generating %d seconds of data..." % gen_interval
+print("Generating %d seconds of data..." % gen_interval)
 gen_timer = time.time()
 row_keys = []
 if data_type == 'base_rate':
@@ -138,5 +138,5 @@ elif data_type == 'histogram':
     row_keys = tester.generate_histogram_data(args.key_prefix, args.metadata_key, args.num_rows, (end_time - gen_interval), end_time, args.summ_type, args.summ_window, args.sample_size, args.min_val, args.max_val)
 else:
     raise Exception("Invalid data type: %s" % data_type)
-print "Data generated in %f seconds." % (time.time() - gen_timer)
-print ""
+print("Data generated in %f seconds." % (time.time() - gen_timer))
+print("")

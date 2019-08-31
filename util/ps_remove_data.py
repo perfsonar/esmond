@@ -246,7 +246,7 @@ def main():
         #determine policy 
         policy = get_policy(et, policies, [v['name'] for v in POLICY_MATCH_FIELD_DEFS], 0)
         if policy is None:
-            print "Unable to find matching policy for %s:%s\n" % (et.metadata, et)
+            print("Unable to find matching policy for %s:%s\n" % (et.metadata, et))
             continue
         
         #determine expire time
@@ -293,7 +293,7 @@ def main():
             try:
                 (expired_data, cf, datapath) = query_data(db, et.metadata.metadata_key, et.event_type, et.summary_type, et.summary_window, begin_time, end_time)
             except Exception as e:
-                print "Query error for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s, begin_time=%s, end_time=%s, error=%s" % (md_key, et.event_type, et.summary_type, et.summary_window, begin_time, end_time, e)
+                print("Query error for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s, begin_time=%s, end_time=%s, error=%s" % (md_key, et.event_type, et.summary_type, et.summary_window, begin_time, end_time, e))
                 break
             
             #adjust begin_time
@@ -314,18 +314,18 @@ def main():
                 except Exception as e:
                     sys.stderr.write("Error deleting {0}: {1}\n".format(row_key, e))
                     
-            print "Sending request to delete %d rows for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s" % (len(expired_data), md_key, et.event_type, et.summary_type, et.summary_window)
+            print("Sending request to delete %d rows for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s" % (len(expired_data), md_key, et.event_type, et.summary_type, et.summary_window))
             try:
                 cf.send()
             except Exception as e:
                 sys.stderr.write("Error sending delete: {0}".format(e))
-            print "Deleted %d rows for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s" % (len(expired_data), md_key, et.event_type, et.summary_type, et.summary_window)
+            print("Deleted %d rows for metadata_key=%s, event_type=%s, summary_type=%s, summary_window=%s" % (len(expired_data), md_key, et.event_type, et.summary_type, et.summary_window))
         
     #Clean out metadata from relational database
     for md_key in metadata_counts:
         if  metadata_counts[md_key]['total'] == metadata_counts[md_key]['expired']:
             metadata_counts[md_key]['obj'].delete()
-            print "Deleted metadata %s" % md_key
+            print("Deleted metadata %s" % md_key)
             
 if __name__ == '__main__':
     try:
