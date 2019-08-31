@@ -10,6 +10,6 @@ class Command(BaseCommand):
     help = 'Initialize cassandra esmond keyspace/column families.'
 
     def handle(self, *args, **options):
-        print 'Initializing cassandra esmond keyspace'
+        print('Initializing cassandra esmond keyspace')
         config = get_config(get_config_path())
         db = CASSANDRA_DB(config)

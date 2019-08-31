@@ -2,12 +2,12 @@ import os
 import optparse
 import logging
 from logging.handlers import SysLogHandler
-import ConfigParser
+import configparser
 
 from esmond.error import ConfigError
 
 def get_config_path():
-    if os.environ.has_key('ESMOND_CONF'):
+    if 'ESMOND_CONF' in os.environ:
         conf = os.environ['ESMOND_CONF']
     else:
         conf = './esmond.conf'
@@ -20,7 +20,7 @@ def get_config(config_file, opts=None):
 
     try:
         conf = EsmondConfig(config_file)
-    except ConfigParser.Error, e:
+    except configparser.Error as e:
         raise ConfigError("unable to parse config: %s" % e)
 
     # the command line overrides the config file
@@ -104,9 +104,9 @@ class EsmondConfig(object):
         for v in ('ESMOND_ROOT', ):
             defaults[v] = os.environ.get(v)
 
-        cfg = ConfigParser.ConfigParser(defaults)
+        cfg = configparser.ConfigParser(defaults)
         cfg.read(self.file)
-        config_items = map(lambda x: x[0], cfg.items("main"))
+        config_items = [x[0] for x in cfg.items("main")]
         for opt in (
                 'agg_tsdb_root',
                 'allowed_hosts',
@@ -180,15 +180,15 @@ class EsmondConfig(object):
         """update_types -- convert input from config file to appropriate types"""
 
         if self.allowed_hosts:
-            self.allowed_hosts = map(str.strip, self.allowed_hosts.split(','))
+            self.allowed_hosts = list(map(str.strip, self.allowed_hosts.split(',')))
 
         if self.mib_dirs:
-            self.mib_dirs = map(str.strip, self.mib_dirs.split(','))
+            self.mib_dirs = list(map(str.strip, self.mib_dirs.split(',')))
 
         if self.mibs:
-            self.mibs = map(str.strip, self.mibs.split(','))
+            self.mibs = list(map(str.strip, self.mibs.split(',')))
         if self.cassandra_servers:
-            self.cassandra_servers = map(str.strip, self.cassandra_servers.split(','))
+            self.cassandra_servers = list(map(str.strip, self.cassandra_servers.split(',')))
         if self.poll_timeout:
             self.poll_timeout = int(self.poll_timeout)
         if self.poll_retries:
@@ -212,7 +212,7 @@ class EsmondConfig(object):
             self.send_error_email = True
 
         if self.syslog_facility is not None:
-            if not SysLogHandler.facility_names.has_key(self.syslog_facility):
+            if self.syslog_facility not in SysLogHandler.facility_names:
                 raise ConfigError("invalid config: %s syslog facility is unknown" % self.syslog_facility)
 
             self.syslog_facility = SysLogHandler.facility_names[self.syslog_facility]
@@ -220,7 +220,7 @@ class EsmondConfig(object):
         if self.syslog_priority is None:
             syslog_priority = logging.INFO
         else:
-            if not SysLogHandler.priority_names.has_key(self.syslog_priority):
+            if self.syslog_priority not in SysLogHandler.priority_names:
                 raise ConfigError("invaild config: unknown syslog_priority %s" %
                         self.syslog_priority)
             self.syslog_priority = SysLogHandler.priority_names[self.syslog_priority]
@@ -236,8 +236,8 @@ class EsmondConfig(object):
         if not os.access(self.tsdb_root, os.W_OK):
             raise ConfigError("invalid config: tsdb_root %s is not writable" % self.tsdb_root)
         if self.tsdb_chunk_prefixes:
-            self.tsdb_chunk_prefixes = map(str.strip,
-                    self.tsdb_chunk_prefixes.split(','))
+            self.tsdb_chunk_prefixes = list(map(str.strip,
+                    self.tsdb_chunk_prefixes.split(',')))
             for cdir in self.tsdb_chunk_prefixes:
                 if not os.path.isdir(cdir):
                     raise ConfigError("invalid config: tsdb_chunk_prefixes doesn't exist: %s" % cdir)
@@ -251,7 +251,7 @@ class EsmondConfig(object):
                 raise ConfigError("invalid config: traceback_dir %s is not writable" % self.traceback_dir)
 
         if self.syslog_facility is not None:
-            if not SysLogHandler.facility_names.has_key(self.syslog_facility):
+            if self.syslog_facility not in SysLogHandler.facility_names:
                 raise ConfigError("invalid config: %s syslog facility is unknown" % self.syslog_facility)
 
             self.syslog_facility = SysLogHandler.facility_names[self.syslog_facility]
@@ -259,15 +259,15 @@ class EsmondConfig(object):
         if self.syslog_priority is None:
             syslog_priority = logging.INFO
         else:
-            if not SysLogHandler.priority_names.has_key(self.syslog_priority):
+            if self.syslog_priority not in SysLogHandler.priority_names:
                 raise ConfigError("invaild config: unknown syslog_priority %s" %
                         self.syslog_priority)
             self.syslog_priority = SysLogHandler.priority_names[self.syslog_priority]
 
         errors = []
-        for oidset, queues in self.persist_map.iteritems():
+        for oidset, queues in self.persist_map.items():
             for queue in queues:
-                if not self.persist_queues.has_key(queue):
+                if queue not in self.persist_queues:
                     errors.append("%s for %s" % (queue, oidset))
 
         if errors:

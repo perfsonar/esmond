@@ -12,18 +12,18 @@ from django.core.wsgi import get_wsgi_application
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esmond.settings'
 
-print >>sys.stderr, "path=", sys.path
+print("path=", sys.path, file=sys.stderr)
 
 # This fixes the hitch that mod_wsgi does not pass Apache SetEnv 
 # directives into os.environ.
 
 def application(environ, start_response):
-    if not environ.has_key('ESMOND_ROOT'):
-        print >>sys.stderr, "Please define ESMOND_ROOT in your Apache configuration"
+    if 'ESMOND_ROOT' not in environ:
+        print("Please define ESMOND_ROOT in your Apache configuration", file=sys.stderr)
         exit()
     esmond_root = environ['ESMOND_ROOT']
     os.environ['ESMOND_ROOT'] = esmond_root
-    if environ.has_key('ESMOND_CONF'):
+    if 'ESMOND_CONF' in environ:
         os.environ['ESMOND_CONF'] = environ['ESMOND_CONF']
     return get_wsgi_application()(environ, start_response)
 

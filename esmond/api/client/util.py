@@ -5,7 +5,7 @@ import os.path
 import sys
 import warnings
 
-import ConfigParser
+import configparser
 
 
 def add_apikey_header(user, key, header_dict):
@@ -59,7 +59,7 @@ def get_config():
     if not os.path.exists(c_path):
         raise ConfigException('Could not find configuration file {0}'.format(c_path))
 
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(c_path)
     return config
 
@@ -84,22 +84,22 @@ def get_summary_name(filterdict):
         raise ConfigException('Arg needs to be a dict of the form: {{django_query_filter: filter_criteria}} - got {0}.'.format(
             filterdict))
 
-    elif len(filterdict.keys()) > 1:
+    elif len(list(filterdict.keys())) > 1:
         raise ConfigException('Dict must contain a single key/value pair of the form: {{django_query_filter: filter_criteria}} - got {0}.'.format(
             filterdict))
 
-    django_query_filter = filterdict.keys()[0]
+    django_query_filter = list(filterdict.keys())[0]
     filter_criteria = filterdict[django_query_filter]
 
     type_map = get_type_map()
 
     if django_query_filter not in type_map:
         raise ConfigException('Config file did does not contain a section for {0} - has: {1}'.format(
-            django_query_filter, type_map.keys()))
+            django_query_filter, list(type_map.keys())))
 
     elif filter_criteria not in type_map[django_query_filter]:
         raise ConfigException('Config section for {0} does not contain an key/entry for {1} - has: {2}'.format(
-            django_query_filter, filter_criteria, type_map[django_query_filter].keys()))
+            django_query_filter, filter_criteria, list(type_map[django_query_filter].keys())))
 
     return type_map[django_query_filter][filter_criteria]
 
@@ -135,23 +135,23 @@ def get_month_start_and_end(start_point):
 
 _atencode_safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ0123456789_.-'
 _atencode_map = {}
-for i, c in zip(xrange(256), str(bytearray(xrange(256)))):
+for i, c in zip(range(256), str(bytearray(range(256)))):
     _atencode_map[c] = c if c in _atencode_safe else '@{:02X}'.format(i)
 
 _atencode_unsafe = ' $&+,/:;=?@\x7F'
 _atencode_map_minimal = {}
-for i, c in zip(xrange(256), str(bytearray(xrange(256)))):
+for i, c in zip(range(256), str(bytearray(range(256)))):
     _atencode_map_minimal[c] = \
         c if (i > 31 and i < 128 and c not in _atencode_unsafe) else '@{:02X}'.format(i)
 
 _atencode_safe_graphite = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ012345689_-'
 _atencode_map_graphite = {}
-for i, c in zip(xrange(256), str(bytearray(xrange(256)))):
+for i, c in zip(range(256), str(bytearray(range(256)))):
     _atencode_map_graphite[c] = c if c in _atencode_safe_graphite else '@{:02X}'.format(i)
 
 _atdecode_map = {}
 
-for i in xrange(256):
+for i in range(256):
     _atdecode_map['{:02X}'.format(i)] = chr(i)
     _atdecode_map['{:02x}'.format(i)] = chr(i)
 

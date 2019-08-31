@@ -122,14 +122,14 @@ class CASSANDRA_DB(object):
         # Connect to cassandra with SystemManager, do a schema check 
         # and set up schema components if need be.
         if ast.literal_eval(os.environ.get('ESMOND_UNIT_TESTS', 'False')):
-            print '*** Using test keyspace'
+            print('*** Using test keyspace')
             self.keyspace = 'test_{0}'.format(config.cassandra_keyspace)
         else:
             self.keyspace = config.cassandra_keyspace
 
         try:
             sysman = SystemManager(config.cassandra_servers[0])                              
-        except TTransportException, e:
+        except TTransportException as e:
             raise ConnectionException("System Manager can't connect to Cassandra "
                 "at %s - %s" % (config.cassandra_servers[0], e))
         
@@ -157,7 +157,7 @@ class CASSANDRA_DB(object):
         # _schema_modified = True so it will be propigated.
         self.log.info('Checking/creating column families')
         # Raw Data CF
-        if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.raw_cf):
+        if self.raw_cf not in sysman.get_keyspace_column_families(self.keyspace):
             _schema_modified = True
             sysman.create_column_family(self.keyspace, self.raw_cf, super=False, 
                     comparator_type=LONG_TYPE, 
@@ -166,7 +166,7 @@ class CASSANDRA_DB(object):
                     compaction_strategy='LeveledCompactionStrategy')
             self.log.info('Created CF: %s' % self.raw_cf)
         # Base Rate CF
-        if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.rate_cf):
+        if self.rate_cf not in sysman.get_keyspace_column_families(self.keyspace):
             _schema_modified = True
             sysman.create_column_family(self.keyspace, self.rate_cf, super=True, 
                     comparator_type=LONG_TYPE, 
@@ -175,7 +175,7 @@ class CASSANDRA_DB(object):
                     compaction_strategy='LeveledCompactionStrategy')
             self.log.info('Created CF: %s' % self.rate_cf)
         # Rate aggregation CF
-        if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.agg_cf):
+        if self.agg_cf not in sysman.get_keyspace_column_families(self.keyspace):
             _schema_modified = True
             sysman.create_column_family(self.keyspace, self.agg_cf, super=True, 
                     comparator_type=LONG_TYPE, 
@@ -184,7 +184,7 @@ class CASSANDRA_DB(object):
                     compaction_strategy='LeveledCompactionStrategy')
             self.log.info('Created CF: %s' % self.agg_cf)
         # Stat aggregation CF
-        if not sysman.get_keyspace_column_families(self.keyspace).has_key(self.stat_cf):
+        if self.stat_cf not in sysman.get_keyspace_column_families(self.keyspace):
             _schema_modified = True
             sysman.create_column_family(self.keyspace, self.stat_cf, super=True, 
                     comparator_type=LONG_TYPE, 
@@ -222,7 +222,7 @@ class CASSANDRA_DB(object):
                 max_retries=10,
                 timeout=timeout,
                 credentials=_creds)
-        except AllServersUnavailable, e:
+        except AllServersUnavailable as e:
             raise ConnectionException("Couldn't connect to any Cassandra "
                     "at %s - %s" % (config.cassandra_servers, e))
                     
@@ -319,7 +319,7 @@ class CASSANDRA_DB(object):
 
         meta_d = None
         
-        if not self.metadata_cache.has_key(raw_data.get_meta_key()):
+        if raw_data.get_meta_key() not in self.metadata_cache:
             # Didn't find a value in the metadata cache.  First look
             # back through the raw data for SEEK_BACK_THRESHOLD seconds
             # to see if we can find the last processed value.
@@ -338,8 +338,8 @@ class CASSANDRA_DB(object):
             if ret:
                 # A previous value was found in the raw data, so we can
                 # seed/return that.
-                key = ret.keys()[-1]
-                ts = ret[key].keys()[0]
+                key = list(ret.keys())[-1]
+                ts = list(ret[key].keys())[0]
                 val = json.loads(ret[key][ts])
                 meta_d = Metadata(last_update=ts, last_val=val, min_ts=ts, 
                     freq=raw_data.freq, path=raw_data.path)
@@ -593,7 +593,7 @@ class CASSANDRA_DB(object):
                 self._get_row_keys(path,freq,ts_min,ts_max), 
                 column_start=ts_min, column_finish=ts_max)
             cols = 0
-            for i in ret_count.keys():
+            for i in list(ret_count.keys()):
                 cols += ret_count[i]
             cols += 5
 
@@ -613,8 +613,8 @@ class CASSANDRA_DB(object):
         # Just return the results and format elsewhere.
         results = []
         
-        for k,v in ret.items():
-            for kk,vv in v.items():
+        for k,v in list(ret.items()):
+            for kk,vv in list(v.items()):
                 results.append({'ts': kk, 'val': float(vv['val']) / value_divisors[cf], 
                                         'is_valid': vv['is_valid']})
             
@@ -639,7 +639,7 @@ class CASSANDRA_DB(object):
                         self._get_row_keys(path,freq,ts_min,ts_max),
                         column_start=ts_min, column_finish=ts_max)
                 cols = 0
-                for i in ret_count.keys():
+                for i in list(ret_count.keys()):
                     cols += ret_count[i]
                 cols += 5
 
@@ -652,13 +652,13 @@ class CASSANDRA_DB(object):
             # Just return the results and format elsewhere.
             results = []
             
-            for k,v in ret.items():
-                for kk,vv in v.items():
+            for k,v in list(ret.items()):
+                for kk,vv in list(v.items()):
                     ts = kk
                     val = None
                     base_freq = None
                     count = None
-                    for kkk in vv.keys():
+                    for kkk in list(vv.keys()):
                         if kkk == 'val':
                             val = vv[kkk]
                         else:
@@ -677,7 +677,7 @@ class CASSANDRA_DB(object):
                         self._get_row_keys(path,freq,ts_min,ts_max),
                         column_start=ts_min, column_finish=ts_max)
                 cols = 0
-                for i in ret_count.keys():
+                for i in list(ret_count.keys()):
                     cols += ret_count[i]
                 cols += 5
 
@@ -688,8 +688,8 @@ class CASSANDRA_DB(object):
             
             results = []
 
-            for k,v in ret.items():
-                for kk,vv in v.items():
+            for k,v in list(ret.items()):
+                for kk,vv in list(v.items()):
                     ts = kk
                     if cf == 'min':
                         datum = {'ts': ts, 'val': vv['min'], 'cf': cf, 'm_ts': vv.get('min_ts', None)}
@@ -711,7 +711,7 @@ class CASSANDRA_DB(object):
                     self._get_row_keys(path,freq,ts_min,ts_max),
                     column_start=ts_min, column_finish=ts_max)
             cols = 0
-            for i in ret_count.keys():
+            for i in list(ret_count.keys()):
                 cols += ret_count[i]
             cols += 5
 
@@ -723,8 +723,8 @@ class CASSANDRA_DB(object):
         # Just return the results and format elsewhere.
         results = []
 
-        for k,v in ret.items():
-            for kk,vv in v.items():
+        for k,v in list(ret.items()):
+            for kk,vv in list(v.items()):
                 results.append({'ts': kk, 'val': json.loads(vv)})
         
         return results
@@ -741,7 +741,7 @@ class CASSANDRA_DB(object):
                 )
         # Just return the results and format elsewhere.
         results=[]
-        for k,v in ret.items():
+        for k,v in list(ret.items()):
             results.append({'ts': k, 'val': json.loads(v)})
         return results
 
@@ -758,7 +758,7 @@ class CASSANDRA_DB(object):
                 )
         # Just return the results and format elsewhere.
         results=[]
-        for k,v in ret.items():
+        for k,v in list(ret.items()):
             results.append({'ts': k, 'val': json.loads(v)})
         return results
 
@@ -832,11 +832,11 @@ class DatabaseMetrics(object):
         """
         
         if not self.profiling:
-            print 'Not profiling'
+            print('Not profiling')
             return
         
         if metric not in self._all_metrics:
-            print 'bad metric'
+            print('bad metric')
             return
             
         s = ''
@@ -853,7 +853,7 @@ class DatabaseMetrics(object):
                 if metric.find('total') > -1:
                     s += ' (informational - not in total)'
         elif metric == 'total':
-            for k,v in self.__dict__.items():
+            for k,v in list(self.__dict__.items()):
                 if k.find('total') > -1:
                     # don't double count the agg total numbers
                     continue
@@ -873,7 +873,7 @@ class DatabaseMetrics(object):
                 else:
                     self.report(m)
                     
-        if len(s): print s
+        if len(s): print(s)
 
 
 # Data encapsulation objects - these objects wrap the various data
@@ -906,7 +906,7 @@ class DataContainerBase(object):
         Return a dictionary of the attrs/props in the object.
         """
         doc = {}
-        for k,v in self.__dict__.items():
+        for k,v in list(self.__dict__.items()):
             if k.startswith('_'):
                 continue
             doc[k] = v

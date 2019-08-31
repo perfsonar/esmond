@@ -2,8 +2,6 @@ import json
 import os
 import time
 
-import pandokia.helpers.filecomp as filecomp
-
 # This MUST be here in any testing modules that use cassandra!
 os.environ['ESMOND_UNIT_TESTS'] = 'True'
 
@@ -72,7 +70,8 @@ class PSAPIBaseTest(TestCase):
                     self._compare_expected(expected[i], data[i])
             elif isinstance(expected, dict):
                 self._compare_expected(expected, data)
-
+        
+        #After all the diagnostics to help debugging, now do the assertion
         self.assertEquals(expected, data)
 
     def _compare_expected(self, expected, data):
@@ -80,9 +79,7 @@ class PSAPIBaseTest(TestCase):
         expected_cmp = json.dumps( expected, indent=4, sort_keys=True, default=str)
         data_cmp = json.dumps( data, indent=4, sort_keys=True, default=str)
 
-        filecomp.diffjson(expected_cmp, data_cmp)
-
-        for k,v in expected.items():
+        for k,v in expected:
             if k not in data.keys():
                 print '  ** key not found:', k
                 continue

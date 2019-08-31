@@ -10,16 +10,16 @@ def get_logger(name):
 
 _atencode_safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXWZ0123456789_.-'
 _atencode_map = {}
-for i, c in (zip(xrange(256), str(bytearray(xrange(256))))):
+for i, c in (list(zip(list(range(256)), str(bytearray(list(range(256))))))):
     _atencode_map[c] = c if c in _atencode_safe else '@{:02X}'.format(i)
 
 _atencode_unsafe = ' $&+,/:;=?@\x7F'
 _atencode_map_minimal = {}
-for i, c in (zip(xrange(256), str(bytearray(xrange(256))))):
+for i, c in (list(zip(list(range(256)), str(bytearray(list(range(256))))))):
     _atencode_map_minimal[c] = c if (i > 31 and i < 128 and c not in _atencode_unsafe) else '@{:02X}'.format(i)
 
 _atdecode_map = {}
-for i in xrange(256):
+for i in range(256):
     _atdecode_map['{:02X}'.format(i)] = chr(i)
     _atdecode_map['{:02x}'.format(i)] = chr(i)
 
