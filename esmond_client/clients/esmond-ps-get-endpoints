@@ -46,7 +46,7 @@ def main():
     ]
 
     output = output_factory(options, data, column_ordering)
-    print output.get_output()
+    print(output.get_output())
 
 if __name__ == '__main__':
     main()

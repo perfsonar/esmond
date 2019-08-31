@@ -28,11 +28,11 @@ class MetadataDataObject(object):  # pylint: disable=too-few-public-methods
 
         if hasattr(initial, 'items'):
             # sanitize dashes to underscores
-            for k in initial.keys():
+            for k in list(initial.keys()):
                 initial[k.replace('-', '_')] = initial.pop(k)
             # load it into a sorted dictionary in alpha key order
             self.__dict__['_data'] = \
-                collections.OrderedDict(sorted(initial.items(), key=lambda t: t[0]))
+                collections.OrderedDict(sorted(list(initial.items()), key=lambda t: t[0]))
 
     def __getattr__(self, name):
         return self._data.get(name, None)
@@ -79,7 +79,7 @@ def main():
             data.append(ip_convert.convert(row.to_dict()))
 
     output = output_factory(options, data, copy.copy(DEFAULT_FIELDS))
-    print output.get_output()
+    print(output.get_output())
 
 if __name__ == '__main__':
     main()

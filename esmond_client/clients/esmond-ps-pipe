@@ -85,7 +85,7 @@ class RecursiveDataObject(object):  # pylint: disable=too-few-public-methods
                 # Recurse through entire all attrs at all levels
                 # to make sure the wrapping is ok so we can check
                 # the parse once.
-                for i in self._data.keys():
+                for i in list(self._data.keys()):
                     self._wrap(self._data.get(i), i)
             except Exception as ex:
                 raise EsmondPipeException(str(ex))

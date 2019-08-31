@@ -62,7 +62,7 @@ def main():  # pylint: disable=too-many-locals
     conn = ApiConnect(options.url, filters)
 
     for meta in conn.get_metadata():
-        print '\n', meta
+        print('\n', meta)
         # Use the user supplied event type if supplied, if not
         # pull all event types for the metadata object.
         if options.type:
@@ -72,7 +72,7 @@ def main():  # pylint: disable=too-many-locals
 
         # Loop through the event types
         for etype in event_type:
-            print '\n  * processing {0}'.format(etype)
+            print('\n  * processing {0}'.format(etype))
 
             # Mimic options object and assign event type to it.
             options_wrap = OptionsWrapper(options)
@@ -87,17 +87,17 @@ def main():  # pylint: disable=too-many-locals
 
             _, sub_data = data_format_factory(options_wrap)(meta_wrap)
             if len(sub_data):
-                print '   * got {0} results'.format(len(sub_data))
+                print('   * got {0} results'.format(len(sub_data)))
             output_klass.add_to_payload(sub_data)
 
             # write it out if we got data
             if output_klass.has_data():
                 fh = get_outfile(options, meta, etype)
-                print '  * writing {0}'.format(fh.name)
+                print('  * writing {0}'.format(fh.name))
                 fh.write(output_klass.get_output())
                 fh.close()
             else:
-                print '  * no data for that event type, skipping output.'
+                print('  * no data for that event type, skipping output.')
 
 
 if __name__ == '__main__':

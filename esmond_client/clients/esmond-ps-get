@@ -26,7 +26,7 @@ def main():
     header, data = data_format_factory(options)(conn)
 
     output = output_factory(options, data, header)
-    print output.get_output()
+    print(output.get_output())
 
 if __name__ == '__main__':
     main()
