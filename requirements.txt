@@ -3,7 +3,7 @@ django-filter==1.0.4
 django-discover-runner==1.0
 django-netfields==0.7.2
 pylint==1.5.1
-web-py==0.39
+web.py==0.39
 -e hg+https://bitbucket.org/jdugan/dlnetsnmp#egg=DLNetSNMP
 -e .
 -e ./esmond_client/
