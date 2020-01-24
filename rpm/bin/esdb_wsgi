@@ -6,7 +6,6 @@ sys.path[0:0] = [
     '/usr/lib/esmond/eggs/nose-1.0.0-py2.6.egg',
     '/usr/lib/esmond/eggs/mock-0.7.0-py2.6.egg',
     '/usr/lib/esmond/eggs/Pympler-0.1-py2.6.egg',
-    '/usr/lib/esmond/eggs/DLNetSNMP-0.4.1-py2.6.egg/DLNetSNMP',
     '/usr/lib/esmond/eggs/httplib2-0.6.0-py2.6.egg',
     '/usr/lib/esmond/eggs/web.py-0.34-py2.6.egg',
     '/usr/lib/esmond/eggs/simplejson-2.1.5-py2.6-linux-i686.egg',
