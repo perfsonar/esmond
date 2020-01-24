@@ -1,4 +1,4 @@
-Django==1.11.20
+Django==1.11.23
 python-memcached==1.47
 simplejson==2.1.6
 django-tagging==0.3.1
