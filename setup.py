@@ -14,7 +14,7 @@ setup(
     packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
     install_requires=[
         'Django==1.11.27', 'web.py',
-        'djangorestframework==3.9.4', 'drf-extensions==0.3.1',
+        'djangorestframework==3.6.4', 'drf-extensions==0.3.1',
         'djangorestframework-filters==0.10.1', 'python-memcached==1.57',
         'pycassa==1.11.1', 'psycopg2==2.7.3.1', 'python-mimeparse==0.1.4',
         'requests', 'nagiosplugin==1.2.2', 'pandokia==1.3.10', 'thrift==0.9.3'
