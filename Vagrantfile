@@ -15,6 +15,10 @@ Vagrant.configure("2") do |config|
     el7.vm.synced_folder ".", "/vagrant", type: "virtualbox"
     # Set hostname
     el7.vm.hostname = "esmond-el7"
+    el7.vm.provider "virtualbox" do |v|
+      # Prevent VirtualBox from interfering with host audio stack
+      v.customize ["modifyvm", :id, "--audio", "none"]
+    end
     
     # Enable IPv4. Cannot be directly before or after line that sets IPv6 address. Looks
     # to be a strange bug where IPv6 and IPv4 mixed-up by vagrant otherwise and one 
@@ -48,8 +52,7 @@ Vagrant.configure("2") do |config|
 
         ## install yum dependencies
         yum install -y epel-release
-        yum install -y  http://software.internet2.edu/rpms/el7/x86_64/RPMS.main/perfSONAR-repo-nightly-minor-0.9-1.noarch.rpm
-        yum clean all
+        yum install -y http://software.internet2.edu/rpms/el7/x86_64/4/packages/perfSONAR-repo-0.9-1.noarch.rpm
         yum clean all
         yum install -y gcc\
             kernel-devel\
@@ -168,14 +171,13 @@ EOF
         systemctl restart httpd
         
         #build database
-        python esmond/manage.py makemigrations --noinput
-        python esmond/manage.py migrate --noinput
+        ./rpm/scripts/configure_esmond 2
     SHELL
   end
   
   # Runs on all hosts before they are provisioned independent of OS
   config.vm.provision "shell", inline: <<-SHELL
-    /usr/sbin/groupadd esmond 2> /dev/null || :
+    /usr/sbin/groupadd -r esmond 2> /dev/null || :
     /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
   SHELL
 end
