@@ -20,7 +20,7 @@ Depends: apache2, libapache2-mod-wsgi, ssl-cert, postgresql,
  python-pycassa, python-memcache, python-webpy, python-mock, python-dlnetsnmp,
  adduser, dbconfig-common, libsnmp-base, python-django (>= 1.11.20),
  python-django-discover-runner, python-django-netfields (>= 0.7.2),
- python-django-tastypie (>= 0.12.2), python-djangorestframework (>= 3.4.0),
+ python-django-tastypie (>= 0.12.2), python-djangorestframework (>= 3.4.0~),
  python-djangorestframework-filters (>= 0.10.1),
  python-djangorestframework-extensions (>= 0.3.1), libjs-jquery, ${misc:Depends}
 Description: ESnet Monitoring Daemon
