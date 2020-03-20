@@ -12,8 +12,8 @@
 %define dbscript_base /usr/lib/esmond-database
 %define init_script_1 espolld
 %define init_script_2 espersistd
-%define perfsonar_auto_version 4.2.3
-%define perfsonar_auto_relnum 1
+%define perfsonar_auto_version 4.2.4
+%define perfsonar_auto_relnum 0.a0.0
  
 Name:           esmond
 Version:        %{perfsonar_auto_version}
