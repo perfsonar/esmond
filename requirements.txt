@@ -1,6 +1,6 @@
 sphinx>=1.2.3
-django-filter>=2.2.0
-django-netfields>=1.0.1
+django-filter>=1.1.0
+django-netfields>=0.7.2
 pylint>=1.6.5
 -e .
 -e ./esmond_client/

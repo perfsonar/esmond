@@ -4,6 +4,118 @@ esmond (4.3.0~a1.0-1) perfsonar-4.3-snapshot; urgency=low
 
  -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Mon, 26 Aug 2019 19:02:45 +0000
 
+esmond (4.2.3-1) perfsonar-4.2; urgency=low
+
+  * New upstream version.
+
+ -- perfSONAR developers <debian@perfsonar.net>  Wed, 19 Feb 2020 15:39:22 +0000
+
+esmond (4.2.1-1) perfsonar-4.2; urgency=low
+
+  * New upstream version.
+
+ -- perfSONAR developers <debian@perfsonar.net>  Fri, 27 Sep 2019 13:18:02 -0400
+
+esmond (4.2.0-1) perfsonar-minor-staging; urgency=low
+
+  * New upstream version.
+  * Correctly removing temporary files after install
+  * Adding dependency to ssl-cert
+  * Upgrading python-django dependency to 1.11.20
+  * Upgrading python-django-netfields dependency to 0.7.2
+  * Upgrading python-djangorestframework dependency to 3.4.0
+  * Upgrading python-djangorestframework-filters dependency to 0.10.1
+  * Upgrading python-djangorestframework-extensions dependency to 0.3.1
+  * Building on Stretch.
+
+ -- Andy Lake <andy@es.net>  Thu, 15 Aug 2019 01:11:47 +0000
+
+esmond (2.1.3-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+  * Updating License information.
+
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Sat, 13 Oct 2018 22:19:58 +0000
+
+esmond (2.1.2.2-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 19 Dec 2017 16:36:57 +0000
+
+esmond (2.1.2.1-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+  * Remove Django-1.10 patches pushed upstream.
+  * Add call to makemigrations in postinst script.
+
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Thu, 02 Nov 2017 12:19:57 +0000
+
+esmond (2.1.1-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+  * Adding patches to support Django 1.10
+  * Removing python-support dependency.
+
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 15 Aug 2017 10:10:56 +0100
+
+esmond (2.1-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+  * We now enable the apache headers module.
+  * Adding autopkgtest tests.
+  * Removing Tastypie migration script from postinst.
+
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Thu, 13 Apr 2017 16:52:38 +0000
+
+esmond (2.0.4~beta-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+
+ -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Tue, 02 Aug 2016 15:03:10 +0000
+
+esmond (2.0.2~beta-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+
+ -- Antoine Delvaux <adelvaux@man.poznan.pl>  Tue, 15 Mar 2016 09:18:22 +0000
+
+esmond (2.0.1~beta-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+
+ -- Antoine Delvaux <adelvaux@man.poznan.pl>  Sat, 05 Mar 2016 10:23:17 +0100
+
+esmond (2.0~beta-1) perfsonar-jessie-release; urgency=low
+
+  * New upstream version.
+  * Beta release.
+
+ -- Valentin Vidic <Valentin.Vidic@CARNet.hr>  Fri, 04 Mar 2016 09:27:38 +0100
+
+esmond (1.0.16-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Valentin Vidic <Valentin.Vidic@CARNet.hr>  Mon, 26 Oct 2015 12:34:43 +0000
+esmond (4.2.4-1) perfsonar-4.2; urgency=low
+
+  * New upstream version.
+
+ -- perfSONAR developers <debian@perfsonar.net>  Thu, 26 Mar 2020 10:10:56 -0400
+
+esmond (4.2.3-1) perfsonar-4.2; urgency=low
+
+  * New upstream version.
+
+ -- perfSONAR developers <debian@perfsonar.net>  Wed, 19 Feb 2020 15:39:22 +0000
+
+esmond (4.2.1-1) perfsonar-4.2; urgency=low
+
+  * New upstream version.
+
+ -- perfSONAR developers <debian@perfsonar.net>  Fri, 27 Sep 2019 13:18:02 -0400
+
 esmond (4.2.0-1) perfsonar-minor-staging; urgency=low
 
   * New upstream version.
