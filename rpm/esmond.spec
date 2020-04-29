@@ -24,16 +24,16 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:    no
 
-BuildRequires:  python
-BuildRequires:  python-virtualenv
+BuildRequires:  python3
+BuildRequires:  python3-virtualenv
 BuildRequires:  systemd
 BuildRequires:  httpd
 BuildRequires:  postgresql95-devel
 BuildRequires:  gcc
 
-Requires:       python
-Requires:       python-virtualenv
-Requires:       python2-mock
+Requires:       python3
+Requires:       python3-virtualenv
+Requires:       python3-mock
 Requires:       mod_wsgi
 Requires:       policycoreutils-python
 %{?systemd_requires: %systemd_requires}

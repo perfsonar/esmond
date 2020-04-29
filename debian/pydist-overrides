@@ -1,8 +1,6 @@
-django python-django
-pycassa python-pycassa
-psycopg2 python-psycopg2
-python_mimeparse python-mimeparse
-requests python-requests
-mock python-mock
-nagiosplugin python-nagiosplugin
-python_tastypie python-django-tastypie
+django python3-django
+psycopg2 python3-psycopg2
+python3_mimeparse python3-mimeparse
+requests python3-requests
+mock python3-mock
+python3_tastypie python3-django-tastypie

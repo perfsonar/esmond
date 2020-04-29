@@ -1,2 +1,2 @@
-etc/esmond/settings.py usr/lib/python2.7/dist-packages/esmond/settings.py
+etc/esmond/settings.py usr/lib/python3.5/dist-packages/esmond/settings.py
 usr/share/esmond/util/esmond_manage usr/sbin/esmond_manage
