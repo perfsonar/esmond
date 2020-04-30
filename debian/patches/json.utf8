@@ -1,0 +1,191 @@
+--- esmond-py3.orig/esmond/api/client/perfsonar/query.py	2020-04-30 19:14:28.160940000 +0000
++++ esmond-py3/esmond/api/client/perfsonar/query.py	2020-04-30 19:14:57.109666000 +0000
+@@ -165,7 +165,7 @@
+ 
+             if r.status_code == 200 and \
+                     r.headers['content-type'] == 'application/json':
+-                data = json.loads(r.text)
++                data = json.loads(r.text.decode('utf-8'))
+ 
+                 data_payload += data
+ 
+@@ -815,7 +815,7 @@
+ 
+         if r.status_code == 200 and \
+                 r.headers['content-type'] == 'application/json':
+-            data = json.loads(r.text)
++            data = json.loads(r.text.decode('utf-8'))
+ 
+             if data:
+                 m_total = Metadata(data[0], self.api_url, self.filters).metadata_count_total
+@@ -853,7 +853,7 @@
+                         raise StopIteration()
+                         yield  # pylint: disable=unreachable
+ 
+-                    tmp = json.loads(r.text)
++                    tmp = json.loads(r.text.decode('utf-8'))
+ 
+                     if self.filters.verbose:
+                         print('got {0} results\n'.format(len(tmp)))
+--- esmond-py3.orig/esmond/api/perfsonar/api_v2.py	2020-04-30 19:14:28.160954000 +0000
++++ esmond-py3/esmond/api/perfsonar/api_v2.py	2020-04-30 19:15:15.767413000 +0000
+@@ -928,7 +928,7 @@
+             raise ParseError(detail='No data payload POSTed.')
+ 
+         try:
+-            request_data = json.loads(request.body)
++            request_data = json.loads(request.body.decode('utf-8'))
+         except ValueError:
+             raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
+         
+@@ -1049,7 +1049,7 @@
+             raise ParseError(detail='No data payload POSTed.')
+ 
+         try:
+-            request_data = json.loads(request.body)
++            request_data = json.loads(request.body.decode('utf-8'))
+         except ValueError:
+             raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
+ 
+@@ -1177,7 +1177,7 @@
+             raise ParseError(detail='No data payload POSTed.')
+ 
+         try:
+-            request_data = json.loads(request.body)
++            request_data = json.loads(request.body.decode('utf-8'))
+         except ValueError:
+             raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
+         
+--- esmond-py3.orig/esmond/api/tests/perfsonar/test_api.py	2020-04-30 19:14:28.160916000 +0000
++++ esmond-py3/esmond/api/tests/perfsonar/test_api.py	2020-04-30 19:14:57.110757000 +0000
+@@ -56,7 +56,7 @@
+     def assertExpectedResponse(self, expected, url, get_params={}):
+         response = self.client.get(url, get_params)
+         self.assertHttpOK(response)
+-        data = json.loads(response.content)
++        data = json.loads(response.content.decode('utf-8'))
+ 
+         # Trigger object inspection if we have a mismatch. This is to 
+         # assist in debugging
+@@ -274,7 +274,7 @@
+     def assertMetadataCount(self, count, url, get_params={}):
+         response = self.client.get(url, get_params)
+         self.assertHttpOK(response)
+-        data = json.loads(response.content)
++        data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(len(data), count)
+         
+     def test_get_metadata_list(self):
+@@ -295,7 +295,7 @@
+         #test query using IPv4 address
+         response = self.client.get(url, {'source': self.v4_ip})
+         self.assertHttpOK(response)
+-        ipv4_data = json.loads(response.content)
++        ipv4_data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(len(ipv4_data), 4)
+         
+         #test query using DNS name with only A record
+@@ -320,7 +320,7 @@
+         #test query using IPv6 address
+         response = self.client.get(url, {'source': self.v6_ip})
+         self.assertHttpOK(response)
+-        ipv6_data = json.loads(response.content)
++        ipv6_data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(len(ipv6_data), 2)
+         
+         #test query using DNS name with only AAAA record
+@@ -345,11 +345,11 @@
+         #test query using DNS name on name with both A and AAAA records
+         response = self.client.get(url, {'source': self.v4v6_ipv4})
+         self.assertHttpOK(response)
+-        ipv4_data = json.loads(response.content)
++        ipv4_data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(len(ipv4_data), 1)
+         response = self.client.get(url, {'source': self.v4v6_ipv6})
+         self.assertHttpOK(response)
+-        ipv6_data = json.loads(response.content)
++        ipv6_data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(len(ipv6_data), 1)
+                
+         #test query using DNS name that only does v4 lookups on name both A and AAAA records
+@@ -413,21 +413,21 @@
+         url = '/{0}/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/'.format(PS_ROOT)
+         response = self.client.get(url)
+         self.assertHttpOK(response)
+-        data = json.loads(response.content)
++        data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(self.md_detail, data)
+     
+     def test_get_event_type_detail(self):
+         url = '/{0}/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/throughput/'.format(PS_ROOT)
+         response = self.client.get(url)
+         self.assertHttpOK(response)
+-        self.assertEquals(self.et_detail, json.loads(response.content))
++        self.assertEquals(self.et_detail, json.loads(response.content.decode('utf-8')))
+ 
+     
+     def test_get_summary_detail(self):
+         url = '/{0}/archive/e99bbc44b7b041c7ad9e51dc6a053b8c/throughput/averages/'.format(PS_ROOT)
+         response = self.client.get(url)
+         self.assertHttpOK(response)
+-        self.assertEquals(self.summ_detail, json.loads(response.content))
++        self.assertEquals(self.summ_detail, json.loads(response.content.decode('utf-8')))
+     
+     
+     def test_post_metadata_list(self):
+@@ -442,7 +442,7 @@
+         #test with credentials with permissions
+         response = self.get_api_client(admin_auth=True).post(url, format='json', data=self.post_data)
+         self.assertHttpCreated(response)
+-        data = json.loads(response.content)
++        data = json.loads(response.content.decode('utf-8'))
+         #verify the server generated he uri and metadata keys
+         self.assertIsNotNone(data['uri'])
+         self.assertIsNotNone(data['metadata-key'])
+@@ -459,7 +459,7 @@
+         existing_mdkey = data['metadata-key']
+         response = self.get_api_client(admin_auth=True).post(url, format='json', data=self.post_data)
+         self.assertHttpCreated(response)
+-        new_data = json.loads(response.content)
++        new_data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(new_data['uri'], existing_uri )
+         self.assertEquals(new_data['metadata-key'], existing_mdkey )
+         
+@@ -598,7 +598,7 @@
+         self.assertHttpCreated(response)
+         response = self.client.get(url, {'time': ts})
+         self.assertHttpOK(response)
+-        response_data = json.loads(response.content)
++        response_data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(len(response_data), 1)
+         if(test_equals):
+             self.assertEquals(post_data, response_data[0])
+@@ -623,7 +623,7 @@
+         self.assertHttpCreated(response)
+         response = self.client.get(base_url, {'time-start': start, 'time-end': end})
+         self.assertHttpOK(response)
+-        response_data = json.loads(response.content)
++        response_data = json.loads(response.content.decode('utf-8'))
+         self.assertEquals(len(response_data), len(data))
+     
+     def assertAuthFailure(self, url, ts, val, cred):
+@@ -834,4 +834,4 @@
+         p = Percentile(95, 10)
+         p.findvalue(4, 100)
+         p.findvalue(6, 101)
+-        self.assertEquals(p.value, 100.45)
+\ No newline at end of file
++        self.assertEquals(p.value, 100.45)
+--- esmond-py3.orig/esmond/cassandra.py	2020-04-30 19:16:11.111269000 +0000
++++ esmond-py3/esmond/cassandra.py	2020-04-30 19:17:09.299529000 +0000
+@@ -615,8 +615,8 @@
+         
+         for k,v in list(ret.items()):
+             for kk,vv in list(v.items()):
+-                results.append({'ts': kk, 'val': float(vv['val']) / value_divisors[cf], 
+-                                        'is_valid': vv['is_valid']})
++                results.append({'ts': kk, 'val': float(vv[('val').encode('utf-8')]) / value_divisors[cf],
++                                        'is_valid': vv[('is_valid').encode('utf-8')]})
+             
+         return results
+ 
