@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Code to issue calls to the cassandra MX4J http server and get stats.

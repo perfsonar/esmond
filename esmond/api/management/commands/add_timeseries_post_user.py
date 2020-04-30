@@ -7,8 +7,6 @@ from django.contrib.auth.models import User, Group, Permission
 
 from .add_api_key_user import generate_api_key_for_user
 
-from esmond.api.models import Device, OIDSet, DeviceOIDSetMap
-
 class Command(BaseCommand):
     help = 'Add a user for POST access'
 

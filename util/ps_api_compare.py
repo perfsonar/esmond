@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Utility script to call v1 and v2 apis for comparison during development.

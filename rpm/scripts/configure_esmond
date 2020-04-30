@@ -9,10 +9,10 @@ cd $ESMOND_ROOT
 
 #update DB tables if doing an upgrade
 if [ "$1" = "2" ]; then
-    python esmond/manage.py migrate --fake-initial &> /var/log/esmond/install.log
+    python3 esmond/manage.py migrate --fake-initial &> /var/log/esmond/install.log
     #this is just for 3.4.X upgrades only. Makes sure authtoken is created
-    python esmond/manage.py migrate authtoken &>> /var/log/esmond/install.log
-    python util/migrate_tastypie_keys.py &>> /var/log/esmond/install.log
+    python3 esmond/manage.py migrate authtoken &>> /var/log/esmond/install.log
+    python3 util/migrate_tastypie_keys.py &>> /var/log/esmond/install.log
 fi
 
 #deploy static files

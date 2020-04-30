@@ -153,9 +153,9 @@ rm -f .git*
 virtualenv --prompt="(esmond)" .
 . bin/activate
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
-python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
+python3 -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
 # Need this for the 1.0->2.0 API key migration script
-python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" django-tastypie
+python3 -m pip install --install-option="--prefix=%{buildroot}%{install_base}" django-tastypie
 #not pretty but below is the best way I could find to remove references to buildroot
 find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
 find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
@@ -170,7 +170,7 @@ mkdir -p /var/run/cassandra/
 . bin/activate
 
 #generate secret key
-grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.py >> esmond/settings.py
+grep -q "SECRET_KEY =" esmond/settings.py || python3 util/gen_django_secret_key.py >> esmond/settings.py
 
 # Create the logging directories
 mkdir -p /var/log/esmond

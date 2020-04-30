@@ -4,20 +4,14 @@ if [ -d /usr/lib/esmond ]; then
     # setup environment on CentOS
     cd /usr/lib/esmond
 
-    if [ -f /opt/rh/python27/enable ]; then
-        # setup python 2.7 on CentOS 6
-        source /opt/rh/python27/enable
-        /opt/rh/python27/root/usr/bin/virtualenv --prompt="(esmond)" .
-    fi
-
     source bin/activate
 
     if [ -f /etc/profile.d/esmond.sh ]; then
         source /etc/profile.d/esmond.sh
     fi
-elif [ -d /usr/lib/python2.7/dist-packages/esmond ]; then
+elif [ -d /usr/lib/python3.5/dist-packages/esmond ]; then
     # setup environment on Debian
-    cd /usr/lib/python2.7/dist-packages
+    cd /usr/lib/python3.5/dist-packages
 
     if [ -f /etc/default/esmond ]; then
         source /etc/default/esmond
@@ -27,4 +21,4 @@ elif [ -d /usr/lib/python2.7/dist-packages/esmond ]; then
     fi
 fi
 
-python esmond/manage.py "$@"
+python3 esmond/manage.py "$@"

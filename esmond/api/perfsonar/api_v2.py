@@ -776,13 +776,13 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
         data['psmetadataparameters'] = sorted(data['psmetadataparameters'], key=lambda md_param: md_param["parameter_key"])
         data['pseventtypes'] = sorted(data['pseventtypes'], key=lambda et:(et["event_type"], et["summary_type"], et["summary_window"]))
         checksum = hashlib.sha256()
-        checksum.update("subject-type::%s" %   data['subject_type'].lower())
+        checksum.update(('subject-type::%s' % data['subject_type'].lower()).encode('utf-8'))
         for subj_param in sorted(data[subject_field]):
-            checksum.update(",%s::%s" % (str(subj_param).lower(), str(data[subject_field][subj_param]).lower()))
+            checksum.update((',%s::%s' % (str(subj_param).lower(), str(data[subject_field][subj_param]).lower())).encode('utf-8'))
         for md_param in data['psmetadataparameters']:
-            checksum.update(",%s::%s" % (str(md_param['parameter_key']).lower(), str(md_param['parameter_value']).lower()))
+            checksum.update((',%s::%s' % (str(md_param['parameter_key']).lower(), str(md_param['parameter_value']).lower())).encode('utf-8'))
         for et in data['pseventtypes']:
-            checksum.update(",%s::%s::%s" % (str(et['event_type']).lower(), str(et['summary_type']).lower(), str(et['summary_window']).lower()))
+            checksum.update((',%s::%s::%s' % (str(et['event_type']).lower(), str(et['summary_type']).lower(), str(et['summary_window']).lower())).encode('utf-8'))
 
         return checksum.hexdigest()
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Utility to clean out old perfsonar data from cassandra and relational database

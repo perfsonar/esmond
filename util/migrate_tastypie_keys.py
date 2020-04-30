@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Script that migrates TastyPie API keys to Django REST Framework tokens. Makes the Token
