@@ -20,7 +20,7 @@ Depends: apache2, libapache2-mod-wsgi-py3, ssl-cert, postgresql,
  python3-djangorestframework (>= 3.4.0~),
  python3-djangorestframework-filters (>= 0.10.1),
  python3-djangorestframework-extensions (>= 0.3.1~),
- python-django-tastypie (>= 0.12.2), libjs-jquery, ${misc:Depends}
+ python3-django-tastypie (>= 0.12.2), libjs-jquery, ${misc:Depends}
 Description: ESnet Monitoring Daemon
  Esmond is a system for collecting and storing large sets of time-series data.
  Esmond uses a hybrid model for storing data using TSDB for time series data and
