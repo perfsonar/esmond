@@ -81,8 +81,8 @@ case "$1" in
             export ESMOND_ROOT ESMOND_CONF
             export DJANGO_SETTINGS_MODULE=esmond.settings
 
-            python3 /usr/lib/python3.5/dist-packages/esmond/manage.py makemigrations --noinput
-            python3 /usr/lib/python3.5/dist-packages/esmond/manage.py migrate --noinput
+            python3 /usr/lib/python3/dist-packages/esmond/manage.py makemigrations --noinput
+            python3 /usr/lib/python3/dist-packages/esmond/manage.py migrate --noinput
 
             mkdir -p /var/lib/esmond/staticfiles
             django-admin collectstatic --clear --noinput

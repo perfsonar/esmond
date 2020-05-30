@@ -62,11 +62,11 @@ class PSAPIBaseTest(TestCase):
         # assist in debugging
 
         if cmp(expected, data) != 0:
-            print '\n* mismatch detected, inspecting payload'
+            print('\n* mismatch detected, inspecting payload')
             if isinstance(expected, list):
-                print ' * checking list'
+                print(' * checking list')
                 for i in xrange(len(expected)):
-                    print '  * list index: {0}'.format(i)
+                    print('  * list index: {0}'.format(i))
                     self._compare_expected(expected[i], data[i])
             elif isinstance(expected, dict):
                 self._compare_expected(expected, data)
@@ -81,10 +81,10 @@ class PSAPIBaseTest(TestCase):
 
         for k,v in expected:
             if k not in data.keys():
-                print '  ** key not found:', k
+                print('  ** key not found:', k)
                 continue
             if v != data[k]:
-                print '  ** value mismatch:', v, data[i][k]
+                print('  ** value mismatch:', v, data[i][k])
 
     def assertHttpOK(self, resp):
         return self.assertEqual(resp.status_code, 200)
