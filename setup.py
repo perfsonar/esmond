@@ -13,7 +13,7 @@ setup(
     url='http://software.es.net/esmond/',
     packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
     install_requires=[
-        'Django==1.11.28', 'web.py',
+        'Django==1.11.29', 'web.py',
         'djangorestframework==3.6.4', 'drf-extensions==0.3.1',
         'djangorestframework-filters==0.10.1', 'python-memcached==1.57',
         'pycassa==1.11.1', 'psycopg2==2.7.3.1', 'python-mimeparse==0.1.4',
