@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 esmond-ps-get - client to fetch perfsonar test results.

@@ -64,5 +64,5 @@
 +        'esmond.api.client.perfsonar', 'esmond.api.management', 'esmond.api.migrations',
 +        'esmond.api.management.commands', 'esmond_client', 'test_data'],
      install_requires=[
-         'Django==1.11.28',
+         'Django==1.11.29',
          'web.py',

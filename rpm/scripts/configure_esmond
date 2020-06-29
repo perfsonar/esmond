@@ -6,6 +6,7 @@ export ESMOND_CONF=/etc/esmond/esmond.conf
 export DJANGO_SETTINGS_MODULE=esmond.settings
 
 cd $ESMOND_ROOT
+. bin/activate
 
 #update DB tables if doing an upgrade
 if [ "$1" = "2" ]; then

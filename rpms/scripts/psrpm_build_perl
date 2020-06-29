@@ -1,0 +1,82 @@
+#!/usr/bin/bash
+
+#Get arguments
+
+PACKAGE=$1
+if [ -z "$1" ]; then
+    echo "Usage: $0 PACKAGE [GITREPO BRANCH]"
+    echo ""
+    echo "Must specify a PACKAGE (i.e. the name of the spec file)"
+    exit 1
+fi
+GITREPO=$2
+BRANCH=$3
+
+#Variables
+SOURCE_DIR=/home/vagrant/source
+GITHUB_URL="https://github.com/perfsonar"
+
+#init source directory
+mkdir -p $SOURCE_DIR
+cd $SOURCE_DIR
+
+#checkout git if needed
+if [ -n "$GITREPO" ]; then
+    if [ ! -d "$GITREPO" ]; then
+        git clone --recursive ${GITHUB_URL}/$GITREPO
+        if [ "$?" -ne "0" ]; then
+            echo "Error cloning git repo"
+            exit 1
+        fi
+    fi
+    cd $GITREPO
+
+    #If given a branch, switch to that
+    if [ -n "$BRANCH" ]; then
+        git fetch
+        if [ "$?" -ne "0" ]; then
+            echo "Error running git fetch"
+            exit 1
+        fi
+
+        git checkout $BRANCH
+        if [ "$?" -ne "0" ]; then
+            echo "Error switching to branch $BRANCH"
+            exit 1
+        fi
+    fi
+else
+    cd /vagrant
+fi
+
+# Build tarball
+RPMVERSION=`grep "%define perfsonar_auto_version" rpm/esmond.spec | sed -r "s/%define perfsonar_auto_version\s*([^ ]+)\s*/\1/"`
+git archive --format=tar --prefix=esmond-$RPMVERSION/ HEAD | gzip > /home/vagrant/rpmbuild/SOURCES/esmond-$RPMVERSION.tar.gz
+if [ "$?" -ne "0" ]; then
+    echo "Error creating tarball archive"
+    exit 1
+fi
+
+# Build SRPM with an incremented release number
+revision=`git rev-parse HEAD`
+count=`git rev-list HEAD | wc -l`
+sed -r "s/Release:\s*(.+)/Release: \1.$count.$revision/" rpm/${PACKAGE}.spec > /tmp/${PACKAGE}.spec
+rpmbuild -bs /tmp/${PACKAGE}.spec
+if [ "$?" -ne "0" ]; then
+    echo "Error building SRPM"
+    exit 1
+fi
+
+#Build RPM
+psrpm_mock /home/vagrant/rpmbuild/SRPMS/${PACKAGE}*.src.rpm
+if [ "$?" -ne "0" ]; then
+    echo "Error building RPM"
+    exit 1
+fi
+
+#Rebuild yum repo
+psrpm_publish
+if [ "$?" -ne "0" ]; then
+    echo "Error publishing RPM"
+    exit 1
+fi

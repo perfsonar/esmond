@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Setup file for esmond."""
 
@@ -13,16 +13,16 @@ setup(
     url='http://software.es.net/esmond/',
     packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
     install_requires=[
-        'Django==1.11.28',
+        'Django==1.11.29',
         'web.py',
-        'djangorestframework>=3.6.4',
-        'drf-extensions>=0.3.1',
-        'djangorestframework-filters>=0.10.1',
+        'djangorestframework~=3.4.7',
+        'drf-extensions==0.3.1',
+        'djangorestframework-filters~=0.10.2',
         'django-filter~=1.1',
-        'python-memcached==1.57',
+        'python-memcached>=1.57',
         'psycopg2>=2.7.7',
         'requests',
-        'thrift>=0.9.3'
+        'thrift==0.13.0'
     ],
     entry_points={
         'console_scripts': [
