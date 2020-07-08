@@ -87,7 +87,7 @@ Requires(post): drop-in
 Provides:       esmond-database
 
 %description database-postgresql95
-Installs Postgresql 9.5 using one of the vendor's RPMs. It will also try to migrate an
+Installs Postgresql 9.5 using one of the vendor RPMs. It will also try to migrate an
 older version of the database to Postgresql 9.5 if it finds one present and there is not
 already data .
 
