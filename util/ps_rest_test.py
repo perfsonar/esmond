@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Quick tester script to exercise the pS REST client lib
@@ -29,11 +29,11 @@ def query(script_alias):
     conn = ApiConnect('http://localhost:8000/', filters, script_alias=script_alias)
 
     for md in conn.get_metadata():
-        print md
+        print(md)
         # print md.destination
         # print md.event_types # a list of event type names
         # print md.input_destination
-        print md.input_source
+        print(md.input_source)
         # print md.ip_packet_interval
         # print md.measurement_agent
         # print md.metadata_key
@@ -52,27 +52,27 @@ def query(script_alias):
         # print dpay.data[-1], dpay.data[-1].ts_epoch
         ## End single call - loop now
         for et in md.get_all_event_types():
-            print '  * ', et
+            print('  * ', et)
             # print et.base_uri
             # print et.event_type
-            print et.summaries
+            print(et.summaries)
             ## Single call
             if et.summaries:
-                print '  * found summary - fetching single'
+                print('  * found summary - fetching single')
                 summ = et.get_summary(et.summaries[0][0], et.summaries[0][1])
-                print '    * ', summ
+                print('    * ', summ)
             ## End single call - loop now
             for summ in et.get_all_summaries():
-                print '    * ', summ
+                print('    * ', summ)
                 # print summ.summary_type
                 # print summ.summary_window
                 # print summ.uri
                 dpay = summ.get_data()
-                print dpay, dpay.data_type
+                print(dpay, dpay.data_type)
                 for dp in dpay.data:
                     # print dp, dp.val
                     pass
-        print '====='
+        print('=====')
 
 def main():
     usage = '%prog [ -u username | -a api_key ]'
@@ -115,8 +115,8 @@ def main():
     
     new_meta = mp.post_metadata()
 
-    print new_meta
-    print new_meta.metadata_key
+    print(new_meta)
+    print(new_meta.metadata_key)
 
     ts = lambda: int(time.time())
     val = lambda: (int(time.time()) % 5)
@@ -135,11 +135,11 @@ def main():
     et.post_data()
 
     events = new_meta.get_event_type('throughput')
-    print events
+    print(events)
     dps = events.get_data()
-    print dps
+    print(dps)
     for dp in dps.data:
-        print dp
+        print(dp)
 
     et = EventTypePost(options.api_url, username=options.user,
         api_key=options.key, metadata_key=new_meta.metadata_key,
@@ -154,11 +154,11 @@ def main():
     et.post_data()
 
     events = new_meta.get_event_type('histogram-ttl')
-    print events
+    print(events)
     dps = events.get_data()
-    print dps
+    print(dps)
     for dp in dps.data:
-        print dp.ts, dp.val
+        print(dp.ts, dp.val)
 
     etb = EventTypeBulkPost(options.api_url, username=options.user,
         api_key=options.key, metadata_key=new_meta.metadata_key,
@@ -179,18 +179,18 @@ def main():
     # print etb.json_payload(True)
 
     events = new_meta.get_event_type('time-error-estimates')
-    print events
+    print(events)
     dps = events.get_data()
-    print dps
+    print(dps)
     for dp in dps.data:
-        print dp
+        print(dp)
 
     events = new_meta.get_event_type('packet-loss-rate')
-    print events
+    print(events)
     dps = events.get_data()
-    print dps
+    print(dps)
     for dp in dps.data:
-        print dp, dp.val
+        print(dp, dp.val)
 
 
 

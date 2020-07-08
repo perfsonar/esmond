@@ -1,8 +1,7 @@
 # Make sure that unpackaged files are noticed
 %define _unpackaged_files_terminate_build      1
 
-# Skip over compile errors in python3 files
-%global _python_bytecompile_errors_terminate_build 0
+%global __python %{python3}
 
 # Don't create a debug package
 %define debug_package %{nil}
@@ -10,8 +9,6 @@
 %define install_base /usr/lib/esmond
 %define config_base /etc/esmond
 %define dbscript_base /usr/lib/esmond-database
-%define init_script_1 espolld
-%define init_script_2 espersistd
 %define perfsonar_auto_version 4.3.0
 %define perfsonar_auto_relnum 0.a1.0
  
@@ -26,18 +23,37 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:    no
 
-BuildRequires:  python
-BuildRequires:  python-virtualenv
+BuildRequires:  python3-devel
+BuildRequires:  python3-memcached
+BuildRequires:  python3-psycopg2
+BuildRequires:  python3-pycassa
+BuildRequires:  python3-requests
+BuildRequires:  python3-thrift
+BuildRequires:  python3-virtualenv
+BuildRequires:  python36-astroid
+BuildRequires:  python36-dateutil
+BuildRequires:  python36-netaddr
+BuildRequires:  python36-pylint
+BuildRequires:  python36-pytz
+BuildRequires:  python36-sphinx
+BuildRequires:  python36-sphinx_rtd_theme
 BuildRequires:  systemd
 BuildRequires:  httpd
 BuildRequires:  postgresql95-devel
-BuildRequires:  mercurial
 BuildRequires:  gcc
 
-Requires:       python
-Requires:       python-virtualenv
-Requires:       python2-mock
-Requires:       mod_wsgi
+Requires:       python3
+Requires:       python3-memcached
+Requires:       python3-psycopg2
+Requires:       python3-pycassa
+Requires:       python3-requests
+Requires:       python3-thrift
+Requires:       python3-virtualenv
+Requires:       python36-astroid
+Requires:       python36-dateutil
+Requires:       python36-netaddr
+Requires:       python36-pytz
+Requires:       mod_wsgi >= 4.6.5
 Requires:       policycoreutils-python
 %{?systemd_requires: %systemd_requires}
 Requires:       cassandra20
@@ -115,7 +131,6 @@ find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 #Create bin directory. virtualenv files will leave here.
 mkdir -p %{buildroot}/%{install_base}/bin/
 
-#Move the init scripts into place
 #create systemd-tmpfiles config for cassandra since it doesn't do this right
 mkdir -p %{buildroot}/%{_tmpfilesdir}
 mv %{buildroot}/%{install_base}/rpm/config_files/tmpfiles.conf %{buildroot}/%{_tmpfilesdir}/esmond.conf
@@ -146,23 +161,33 @@ mkdir -p %{buildroot}/etc/profile.d
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.csh %{buildroot}/etc/profile.d/esmond.csh
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.sh %{buildroot}/etc/profile.d/esmond.sh
 
-# Get rid of the 'rpm' directory now that all the files have been moved into place
-rm -rf %{buildroot}/%{install_base}/rpm
+
+cd %{buildroot}/%{install_base}
+# Get rid of the development files and directories
+rm -rf .git
+rm -f .git*
+rm -rf devel
+rm -rf rpm
+rm -rf rpms
+rm -f mkdevenv
+rm -f pylint.rc
+rm -f Vagrantfile
 
 # Install python libs so don't rely on pip connectivity during RPM install
 # NOTE: This part is why its not noarch
-cd %{buildroot}/%{install_base}
-rm -rf .git
-rm -f .git*
-virtualenv --prompt="(esmond)" .
+# We don't want to use a PIP > 19.0.2 to avoid build errors in dependencies
+virtualenv-3.6 --prompt="(esmond)" . --system-site-packages --no-pip
 . bin/activate
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python get-pip.py pip==18.1
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
-python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
-# Need this for the 1.0->2.0 API key migration script
-python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" django-tastypie
+python3 -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
 #not pretty but below is the best way I could find to remove references to buildroot
 find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
 find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
+# Clean up after build
+rm -f %{buildroot}/%{install_base}/get-pip.py
+rm -f %{buildroot}/%{install_base}/pip-selfcheck.json
 
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
@@ -174,7 +199,7 @@ mkdir -p /var/run/cassandra/
 . bin/activate
 
 #generate secret key
-grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.py >> esmond/settings.py
+grep -q "SECRET_KEY =" esmond/settings.py || python3 util/gen_django_secret_key.py >> esmond/settings.py
 
 # Create the logging directories
 mkdir -p /var/log/esmond
@@ -186,18 +211,6 @@ chown -R apache:apache /var/log/esmond
 semanage fcontext -a -t httpd_log_t '/var/log/esmond(/.*)?'
 restorecon -R /var/log/esmond
 setsebool -P httpd_can_network_connect on
-
-#handle updates
-if [ "$1" = "2" ]; then
-    #migrate pre-2.0 files
-    if [ -e "/opt/esmond/esmond.conf" ]; then
-        mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
-        mv /opt/esmond/esmond.conf %{config_base}/esmond.conf
-    elif [ -e "/opt/esmond/esmond.conf.rpmsave" ]; then
-        mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
-        mv /opt/esmond/esmond.conf.rpmsave %{config_base}/esmond.conf
-    fi
-fi
 
 #run config script
 chmod 755 configure_esmond
@@ -244,15 +257,34 @@ if [ "$1" != "0" ]; then
 fi
 
 %files
-%defattr(0644,esmond,esmond,0755)
 %config(noreplace) %{config_base}/esmond.conf
-%config %{install_base}/esmond/settings.py
 %attr(0755,esmond,esmond) %{install_base}/bin/*
 %attr(0755,esmond,esmond) %{install_base}/util/*
 %attr(0755,esmond,esmond) %{install_base}/esmond_client/clients/*
-%attr(0755,esmond,esmond) %{install_base}/mkdevenv
 %attr(0755,esmond,esmond) %{install_base}/configure_esmond
-%{install_base}/*
+%{install_base}/AUTHORS
+%{install_base}/COPYING
+%{install_base}/ChangeLog
+%{install_base}/INSTALL
+%{install_base}/LICENSE
+%{install_base}/README.rst
+%{install_base}/TODO
+%{install_base}/__pycache__
+%{install_base}/docs
+%{install_base}/esmond.egg-info
+%{install_base}/esmond
+%{install_base}/esmond_client/README.rst
+%{install_base}/esmond_client/__pycache__
+%{install_base}/esmond_client/esmond_client*
+%{install_base}/esmond_client/setup*
+%{install_base}/example_esmond.conf
+%{install_base}/include
+%{install_base}/lib
+%{install_base}/lib64
+%{install_base}/requirements.txt
+%{install_base}/setup.py
+%{install_base}/test_data
+%config %{install_base}/esmond/settings.py
 /usr/sbin/esmond_manage
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.csh
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.sh

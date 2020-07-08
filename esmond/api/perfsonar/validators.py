@@ -32,7 +32,7 @@ class FloatValidator(DataValidator):
         formatted_value ={}
         try:
             formatted_value = {
-                'numerator': long( float(obj.value) *  (obj.base_freq/1000)),
+                'numerator': int( float(obj.value) *  (obj.base_freq/1000)),
                 'denominator': 1
             }
         except ValueError:
@@ -93,7 +93,7 @@ class HistogramValidator(DataValidator):
         try:
             json.dumps(obj.value)
             for k in obj.value:
-                obj.value[k] = long(obj.value[k])
+                obj.value[k] = int(obj.value[k])
         except ValueError:
             raise ParseError(detail="Value of histogram must be an integer")
         except:
@@ -161,10 +161,10 @@ class HistogramValidator(DataValidator):
         stats['mean'] = (mean_num/(1.0*sample_size))
         
         #sort items. make sure sort as numbers not strings
-        sorted_hist = sorted(agg_hist.iteritems(), key=lambda k: float(k[0]))
+        sorted_hist = sorted(iter(agg_hist.items()), key=lambda k: float(k[0]))
         
         #make mode floats.
-        stats['mode'] = map(lambda x: float(x), stats['mode'])
+        stats['mode'] = [float(x) for x in stats['mode']]
         #get min and max
         stats['minimum'] = float(sorted_hist[0][0])
         stats['maximum'] = float(sorted_hist[len(sorted_hist)-1][0])
@@ -210,7 +210,7 @@ IntegerValidator: Simple validator for integers
 class IntegerValidator(DataValidator):
     def validate(self, obj):
         try:
-            return long(obj.value)
+            return int(obj.value)
         except ValueError:
             raise ParseError(detail="Value must be an integer")
     
@@ -251,11 +251,11 @@ class PercentageValidator(DataValidator):
         elif "denominator" not in obj.value:
             raise ParseError(detail="Missing required field 'denominator'")
         try:
-            obj.value["numerator"] = long(obj.value["numerator"])
+            obj.value["numerator"] = int(obj.value["numerator"])
         except:
             raise ParseError(detail="The field 'numerator' must be an integer")
         try:
-            obj.value["denominator"] = long(obj.value["denominator"])
+            obj.value["denominator"] = int(obj.value["denominator"])
         except:
             raise ParseError(detail="The field 'denominator' must be an integer")
         

@@ -183,7 +183,7 @@ SUMMARY_TYPES = {
 '''
 INVERSE_SUMMARY_TYPES: Same as SUMMARY_TYPES with the key and values swapped
 '''
-INVERSE_SUMMARY_TYPES = {v:k for k,v in SUMMARY_TYPES.items()}
+INVERSE_SUMMARY_TYPES = {v:k for k,v in list(SUMMARY_TYPES.items())}
 SUBJECT_FIELDS = ['p2p_subject', 'networkelement_subject']
 SUBJECT_TYPE_MAP = {
     "point-to-point": "p2p_subject",

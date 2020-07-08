@@ -249,7 +249,7 @@ class MetadataPost(PostBase):  # pylint: disable=too-many-instance-attributes
                                 verify=self.ssl_verify, 
                                 timeout=self.timeout
                              )
-        except ConnectionError, ex:
+        except ConnectionError as ex:
             self.ex('POST connection error: {0}'.format(str(ex)))
             return None
 
@@ -330,7 +330,7 @@ class EventTypePost(PostBase):
         for dpay in self._payload:
             try:
                 r = requests.post(url, data=json.dumps(dpay), headers=self.headers, verify=self.ssl_verify, timeout=self.timeout)
-            except ConnectionError, ex:
+            except ConnectionError as ex:
                 self.ex('POST connection error: {0}'.format(str(ex)))
 
             if r.status_code != 201:
@@ -404,7 +404,7 @@ class EventTypeBulkPost(PostBase):
 
         try:
             r = requests.put(url, data=self.json_payload(), headers=self.headers, verify=self.ssl_verify, timeout=self.timeout)
-        except ConnectionError, ex:
+        except ConnectionError as ex:
             self.ex('POST connection error: {0}'.format(str(ex)))
 
         if r.status_code != 201:

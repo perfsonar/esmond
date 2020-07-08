@@ -1,6 +1,6 @@
 language: python
 python:
-  - "2.7"
+  - "3.6"
 sudo: required
 services:
   - cassandra
@@ -9,7 +9,6 @@ addons:
   postgresql: "9.5"
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -y libsnmp-base libsnmp-dev libsnmp-python
 install:
   - pip install -r requirements.txt
   - pip install coveralls
@@ -20,15 +19,8 @@ before_script:
   - psql -c 'create database esmond;' -U postgres
   - python esmond/manage.py makemigrations --noinput
   - python esmond/manage.py migrate --noinput 
-  - python esmond/manage.py loaddata oidsets.json
 script:
   # Run each test seperately but append to same coverage report.
-  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_api
-  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_client
-  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_correlator
-  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_persist
-  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_translator
-  - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.test_util
   - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.perfsonar.test_api
   - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.perfsonar.test_client
   - coverage run --append --source=esmond --omit=*wsgi*,*commands* esmond/manage.py test api.tests.perfsonar.test_data

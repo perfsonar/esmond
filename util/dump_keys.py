@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Quick one off to dump keys from a column family in an esmond 
@@ -42,8 +42,8 @@ def main():
         'stat': db.stat_agg
     }
 
-    if options.column_family not in col_fams.keys():
-        print '{0} is not a valid column family selection'.format(options.column_family)
+    if options.column_family not in list(col_fams.keys()):
+        print('{0} is not a valid column family selection'.format(options.column_family))
         parser.print_help()
         return -1
 
@@ -55,7 +55,7 @@ def main():
             break
         if k[0].find(options.pattern) == -1:
             continue
-        print k[0]
+        print(k[0])
         count += 1
 
     return

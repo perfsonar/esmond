@@ -2,8 +2,6 @@ import json
 import os
 import time
 
-import pandokia.helpers.filecomp as filecomp
-
 # This MUST be here in any testing modules that use cassandra!
 os.environ['ESMOND_UNIT_TESTS'] = 'True'
 
@@ -64,15 +62,16 @@ class PSAPIBaseTest(TestCase):
         # assist in debugging
 
         if cmp(expected, data) != 0:
-            print '\n* mismatch detected, inspecting payload'
+            print('\n* mismatch detected, inspecting payload')
             if isinstance(expected, list):
-                print ' * checking list'
+                print(' * checking list')
                 for i in xrange(len(expected)):
-                    print '  * list index: {0}'.format(i)
+                    print('  * list index: {0}'.format(i))
                     self._compare_expected(expected[i], data[i])
             elif isinstance(expected, dict):
                 self._compare_expected(expected, data)
-
+        
+        #After all the diagnostics to help debugging, now do the assertion
         self.assertEquals(expected, data)
 
     def _compare_expected(self, expected, data):
@@ -80,14 +79,12 @@ class PSAPIBaseTest(TestCase):
         expected_cmp = json.dumps( expected, indent=4, sort_keys=True, default=str)
         data_cmp = json.dumps( data, indent=4, sort_keys=True, default=str)
 
-        filecomp.diffjson(expected_cmp, data_cmp)
-
-        for k,v in expected.items():
+        for k,v in expected:
             if k not in data.keys():
-                print '  ** key not found:', k
+                print('  ** key not found:', k)
                 continue
             if v != data[k]:
-                print '  ** value mismatch:', v, data[i][k]
+                print('  ** value mismatch:', v, data[i][k])
 
     def assertHttpOK(self, resp):
         return self.assertEqual(resp.status_code, 200)
@@ -131,9 +128,9 @@ class PSArchiveResourceTest(PSAPIBaseTest):
         self.v4_name = 'lbl-pt1.es.net'
         self.v6_ip = '2001:400:201:1150::3'
         self.v6_name = 'lbl-pt1-v6.es.net'
-        self.v4v6_ipv4 = '198.129.254.187'
-        self.v4v6_ipv6 = '2001:400:201:11ff::87'
-        self.v4v6_name = 'ps-lat.es.net'
+        self.v4v6_ipv4 = '198.129.254.38'
+        self.v4v6_ipv6 = '2001:400:501:1150::3'
+        self.v4v6_name = 'sacr-pt1.es.net'
         self.dest = 'bost-pt1.es.net'
         
         #metadata detail test object

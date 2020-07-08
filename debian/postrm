@@ -31,6 +31,7 @@ case "$1" in
 
         rm -rf /var/log/esmond
         rm -rf /var/lib/esmond
+        rm -rf /var/run/esmond
 
         . /usr/share/debconf/confmodule
         if [ -f /usr/share/dbconfig-common/dpkg/postrm.pgsql ]; then

@@ -77,5 +77,5 @@ cd $ESMOND_ROOT
 . bin/activate
 
 #build esmond tables
-python esmond/manage.py makemigrations --noinput &> /dev/null
-python esmond/manage.py migrate --noinput &> /dev/null
+python3 esmond/manage.py makemigrations --noinput &> /dev/null
+python3 esmond/manage.py migrate --noinput &> /dev/null

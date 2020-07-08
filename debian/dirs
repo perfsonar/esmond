@@ -1,2 +1,3 @@
 etc/esmond
 var/log/esmond/crashlog
+var/run/esmond

@@ -130,7 +130,7 @@ class NodeInfo(object):
     def inspect_request(self, req):
         """Debug method to dump the URLs for the requests."""
         if self.filters.verbose:
-            print '[url: {0}]'.format(req.url)
+            print('[url: {0}]'.format(req.url))
 
     def _query_with_limit(self):
         """Internal method used by the get_data() methods in the EventType
@@ -142,7 +142,7 @@ class NodeInfo(object):
         if self.filters.verbose:
             # query_uri is a property defined in subclasses.
             # pylint: disable=no-member
-            print ' * looping query for: {0}'.format(self.query_uri)
+            print(' * looping query for: {0}'.format(self.query_uri))
 
         # revisit this value?
         LIMIT = 1000  # pylint: disable=invalid-name
@@ -170,7 +170,7 @@ class NodeInfo(object):
                 data_payload += data
 
                 if self.filters.verbose:
-                    print '  ** got {0} results'.format(len(data))
+                    print('  ** got {0} results'.format(len(data)))
 
                 if len(data) < LIMIT:
                     # got less than requested - done
@@ -190,7 +190,7 @@ class NodeInfo(object):
                 raise QueryLimitException
 
         if self.filters.verbose:
-            print '  *** finished with {0} results'.format(len(data_payload))
+            print('  *** finished with {0} results'.format(len(data_payload)))
 
         return data_payload
 
@@ -499,7 +499,7 @@ class DataHistogram(NodeInfo):
         return calendar.timegm(self.ts.utctimetuple())
 
     def __repr__(self):
-        return '<DataHistogram: ts:{0} len:{1}>'.format(self.ts, len(self.val.keys()))
+        return '<DataHistogram: ts:{0} len:{1}>'.format(self.ts, len(list(self.val.keys())))
 
 
 class ApiFilters(object):
@@ -828,15 +828,15 @@ class ApiConnect(object):
             if len(data) < m_total:
                 # looks like we got paginated content.
                 if self.filters.verbose:
-                    print 'pagination - metadata_count_total: {0} got: {1}\n'.format(
-                        m_total, len(data))
+                    print('pagination - metadata_count_total: {0} got: {1}\n'.format(
+                        m_total, len(data)))
                 initial_offset = len(data) # should be the API V1 internal limit of 1000
                 offset = initial_offset
 
                 while offset < m_total:
                     if self.filters.verbose:
-                        print 'current total results: {0}'.format(len(data))
-                        print 'issuing request with offset: {0}'.format(offset)
+                        print('current total results: {0}'.format(len(data)))
+                        print('issuing request with offset: {0}'.format(offset))
 
                     r = requests.get(
                         archive_url,
@@ -848,7 +848,7 @@ class ApiConnect(object):
                     self.inspect_request(r)
 
                     if r.status_code != 200:
-                        print 'error fetching paginated content'
+                        print('error fetching paginated content')
                         self.http_alert(r)
                         raise StopIteration()
                         yield  # pylint: disable=unreachable
@@ -856,13 +856,13 @@ class ApiConnect(object):
                     tmp = json.loads(r.text)
 
                     if self.filters.verbose:
-                        print 'got {0} results\n'.format(len(tmp))
+                        print('got {0} results\n'.format(len(tmp)))
 
                     data.extend(tmp)
                     offset += initial_offset
 
             if self.filters.verbose:
-                print 'final result count: {0}\n'.format(len(data))
+                print('final result count: {0}\n'.format(len(data)))
 
             for i in data:
                 yield Metadata(i, self.api_url, self.filters)
@@ -874,12 +874,12 @@ class ApiConnect(object):
     def inspect_request(self, r):
         """Debug method to output the URLs of the query requests."""
         if self.filters.verbose:
-            print '[url: {0}]'.format(r.url)
+            print('[url: {0}]'.format(r.url))
 
     def inspect_payload(self, pload):
         """Debug method to output request payload to pretty printed json."""
         if self.filters.verbose > 1:
-            print '[POST payload: {0}]'.format(json.dumps(pload, indent=4))
+            print('[POST payload: {0}]'.format(json.dumps(pload, indent=4)))
 
     def http_alert(self, r):
         """Emit a formatted alert if http transaction doesn't do the right thing."""

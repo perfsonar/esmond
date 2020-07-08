@@ -7,7 +7,7 @@ http://mx4j.sourceforge.net/
 http://wiki.apache.org/cassandra/Operations#Monitoring_with_MX4J
 """
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import warnings
 import xml.etree.ElementTree as ET
 
@@ -51,7 +51,7 @@ class CassandraJMX(object):  # pylint: disable=too-many-instance-attributes, too
 
     def _make_request(self, var):
         qs = dict(objectname=var, template='identity')
-        url = '{0}/mbean?{1}'.format(self.url, urllib.urlencode(qs))
+        url = '{0}/mbean?{1}'.format(self.url, urllib.parse.urlencode(qs))
         r = requests.get(url)
         if r.status_code != 200:
             warnings.warn('Bad request: {0} got return code: {1}'.format(url, r.status_code),
@@ -160,4 +160,4 @@ class CassandraJMX(object):  # pylint: disable=too-many-instance-attributes, too
     def get_compaction_complete(self):
         return self._fetch_value(self.jmx_compaction, 'CompletedTasks')
 
-AVAILABLE_TESTS = filter(lambda x: x.startswith('get_'), dir(CassandraJMX('')))  # pylint: disable=bad-builtin, deprecated-lambda
+AVAILABLE_TESTS = [x for x in dir(CassandraJMX('')) if x.startswith('get_')]  # pylint: disable=bad-builtin, deprecated-lambda
