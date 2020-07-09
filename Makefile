@@ -9,7 +9,7 @@ default:
 build:
 	vagrant destroy -f
 	vagrant up
-TO_CLEAN += "esmond-*.rpm"
+TO_CLEAN += esmond-*.rpm
 
 
 clean:
