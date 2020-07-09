@@ -39,3 +39,6 @@ vagrant-data
 lib64
 build
 staticfiles
+
+# Build by-products
+/esmond-*.rpm

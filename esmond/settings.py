@@ -196,4 +196,4 @@ LOGGING = {
         },
     }
 }
-SECRET_KEY = 'eqj1rm(w@rrg5#t3f(1pl)(frw!=*&i@7=3#gbk)@(w6v-5i(b'
+SECRET_KEY = 'kf*ap#0nls%04d01fzw+g%-&!d@u#bsz9nm@e^hkb!*pmq5p*4'
