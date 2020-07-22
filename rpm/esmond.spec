@@ -28,6 +28,8 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:    no
 
+# NOTE:  This comes from pScheduler
+BuildRequires:  postgresql-init
 BuildRequires:  python3-devel
 BuildRequires:  python3-memcached
 BuildRequires:  python3-psycopg2
@@ -47,6 +49,8 @@ BuildRequires:  httpd
 BuildRequires:  %{postgresql}-devel >= %{postgresql_version}
 BuildRequires:  gcc
 
+
+Requires:       postgresql-init
 Requires:       python3
 Requires:       python3-memcached
 Requires:       python3-psycopg2
