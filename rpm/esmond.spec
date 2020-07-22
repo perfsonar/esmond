@@ -3,6 +3,11 @@
 
 %global __python %{python3}
 
+%define postgresql_version_major  10
+%define postgresql_version_minor  12
+%define postgresql_version        %{postgresql_version_major}.%{postgresql_version_minor}
+%define postgresql                postgresql%{postgresql_version_major}
+
 # Don't create a debug package
 %define debug_package %{nil}
 
@@ -23,6 +28,8 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:    no
 
+# NOTE:  This comes from pScheduler
+BuildRequires:  postgresql-init
 BuildRequires:  python3-devel
 BuildRequires:  python3-memcached
 BuildRequires:  python3-psycopg2
@@ -39,9 +46,11 @@ BuildRequires:  python36-sphinx
 BuildRequires:  python36-sphinx_rtd_theme
 BuildRequires:  systemd
 BuildRequires:  httpd
-BuildRequires:  postgresql95-devel
+BuildRequires:  %{postgresql}-devel >= %{postgresql_version}
 BuildRequires:  gcc
 
+
+Requires:       postgresql-init
 Requires:       python3
 Requires:       python3-memcached
 Requires:       python3-psycopg2
@@ -74,20 +83,20 @@ uses a hybrid model for storing data using TSDB for time series data and an SQL
 database for everything else. All data is available via a REST style interface
 (as JSON) allowing for easy integration with other tools.
 
-%package database-postgresql95
-Summary:        Esmond Postgresql 9.5 Database Plugin
+%package database-%{postgresql}
+Summary:        Esmond PostgreSQL %{postgresql_version} Database Plugin
 Group:          Development/Tools
-Requires:       postgresql95
-Requires:       postgresql95-server
-Requires:       postgresql95-devel
-Requires(post): postgresql95
-Requires(post): postgresql95-server
-Requires(post): postgresql95-devel
+Requires:       %{postgresql} >= %{postgresql_version}
+Requires:       %{postgresql}-server >= %{postgresql_version}
+Requires:       %{postgresql}-devel >= %{postgresql_version}
+Requires(post): %{postgresql} >= %{postgresql_version}
+Requires(post): %{postgresql}-server >= %{postgresql_version}
+Requires(post): %{postgresql}-devel >= %{postgresql_version}
 Requires(post): drop-in
 Provides:       esmond-database
 
-%description database-postgresql95
-Installs Postgresql 9.5 using one of the vendor's RPMs. It will also try to migrate an
+%description database-%{postgresql}
+Installs Postgresql 9.5 using one of the vendor RPMs. It will also try to migrate an
 older version of the database to Postgresql 9.5 if it finds one present and there is not
 already data .
 
@@ -95,7 +104,7 @@ already data .
 Summary:        Esmond Backward Compatibility
 Group:          Development/Tools
 Requires:       esmond >= 2.1
-Requires:       esmond-database-postgresql95
+Requires:       esmond-database-%{postgresql}
 Obsoletes:      esmond < 2.1
 
 %description compat
@@ -106,7 +115,7 @@ Transitions esmond instances prior to the split of database modules to new versi
 /usr/sbin/groupadd -r esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 
-%pre database-postgresql95
+%pre database-%{postgresql}
 # Create the 'esmond' user
 /usr/sbin/groupadd -r esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
@@ -244,7 +253,7 @@ if [ "$1" = "1" ]; then
     systemctl restart httpd
 fi
 
-%post database-postgresql95
+%post database-%{postgresql}
 #try to update the database if this is a clean install
 if [ "$1" = "1" ]; then
     %{dbscript_base}/upgrade-pgsql95.sh
@@ -269,12 +278,14 @@ fi
 %{install_base}/LICENSE
 %{install_base}/README.rst
 %{install_base}/TODO
-%{install_base}/__pycache__
+# TODO: Not produced
+# %{install_base}/__pycache__
 %{install_base}/docs
 %{install_base}/esmond.egg-info
 %{install_base}/esmond
 %{install_base}/esmond_client/README.rst
-%{install_base}/esmond_client/__pycache__
+# TODO: Not produced
+# %{install_base}/esmond_client/__pycache__
 %{install_base}/esmond_client/esmond_client*
 %{install_base}/esmond_client/setup*
 %{install_base}/example_esmond.conf
@@ -291,7 +302,7 @@ fi
 /etc/httpd/conf.d/apache-esmond.conf
 %{_tmpfilesdir}/esmond.conf
 
-%files database-postgresql95
+%files database-%{postgresql}
 %defattr(0644,esmond,esmond,0755)
 %attr(0755,esmond,esmond) %{dbscript_base}/upgrade-pgsql95.sh
 %attr(0755,esmond,esmond) %{dbscript_base}/configure-pgsql95.sh

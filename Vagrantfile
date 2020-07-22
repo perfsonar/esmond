@@ -1,6 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby shiftwidth=4 :
 
+# Enable this to do a build after the system is set up.
+do_build = true
+
 Vagrant.configure("2") do |config|
     # Disable audio and get reasonable specs
     config.vm.provider "virtualbox" do |vb|
@@ -30,18 +33,18 @@ Vagrant.configure("2") do |config|
         # to be a strange bug where IPv6 and IPv4 mixed-up by vagrant otherwise and one 
         #interface will appear not to have an address. If you look at network-scripts file
         # you will see a mangled result where IPv4 is set for IPv6 or vice versa
-        el7.vm.network "private_network", ip: "10.0.0.203"
+        #el7.vm.network "private_network", ip: "10.0.0.203"
 
         # Setup port forwarding to apache
-        el7.vm.network "forwarded_port", guest: 443, host: "21443", host_ip: "127.0.0.1"
-        el7.vm.network "forwarded_port", guest: 80, host: "21080", host_ip: "127.0.0.1"
+        #el7.vm.network "forwarded_port", guest: 443, host: "21443", host_ip: "127.0.0.1"
+        #el7.vm.network "forwarded_port", guest: 80, host: "21080", host_ip: "127.0.0.1"
 
         # Enable IPv6. Currently only supports setting via static IP. Address below in the
         # reserved local address range for IPv6
-        el7.vm.network "private_network", ip: "fdac:218a:75e5:69c8::203"
+        #el7.vm.network "private_network", ip: "fdac:218a:75e5:69c8::203"
 
         #Disable selinux
-        el7.vm.provision "shell", inline: <<-SHELL
+        el7.vm.provision "disable-selinux", type: "shell", inline: <<-SHELL
         sed -i s/SELINUX=enforcing/SELINUX=permissive/g /etc/selinux/config
         SHELL
 
@@ -49,7 +52,7 @@ Vagrant.configure("2") do |config|
         el7.vm.provision :reload
 
         #Install all requirements and perform initial setup
-        el7.vm.provision "shell", inline: <<-SHELL
+        el7.vm.provision "initial-setup", type: "shell", inline: <<-SHELL
 
         #env variables
         export ESMOND_ROOT=/usr/lib/esmond
@@ -60,6 +63,10 @@ Vagrant.configure("2") do |config|
         yum install -y epel-release
         yum install -y centos-release-scl
         yum install -y http://software.internet2.edu/rpms/el7/x86_64/4/packages/perfSONAR-repo-0.9-1.noarch.rpm
+        # TODO: Should be from production
+        yum install -y perfSONAR-repo-nightly-minor
+        yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
         yum clean all
         yum install -y gcc\
             kernel-devel\
@@ -68,10 +75,10 @@ Vagrant.configure("2") do |config|
             make\
             bzip2\
             perl\
-            pscheduler-bundle-full\
             python3\
             python3-virtualenv\
             httpd\
+            mod_wsgi\
             python3-mock\
             python3-memcached\
             python3-psycopg2\
@@ -83,9 +90,10 @@ Vagrant.configure("2") do |config|
             sqlite-devel\
             memcached\
             java-1.7.0-openjdk\
-            postgresql95\
-            postgresql95-server\
-            postgresql95-devel
+            postgresql10\
+            postgresql10-server\
+            postgresql10-devel\
+            drop-in
 
         ## setup shared folders and files
         if ! [ -d /vagrant/vagrant-data/esmond-el7/etc/esmond ]; then
@@ -113,7 +121,13 @@ Vagrant.configure("2") do |config|
         chmod 644 /etc/httpd/conf.d/apache-esmond.conf
         ln -fs /vagrant/rpm/config_files/esmond.csh /etc/profile.d/esmond.csh
         ln -fs /vagrant/rpm/config_files/esmond.sh /etc/profile.d/esmond.sh
-        ln -fs /usr/pgsql-9.5/bin/pg_config /usr/sbin/pg_config
+        ln -fs /usr/pgsql-10/bin/pg_config /usr/sbin/pg_config
+
+        ## Make PostgreSQL ready.  In production, pScheduler's
+        ## postgres-init handles this.
+        /usr/pgsql-10/bin/postgresql-10-setup initdb
+        systemctl enable --now postgresql-10
+
 
         ## Setup python environment
         virtualenv-3 --prompt="(esmond)" .
@@ -153,7 +167,7 @@ Vagrant.configure("2") do |config|
             sed -i "s/sql_db_name = .*/sql_db_name = esmond/g" /etc/esmond/esmond.conf
             sed -i "s/sql_db_user = .*/sql_db_user = esmond/g" /etc/esmond/esmond.conf
             sed -i "s/sql_db_password = .*/sql_db_password = ${DB_PASSWORD}/g" /etc/esmond/esmond.conf
-            drop-in -n -t esmond - /var/lib/pgsql/9.5/data/pg_hba.conf <<EOF
+            drop-in -n -t esmond - /var/lib/pgsql/10/data/pg_hba.conf <<EOF
 #
 # esmond
 #
@@ -173,8 +187,8 @@ EOF
         fi
 
         ## Restart remaining services
-        systemctl enable postgresql-9.5
-        systemctl restart postgresql-9.5
+        systemctl enable postgresql-10
+        systemctl restart postgresql-10
         systemctl enable cassandra
         systemctl restart cassandra
         systemctl enable httpd
@@ -183,11 +197,54 @@ EOF
         #build database
         ./rpm/scripts/configure_esmond 2
         SHELL
+
+    # Do the build if we're configured to do so
+    if do_build
+      el7.vm.provision "build", type: "shell", inline: <<-SHELL
+        echo
+        echo Building Esmond
+        echo
+
+        set -e
+
+        # TODO: See if there's a way to get this location from Vagrant
+        cd /vagrant
+
+        RPMBUILD="${HOME}/rpmbuild"
+
+        yum -y install git rpm-build
+
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+        RPMVERSION=$(rpmspec -q --qf "%{Version}\n" rpm/esmond.spec | head -1)
+
+        for DIR in SOURCES SRPMS
+        do
+            mkdir -p "${RPMBUILD}/${DIR}"
+        done
+
+
+        git archive --format=tar --prefix="esmond-${RPMVERSION}/" "remotes/origin/${BRANCH}" \
+            | gzip > "${RPMBUILD}/SOURCES/esmond-${RPMVERSION}.tar.gz"
+
+        rpmbuild -bs rpm/esmond.spec
+
+        yum-builddep -y ${RPMBUILD}/SRPMS/*.src.rpm
+
+        rpmbuild -ba rpm/esmond.spec
+
+        cp ${RPMBUILD}/RPMS/$(uname -m)/* .
+
+    SHELL
+
     end
 
     # Runs on all hosts before they are provisioned independent of OS
-    config.vm.provision "shell", inline: <<-SHELL
+    config.vm.provision "account", type: "shell", inline: <<-SHELL
     /usr/sbin/groupadd -r esmond 2> /dev/null || :
     /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
     SHELL
+
+  end
+
 end

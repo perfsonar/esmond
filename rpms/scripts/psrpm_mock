@@ -40,7 +40,7 @@ EOF
 
 sudo mock -r $MOCK_CFG --clean
 sudo mock -r $MOCK_CFG --init
-sudo mock -r $MOCK_CFG --install postgresql95-devel
-sudo mock -r $MOCK_CFG --shell 'ln -fs /usr/pgsql-9.5/bin/pg_config /usr/sbin/pg_config'
+sudo mock -r $MOCK_CFG --install postgresql10-devel
+sudo mock -r $MOCK_CFG --shell 'ln -fs /usr/pgsql-10/bin/pg_config /usr/sbin/pg_config'
 sudo mock -r $MOCK_CFG --resultdir=${MOCK_RESULTS} --arch=x86_64 --enable-network --no-clean --no-cleanup-after $1
 
