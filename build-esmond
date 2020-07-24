@@ -1,0 +1,54 @@
+#!/bin/sh
+
+
+echo
+echo Building Esmond
+echo
+
+set -e
+
+yum -y install git rpm-build
+
+# TODO: See if there's a way to get this location from Vagrant
+WORK_DIR=/tmp/esmond-build
+rm -rf "${WORK_DIR}"
+mkdir -p "${WORK_DIR}"
+rsync --archive --delete ./ "${WORK_DIR}"
+
+RPMBUILD="${HOME}/rpmbuild"
+rm -rf "${RPMBUILD}"
+for DIR in SOURCES SRPMS
+do
+    mkdir -p "${RPMBUILD}/${DIR}"
+done
+
+OLD_DIR="${PWD}"
+cd "${WORK_DIR}"
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+RPMVERSION=$(rpmspec -q --qf "%{Version}\n" rpm/esmond.spec | head -1)
+
+
+TARBALL="${RPMBUILD}/SOURCES/esmond-${RPMVERSION}.tar.gz"
+rm -rf "${TARBALL}"
+
+TAR_BUILD=/tmp/esmond-tar-build
+TAR_ESMOND="${TAR_BUILD}/esmond-${RPMVERSION}"
+rm -rf "${TAR_BUILD}"
+mkdir -p "${TAR_ESMOND}"
+rsync \
+    --exclude "*~" \
+    --exclude "*.rpm" \
+    --archive --delete ./ "${TAR_ESMOND}"
+(cd "${TAR_BUILD}" && tar czf "${TARBALL}" .)
+rm -rf "${TAR_BUILD}"
+
+rpmbuild -bs rpm/esmond.spec
+
+yum-builddep -y ${RPMBUILD}/SRPMS/*.src.rpm
+
+rpmbuild -ba rpm/esmond.spec
+
+cp ${RPMBUILD}/RPMS/$(uname -m)/* "${OLD_DIR}"
+

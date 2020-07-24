@@ -42,3 +42,6 @@ staticfiles
 
 # Build by-products
 /esmond-*.rpm
+
+# Editor droppings
+*~

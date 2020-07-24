@@ -206,34 +206,7 @@ EOF
         echo
 
         set -e
-
-        # TODO: See if there's a way to get this location from Vagrant
-        cd /vagrant
-
-        RPMBUILD="${HOME}/rpmbuild"
-
-        yum -y install git rpm-build
-
-        BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-        RPMVERSION=$(rpmspec -q --qf "%{Version}\n" rpm/esmond.spec | head -1)
-
-        for DIR in SOURCES SRPMS
-        do
-            mkdir -p "${RPMBUILD}/${DIR}"
-        done
-
-
-        git archive --format=tar --prefix="esmond-${RPMVERSION}/" "remotes/origin/${BRANCH}" \
-            | gzip > "${RPMBUILD}/SOURCES/esmond-${RPMVERSION}.tar.gz"
-
-        rpmbuild -bs rpm/esmond.spec
-
-        yum-builddep -y ${RPMBUILD}/SRPMS/*.src.rpm
-
-        rpmbuild -ba rpm/esmond.spec
-
-        cp ${RPMBUILD}/RPMS/$(uname -m)/* .
+        /vagrant/build-esmond
 
     SHELL
 

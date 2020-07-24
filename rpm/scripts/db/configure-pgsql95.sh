@@ -1,5 +1,5 @@
 #!/bin/bash
-PG_VERSION=9.5
+PG_VERSION=10
 PG_BINDIR=/usr/pgsql-${PG_VERSION}/bin
 PG_DATADIR=/var/lib/pgsql/${PG_VERSION}/data
 PG_SERVICE_NAME="postgresql-${PG_VERSION}"

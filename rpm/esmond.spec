@@ -68,13 +68,19 @@ Requires:       policycoreutils-python
 Requires:       cassandra20
 Requires:       httpd
 Requires:       mod_ssl
-Requires:       esmond-database
-Requires(post): esmond-database
 Requires:       sqlite
 Requires:       sqlite-devel
 Requires:       memcached
 #java 1.7 needed for cassandra. dependency wrong in cassandra rpm.
 Requires:       java-1.7.0-openjdk
+Requires(post): drop-in
+
+
+# Packages from older versions
+Obsoletes:      esmond-compat
+Obsoletes:      esmond-database
+
+
 
 
 %description
@@ -83,47 +89,18 @@ uses a hybrid model for storing data using TSDB for time series data and an SQL
 database for everything else. All data is available via a REST style interface
 (as JSON) allowing for easy integration with other tools.
 
-%package database-%{postgresql}
-Summary:        Esmond PostgreSQL %{postgresql_version} Database Plugin
-Group:          Development/Tools
-Requires:       %{postgresql} >= %{postgresql_version}
-Requires:       %{postgresql}-server >= %{postgresql_version}
-Requires:       %{postgresql}-devel >= %{postgresql_version}
-Requires(post): %{postgresql} >= %{postgresql_version}
-Requires(post): %{postgresql}-server >= %{postgresql_version}
-Requires(post): %{postgresql}-devel >= %{postgresql_version}
-Requires(post): drop-in
-Provides:       esmond-database
-
-%description database-%{postgresql}
-Installs Postgresql 9.5 using one of the vendor RPMs. It will also try to migrate an
-older version of the database to Postgresql 9.5 if it finds one present and there is not
-already data .
-
-%package compat
-Summary:        Esmond Backward Compatibility
-Group:          Development/Tools
-Requires:       esmond >= 2.1
-Requires:       esmond-database-%{postgresql}
-Obsoletes:      esmond < 2.1
-
-%description compat
-Transitions esmond instances prior to the split of database modules to new version
 
 %pre
 # Create the 'esmond' user
 /usr/sbin/groupadd -r esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 
-%pre database-%{postgresql}
-# Create the 'esmond' user
-/usr/sbin/groupadd -r esmond 2> /dev/null || :
-/usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 
 %prep
 %setup -q -n %{name}-%{version}
 
 %build
+
 
 %install
 # Copy and build in place so that we know what the path in the various files
@@ -181,6 +158,14 @@ rm -rf rpms
 rm -f mkdevenv
 rm -f pylint.rc
 rm -f Vagrantfile
+rm -rf vagrant
+rm -rf .vagrant
+rm -f build-esmond
+rm -f Makefile
+rm -rf debian
+rm -rf .travis.yml
+
+
 
 # Install python libs so don't rely on pip connectivity during RPM install
 # NOTE: This part is why its not noarch
@@ -188,7 +173,7 @@ rm -f Vagrantfile
 virtualenv-3.6 --prompt="(esmond)" . --system-site-packages --no-pip
 . bin/activate
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python get-pip.py pip==18.1
+python3 get-pip.py pip==18.1
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
 python3 -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
 #not pretty but below is the best way I could find to remove references to buildroot
@@ -253,11 +238,6 @@ if [ "$1" = "1" ]; then
     systemctl restart httpd
 fi
 
-%post database-%{postgresql}
-#try to update the database if this is a clean install
-if [ "$1" = "1" ]; then
-    %{dbscript_base}/upgrade-pgsql95.sh
-fi
 
 %postun
 if [ "$1" != "0" ]; then
@@ -266,6 +246,7 @@ if [ "$1" != "0" ]; then
 fi
 
 %files
+%defattr(-,esmond,esmond)
 %config(noreplace) %{config_base}/esmond.conf
 %attr(0755,esmond,esmond) %{install_base}/bin/*
 %attr(0755,esmond,esmond) %{install_base}/util/*
@@ -302,12 +283,8 @@ fi
 /etc/httpd/conf.d/apache-esmond.conf
 %{_tmpfilesdir}/esmond.conf
 
-%files database-%{postgresql}
-%defattr(0644,esmond,esmond,0755)
-%attr(0755,esmond,esmond) %{dbscript_base}/upgrade-pgsql95.sh
 %attr(0755,esmond,esmond) %{dbscript_base}/configure-pgsql95.sh
 
-%files compat
 
 %changelog
 * Wed Mar 5 2014 Monte Goode <mmgoode@lbl.gov> .99-1
