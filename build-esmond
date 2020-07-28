@@ -7,6 +7,9 @@ echo
 
 set -e
 
+
+make clean
+
 yum -y install git rpm-build
 
 # TODO: See if there's a way to get this location from Vagrant
@@ -40,6 +43,7 @@ mkdir -p "${TAR_ESMOND}"
 rsync \
     --exclude "*~" \
     --exclude "*.rpm" \
+    --exclude "vagrant" \
     --archive --delete ./ "${TAR_ESMOND}"
 (cd "${TAR_BUILD}" && tar czf "${TARBALL}" .)
 rm -rf "${TAR_BUILD}"
