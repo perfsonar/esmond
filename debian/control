@@ -14,11 +14,11 @@ Architecture: all
 Depends: apache2, libapache2-mod-wsgi-py3, ssl-cert, postgresql,
  memcached, cassandra, ucf (>= 0.28), python3-pkg-resources,
  python3-requests, python3-mimeparse, python3-psycopg2, python3-memcache,
- python3-webpy, adduser, dbconfig-common, python3-django (>= 1.11.20),
+ python3-webpy, adduser, dbconfig-common, python3-django (>= 1.11.22~),
  python3-pycassa, python3-django-netfields,
- python3-djangorestframework (>= 3.4.0~),
+ python3-djangorestframework (>= 3.9.0),
  python3-djangorestframework-filters (>= 0.10.1),
- python3-djangorestframework-extensions (>= 0.3.1~),
+ python3-djangorestframework-extensions (>= 0.4.0~),
  python3-django-tastypie (>= 0.12.2), libjs-jquery,
  ${python3:Depends}, ${misc:Depends}
 Description: ESnet Monitoring Daemon
