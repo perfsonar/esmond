@@ -197,6 +197,8 @@ find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" 
 # Clean up after build
 rm -f %{buildroot}/%{install_base}/get-pip.py
 rm -f %{buildroot}/%{install_base}/pip-selfcheck.json
+rm -rf %{install_base}/__pycache__
+rm -rf %{install_base}/esmond_client/__pycache__
 
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
