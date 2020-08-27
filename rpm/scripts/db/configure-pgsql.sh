@@ -22,9 +22,9 @@ if [ -f "${PG_DATADIR}/pg_hba.conf" ]; then
 fi
 
 #make sure postgresql is running
-/sbin/service ${PG_SERVICE_NAME} status &> /dev/null
+systemctl status ${PG_SERVICE_NAME} &> /dev/null
 if [ $? -ne 0 ]; then
-    /sbin/service ${PG_SERVICE_NAME} restart 
+    systemctl restart ${PG_SERVICE_NAME}
     if [ $? -ne 0 ]; then
         echo "Unable to start ${PG_SERVICE_NAME}. Your esmond database may not be initialized"
         exit 1
@@ -65,7 +65,7 @@ local     esmond          esmond                            md5
 host      esmond          esmond     127.0.0.1/32           md5
 host      esmond          esmond     ::1/128                md5
 EOF
-    /sbin/service ${PG_SERVICE_NAME} restart 
+    systemctl restart ${PG_SERVICE_NAME}
     if [ $? -ne 0 ]; then
         echo "Unable to restart ${PG_SERVICE_NAME}. Your esmond database may not be initialized"
     fi
