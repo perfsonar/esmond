@@ -1,5 +1,5 @@
-# Make sure that unpackaged files are noticed
-%define _unpackaged_files_terminate_build      1
+# Ignore unpackaged files
+%define _unpackaged_files_terminate_build      0
 
 %global __python %{python3}
 
