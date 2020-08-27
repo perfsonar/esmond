@@ -1,5 +1,9 @@
 #!/bin/bash
-PG_VERSION=9.5
+if [ -z "$1" ]; then
+    echo "No postgres version specified"
+    exit 1
+fi
+PG_VERSION=$1
 PG_BINDIR=/usr/pgsql-${PG_VERSION}/bin
 PG_DATADIR=/var/lib/pgsql/${PG_VERSION}/data
 PG_SERVICE_NAME="postgresql-${PG_VERSION}"

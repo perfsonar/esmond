@@ -94,11 +94,10 @@ Requires(post): %{postgresql}-server >= %{postgresql_version}
 Requires(post): %{postgresql}-devel >= %{postgresql_version}
 Requires(post): drop-in
 Provides:       esmond-database
+Obsoletes:      esmond-database-postgresql95
 
 %description database-%{postgresql}
-Installs Postgresql 9.5 using one of the vendor RPMs. It will also try to migrate an
-older version of the database to Postgresql 9.5 if it finds one present and there is not
-already data .
+Installs Postgresql using one of the vendor RPMs.
 
 %package compat
 Summary:        Esmond Backward Compatibility
@@ -245,9 +244,7 @@ chown -R esmond:esmond /var/run/esmond
 find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
 
 #run database configuration scripts (dependent on esmond-database package installed)
-for script in %{dbscript_base}/configure-*; do
-    $script $1
-done
+%{dbscript_base}/configure-pgsql.sh %{postgresql_version_major}
 
 #enable and start httpd and cassandra on fresh install
 if [ "$1" = "1" ]; then
@@ -255,12 +252,6 @@ if [ "$1" = "1" ]; then
     systemctl restart cassandra
     systemctl enable httpd
     systemctl restart httpd
-fi
-
-%post database-%{postgresql}
-#try to update the database if this is a clean install
-if [ "$1" = "1" ]; then
-    %{dbscript_base}/upgrade-pgsql95.sh
 fi
 
 %postun
@@ -308,8 +299,7 @@ fi
 
 %files database-%{postgresql}
 %defattr(0644,esmond,esmond,0755)
-%attr(0755,esmond,esmond) %{dbscript_base}/upgrade-pgsql95.sh
-%attr(0755,esmond,esmond) %{dbscript_base}/configure-pgsql95.sh
+%attr(0755,esmond,esmond) %{dbscript_base}/configure-pgsql.sh
 
 %files compat
 
