@@ -1,9 +1,9 @@
-esmond (4.3.0~a1.0-1) perfsonar-4.3-snapshot; urgency=low
+esmond (4.3.0~b1.1-1) perfsonar-4.3; urgency=low
 
   * New upstream version.
   * Python 3 port.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Sat, 30 May 2020 16:58:07 +0000
+ -- perfSONAR developers <debian@perfsonar.net>  Tue, 29 Sep 2020 18:04:51 +0000
 
 esmond (4.2.3-1) perfsonar-4.2; urgency=low
 
