@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """
 Setup file for esmond_client distribution.
@@ -42,7 +42,7 @@ setup(
         'Environment :: Console',
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
         'Topic :: Internet',
         'Topic :: System :: Networking',
         'Topic :: Software Development :: Libraries',

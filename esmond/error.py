@@ -8,7 +8,3 @@ class ConfigError(EsmondError):
 
 class BadQuery(EsmondError):
     pass
-
-class PollerError(EsmondError):
-    """Problem with a poller."""
-    pass

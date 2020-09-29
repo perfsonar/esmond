@@ -4,15 +4,15 @@ Utility code for perfsonar esmond client programs.
 
 import calendar
 import copy
-import cStringIO
+import io
 import csv
 import datetime
 import json
 import os
 import socket
 import sys
-import urllib
-import urlparse
+import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 
 from optparse import OptionParser
 from collections import OrderedDict
@@ -58,7 +58,7 @@ EVENT_MAP = OrderedDict([
     ('time-error-estimates', 'numeric'),
 ])
 
-EVENT_TYPES = EVENT_MAP.keys()
+EVENT_TYPES = list(EVENT_MAP.keys())
 
 
 def event_format(etype):
@@ -144,7 +144,7 @@ class EsmondOutput(object):
         # no point in processing each row if not necessary.
         if self._list_fields is None:
             self._list_fields = []
-            for k, v in dct.items():
+            for k, v in list(dct.items()):
                 if isinstance(v, list):
                     self._list_fields.append(k)
 
@@ -178,7 +178,7 @@ class HumanOutput(EsmondOutput):
             if self.has_data():
                 for row in self._data:
                     if isinstance(row, HeaderRow):
-                        for k, v in row.items():
+                        for k, v in list(row.items()):
                             self._output += '{0}: {1}\n'.format(k, v)
                     else:
                         row = self._massage_row_dict(row)
@@ -186,7 +186,7 @@ class HumanOutput(EsmondOutput):
                         for c in self._columns:
                             self._output += '{0}: {1}\n'.format(c, row.get(c))
                         if self._extended_data:
-                            for k, v in row.items():
+                            for k, v in list(row.items()):
                                 if k in self._columns:
                                     continue
                                 self._output += '{0}: {1}\n'.format(k, v)
@@ -214,7 +214,7 @@ class CSVOutput(EsmondOutput):
     """Format output for CSV."""
     def get_output(self):
         if not self._output:
-            cfile = cStringIO.StringIO()
+            cfile = io.StringIO()
 
             writer = csv.DictWriter(cfile, fieldnames=self._columns, extrasaction='ignore')
             writer.writeheader()
@@ -640,17 +640,17 @@ def get_outfile(options, metadata, event_type):
 def check_url(options, parser):
     """Validate URL passed to command line args."""
     if not options.url:
-        print '--url is a required arg\n'
+        print('--url is a required arg\n')
         parser.print_help()
         sys.exit(-1)
 
     # trim URI from --url since people will cut and paste from
     # the list of MAs.
     url = options.url
-    upar = urlparse.urlparse(url)
+    upar = urllib.parse.urlparse(url)
     if upar.path.startswith('/esmond/perfsonar/archive'):
         options.url = url.replace(upar.path, '')
-        print '\n not necessary to add /esmond/perfsonar/archive to --url arg - trimming'
+        print('\n not necessary to add /esmond/perfsonar/archive to --url arg - trimming')
 
 def check_valid_hostnames(options, parser, hn_args=[]):  # pylint: disable=dangerous-default-value, unused-argument
     """Validate hostnames in cmd line args."""
@@ -659,18 +659,18 @@ def check_valid_hostnames(options, parser, hn_args=[]):  # pylint: disable=dange
             if getattr(options, hname):
                 socket.gethostbyname(getattr(options, hname))
     except Exception:  # pylint: disable=broad-except
-        print '--{0} arg had invalid hostname: {1}'.format(hname, getattr(options, hname))
+        print('--{0} arg had invalid hostname: {1}'.format(hname, getattr(options, hname)))
         sys.exit(-1)
 
 
 def check_event_types(options, parser, require_event):
     """Validate the event types passed in cmd line args."""
     if options.type and options.type not in EVENT_TYPES:
-        print '{0} is not a valid event type'.format(options.type)
+        print('{0} is not a valid event type'.format(options.type))
         list_event_types()
         sys.exit(-1)
     if require_event and not options.type:
-        print 'The --event-type arg is required. Use -L to see a list.\n'
+        print('The --event-type arg is required. Use -L to see a list.\n')
         parser.print_help()
         sys.exit(-1)
 
@@ -679,10 +679,10 @@ def check_formats(options, parser):  # pylint: disable=unused-argument
     """Validate output formats passed in cmd line args."""
     f_args = ['human', 'json', 'csv']
     if options.format not in f_args:
-        print '{0} is not a valid --output-format arg (one of: {1})'.format(options.format, f_args)
+        print('{0} is not a valid --output-format arg (one of: {1})'.format(options.format, f_args))
         sys.exit(-1)
     if options.format == 'csv' and options.metadata:
-        print '--output-format csv can not be used with --metadata-extended'
+        print('--output-format csv can not be used with --metadata-extended')
         sys.exit(-1)
 
 
@@ -690,8 +690,8 @@ def check_summary(options, parser):  # pylint: disable=unused-argument
     """Validate summary passed in the cmd line args."""
     s_args = ['aggregation', 'average', 'statistics']
     if options.summary_type and options.summary_type not in s_args:
-        print '{0} is not a valid --summary-type arg (one of: {1})'.format(
-            options.summary_type, s_args)
+        print('{0} is not a valid --summary-type arg (one of: {1})'.format(
+            options.summary_type, s_args))
         sys.exit(-1)
 
 
@@ -700,7 +700,7 @@ def src_dest_required(options, parser):
     if not options.src \
             or not (options.dest or
                     (options.type is not None and options.type.startswith('ntp-'))):
-        print '--src and --dest args are both required (ntp-* event types only require --src).\n'
+        print('--src and --dest args are both required (ntp-* event types only require --src).\n')
         parser.print_help()
         sys.exit(-1)
 
@@ -708,11 +708,11 @@ def src_dest_required(options, parser):
 def valid_output_dir(options, parser):
     """If outputting files to disc, validate the output path."""
     if options.format == 'human':
-        print 'please specify either json or csv --output-format for bulk output.\n'
+        print('please specify either json or csv --output-format for bulk output.\n')
         parser.print_help()
         sys.exit(-1)
     if not os.path.exists(os.path.abspath(options.output_dir)):
-        print 'output path {0} does not exist.'.format(os.path.abspath(options.output_dir))
+        print('output path {0} does not exist.'.format(os.path.abspath(options.output_dir)))
         sys.exit(-1)
 
 #
@@ -722,9 +722,9 @@ def valid_output_dir(options, parser):
 
 def list_event_types():
     """Dump valid event types to stdout."""
-    print '\nValid event types:'
+    print('\nValid event types:')
     for etype in EVENT_TYPES:
-        print '    {0}'.format(etype)
+        print('    {0}'.format(etype))
 
 #
 # Utility functions to import into clients.
@@ -745,7 +745,7 @@ def get_start_and_end_times(options):
         try:
             start = parse(options.start)
         except Exception:  # pylint: disable=broad-except
-            print 'could not parse --start-time arg: {0}'.format(options.start)
+            print('could not parse --start-time arg: {0}'.format(options.start))
             sys.exit(-1)
 
     if not options.end:
@@ -754,7 +754,7 @@ def get_start_and_end_times(options):
         try:
             end = parse(options.end)
         except Exception:  # pylint: disable=broad-except
-            print 'could not parse --end-time arg: {0}'.format(options.end)
+            print('could not parse --end-time arg: {0}'.format(options.end))
             sys.exit(-1)
 
     return start, end
@@ -884,12 +884,12 @@ def perfsonar_client_filters(options):
         # Apply arbritrary metadata filters
         for flt in options.filter:
             if flt.find(':') == -1:
-                print '--filter arg {0} should be of the format key:value'.format(flt)
+                print('--filter arg {0} should be of the format key:value'.format(flt))
                 continue
             k, v = flt.split(':')
             key = k.replace('-', '_')
             if not hasattr(filters, k):
-                print '--filter arg {0} is not a valid filtering value'.format(key)
+                print('--filter arg {0} is not a valid filtering value'.format(key))
                 continue
             setattr(filters, key, v)
 

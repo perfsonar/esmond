@@ -1,8 +1,12 @@
-# Make sure that unpackaged files are noticed
-%define _unpackaged_files_terminate_build      1
+# Ignore unpackaged files
+%define _unpackaged_files_terminate_build      0
 
-# Skip over compile errors in python3 files
-%global _python_bytecompile_errors_terminate_build 0
+%global __python %{python3}
+
+%define postgresql_version_major  10
+%define postgresql_version_minor  12
+%define postgresql_version        %{postgresql_version_major}.%{postgresql_version_minor}
+%define postgresql                postgresql%{postgresql_version_major}
 
 # Don't create a debug package
 %define debug_package %{nil}
@@ -10,10 +14,8 @@
 %define install_base /usr/lib/esmond
 %define config_base /etc/esmond
 %define dbscript_base /usr/lib/esmond-database
-%define init_script_1 espolld
-%define init_script_2 espersistd
-%define perfsonar_auto_version 4.2.4
-%define perfsonar_auto_relnum 1
+%define perfsonar_auto_version 4.3.0
+%define perfsonar_auto_relnum 0.b1.1
  
 Name:           esmond
 Version:        %{perfsonar_auto_version}
@@ -26,18 +28,41 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 AutoReqProv:    no
 
-BuildRequires:  python
-BuildRequires:  python-virtualenv
+# NOTE:  This comes from pScheduler
+BuildRequires:  postgresql-init
+BuildRequires:  python3-devel
+BuildRequires:  python3-memcached
+BuildRequires:  python3-psycopg2
+BuildRequires:  python3-pycassa
+BuildRequires:  python3-requests
+BuildRequires:  python3-thrift
+BuildRequires:  python3-virtualenv
+BuildRequires:  python36-astroid
+BuildRequires:  python36-dateutil
+BuildRequires:  python36-netaddr
+BuildRequires:  python36-pylint
+BuildRequires:  python36-pytz
+BuildRequires:  python36-sphinx
+BuildRequires:  python36-sphinx_rtd_theme
 BuildRequires:  systemd
 BuildRequires:  httpd
-BuildRequires:  postgresql95-devel
-BuildRequires:  mercurial
+BuildRequires:  %{postgresql}-devel >= %{postgresql_version}
 BuildRequires:  gcc
 
-Requires:       python
-Requires:       python-virtualenv
-Requires:       python2-mock
-Requires:       mod_wsgi
+
+Requires:       postgresql-init
+Requires:       python3
+Requires:       python3-memcached
+Requires:       python3-psycopg2
+Requires:       python3-pycassa
+Requires:       python3-requests
+Requires:       python3-thrift
+Requires:       python3-virtualenv
+Requires:       python36-astroid
+Requires:       python36-dateutil
+Requires:       python36-netaddr
+Requires:       python36-pytz
+Requires:       mod_wsgi >= 4.6.5
 Requires:       policycoreutils-python
 %{?systemd_requires: %systemd_requires}
 Requires:       cassandra20
@@ -58,28 +83,27 @@ uses a hybrid model for storing data using TSDB for time series data and an SQL
 database for everything else. All data is available via a REST style interface
 (as JSON) allowing for easy integration with other tools.
 
-%package database-postgresql95
-Summary:        Esmond Postgresql 9.5 Database Plugin
+%package database-%{postgresql}
+Summary:        Esmond PostgreSQL %{postgresql_version} Database Plugin
 Group:          Development/Tools
-Requires:       postgresql95
-Requires:       postgresql95-server
-Requires:       postgresql95-devel
-Requires(post): postgresql95
-Requires(post): postgresql95-server
-Requires(post): postgresql95-devel
+Requires:       %{postgresql} >= %{postgresql_version}
+Requires:       %{postgresql}-server >= %{postgresql_version}
+Requires:       %{postgresql}-devel >= %{postgresql_version}
+Requires(post): %{postgresql} >= %{postgresql_version}
+Requires(post): %{postgresql}-server >= %{postgresql_version}
+Requires(post): %{postgresql}-devel >= %{postgresql_version}
 Requires(post): drop-in
 Provides:       esmond-database
+Obsoletes:      esmond-database-postgresql95
 
-%description database-postgresql95
-Installs Postgresql 9.5 using one of the vendor's RPMs. It will also try to migrate an
-older version of the database to Postgresql 9.5 if it finds one present and there is not
-already data .
+%description database-%{postgresql}
+Installs Postgresql using one of the vendor RPMs.
 
 %package compat
 Summary:        Esmond Backward Compatibility
 Group:          Development/Tools
 Requires:       esmond >= 2.1
-Requires:       esmond-database-postgresql95
+Requires:       esmond-database-%{postgresql}
 Obsoletes:      esmond < 2.1
 
 %description compat
@@ -90,7 +114,7 @@ Transitions esmond instances prior to the split of database modules to new versi
 /usr/sbin/groupadd -r esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
 
-%pre database-postgresql95
+%pre database-%{postgresql}
 # Create the 'esmond' user
 /usr/sbin/groupadd -r esmond 2> /dev/null || :
 /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
@@ -115,7 +139,6 @@ find %{buildroot}/%{install_base} -type f -exec sed -i "s|%{buildroot}||" {} \;
 #Create bin directory. virtualenv files will leave here.
 mkdir -p %{buildroot}/%{install_base}/bin/
 
-#Move the init scripts into place
 #create systemd-tmpfiles config for cassandra since it doesn't do this right
 mkdir -p %{buildroot}/%{_tmpfilesdir}
 mv %{buildroot}/%{install_base}/rpm/config_files/tmpfiles.conf %{buildroot}/%{_tmpfilesdir}/esmond.conf
@@ -146,23 +169,37 @@ mkdir -p %{buildroot}/etc/profile.d
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.csh %{buildroot}/etc/profile.d/esmond.csh
 mv %{buildroot}/%{install_base}/rpm/config_files/esmond.sh %{buildroot}/etc/profile.d/esmond.sh
 
-# Get rid of the 'rpm' directory now that all the files have been moved into place
-rm -rf %{buildroot}/%{install_base}/rpm
+
+cd %{buildroot}/%{install_base}
+# Get rid of the development files and directories
+rm -rf .git
+rm -f .git*
+rm -rf devel
+rm -rf rpm
+rm -rf rpms
+rm -f mkdevenv
+rm -f pylint.rc
+rm -f Vagrantfile
 
 # Install python libs so don't rely on pip connectivity during RPM install
 # NOTE: This part is why its not noarch
-cd %{buildroot}/%{install_base}
-rm -rf .git
-rm -f .git*
-virtualenv --prompt="(esmond)" .
+# We don't want to use a PIP > 19.0.2 to avoid build errors in dependencies
+virtualenv-3.6 --prompt="(esmond)" . --system-site-packages --no-pip
 . bin/activate
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python get-pip.py pip==18.1
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
-python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
-# Need this for the 1.0->2.0 API key migration script
-python -m pip install --install-option="--prefix=%{buildroot}%{install_base}" django-tastypie
+python3 -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
+#leave venv
+deactivate
 #not pretty but below is the best way I could find to remove references to buildroot
 find bin -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
 find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" {} \;
+# Clean up after build
+rm -f %{buildroot}%{install_base}/get-pip.py
+rm -f %{buildroot}%{install_base}/pip-selfcheck.json
+rm -rf %{buildroot}%{install_base}/__pycache__
+rm -rf %{buildroot}%{install_base}/esmond_client/__pycache__
 
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
@@ -174,7 +211,7 @@ mkdir -p /var/run/cassandra/
 . bin/activate
 
 #generate secret key
-grep -q "SECRET_KEY =" esmond/settings.py || python util/gen_django_secret_key.py >> esmond/settings.py
+grep -q "SECRET_KEY =" esmond/settings.py || python3 util/gen_django_secret_key.py >> esmond/settings.py
 
 # Create the logging directories
 mkdir -p /var/log/esmond
@@ -186,18 +223,6 @@ chown -R apache:apache /var/log/esmond
 semanage fcontext -a -t httpd_log_t '/var/log/esmond(/.*)?'
 restorecon -R /var/log/esmond
 setsebool -P httpd_can_network_connect on
-
-#handle updates
-if [ "$1" = "2" ]; then
-    #migrate pre-2.0 files
-    if [ -e "/opt/esmond/esmond.conf" ]; then
-        mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
-        mv /opt/esmond/esmond.conf %{config_base}/esmond.conf
-    elif [ -e "/opt/esmond/esmond.conf.rpmsave" ]; then
-        mv %{config_base}/esmond.conf %{config_base}/esmond.conf.default
-        mv /opt/esmond/esmond.conf.rpmsave %{config_base}/esmond.conf
-    fi
-fi
 
 #run config script
 chmod 755 configure_esmond
@@ -219,9 +244,7 @@ chown -R esmond:esmond /var/run/esmond
 find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
 
 #run database configuration scripts (dependent on esmond-database package installed)
-for script in %{dbscript_base}/configure-*; do
-    $script $1
-done
+%{dbscript_base}/configure-pgsql.sh %{postgresql_version_major}
 
 #enable and start httpd and cassandra on fresh install
 if [ "$1" = "1" ]; then
@@ -231,12 +254,6 @@ if [ "$1" = "1" ]; then
     systemctl restart httpd
 fi
 
-%post database-postgresql95
-#try to update the database if this is a clean install
-if [ "$1" = "1" ]; then
-    %{dbscript_base}/upgrade-pgsql95.sh
-fi
-
 %postun
 if [ "$1" != "0" ]; then
     # An RPM upgrade
@@ -244,25 +261,45 @@ if [ "$1" != "0" ]; then
 fi
 
 %files
-%defattr(0644,esmond,esmond,0755)
 %config(noreplace) %{config_base}/esmond.conf
-%config %{install_base}/esmond/settings.py
 %attr(0755,esmond,esmond) %{install_base}/bin/*
 %attr(0755,esmond,esmond) %{install_base}/util/*
 %attr(0755,esmond,esmond) %{install_base}/esmond_client/clients/*
-%attr(0755,esmond,esmond) %{install_base}/mkdevenv
 %attr(0755,esmond,esmond) %{install_base}/configure_esmond
-%{install_base}/*
+%{install_base}/AUTHORS
+%{install_base}/COPYING
+%{install_base}/ChangeLog
+%{install_base}/INSTALL
+%{install_base}/LICENSE
+%{install_base}/README.rst
+%{install_base}/TODO
+# TODO: Not produced
+# %{install_base}/__pycache__
+%{install_base}/docs
+%{install_base}/esmond.egg-info
+%{install_base}/esmond
+%{install_base}/esmond_client/README.rst
+# TODO: Not produced
+# %{install_base}/esmond_client/__pycache__
+%{install_base}/esmond_client/esmond_client*
+%{install_base}/esmond_client/setup*
+%{install_base}/example_esmond.conf
+%{install_base}/include
+%{install_base}/lib
+%{install_base}/lib64
+%{install_base}/requirements.txt
+%{install_base}/setup.py
+%{install_base}/test_data
+%config %{install_base}/esmond/settings.py
 /usr/sbin/esmond_manage
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.csh
 %attr(0755,esmond,esmond) /etc/profile.d/esmond.sh
 /etc/httpd/conf.d/apache-esmond.conf
 %{_tmpfilesdir}/esmond.conf
 
-%files database-postgresql95
+%files database-%{postgresql}
 %defattr(0644,esmond,esmond,0755)
-%attr(0755,esmond,esmond) %{dbscript_base}/upgrade-pgsql95.sh
-%attr(0755,esmond,esmond) %{dbscript_base}/configure-pgsql95.sh
+%attr(0755,esmond,esmond) %{dbscript_base}/configure-pgsql.sh
 
 %files compat
 

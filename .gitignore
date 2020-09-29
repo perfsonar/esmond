@@ -34,7 +34,11 @@ pysqlite2-doc/install-source.txt
 pip-selfcheck.json
 # Ignore vagrant files
 .vagrant
+vagrant
 vagrant-data
 lib64
 build
 staticfiles
+
+# Build by-products
+/esmond-*.rpm

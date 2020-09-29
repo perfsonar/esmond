@@ -9,11 +9,9 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-%:
-	dh $@ --with=python2 --buildsystem=pybuild
+export PYBUILD_NAME=esmond
 
-override_dh_install:
-	dh_install
-	chmod +x $(CURDIR)/debian/esmond/usr/share/esmond/util/nagios/check_espersistd_queues
+%:
+	dh $@ --with=python3 --buildsystem=pybuild
 
 override_dh_auto_test:

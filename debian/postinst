@@ -53,7 +53,7 @@ case "$1" in
 
         # update django secret key
         if ! grep '^SECRET_KEY *=' /etc/esmond/settings.py >> ${tmp_settings_py} 2>/dev/null; then
-            python /usr/share/esmond/util/gen_django_secret_key.py >> ${tmp_settings_py}
+            python3 /usr/share/esmond/util/gen_django_secret_key.py >> ${tmp_settings_py}
         fi
         ucf --debconf-ok ${tmp_settings_py} /etc/esmond/settings.py
         chgrp www-data /etc/esmond/settings.py
@@ -81,8 +81,8 @@ case "$1" in
             export ESMOND_ROOT ESMOND_CONF
             export DJANGO_SETTINGS_MODULE=esmond.settings
 
-            python /usr/lib/python2.7/dist-packages/esmond/manage.py makemigrations --noinput
-            python /usr/lib/python2.7/dist-packages/esmond/manage.py migrate --noinput
+            python3 /usr/lib/python3/dist-packages/esmond/manage.py makemigrations --noinput
+            python3 /usr/lib/python3/dist-packages/esmond/manage.py migrate --noinput
 
             mkdir -p /var/lib/esmond/staticfiles
             django-admin collectstatic --clear --noinput

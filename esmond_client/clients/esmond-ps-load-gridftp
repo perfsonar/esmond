@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 esmond-ps-load-gridftp - process GridFTP logs and load into an Esmond MA.
@@ -299,7 +299,7 @@ def scan_and_load_netlogger(file_path, last_record, options, _log):  # pylint: d
             try:
                 dest = obj.dest.lstrip('[').rstrip(']')
                 mda = _generate_metadata_args(obj.host, dest, obj.type)
-            except Exception, ex:  # pylint: disable=broad-except
+            except Exception as ex:  # pylint: disable=broad-except
                 _log('scan_and_load_netlogger.error',
                      'could not generate metadata args for row: {0} - exception: {1}'.format(
                          row, str(ex)))
@@ -534,7 +534,7 @@ class EntryDataObject(object):
         if hasattr(initial, 'items'):
             self.__dict__['_data'] = initial
 
-            for k in self._data.keys():
+            for k in list(self._data.keys()):
                 if k != self._sanitize(k):
                     self._data[self._sanitize(k)] = self._data.pop(k)
 
@@ -553,13 +553,13 @@ class EntryDataObject(object):
 
     def __str__(self):
         msg = ''
-        for k, v in self._data.items():
+        for k, v in list(self._data.items()):
             msg += ' {0} : {1}\n'.format(k, v)
         return 'Contains: {0}'.format(msg)
 
     def get_members(self):
         """Get the members/keys from the payload"""
-        for k in self._data.keys():
+        for k in list(self._data.keys()):
             yield k
 
     def to_dict(self):
@@ -612,7 +612,7 @@ def scan_and_load_json(file_path, last_record, options, _log):  # pylint: disabl
 
             try:
                 mda = _generate_metadata_args(obj.host, obj.dest, obj.cmd_type, host_to_ip=False)
-            except Exception, ex:  # pylint: disable=broad-except
+            except Exception as ex:  # pylint: disable=broad-except
                 _log('scan_and_load_json.error',
                      'could not generate metadata args for row: {0} - exception: {1}'.format(
                          row, str(ex)))
@@ -684,7 +684,7 @@ def scan_and_load_json(file_path, last_record, options, _log):  # pylint: disabl
                 'streams-tcpinfo': [x.to_dict() for x in obj.streams]
             }
 
-            for k, v in et_map.items():
+            for k, v in list(et_map.items()):
                 etb.add_data_point(k, _epoch(obj.start_timestamp), v)
 
             try:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Setup file for esmond."""
 
@@ -13,21 +13,19 @@ setup(
     url='http://software.es.net/esmond/',
     packages=['esmond', 'esmond.api', 'esmond.api.client', 'esmond.admin'],
     install_requires=[
-        'Django==1.11.28', 'web.py',
-        'djangorestframework==3.6.4', 'drf-extensions==0.3.1',
-        'djangorestframework-filters==0.10.1', 'python-memcached==1.57',
-        'pycassa==1.11.1', 'psycopg2==2.7.3.1', 'python-mimeparse==0.1.4',
-        'requests', 'nagiosplugin==1.2.2', 'pandokia==1.3.10', 'thrift==0.9.3'
+        'Django~=1.11.29',
+        'web.py',
+        'djangorestframework~=3.9.4',
+        'drf-extensions~=0.4.0',
+        'djangorestframework-filters~=0.10.2',
+        'django-filter~=1.1',
+        'python-memcached>=1.57',
+        'psycopg2>=2.7.7',
+        'requests',
+        'thrift==0.13.0'
     ],
     entry_points={
         'console_scripts': [
-            'espolld = esmond.poll:espolld',
-            'espoll = esmond.poll:espoll',
-            'espersistd = esmond.persist:espersistd',
-            'espersistq = esmond.persist:espersistq',
-            'esfetch = esmond.fetch:esfetch',
-            'esdbd = esmond.newdb:esdb_standalone',
-            'gen_ma_storefile = esmond.perfsonar:gen_ma_storefile',
             'esmanage = esmond.manage:esmanage',
         ]
     },
@@ -38,7 +36,7 @@ setup(
         'Environment :: Console',
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
         'Topic :: Internet',
         'Topic :: System :: Networking',
         'Topic :: Software Development :: Libraries',

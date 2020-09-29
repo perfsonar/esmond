@@ -1,46 +1,58 @@
 # -*- mode: ruby -*-
-# vi: set ft=ruby :
+# vi: set ft=ruby shiftwidth=4 :
+
+# Enable this to do a build after the system is set up.
+do_build = true
 
 Vagrant.configure("2") do |config|
-
-  # Build an el7 machine as the default
-  config.vm.define "esmond-el7", primary: true, autostart: true do |el7|
-    # set box to official CentOS 7 image
-    el7.vm.box = "centos/7"
-    # explcitly set shared folder to virtualbox type. If not set will choose rsync 
-    # which is just a one-way share that is less useful in this context
-    el7.vm.synced_folder ".", "/vagrant", type: "virtualbox"
-    # Set hostname
-    el7.vm.hostname = "esmond-el7"
-    el7.vm.provider "virtualbox" do |v|
-      # Prevent VirtualBox from interfering with host audio stack
-      v.customize ["modifyvm", :id, "--audio", "none"]
+    # Disable audio and get reasonable specs
+    config.vm.provider "virtualbox" do |vb|
+        vb.customize ["modifyvm", :id, "--audio", "none"]
+        vb.cpus = 2
+        vb.memory = 2048
     end
-    
-    # Enable IPv4. Cannot be directly before or after line that sets IPv6 address. Looks
-    # to be a strange bug where IPv6 and IPv4 mixed-up by vagrant otherwise and one 
-    #interface will appear not to have an address. If you look at network-scripts file
-    # you will see a mangled result where IPv4 is set for IPv6 or vice versa
-    el7.vm.network "private_network", ip: "10.0.0.201"
-    
-    # Setup port forwarding to apache
-    el7.vm.network "forwarded_port", guest: 443, host: "20443", host_ip: "127.0.0.1"
-    el7.vm.network "forwarded_port", guest: 80, host: "20080", host_ip: "127.0.0.1"
-    
-    # Enable IPv6. Currently only supports setting via static IP. Address below in the
-    # reserved local address range for IPv6
-    el7.vm.network "private_network", ip: "fdac:218a:75e5:69c8::201"
-    
-    #Disable selinux
-    el7.vm.provision "shell", inline: <<-SHELL
+    # Skip VB Gest Additions update
+    if Vagrant.has_plugin?("vagrant-vbguest")
+        config.vbguest.auto_update = false
+    end
+    # Build an el7 machine as the default
+    config.vm.define "esmond-el7-py3", primary: true, autostart: true do |el7|
+        # set box to official CentOS 7 image
+        el7.vm.box = "bento/centos-7"
+        # explcitly set shared folder to virtualbox type. If not set will choose rsync 
+        # which is just a one-way share that is less useful in this context
+        el7.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+        # Set hostname
+        el7.vm.hostname = "esmond-el7-py3"
+        el7.vm.provider "virtualbox" do |v|
+            # Prevent VirtualBox from interfering with host audio stack
+            v.customize ["modifyvm", :id, "--audio", "none"]
+        end
+
+        # Enable IPv4. Cannot be directly before or after line that sets IPv6 address. Looks
+        # to be a strange bug where IPv6 and IPv4 mixed-up by vagrant otherwise and one 
+        #interface will appear not to have an address. If you look at network-scripts file
+        # you will see a mangled result where IPv4 is set for IPv6 or vice versa
+        #el7.vm.network "private_network", ip: "10.0.0.203"
+
+        # Setup port forwarding to apache
+        #el7.vm.network "forwarded_port", guest: 443, host: "21443", host_ip: "127.0.0.1"
+        #el7.vm.network "forwarded_port", guest: 80, host: "21080", host_ip: "127.0.0.1"
+
+        # Enable IPv6. Currently only supports setting via static IP. Address below in the
+        # reserved local address range for IPv6
+        #el7.vm.network "private_network", ip: "fdac:218a:75e5:69c8::203"
+
+        #Disable selinux
+        el7.vm.provision "disable-selinux", type: "shell", inline: <<-SHELL
         sed -i s/SELINUX=enforcing/SELINUX=permissive/g /etc/selinux/config
-    SHELL
-    
-    #reload VM since selinux requires reboot. Requires `vagrant plugin install vagrant-reload`
-    el7.vm.provision :reload
-    
-    #Install all requirements and perform initial setup
-    el7.vm.provision "shell", inline: <<-SHELL
+        SHELL
+
+        #reload VM since selinux requires reboot. Requires `vagrant plugin install vagrant-reload`
+        el7.vm.provision :reload
+
+        #Install all requirements and perform initial setup
+        el7.vm.provision "initial-setup", type: "shell", inline: <<-SHELL
 
         #env variables
         export ESMOND_ROOT=/usr/lib/esmond
@@ -49,7 +61,12 @@ Vagrant.configure("2") do |config|
 
         ## install yum dependencies
         yum install -y epel-release
+        yum install -y centos-release-scl
         yum install -y http://software.internet2.edu/rpms/el7/x86_64/4/packages/perfSONAR-repo-0.9-1.noarch.rpm
+        # TODO: Should be from production
+        yum install -y perfSONAR-repo-nightly-minor
+        yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
         yum clean all
         yum install -y gcc\
             kernel-devel\
@@ -58,22 +75,26 @@ Vagrant.configure("2") do |config|
             make\
             bzip2\
             perl\
-            pscheduler-bundle-full\
-            python\
-            python-virtualenv\
+            python3\
+            python3-virtualenv\
             httpd\
-            mercurial\
-            python2-mock\
             mod_wsgi\
+            python3-mock\
+            python3-memcached\
+            python3-psycopg2\
+            python3-requests\
+            python3-thrift\
+            rh-python36-mod_wsgi\
             cassandra20\
             sqlite\
             sqlite-devel\
             memcached\
             java-1.7.0-openjdk\
-            postgresql95\
-            postgresql95-server\
-            postgresql95-devel
-        
+            postgresql10\
+            postgresql10-server\
+            postgresql10-devel\
+            drop-in
+
         ## setup shared folders and files
         if ! [ -d /vagrant/vagrant-data/esmond-el7/etc/esmond ]; then
             rm -rf /vagrant/vagrant-data/esmond-el7/etc/esmond
@@ -97,19 +118,25 @@ Vagrant.configure("2") do |config|
         ln -fs /vagrant/util/esmond_manage /usr/sbin
         #have to copy so apache starts on boot
         cp -f /vagrant/rpm/config_files/apache-esmond.conf /etc/httpd/conf.d/apache-esmond.conf
-        chmod 644 
+        chmod 644 /etc/httpd/conf.d/apache-esmond.conf
         ln -fs /vagrant/rpm/config_files/esmond.csh /etc/profile.d/esmond.csh
         ln -fs /vagrant/rpm/config_files/esmond.sh /etc/profile.d/esmond.sh
-        ln -fs /usr/pgsql-9.5/bin/pg_config /usr/sbin/pg_config
-        
+        ln -fs /usr/pgsql-10/bin/pg_config /usr/sbin/pg_config
+
+        ## Make PostgreSQL ready.  In production, pScheduler's
+        ## postgres-init handles this.
+        /usr/pgsql-10/bin/postgresql-10-setup initdb
+        systemctl enable --now postgresql-10
+
+
         ## Setup python environment
-        virtualenv --prompt="(esmond)" .
+        virtualenv-3 --prompt="(esmond)" .
         . bin/activate
-        python -m pip install --install-option="--prefix=/vagrant" -r requirements.txt
-        python -m pip install --install-option="--prefix=/vagrant" django-tastypie
+        python3 -m pip install --install-option="--prefix=/vagrant" -r requirements.txt
+        python3 -m pip install --install-option="--prefix=/vagrant" django-tastypie
         #need below for unittests
-        python -m pip install --install-option="--prefix=/vagrant"  --upgrade setuptools
-        python -m pip install --install-option="--prefix=/vagrant" mock
+        python3 -m pip install --install-option="--prefix=/vagrant"  --upgrade setuptools
+        python3 -m pip install --install-option="--prefix=/vagrant" mock
         ## Setup logging
         mkdir -p /var/run/cassandra/
         mkdir -p /var/log/esmond
@@ -118,13 +145,13 @@ Vagrant.configure("2") do |config|
         touch /var/log/esmond/django.log
         touch /var/log/esmond/install.log
         chown -R apache:apache /var/log/esmond
-        
+
         ## Finish Django setup
         #TODO: Handle this better
         cp -f rpm/config_files/settings.py esmond/settings.py
-        grep -q "SECRET_KEY =" esmond/settings.py|| python util/gen_django_secret_key.py >> esmond/settings.py
+        grep -q "SECRET_KEY =" esmond/settings.py|| python3 util/gen_django_secret_key.py >> esmond/settings.py
         ./rpm/scripts/configure_esmond
-        
+
         ## Configure DB
         USER_EXISTS=$(su -l postgres -c "psql -tAc \\"SELECT 1 FROM pg_roles WHERE rolname='esmond'\\"")
         if [ $? -ne 0 ]; then
@@ -140,41 +167,84 @@ Vagrant.configure("2") do |config|
             sed -i "s/sql_db_name = .*/sql_db_name = esmond/g" /etc/esmond/esmond.conf
             sed -i "s/sql_db_user = .*/sql_db_user = esmond/g" /etc/esmond/esmond.conf
             sed -i "s/sql_db_password = .*/sql_db_password = ${DB_PASSWORD}/g" /etc/esmond/esmond.conf
-            drop-in -n -t esmond - /var/lib/pgsql/9.5/data/pg_hba.conf <<EOF
-        #
-        # esmond
-        #
-        # This user should never need to access the database from anywhere
-        # other than locally.
-        #
-        local     esmond          esmond                            md5
-        host      esmond          esmond     127.0.0.1/32           md5
-        host      esmond          esmond     ::1/128                md5
-        local     test_esmond     esmond                            md5
-        host      test_esmond     esmond     127.0.0.1/32           md5
-        host      test_esmond     esmond     ::1/128                md5
-        local     postgres        esmond                            md5
-        host      postgres        esmond     127.0.0.1/32           md5
-        host      postgres        esmond     ::1/128                md5
+            drop-in -n -t esmond - /var/lib/pgsql/10/data/pg_hba.conf <<EOF
+#
+# esmond
+#
+# This user should never need to access the database from anywhere
+# other than locally.
+#
+local     esmond          esmond                            md5
+host      esmond          esmond     127.0.0.1/32           md5
+host      esmond          esmond     ::1/128                md5
+local     test_esmond     esmond                            md5
+host      test_esmond     esmond     127.0.0.1/32           md5
+host      test_esmond     esmond     ::1/128                md5
+local     postgres        esmond                            md5
+host      postgres        esmond     127.0.0.1/32           md5
+host      postgres        esmond     ::1/128                md5
 EOF
         fi
-        
+
         ## Restart remaining services
-        systemctl enable postgresql-9.5
-        systemctl restart postgresql-9.5
+        systemctl enable postgresql-10
+        systemctl restart postgresql-10
         systemctl enable cassandra
         systemctl restart cassandra
         systemctl enable httpd
         systemctl restart httpd
-        
+
         #build database
         ./rpm/scripts/configure_esmond 2
+        SHELL
+
+    # Do the build if we're configured to do so
+    if do_build
+      el7.vm.provision "build", type: "shell", inline: <<-SHELL
+        echo
+        echo Building Esmond
+        echo
+
+        set -e
+
+        # TODO: See if there's a way to get this location from Vagrant
+        cd /vagrant
+
+        RPMBUILD="${HOME}/rpmbuild"
+
+        yum -y install git rpm-build
+
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+        RPMVERSION=$(rpmspec -q --qf "%{Version}\n" rpm/esmond.spec | head -1)
+
+        for DIR in SOURCES SRPMS
+        do
+            mkdir -p "${RPMBUILD}/${DIR}"
+        done
+
+
+        git archive --format=tar --prefix="esmond-${RPMVERSION}/" "remotes/origin/${BRANCH}" \
+            | gzip > "${RPMBUILD}/SOURCES/esmond-${RPMVERSION}.tar.gz"
+
+        rpmbuild -bs rpm/esmond.spec
+
+        yum-builddep -y ${RPMBUILD}/SRPMS/*.src.rpm
+
+        rpmbuild -ba rpm/esmond.spec
+
+        cp ${RPMBUILD}/RPMS/$(uname -m)/* .
+
     SHELL
-  end
-  
-  # Runs on all hosts before they are provisioned independent of OS
-  config.vm.provision "shell", inline: <<-SHELL
+
+    end
+
+    # Runs on all hosts before they are provisioned independent of OS
+    config.vm.provision "account", type: "shell", inline: <<-SHELL
     /usr/sbin/groupadd -r esmond 2> /dev/null || :
     /usr/sbin/useradd -g esmond -r -s /sbin/nologin -c "Esmond User" -d /tmp esmond 2> /dev/null || :
-  SHELL
+    SHELL
+
+  end
+
 end

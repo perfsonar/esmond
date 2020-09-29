@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 esmond-ps-get - client to fetch perfsonar test results.
@@ -26,7 +26,7 @@ def main():
     header, data = data_format_factory(options)(conn)
 
     output = output_factory(options, data, header)
-    print output.get_output()
+    print(output.get_output())
 
 if __name__ == '__main__':
     main()

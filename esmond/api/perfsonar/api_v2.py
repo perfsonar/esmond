@@ -9,7 +9,7 @@ import json
 import math
 import os
 import time
-import urlparse
+import urllib.parse
 import uuid
 
 import pprint
@@ -29,16 +29,13 @@ from rest_framework import (viewsets, serializers, status,
 from rest_framework.exceptions import (ParseError, NotFound, MethodNotAllowed, APIException)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (DjangoModelPermissions, IsAuthenticatedOrReadOnly)
 from rest_framework.authentication import BaseAuthentication, TokenAuthentication
 
 import rest_framework_filters as filters
 
 from esmond.api.models import (PSMetadata, PSPointToPointSubject, PSEventTypes, 
     PSMetadataParameters, PSNetworkElementSubject, UserIpAddress)
-
-from esmond.api.api_v2 import (DataObject, _get_ersatz_esmond_api_queryset,
-    DjangoModelPerm)
 
 from esmond.api.perfsonar.types import *
 
@@ -66,7 +63,7 @@ try:
             'subinterval': db.raw_cf,
             'float': db.agg_cf
         }
-except ConnectionException, e:
+except ConnectionException as e:
     #try to get a cassandra connection but don't sweat if cant get one now
     #corrects race condition with cassandra boot and esmond boot
     db = None
@@ -87,20 +84,57 @@ def check_connection():
             'subinterval': db.raw_cf,
             'float': db.agg_cf
         }
-
+    
 #
 # Bases, etc
 #
+def _get_ersatz_esmond_api_queryset(ersatz_device):
+    """
+    We have a custom set of django.contrib.auth permissions (see 
+    models.APIPermission) for non-model API resources. This function 
+    generates a fake queryset that can be put on these non-model resources 
+    so that they can use the (above) standard DjangoModelPermissions as 
+    a permissions class instead of needing to roll a new custom 
+    permission class up to deal with these resources.
+    """
+    class ErsatzValues(object):
+        model_name = ersatz_device
+        app_label = 'auth.esmond_api'
+    class ErsatzModel(object):
+        _meta = ErsatzValues
+    class ErsatzQueryset(object):
+        model = ErsatzModel
 
+    return ErsatzQueryset
+    
+class DataObject(object):
+    def __init__(self, initial=None):
+        self.__dict__['_data'] = collections.OrderedDict()
+
+    def __getattr__(self, name):
+        return self._data.get(name, None)
+
+    def __setattr__(self, name, value):
+        self.__dict__['_data'][name] = value
+
+    def to_dict(self):
+        return self._data
+
+class DjangoModelPerm(DjangoModelPermissions):
+    """
+    Just allowing unauth for read ops
+    """
+    authenticated_users_only = False
+        
 class UtilMixin(object):
     def undash_dict(self, d):
         """Dict key dash => underscore conversion."""
-        for i in d.keys():
+        for i in list(d.keys()):
             d[i.replace('-', '_')] = d.pop(i)
 
     def to_dash_dict(self, d):
         """Dict key underscore => dash conversion."""
-        for i in d.keys():
+        for i in list(d.keys()):
             d[i.replace('_', '-')] = d.pop(i)
 
     def datetime_to_ts(self, dt):
@@ -112,7 +146,7 @@ class UtilMixin(object):
         """Add Uris to payload from serialized URL value."""
         if o.get('url', None):
             # Parse DRF-generated URL field into chunks.
-            up = urlparse.urlparse(o.get('url'))
+            up = urllib.parse.urlparse(o.get('url'))
             # Assign uri element to "main" payload
             o['uri'] = up.path
             # If there are event types associated, process them. If so,
@@ -135,14 +169,14 @@ class UtilMixin(object):
         ret = list()
 
         for et in queryset:
-            if not et_map.has_key(et.event_type):
+            if et.event_type not in et_map:
                 et_map[et.event_type] = dict(time_updated=None, summaries=list())
             if et.summary_type == 'base':
                 et_map[et.event_type]['time_updated'] = et.time_updated
             else:
                 et_map[et.event_type]['summaries'].append((et.summary_type, et.summary_window, et.time_updated))
 
-        for k,v in et_map.items():
+        for k,v in list(et_map.items()):
             d = dict(
                 base_uri='{0}/base'.format(k),
                 event_type=k,
@@ -155,7 +189,7 @@ class UtilMixin(object):
                     s = dict(   
                         uri='{0}/{1}/{2}'.format(k, INVERSE_SUMMARY_TYPES[a[0]], a[1]),
                         summary_type=a[0],
-                        summary_window=unicode(a[1]),
+                        summary_window=str(a[1]),
                         time_updated=self.datetime_to_ts(a[2]),
                     )
                     self.to_dash_dict(s)
@@ -235,24 +269,24 @@ class FilterUtilMixin(object):
         end_time = int(time.time())
         begin_time = 0
         has_filters = True
-        if filters.has_key(TIME_FILTER):
+        if TIME_FILTER in filters:
             begin_time = self.valid_time(filters[TIME_FILTER])
             end_time = begin_time
-        elif filters.has_key(TIME_START_FILTER) and filters.has_key(TIME_END_FILTER):
+        elif TIME_START_FILTER in filters and TIME_END_FILTER in filters:
             begin_time = self.valid_time(filters[TIME_START_FILTER])
             end_time = self.valid_time(filters[TIME_END_FILTER])
-        elif filters.has_key(TIME_START_FILTER) and filters.has_key(TIME_RANGE_FILTER):
+        elif TIME_START_FILTER in filters and TIME_RANGE_FILTER in filters:
             begin_time = self.valid_time(filters[TIME_START_FILTER])
             end_time = begin_time + self.valid_time(filters[TIME_RANGE_FILTER])
-        elif filters.has_key(TIME_END_FILTER) and filters.has_key(TIME_RANGE_FILTER):
+        elif TIME_END_FILTER in filters and TIME_RANGE_FILTER in filters:
             end_time = self.valid_time(filters[TIME_END_FILTER])
             begin_time = end_time - self.valid_time(filters[TIME_RANGE_FILTER])
-        elif filters.has_key(TIME_START_FILTER):
+        elif TIME_START_FILTER in filters:
             begin_time = self.valid_time(filters[TIME_START_FILTER])
             end_time = None
-        elif filters.has_key(TIME_END_FILTER):
+        elif TIME_END_FILTER in filters:
             end_time = self.valid_time(filters[TIME_END_FILTER])
-        elif filters.has_key(TIME_RANGE_FILTER):
+        elif TIME_RANGE_FILTER in filters:
             begin_time = end_time - self.valid_time(filters[TIME_RANGE_FILTER])
             end_time = None
         else:
@@ -268,7 +302,7 @@ class FilterUtilMixin(object):
             sw = int(sw)
         except ValueError:
             raise ParseError(detail="Summary window parameter must be an integer")
-        return unicode(sw)
+        return str(sw)
 
 class ConflictException(APIException):
     status_code=status.HTTP_409_CONFLICT
@@ -325,7 +359,7 @@ class IpAuth(BaseAuthentication):
             remoteip = x_forwarded_for
         else:
             remoteip = request.META['REMOTE_ADDR']
-        remoteip = unicode(remoteip)
+        remoteip = str(remoteip)
         
         #sort so that most specific subnet is at top of list
         userip = []
@@ -392,7 +426,7 @@ class PSTimeSeriesObject(object):
         ts = self._time
         #calculate summary bin
         if self.summary_type != 'base' and self.summary_window > 0:
-            ts = math.floor(long(ts)/long(self.summary_window)) * long(self.summary_window)
+            ts = math.floor(int(ts)/int(self.summary_window)) * int(self.summary_window)
         
         return ts
     
@@ -651,7 +685,7 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
         validated_data['checksum'] = self.calculate_checksum(validated_data, subject_model)
         
         #set metatadatakey
-        validated_data['metadata_key'] = slugify(unicode(uuid.uuid4().hex))
+        validated_data['metadata_key'] = slugify(str(uuid.uuid4().hex))
         
         return validated_data
     
@@ -742,13 +776,13 @@ class ArchiveSerializer(UtilMixin, serializers.ModelSerializer):
         data['psmetadataparameters'] = sorted(data['psmetadataparameters'], key=lambda md_param: md_param["parameter_key"])
         data['pseventtypes'] = sorted(data['pseventtypes'], key=lambda et:(et["event_type"], et["summary_type"], et["summary_window"]))
         checksum = hashlib.sha256()
-        checksum.update("subject-type::%s" %   data['subject_type'].lower())
+        checksum.update(('subject-type::%s' % data['subject_type'].lower()).encode('utf-8'))
         for subj_param in sorted(data[subject_field]):
-            checksum.update(",%s::%s" % (str(subj_param).lower(), str(data[subject_field][subj_param]).lower()))
+            checksum.update((',%s::%s' % (str(subj_param).lower(), str(data[subject_field][subj_param]).lower())).encode('utf-8'))
         for md_param in data['psmetadataparameters']:
-            checksum.update(",%s::%s" % (str(md_param['parameter_key']).lower(), str(md_param['parameter_value']).lower()))
+            checksum.update((',%s::%s' % (str(md_param['parameter_key']).lower(), str(md_param['parameter_value']).lower())).encode('utf-8'))
         for et in data['pseventtypes']:
-            checksum.update(",%s::%s::%s" % (str(et['event_type']).lower(), str(et['summary_type']).lower(), str(et['summary_window']).lower()))
+            checksum.update((',%s::%s::%s' % (str(et['event_type']).lower(), str(et['summary_type']).lower(), str(et['summary_window']).lower())).encode('utf-8'))
 
         return checksum.hexdigest()
 
@@ -973,7 +1007,7 @@ class EventTypeDetailViewset(UtilMixin, ViewsetBase):
             request=request,
             )
 
-        up = urlparse.urlparse(mdata_url)
+        up = urllib.parse.urlparse(mdata_url)
 
         for i in l:
             i['base-uri'] = up.path + i['base-uri']
@@ -1033,11 +1067,11 @@ class EventTypeDetailViewset(UtilMixin, ViewsetBase):
 class TimeSeriesSerializer(serializers.Serializer):
     
     def to_representation(self, obj):
-        if obj.has_key('ts'):
+        if 'ts' in obj:
             obj['ts'] = int( obj['ts'] / 1e3 )
-        if obj.has_key('is_valid'):
+        if 'is_valid' in obj:
             del obj['is_valid']
-        if obj.has_key('cf'):
+        if 'cf' in obj:
             del obj['cf']
             
         return obj
@@ -1151,7 +1185,7 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
         if DATA_KEY_TIME not in request_data:
             raise ParseError(detail="Required field %s not provided in request" % DATA_KEY_TIME)
         try:
-            long(request_data[DATA_KEY_TIME])
+            int(request_data[DATA_KEY_TIME])
         except:
             raise ParseError(detail="Time must be a unix timestamp")
         if DATA_KEY_VALUE not in request_data:
@@ -1197,7 +1231,7 @@ class TimeSeriesViewset(UtilMixin, FilterUtilMixin, ViewsetBase):
         mdata_url = reverse('archive-detail',  
                             kwargs={'metadata_key': self.kwargs.get('metadata_key')},
                             request=request)
-        up = urlparse.urlparse(mdata_url)
+        up = urllib.parse.urlparse(mdata_url)
         for s in event_type_detail[0]['summaries']:
             s['uri'] = up.path + s['uri']
             
