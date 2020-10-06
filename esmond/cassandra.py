@@ -105,7 +105,8 @@ class CASSANDRA_DB(object):
         if qname:
             self.log = get_logger("espersistd.%s.cass_db" % qname)
         else:
-            self.log = logging.getLogger('cassandra_db')
+            #self.log = logging.getLogger('cassandra_db')
+            self.log = logging.getLogger('esmond')
             self.log.setLevel(logging.DEBUG)
             format = logging.Formatter('%(name)s [%(levelname)s] %(message)s')
             handle = logging.StreamHandler()
@@ -615,8 +616,8 @@ class CASSANDRA_DB(object):
         
         for k,v in list(ret.items()):
             for kk,vv in list(v.items()):
-                results.append({'ts': kk, 'val': float(vv['val']) / value_divisors[cf], 
-                                        'is_valid': vv['is_valid']})
+                results.append({'ts': kk, 'val': float(vv[b'val']) / value_divisors[cf], 
+                                        'is_valid': vv[b'is_valid']})
             
         return results
 
@@ -659,7 +660,7 @@ class CASSANDRA_DB(object):
                     base_freq = None
                     count = None
                     for kkk in list(vv.keys()):
-                        if kkk == 'val':
+                        if kkk == b'val':
                             val = vv[kkk]
                         else:
                             base_freq = kkk
