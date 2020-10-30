@@ -1,5 +1,5 @@
---- a/rpm/config_files/esmond.conf	2020-10-06 19:21:21.858812090 +0000
-+++ b/rpm/config_files/esmond.conf	2020-10-06 19:21:22.829826670 +0000
+--- a/rpm/config_files/esmond.conf	2020-10-30 13:49:09.338711622 +0000
++++ b/rpm/config_files/esmond.conf	2020-10-30 13:49:11.452701542 +0000
 @@ -1,5 +1,6 @@
  [main]
  sql_db_engine = django.db.backends.postgresql_psycopg2
@@ -7,8 +7,8 @@
  sql_db_name = esmond
  sql_db_user = esmond
  sql_db_password = changeit
---- a/rpm/config_files/apache-esmond.conf	2020-10-06 19:21:21.858812090 +0000
-+++ b/rpm/config_files/apache-esmond.conf	2020-10-06 19:21:22.829826670 +0000
+--- a/rpm/config_files/apache-esmond.conf	2020-10-30 13:49:09.338711622 +0000
++++ b/rpm/config_files/apache-esmond.conf	2020-10-30 13:49:11.452701542 +0000
 @@ -1,16 +1,15 @@
 -WSGIScriptAlias /esmond /usr/lib/esmond/esmond/wsgi.py
 -WSGISocketPrefix run/wsgi
@@ -41,8 +41,8 @@
  Header set Access-Control-Allow-Origin "*"
  AllowOverride None
  <IfVersion >= 2.4>
---- a/rpm/config_files/settings.py	2020-10-06 19:21:21.858812090 +0000
-+++ b/rpm/config_files/settings.py	2020-10-06 19:21:22.829826670 +0000
+--- a/rpm/config_files/settings.py	2020-10-30 13:49:09.338711622 +0000
++++ b/rpm/config_files/settings.py	2020-10-30 13:49:11.452701542 +0000
 @@ -63,7 +63,7 @@
  USE_I18N = True
  
@@ -52,8 +52,8 @@
  
  # Absolute path to the directory that holds media.
  # Example: "/home/media/media.lawrence.com/"
---- a/setup.py	2020-10-06 19:21:21.858812090 +0000
-+++ b/setup.py	2020-10-06 19:21:22.829826670 +0000
+--- a/setup.py	2020-10-30 13:49:09.341711608 +0000
++++ b/setup.py	2020-10-30 13:49:11.452701542 +0000
 @@ -11,7 +11,10 @@
      author='Jon M. Dugan',
      author_email='jdugan@es.net',
