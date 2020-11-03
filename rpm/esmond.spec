@@ -14,7 +14,7 @@
 %define install_base /usr/lib/esmond
 %define config_base /etc/esmond
 %define dbscript_base /usr/lib/esmond-database
-%define perfsonar_auto_version 4.3.1
+%define perfsonar_auto_version 4.4.0
 %define perfsonar_auto_relnum 0.a1.0
  
 Name:           esmond
