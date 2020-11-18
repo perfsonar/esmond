@@ -1,8 +1,8 @@
-esmond (4.3.2~a1.0-1) perfsonar-4.3-snapshot; urgency=low
+esmond (4.3.2-1) perfsonar-4.3; urgency=low
 
   * New upstream version.
 
- -- Antoine Delvaux <antoine.delvaux@man.poznan.pl>  Fri, 13 Nov 2020 17:48:31 +0000
+ -- perfSONAR developers <debian@perfsonar.net>  Wed, 18 Nov 2020 15:44:32 +0000
 
 esmond (4.3.0-1) perfsonar-4.3; urgency=low
 
