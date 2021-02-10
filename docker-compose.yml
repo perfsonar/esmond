@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  esmond_build:
+    image: perfsonar/esmond-build:latest
+    build:
+        context: .
+        dockerfile: Dockerfile
+    environment: 
+         BRANCH: "${BRANCH}"
+    tmpfs: 
+       - /run
+       - /tmp
+    volumes:
+       - /sys/fs/cgroup:/sys/fs/cgroup:ro
