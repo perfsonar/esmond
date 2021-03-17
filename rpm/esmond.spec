@@ -14,7 +14,7 @@
 %define install_base /usr/lib/esmond
 %define config_base /etc/esmond
 %define dbscript_base /usr/lib/esmond-database
-%define perfsonar_auto_version 4.3.3
+%define perfsonar_auto_version 4.3.4
 %define perfsonar_auto_relnum 1
  
 Name:           esmond
@@ -198,8 +198,7 @@ find lib -type f -exec sed -i "s|%{buildroot}%{install_base}|%{install_base}|g" 
 # Clean up after build
 rm -f %{buildroot}%{install_base}/get-pip.py
 rm -f %{buildroot}%{install_base}/pip-selfcheck.json
-rm -rf %{buildroot}%{install_base}/__pycache__
-rm -rf %{buildroot}%{install_base}/esmond_client/__pycache__
+find %{buildroot}%{install_base} | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
 
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
