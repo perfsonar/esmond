@@ -15,7 +15,7 @@
 %define config_base /etc/esmond
 %define dbscript_base /usr/lib/esmond-database
 %define perfsonar_auto_version 4.4.2
-%define perfsonar_auto_relnum 1
+%define perfsonar_auto_relnum 2
  
 Name:           esmond
 Version:        %{perfsonar_auto_version}
@@ -73,6 +73,7 @@ Requires(post): esmond-database
 Requires:       sqlite
 Requires:       sqlite-devel
 Requires:       memcached
+Requires:       zip
 #java 1.7 needed for cassandra. dependency wrong in cassandra rpm.
 Requires:       java-1.7.0-openjdk
 
@@ -244,6 +245,9 @@ find %{install_base}/lib -type f -perm 0666 -exec chmod 644 {} \;
 
 #run database configuration scripts (dependent on esmond-database package installed)
 %{dbscript_base}/configure-pgsql.sh %{postgresql_version_major}
+
+# Remove problematic classes from cassandra (CVE-2022-23307)
+zip -q -d /usr/share/cassandra/lib/log4j*.jar org/apache/log4j/chainsaw/* || :
 
 #enable and start httpd and cassandra on fresh install
 if [ "$1" = "1" ]; then
