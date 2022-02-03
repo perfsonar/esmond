@@ -187,7 +187,7 @@ rm -f Vagrantfile
 # We don't want to use a PIP > 19.0.2 to avoid build errors in dependencies
 virtualenv-3.6 --prompt="(esmond)" . --system-site-packages --no-pip
 . bin/activate
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+curl https://bootstrap.pypa.io/pip/3.6/get-pip.py -o get-pip.py
 python get-pip.py pip==18.1
 #Invoking pip using 'python -m pip' to avoid 128 char shebang line limit that pip can hit in build envs like Jenkins
 python3 -m pip install --install-option="--prefix=%{buildroot}%{install_base}" -r requirements.txt
