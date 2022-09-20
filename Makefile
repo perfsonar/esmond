@@ -1,4 +1,4 @@
-PERFSONAR_AUTO_VERSION=4.4.4
+PERFSONAR_AUTO_VERSION=4.4.5
 #Need to set BRANCH in environment - Jenkins does this.
 
 jenkins_rpms:
