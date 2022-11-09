@@ -1,7 +1,7 @@
 This patch should be remove when the Debian/Ubuntu systems are using Python 3.6 or higher.
 See https://docs.python.org/3/whatsnew/3.6.html#json
---- a/esmond/api/client/perfsonar/query.py	2022-09-20 08:43:10.071667023 -0400
-+++ b/esmond/api/client/perfsonar/query.py	2022-09-20 08:43:11.492823487 -0400
+--- a/esmond/api/client/perfsonar/query.py	2020-07-08 20:20:59.608012000 +0000
++++ b/esmond/api/client/perfsonar/query.py	2022-11-09 19:46:53.655945431 +0000
 @@ -165,7 +165,7 @@
  
              if r.status_code == 200 and \
@@ -29,8 +29,8 @@ See https://docs.python.org/3/whatsnew/3.6.html#json
  
                      if self.filters.verbose:
                          print('got {0} results\n'.format(len(tmp)))
---- a/esmond/api/perfsonar/api_v2.py	2022-09-20 08:43:10.077728716 -0400
-+++ b/esmond/api/perfsonar/api_v2.py	2022-09-20 08:43:11.493905525 -0400
+--- a/esmond/api/perfsonar/api_v2.py	2020-07-08 20:20:59.608012000 +0000
++++ b/esmond/api/perfsonar/api_v2.py	2022-11-09 19:46:53.657908953 +0000
 @@ -928,7 +928,7 @@
              raise ParseError(detail='No data payload POSTed.')
  
@@ -58,8 +58,8 @@ See https://docs.python.org/3/whatsnew/3.6.html#json
          except ValueError:
              raise ParseError(detail='POST data payload could not be decoded to a JSON object - given: {0}'.format(request.body))
          
---- a/esmond/api/tests/perfsonar/test_api.py	2022-09-20 08:43:10.079019550 -0400
-+++ b/esmond/api/tests/perfsonar/test_api.py	2022-09-20 08:43:11.495090694 -0400
+--- a/esmond/api/tests/perfsonar/test_api.py	2020-07-08 20:20:59.608012000 +0000
++++ b/esmond/api/tests/perfsonar/test_api.py	2022-11-09 19:46:53.659693106 +0000
 @@ -56,7 +56,7 @@
      def assertExpectedResponse(self, expected, url, get_params={}):
          response = self.client.get(url, get_params)

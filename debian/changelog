@@ -1,8 +1,8 @@
-esmond (4.4.6-1) perfsonar-4.4; urgency=low
+esmond (4.4.6-2) perfsonar-4.4; urgency=low
 
   * New upstream version.
 
- -- perfSONAR developers <debian@perfsonar.net>  Mon, 07 Nov 2022 11:01:20 -0500
+ -- perfSONAR developers <debian@perfsonar.net>  Wed, 09 Nov 2022 19:46:53 +0000
 
 esmond (4.4.5-1) perfsonar-4.4; urgency=low
 
